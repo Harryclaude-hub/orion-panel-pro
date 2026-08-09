@@ -57,12 +57,43 @@
    * wird das gesagt statt still einen toten Knopf anzuzeigen. */
   function aktionen(f) {
     var h = '<div class="aktionen">';
-    if (f.pm_link) h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.pm_link) + '">Polymarket</a>';
-    else h += '<span class="knopf gesperrt" title="Kein Polymarket-Link im Fund">Polymarket fehlt</span>';
-    if (f.bf_link) h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bf_link) + '">Betfair über Broker</a>';
-    else h += '<span class="knopf gesperrt" title="Kein Betfair-Link im Fund">Betfair fehlt</span>';
+    if (f.pm_link) {
+      h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.pm_link) + '">Polymarket öffnen</a>' +
+           '<button class="knopf kopieren" data-link="' + txt(f.pm_link) + '" title="Polymarket-Link kopieren">Link kopieren</button>';
+    } else {
+      h += '<span class="knopf gesperrt" title="Kein Polymarket-Link im Fund">Polymarket fehlt</span>';
+    }
+    if (f.bf_link) {
+      h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bf_link) + '">Betfair über Broker</a>' +
+           '<button class="knopf kopieren" data-link="' + txt(f.bf_link) + '" title="Betfair-Link kopieren">Link kopieren</button>';
+    } else {
+      h += '<span class="knopf gesperrt" title="Kein Betfair-Link im Fund">Betfair fehlt</span>';
+    }
     h += '</div>';
     return h;
+  }
+
+  function zeitpunkt(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return '?';
+    var d = new Date(t);
+    function zwei(n) { return (n < 10 ? '0' : '') + n; }
+    return zwei(d.getDate()) + '.' + zwei(d.getMonth() + 1) + '. ' + zwei(d.getHours()) + ':' + zwei(d.getMinutes());
+  }
+
+  /* Die Analysezeile: was, wie viel, seit wann, bis wann. Alles in einer
+   * Zeile, damit man einen Fund beurteilen kann ohne zu rechnen. */
+  function analyse(f, imVerlauf) {
+    var gewinn = Number(f.auszahlung) - 100;
+    return '<div class="analyse">' +
+      '<span><b>' + Number(f.rendite).toFixed(2) + ' %</b> Rendite</span>' +
+      '<span>' + (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' auf 100 Einsatz</span>' +
+      '<span>beste bisher ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span>' +
+      '<span>gefunden ' + zeitpunkt(f.zuerst_gesehen) + ' (vor ' + seit(f.zuerst_gesehen) + ')</span>' +
+      '<span>' + (imVerlauf
+        ? 'beendet ' + zeitpunkt(f.vorbei_seit)
+        : 'endet ' + zeitpunkt(f.endet_am) + ' (in ' + bis(f.endet_am) + ')') + '</span>' +
+      '</div>';
   }
 
   function karte(f, imVerlauf) {
@@ -91,9 +122,11 @@
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
           '</div>' +
         '</div>' +
+        analyse(f, imVerlauf) +
         '<div class="unter">Kehrwertsumme ' + Number(f.inv).toFixed(4) +
-          ' &middot; bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' / ' + Number(f.einsatz_2).toFixed(2) +
-          ' &rarr; Auszahlung ' + Number(f.auszahlung).toFixed(2) + '</div>' +
+          ' &middot; Aufteilung ' + Number(f.einsatz_1).toFixed(2) + ' / ' + Number(f.einsatz_2).toFixed(2) +
+          ' &rarr; Auszahlung ' + Number(f.auszahlung).toFixed(2) +
+          ' &middot; Betfair-Partie: ' + txt(f.bf_partie) + '</div>' +
         aktionen(f) +
       '</div>';
   }
@@ -169,6 +202,62 @@
     if (el.textContent !== text) el.textContent = text;
   }
 
-  welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, setzeWennAnders: setzeWennAnders };
+  /* Kopieren laeuft ueber EINEN Zuhoerer am Dokument, nicht ueber einen je
+   * Knopf. Bei zwei Sekunden Takt wird die Liste staendig neu geschrieben;
+   * Zuhoerer an einzelnen Knoepfen waeren nach dem naechsten Takt weg. */
+  document.addEventListener('click', function (e) {
+    var knopf = e.target && e.target.closest ? e.target.closest('.kopieren') : null;
+    if (!knopf) return;
+    var link = knopf.getAttribute('data-link');
+    if (!link) return;
+
+    function gemeldet(text) {
+      var alt = knopf.textContent;
+      knopf.textContent = text;
+      setTimeout(function () { knopf.textContent = alt; }, 1400);
+    }
+
+    /* Aelterer Weg. Wird auch gebraucht, wenn die neue Schnittstelle da ist,
+     * aber ABLEHNT: das passiert, sobald das Fenster nicht im Vordergrund
+     * ist. Ein Rueckfall, der nur bei fehlender Schnittstelle greift, greift
+     * dann nie. */
+    function ueberFeld() {
+      try {
+        var feld = document.createElement('textarea');
+        feld.value = link;
+        feld.setAttribute('readonly', '');
+        feld.style.position = 'fixed';
+        feld.style.top = '0';
+        feld.style.opacity = '0';
+        document.body.appendChild(feld);
+        feld.select();
+        feld.setSelectionRange(0, link.length);
+        var ok = document.execCommand('copy');
+        document.body.removeChild(feld);
+        return ok;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    /* Beide Kopierwege verweigern per Browserregel, wenn das Fenster nicht
+     * im Vordergrund ist. Gemessen am 9.8.2026: hasFocus false, beide Wege
+     * schlagen fehl. Dann ist "Fenster aktivieren" die brauchbare Auskunft,
+     * "ging nicht" waere nur eine Sackgasse. */
+    function fehlgeschlagen() {
+      gemeldet(document.hasFocus() ? 'ging nicht' : 'Fenster aktivieren');
+    }
+
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(link).then(
+        function () { gemeldet('kopiert'); },
+        function () { if (ueberFeld()) gemeldet('kopiert'); else fehlgeschlagen(); }
+      );
+      return;
+    }
+    if (ueberFeld()) gemeldet('kopiert'); else fehlgeschlagen();
+  });
+
+  welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt, setzeWennAnders: setzeWennAnders };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);

@@ -76,6 +76,21 @@
     return [a, b];
   }
 
+  /* Die PARTIE eines Betfair-Marktes, nicht seine Laeufer.
+   *
+   * Teuer gelernt am 9.8.2026: bei MATCH_ODDS steht in `k` die Partie
+   * ("Italy vs Bahrain"), bei jedem anderen Markttyp aber stehen dort die
+   * Laeufer ("Under 3.5 Goals vs Over 3.5 Goals"). Der frueher benutzte
+   * Ausdruck `paar(k) || paar(ev)` faellt deshalb NIE auf `ev` zurueck:
+   * `paar(k)` gelingt ja, es kommt nur Unsinn heraus. Ergebnis waren
+   * 0 Paare bei 849 Polymarket- gegen 865 Betfair-Over/Under-Maerkten.
+   *
+   * `ev` traegt in BEIDEN Faellen die Partie. Also `ev` zuerst. */
+  function partieVon(bf) {
+    if (!bf) return null;
+    return paar(bf.ev) || paar(bf.k);
+  }
+
   /* Zusatzmaerkte abschneiden: Polymarket fuehrt dieselbe Partie mehrfach
    * ("... total corners", "... halftime result"). Fuer die Zuordnung zaehlt
    * die Begegnung, nicht die Marktvariante. */
@@ -98,7 +113,7 @@
 
     for (var i = 0; i < bfListe.length; i++) {
       var bf = bfListe[i];
-      var bp = paar(bf.k) || paar(bf.ev);
+      var bp = partieVon(bf);
       if (!bp) continue;
 
       // beide Richtungen: Heim und Auswaerts koennen vertauscht sein
@@ -146,10 +161,47 @@
    * Absicherung, auch wenn dieselben Mannschaften darin vorkommen.
    *
    * Gibt 'sieger', 'unentschieden' oder null zurueck. */
-  function marktArt(frage) {
+  function marktArt(frage, teil) {
     var f = norm(frage);
     if (/\bwin on \d{4} \d{2} \d{2}\b/.test(f)) return 'sieger';
     if (/end in a draw/.test(f)) return 'unentschieden';
+    /* Ueber/Unter zaehlt NUR, wenn es die Gesamtlinie der Partie ist.
+     * "CF America O/U 1.5" ist das Torkonto EINER Mannschaft und damit
+     * eine andere Frage als Betfairs OVER_UNDER_15, das fuer das Spiel gilt.
+     * Deshalb muss der Teilname GENAU "O/U x.x" sein, ohne Vorsatz. */
+    if (ouLinie(teil) !== null) return 'ueber_unter';
+    return null;
+  }
+
+  /* "O/U 2.5" -> 2.5 ; alles mit Vorsatz oder Zusatz -> null */
+  function ouLinie(teil) {
+    var m = String(teil == null ? '' : teil).trim().match(/^O\/U\s*(\d+(?:\.\d+)?)$/i);
+    return m ? parseFloat(m[1]) : null;
+  }
+
+  /* "OVER_UNDER_25" -> 2.5 */
+  function bfOuLinie(mt) {
+    var m = String(mt == null ? '' : mt).match(/^OVER_UNDER_(\d)(\d)$/);
+    return m ? parseFloat(m[1] + '.' + m[2]) : null;
+  }
+
+  /* Nur die Betfair-Maerkte derselben Linie kommen als Gegenstueck infrage. */
+  function ouKandidaten(bfListe, linie) {
+    if (!bfListe || linie === null) return [];
+    var aus = [];
+    for (var i = 0; i < bfListe.length; i++) {
+      if (bfOuLinie(bfListe[i].mt) === linie) aus.push(bfListe[i]);
+    }
+    return aus;
+  }
+
+  /* Polymarket fragt "Over?" mit Ja und Nein. Das Gegenstueck bei Betfair
+   * ist der Over-Laeufer. Under ergibt sich als dessen Gegenseite. */
+  function ouLaeufer(laeufer) {
+    if (!laeufer) return null;
+    for (var i = 0; i < laeufer.length; i++) {
+      if (/^over\b/.test(norm(laeufer[i].n))) return { score: 1, laeufer: laeufer[i] };
+    }
     return null;
   }
 
@@ -182,7 +234,12 @@
     aehnlichkeit: aehnlichkeit,
     namensgleichheit: namensgleichheit,
     marktArt: marktArt,
+    ouLinie: ouLinie,
+    bfOuLinie: bfOuLinie,
+    ouKandidaten: ouKandidaten,
+    ouLaeufer: ouLaeufer,
     paar: paar,
+    partieVon: partieVon,
     ohneAnhang: ohneAnhang,
     besterTreffer: besterTreffer,
     laeuferZu: laeuferZu,

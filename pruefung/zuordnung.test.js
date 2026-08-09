@@ -87,6 +87,29 @@ ok('halftime result faellt weg',
 ok('normaler Name bleibt unveraendert',
    Z.ohneAnhang('Motherwell vs Falkirk') === 'motherwell vs falkirk');
 
+/* ---------- partieVon: die Partie, nicht die Laeufer ----------
+ *
+ * Am 9.8.2026 gemessen: bei MATCH_ODDS steht die Partie in k, bei jedem
+ * anderen Markttyp stehen dort die Laeufer. `paar(k) || paar(ev)` fiel
+ * deshalb nie auf ev zurueck und ergab 0 Paare bei 849 gegen 865 Maerkten. */
+
+var moMarkt = { k: 'Italy vs Bahrain', ev: 'Italy v Bahrain', mt: 'MATCH_ODDS' };
+var ouMarkt = { k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: 'St Gallen v Luzern', mt: 'OVER_UNDER_35' };
+
+var pm1 = Z.partieVon(moMarkt);
+ok('MATCH_ODDS: Partie wird erkannt', pm1 && pm1[0] === 'italy' && pm1[1] === 'bahrain', JSON.stringify(pm1));
+
+var pm2 = Z.partieVon(ouMarkt);
+ok('OVER_UNDER: Partie kommt aus ev, nicht aus k',
+   pm2 && pm2[0] === 'st gallen' && pm2[1] === 'luzern', JSON.stringify(pm2));
+ok('OVER_UNDER: die Laeufer landen NICHT als Partie',
+   !(pm2[0].indexOf('goals') >= 0 || pm2[1].indexOf('goals') >= 0), JSON.stringify(pm2));
+
+ok('ohne ev wird k genommen',
+   JSON.stringify(Z.partieVon({ k: 'Italy vs Bahrain', ev: '' })) === JSON.stringify(['italy', 'bahrain']));
+ok('ohne beides gibt null', Z.partieVon({ k: '', ev: '' }) === null);
+ok('null gibt null',       Z.partieVon(null) === null);
+
 /* ---------- Zuordnung gegen eine Betfair-Liste ---------- */
 
 var bfListe = [
@@ -161,6 +184,57 @@ ok('Extra Innings wird abgewiesen',
 ok('leere Frage wird abgewiesen',     Z.marktArt('') === null);
 ok('null wird abgewiesen',            Z.marktArt(null) === null);
 ok('undefined wird abgewiesen',       Z.marktArt(undefined) === null);
+
+/* ---------- Ueber/Unter: gleiche Frage, aber nur die Gesamtlinie ----------
+ *
+ * Gemessen am 9.8.2026: 235 Polymarket-Gesamtlinien gegen 865 Betfair-
+ * Over/Under im Fenster ergeben 84 zusaetzliche Paare. Ohne die strenge
+ * Regel waeren es 174 gewesen, aber die Haelfte davon waere falsch:
+ * "CF America O/U 1.5" ist das Torkonto EINER Mannschaft. */
+
+ok('Gesamtlinie wird erkannt',        Z.marktArt('Benevento vs. Ravenna: O/U 2.5', 'O/U 2.5') === 'ueber_unter');
+ok('Linie wird gelesen',              Z.ouLinie('O/U 2.5') === 2.5);
+ok('halbe Linie 0.5 wird gelesen',    Z.ouLinie('O/U 0.5') === 0.5);
+ok('Leerzeichenform wird gelesen',    Z.ouLinie('O/U   3.5') === 3.5);
+
+ok('Mannschaftslinie wird ABGEWIESEN',      Z.ouLinie('CF América O/U 1.5') === null,
+   String(Z.ouLinie('CF América O/U 1.5')));
+ok('Mannschaftslinie ist keine gueltige Marktart',
+   Z.marktArt('CF América vs. Portland: CF América O/U 1.5', 'CF América O/U 1.5') === null);
+ok('Halbzeitlinie wird abgewiesen',   Z.ouLinie('1st Half O/U 1.5') === null);
+ok('Innings-Linie wird abgewiesen',   Z.ouLinie('1st 5 Innings O/U 4.5') === null);
+ok('leerer Teil gibt null',           Z.ouLinie('') === null);
+ok('null gibt null',                  Z.ouLinie(null) === null);
+
+ok('OVER_UNDER_25 -> 2.5',  Z.bfOuLinie('OVER_UNDER_25') === 2.5);
+ok('OVER_UNDER_05 -> 0.5',  Z.bfOuLinie('OVER_UNDER_05') === 0.5);
+ok('MATCH_ODDS gibt null',  Z.bfOuLinie('MATCH_ODDS') === null);
+ok('FIRST_HALF_GOALS_15 gibt null', Z.bfOuLinie('FIRST_HALF_GOALS_15') === null);
+
+var ouListe = [
+  { mt: 'OVER_UNDER_25', ev: 'St Gallen v Luzern', k: 'Under 2.5 Goals vs Over 2.5 Goals',
+    r: [{ n: 'Under 2.5 Goals', b: 2.6, l: 2.7 }, { n: 'Over 2.5 Goals', b: 1.59, l: 1.62 }] },
+  { mt: 'OVER_UNDER_35', ev: 'St Gallen v Luzern', k: 'Under 3.5 Goals vs Over 3.5 Goals',
+    r: [{ n: 'Under 3.5 Goals', b: 1.64, l: 1.7 }, { n: 'Over 3.5 Goals', b: 2.46, l: 2.5 }] },
+  { mt: 'MATCH_ODDS', ev: 'St Gallen v Luzern', k: 'St Gallen vs Luzern vs The Draw',
+    r: [{ n: 'St Gallen', b: 2.1, l: 2.2 }, { n: 'Luzern', b: 3.4, l: 3.5 }, { n: 'The Draw', b: 3.3, l: 3.4 }] }
+];
+
+var k25 = Z.ouKandidaten(ouListe, 2.5);
+ok('nur die passende Linie kommt infrage', k25.length === 1 && k25[0].mt === 'OVER_UNDER_25', k25.length);
+ok('falsche Linie findet nichts',          Z.ouKandidaten(ouListe, 9.5).length === 0);
+ok('MATCH_ODDS ist nie ein O/U-Kandidat',
+   Z.ouKandidaten(ouListe, 2.5).every(function (b) { return b.mt !== 'MATCH_ODDS'; }));
+
+var ol = Z.ouLaeufer(ouListe[0].r);
+ok('Over-Laeufer wird gefunden',  ol && ol.laeufer.n === 'Over 2.5 Goals', ol && ol.laeufer.n);
+ok('NICHT der Under-Laeufer',     ol.laeufer.n.indexOf('Under') === -1);
+ok('ohne Over gibt null',         Z.ouLaeufer([{ n: 'Under 2.5 Goals', b: 2 }]) === null);
+ok('leere Liste gibt null',       Z.ouLaeufer([]) === null);
+
+/* Die Partie muss auch bei O/U aus ev kommen */
+var ouTreffer = Z.besterTreffer('st gallen', 'luzern', k25, 0.5);
+ok('O/U-Markt wird der Partie zugeordnet', ouTreffer !== null && ouTreffer.bf.mt === 'OVER_UNDER_25');
 
 /* ---------- namensgleichheit: symmetrisch, nicht austricksbar ----------
  *
