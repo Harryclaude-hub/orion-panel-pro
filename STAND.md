@@ -1,93 +1,86 @@
-# Orion Panel — Stand vom 9. August 2026, Neuaufbau
+# Orion Panel Pro — Stand vom 9. August 2026
 
-Kurzfassung für den Wiedereinstieg. Nichts ist live, nichts ist gepusht.
+Live: https://saifokaram1-hub.github.io/orion-panel-pro/
+Alte Fassung unverändert: https://saifokaram1-hub.github.io/orion-panel/
 
-## Was gemessen und belegt ist
-
-1. **`/events?tag_slug=…` trägt.** 15.290 Märkte, 7.586 handelbar, 427 Begegnungen
-   im 72-Stunden-Fenster. Der alte Weg über `/markets` fand 28 Sportmärkte,
-   keinen unter 60 Tagen.
-2. **Schnittmenge mit Betfair: 39 Partien**, gemessen gegen `bridge_odds`
-   (40 s alt). Die Bridge selbst meldet im selben Moment `gemeinsam: 12`.
-   Faktor 3,2.
-3. **Betfair blockt Supabase mit 403 Cloudflare.** Gegenprobe: Polymarket
-   antwortet aus derselben Funktion mit 200 in 55 ms. Die Betfair-Hälfte
-   kann nicht auf den Server, das gilt für jeden Rechenzentrums-Anbieter.
-   Nachmessen: `curl -s https://noexklrgtqveiclijdwp.supabase.co/functions/v1/bf-erreichbar`
-4. **Serverseitiger Scan läuft:** `orion-scan`, 5,8 s, 4.124 handelbare Märkte,
-   0 Stapelfehler.
-5. **Nur rund die Hälfte der handelbaren Märkte hat beidseitige Briefkurse.**
-6. Die Bridge lädt nur **4.000 von 8.247** Betfair-Märkten hoch. Deshalb fehlen
-   Partien. Additiv behebbar, ohne das POST-Format anzufassen.
-
-## Dateien
+## Wie es jetzt läuft
 
 ```
-js/rechnung.js     94 Prüfungen grün   (pruefung/rechnung.test.js)
-js/zuordnung.js    52 Prüfungen grün   (pruefung/zuordnung.test.js)
-js/konfig.js       Schwellen, Schlüssel, Gebühren-Rückfall
-js/daten.js        holt beide Seiten, verbindet, rechnet
-js/anzeige.js      Darstellung
-js/sperre.js       Sperrbildschirm, Overlay wird ENTFERNT + Wache
-js/app.js          Ablauf
-index.html         neu, modular
-css/stil.css       Graphit, rund
+pg_cron  ──jede Minute──→  orion-lauf  ──→  orion_funde  ──→  Website (liest alle 2 s)
+                              ↑                                    ↑
+                   Polymarket (tag_slug)                    orion_laeufe
+                              ↑
+                   bridge_odds  ←── Bridge auf dem Heim-PC ←── Betfair
 ```
 
-Edge Functions neu: `orion-scan`, `bf-erreichbar`.
-Unberührt: `bf-bridge`, `pm-scan`, `ob-proxy`, `sx-proxy`,
-`profiles.bridge_token`, POST-Format. Bridges laufen weiter.
+**Gesucht wird auf dem Server**, nicht im Browser. Der Scanner läuft weiter,
+auch wenn niemand die Seite offen hat. Die Seite liest nur ab, deshalb sind
+zwei Sekunden Takt bezahlbar.
 
-Alter Stand gesichert: `git checkout alte-fassung-2026-08-09`
+Gemessen: Lauf 2,6 bis 6,0 s · Ablesen 114 bis 125 ms · 162 Polymarket-Märkte
+im Fenster · 309 Betfair-Match-Odds · 64 Paare.
 
-## Der Fehler, der im ersten echten Lauf auffiel
+## Live und Verlauf
 
-Die Anzeige meldete **663 Chancen mit bis zu 184 % Rendite**. Alles falsch.
-Ursache: Polymarket-Märkte wie „CSD Municipal 1 - 3 CSD Cobán Imperial"
-(Exact Score) wurden gegen die Betfair-**Siegerquote** gehalten. Zwei
-verschiedene Fragen sind keine Absicherung.
+- **Chancen**: Rendite ab 0,5 %.
+- **Knappste Paare**: alles darunter, mit beiden Links.
+- **Verlauf**: was nicht mehr gefunden wird oder dessen Partie vorbei ist,
+  mit Grund, erster Sichtung und bester je gesehener Rendite.
 
-Zwei Gründe, beide behoben:
-- `aehnlichkeit()` teilt durch den **kürzeren** Namen. „CSD Municipal" steckt
-  vollständig in „CSD Municipal 1 - 3 CSD Cobán Imperial" → Score 1,00.
-  → neue `namensgleichheit()` teilt durch den **längeren** Namen, Schwelle 0,8.
-- Es fehlte die Prüfung, ob der Markt überhaupt dieselbe Frage stellt.
-  → neue `marktArt()`, lässt nur `sieger` und `unentschieden` durch.
+Die Verlauf-Regel wurde **absichtlich ausgelöst** und geprüft, nicht nur
+gebaut: Prüfzeile eingefügt, ein Lauf, danach `beendet: 1`, Status `vorbei`,
+Grund `nicht mehr gefunden`. Prüfzeile danach wieder gelöscht.
 
-## Ergebnis nach der Reparatur
+## Betfair: was geht und was nicht
 
-Derselbe Lauf, dieselben Daten, mit Filter:
+Neun Wege aus Supabase geprüft:
 
 ```
-663 Chancen  ->  0 Chancen
-3.303 Polymarket-Märkte handelbar
-3.116 abgewiesen, weil sie eine andere Frage stellen als Betfair
-65 Paare wirklich gerechnet
-beste Rendite 0,049 %  ->  unter der Schwelle von 0,5 %, also kein Fund
+GEBLOCKT 403  api.betfair.com          json-rpc, rest, account
+GEBLOCKT 403  api-au.betfair.com · api.betfair.es
+GEBLOCKT 403  historicdata.betfair.com · www.betfair.com
+GEBLOCKT 403  menu.json (öffentlich, ohne Anmeldung)
+GEBLOCKT 403  identitysso.betfair.com/api/login
+ERREICHBAR    identitysso-cert.betfair.com   {"loginStatus":"CERT_AUTH_REQUIRED"}
+ERREICHBAR    stream-api.betfair.com:443     {"op":"connection","connectionId":"..."}
 ```
 
-**Null ist hier das richtige Ergebnis.** Zwei Börsen mit vielen Teilnehmern
-liegen selten weit auseinander. Der Fund aus Abschnitt 0 verbessert die
-Ausgangslage, aber niemand kann eine Trefferzahl versprechen.
+**Der Push-Strom antwortet aus dem Rechenzentrum.** Damit ist ein
+Betfair-Anschluss ohne Heim-PC zum ersten Mal denkbar: anmelden über die
+Zertifikats-Anmeldung, Kurse über den Strom empfangen statt abzufragen.
 
-Gegengeprüft im echten Browser mit `elementFromPoint`:
-**52 von 52 Knöpfen erreichbar, 0 tot, 0 Überlappungen.**
-Die alte Fassung hatte 49 von 53 unerreichbar.
+Ungeprüft und deshalb kein Versprechen:
+1. Ob eine Supabase Edge Function eine Client-Zertifikat-Verbindung aufbauen
+   kann (`Deno.createHttpClient`).
+2. Ob eine Funktion einen Strom lange genug offen halten kann. Edge Functions
+   sind auf Anfragen ausgelegt, nicht auf Dauerverbindungen.
+3. Ob die Marktsuche ohne `listMarketCatalogue` auskommt.
 
-Zusätzlich eingebaut: Warnung, wenn die Bridge-Daten älter als 5 Minuten sind.
-Beim Test waren sie 4,7 h alt, und die Seite hat das gemeldet statt eine
-Chance auf toten Kursen vorzuspielen.
+Nachmessen: `curl -s https://noexklrgtqveiclijdwp.supabase.co/functions/v1/bf-erreichbar`
 
-## Offen, als Nächstes
+## Einstellungen
 
-1. `funktionen.html` und `logik.html` nachziehen (Übergabe Punkt 6).
-   Beide sind noch die alten Seiten und passen nicht mehr zum Programm.
-2. Verlauf und Fundzeit dauerhaft speichern (Fehlerklasse 7).
-3. Upload-Grenze der Bridge von 4.000 anheben, additiv. Dadurch fehlen
-   derzeit Partien, die es bei beiden gibt.
-4. Betfair-Kommission: die Bridge schickt `marketBaseRate` nicht mit,
-   deshalb wird mit 7 % gerechnet. Additiv nachrüstbar, macht die
-   Rechnung genauer und findet mehr echte Chancen.
-5. `pm-scan` durch `orion-scan` ersetzen oder zusammenlegen.
-6. Alte Dateien aufräumen: `admin.html`, `konto.html`, `login.html`,
-   `config.js`, `pdf.js` gehören zur alten Fassung.
+`einstellungen.html` nimmt Benutzername, Passwort, App Key und Bridge-Token
+entgegen, merkt sie **im Browser** und baut daraus `bridge-config.json` zum
+Herunterladen. **Nichts davon geht in die Datenbank.** `orion_funde` und
+`bridge_odds` sind öffentlich lesbar, dort hat ein Passwort zu einem
+Geldkonto nichts zu suchen.
+
+## Unangetastet
+
+`bf-bridge`, POST-Format `{data:[{key,o1,o2,link}]}`, `profiles.bridge_token`,
+`pm-scan` und sein Takt. Die Bridge auf dem Heim-PC läuft unverändert weiter.
+
+## Offen
+
+1. **Die Bridge steht.** Beim letzten Blick waren die Betfair-Daten 71 Minuten
+   alt. Ohne sie sind alle Quoten hier Geschichte. Die Seite sagt das in Rot.
+2. Stream-Weg messen (die drei Punkte oben). Das ist der Weg zu „läuft ganz
+   von allein, ohne PC".
+3. Bridge lädt nur 4.000 von 8.357 Märkten hoch. Additiv anhebbar.
+4. Bridge schickt `marketBaseRate` nicht mit, deshalb wird mit 7 % statt der
+   echten 2 bis 5 % gerechnet. Das drückt jede Rendite nach unten.
+5. Prüfstand, der die Serverfassung (`rechnung.ts`, `zuordnung.ts`) gegen die
+   Browserfassung hält. Solange es zwei Fassungen gibt, können sie
+   auseinanderlaufen.
+6. `logik.html` und `funktionen.html` sind noch die alten Seiten.
