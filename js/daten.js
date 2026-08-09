@@ -59,8 +59,20 @@
           return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
         }
 
-        live.forEach(function (f) { f.veraltet = veraltet(f); });
-        verlauf.forEach(function (f) { f.veraltet = false; });
+        /* Broker-Adresse an EINER Stelle festlegen, hier beim Anzeigen.
+         * Die Marktnummer ist das Bestaendige, der Broker nicht: 96ex.com
+         * antwortete am 9.8.2026 gar nicht mehr (HTTP 000, dreimal 21 s
+         * Zeitueberschreitung). Wer den Broker wechselt, aendert nur
+         * KONFIG.brokerMuster und alle Zeilen stimmen wieder, auch die
+         * alten im Verlauf. */
+        function brokerRichten(f) {
+          if (f.buch === 'kalshi') return;              // Kalshi hat keinen Broker
+          var m = String(f.bf_link || '').match(/market\/([\d.]+)/);
+          if (m) f.bf_link = K.brokerMuster.replace('{id}', m[1]);
+        }
+
+        live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); });
+        verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); });
 
         var chancen = live.filter(function (f) { return f.rendite >= K.mindestRendite && !f.veraltet; });
         var knapp = live.filter(function (f) { return !(f.rendite >= K.mindestRendite && !f.veraltet); });

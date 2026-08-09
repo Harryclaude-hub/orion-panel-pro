@@ -37,8 +37,17 @@
     laufMaxAlterS: 180,
 
     /* Betfair ist aus Oesterreich im Browser gesperrt. Die Marktnummer im
-     * Link stimmt, die Seite weist ab. Deshalb ueber den Broker. */
-    brokerMuster: 'https://www.96ex.com/exchange/plus/market/{id}'
+     * Link stimmt, die Seite weist ab. Deshalb ueber den Broker.
+     *
+     * 96ex.com antwortet seit dem 9.8.2026 GAR NICHT mehr: HTTP 000,
+     * Zeitueberschreitung nach 21 s, dreimal gemessen, auch die blosse
+     * Startseite. Die Adresse ist tot, das war kein Proxy-Problem.
+     *
+     * orbitexch.com antwortet in 0,3 s. Muster mit drei verschiedenen
+     * Marktnummern gegengeprueft: der Seitentitel nannte jedes Mal den
+     * richtigen Wettbewerb (Leagues Cup, Delhi Premier League,
+     * International Twenty20). */
+    brokerMuster: 'https://www.orbitexch.com/customer/sport/1/market/{id}'
   };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);

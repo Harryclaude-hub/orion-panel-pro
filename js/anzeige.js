@@ -64,10 +64,11 @@
       h += '<span class="knopf gesperrt" title="Kein Polymarket-Link im Fund">Polymarket fehlt</span>';
     }
     if (f.bf_link) {
-      h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bf_link) + '">Betfair über Broker</a>' +
-           '<button class="knopf kopieren" data-link="' + txt(f.bf_link) + '" title="Betfair-Link kopieren">Link kopieren</button>';
+      h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bf_link) + '">' +
+             (f.buch === 'kalshi' ? 'Kalshi öffnen' : 'Betfair über Orbit') + '</a>' +
+           '<button class="knopf kopieren" data-link="' + txt(f.bf_link) + '" title="Gegenbuch-Link kopieren">Link kopieren</button>';
     } else {
-      h += '<span class="knopf gesperrt" title="Kein Betfair-Link im Fund">Betfair fehlt</span>';
+      h += '<span class="knopf gesperrt" title="Kein Link im Fund">Gegenbuch-Link fehlt</span>';
     }
     h += '</div>';
     return h;
@@ -120,7 +121,7 @@
             '<div class="leise">' + txt(f.mannschaft) + '</div>' +
           '</div>' +
           '<div class="seite bf">' +
-            '<div class="quelle">Betfair</div>' +
+            '<div class="quelle">' + (f.buch === 'kalshi' ? 'Kalshi' : 'Betfair') + '</div>' +
             '<div class="zahl">' + txt(f.bf_seite) + ' ' + Number(f.bf_quote).toFixed(2) + '</div>' +
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
           '</div>' +
@@ -129,7 +130,7 @@
         '<div class="unter">Kehrwertsumme ' + Number(f.inv).toFixed(4) +
           ' &middot; Aufteilung ' + Number(f.einsatz_1).toFixed(2) + ' / ' + Number(f.einsatz_2).toFixed(2) +
           ' &rarr; Auszahlung ' + Number(f.auszahlung).toFixed(2) +
-          ' &middot; Betfair-Partie: ' + txt(f.bf_partie) + '</div>' +
+          ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
         aktionen(f) +
       '</div>';
   }
