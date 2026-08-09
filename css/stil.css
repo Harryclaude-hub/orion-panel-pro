@@ -1,0 +1,133 @@
+/* Orion Panel — Stil
+ * Vorgaben des Auftraggebers (Uebergabe 7): rund statt eckig, mittel-dunkles
+ * Graphit, kein Schwarz, kein Weiss, keine Neonfarben, grosse Knoepfe.
+ */
+
+:root {
+  --grund:    #24262B;
+  --karte:    #2F3339;
+  --karte-2:  #363A41;
+  --rand:     #41464E;
+  --text:     #E8EAED;
+  --text-leise: #A8AEB8;
+
+  --gold:     #C8AC63;
+  --gruen:    #8FC178;
+  --violett:  #B3A1E6;   /* Polymarket */
+  --blau:     #82B3D9;   /* Betfair */
+  --tuerkis:  #6FBFB5;   /* weitere Boerse */
+  --orange:   #D9A066;
+  --rot:      #D98A8A;
+
+  --rund:     12px;
+  --rund-chip: 8px;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  margin: 0; padding: 0;
+  background: var(--grund);
+  color: var(--text);
+  font: 16px/1.55 system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+}
+
+.huelle { max-width: 1180px; margin: 0 auto; padding: 20px 16px 64px; }
+
+/* ---------- Kopfzeile ---------- */
+
+header.kopf {
+  display: flex; align-items: center; gap: 12px; flex-wrap: wrap;
+  padding: 14px 16px; margin-bottom: 18px;
+  background: var(--karte); border: 1px solid var(--rand); border-radius: var(--rund);
+}
+.kopf h1 { font-size: 20px; margin: 0; letter-spacing: .3px; }
+.kopf .luecke { flex: 1; }
+
+button, .knopf {
+  min-height: 44px; padding: 0 18px;
+  background: var(--karte-2); color: var(--text);
+  border: 1px solid var(--rand); border-radius: var(--rund);
+  font-size: 15px; cursor: pointer;
+}
+button:hover, .knopf:hover { background: #3E434B; }
+/* Nie disabled (Fehlerklasse 3): optisch gesperrt, Klick nennt den Grund. */
+button.gesperrt { opacity: .5; }
+
+.chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: var(--rund-chip);
+  font-size: 13px; border: 1px solid var(--rand); background: var(--karte-2);
+  color: var(--text-leise);
+}
+.chip.pm { color: var(--violett); border-color: #4A4260; }
+.chip.bf { color: var(--blau);    border-color: #3C4C5C; }
+.chip.gut { color: var(--gruen);  border-color: #3F5238; }
+.chip.acht { color: var(--orange); border-color: #5A4634; }
+.chip.rot  { color: var(--rot);    border-color: #5C3E3E; }
+
+/* ---------- Kartengitter ---------- */
+
+.zeile-oben { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }
+.kachel {
+  flex: 1 1 190px; padding: 14px 16px;
+  background: var(--karte); border: 1px solid var(--rand); border-radius: var(--rund);
+}
+.kachel .wert { font-size: 26px; font-weight: 600; }
+.kachel .name { font-size: 13px; color: var(--text-leise); }
+
+/* ---------- Fundliste ---------- */
+
+.fund {
+  padding: 14px 16px; margin-bottom: 10px;
+  background: var(--karte); border: 1px solid var(--rand); border-radius: var(--rund);
+}
+.fund.chance { border-color: #4C6242; background: #2C332C; }
+.fund .titel { font-size: 17px; font-weight: 600; margin-bottom: 4px; }
+.fund .unter { font-size: 13px; color: var(--text-leise); margin-bottom: 10px; }
+.fund .seiten { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 10px; }
+.fund .seite {
+  flex: 1 1 260px; padding: 10px 12px;
+  background: var(--karte-2); border: 1px solid var(--rand); border-radius: var(--rund-chip);
+}
+.fund .seite .quelle { font-size: 12px; letter-spacing: .5px; text-transform: uppercase; }
+.fund .seite.pm .quelle { color: var(--violett); }
+.fund .seite.bf .quelle { color: var(--blau); }
+.fund .seite .zahl { font-size: 20px; font-weight: 600; }
+.fund .aktionen { display: flex; gap: 8px; flex-wrap: wrap; }
+/* Aktionsspalte NIE mit fester Breite und overflow:hidden (Fehlerklasse 9) */
+.fund .aktionen a.knopf { text-decoration: none; display: inline-flex; align-items: center; }
+
+.rendite-gut { color: var(--gruen); }
+.rendite-schlecht { color: var(--text-leise); }
+
+.leise { color: var(--text-leise); font-size: 14px; }
+.warnung {
+  padding: 12px 14px; margin-bottom: 14px;
+  border: 1px solid #5A4634; border-radius: var(--rund);
+  background: #322C24; color: var(--orange); font-size: 14px;
+}
+
+/* ---------- Sperrbildschirm ---------- */
+
+#sperre {
+  position: fixed; inset: 0; z-index: 2147483647;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--grund);
+}
+#sperre .kasten {
+  width: min(380px, 90vw); padding: 24px;
+  background: var(--karte); border: 1px solid var(--rand); border-radius: var(--rund);
+}
+#sperre h2 { margin: 0 0 14px; font-size: 18px; }
+#sperre input {
+  width: 100%; min-height: 44px; padding: 0 12px; margin-bottom: 12px;
+  background: var(--karte-2); color: var(--text);
+  border: 1px solid var(--rand); border-radius: var(--rund); font-size: 16px;
+}
+#sperre .fehler { color: var(--rot); font-size: 14px; min-height: 20px; }
+
+@media (max-width: 640px) {
+  .kopf h1 { font-size: 17px; }
+  .fund .seite { flex: 1 1 100%; }
+}

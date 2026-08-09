@@ -1,0 +1,15 @@
+.test_email
+_check.js
+_verify.mjs
+_*.mjs
+_*.js
+bridge/bridge-config.json
+bridge/sea-prep.blob
+bridge/betfair-bridge.exe
+_opp-test.html
+_test.html
+.claude/
+node_modules/
+
+bridge/*.exe
+bridge/*.blob

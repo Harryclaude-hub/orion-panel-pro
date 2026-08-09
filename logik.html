@@ -1,0 +1,681 @@
+﻿<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion Panel — Suchlogik</title>
+<meta name="robots" content="noindex, nofollow">
+<style>
+  :root{
+    --void:#24262B;--void2:#1F2126;--panel:#2A2D33;--panel2:#26292E;--panelhi:#2F3339;--sunken:#1B1D21;
+    --line:#383C43;--line2:#454A53;--line3:#575E69;
+    --txt:#E8EAED;--muted:#B6BAC2;--dim:#969CA6;--faint:#6C7280;
+    --gold:#C8AC63;--gold-b:#E0CB8E;--gold-d:#8A7A47;--gold-flae:#3A3423;
+    --pos:#8FC178;--pos-d:#4F6B42;--pos-flae:#2A3424;
+    --neg:#E0897B;--neg-d:#7A4A40;--neg-flae:#3A2A26;
+    --warn:#DBAD6A;--warn-d:#77592C;--warn-flae:#383021;
+    --info:#82B3D9;--info-d:#3F5A73;--info-flae:#263039;
+    --pm:#B3A1E6;--pm-d:#55467E;--pm-flae:#2E2A3D;
+    --bf:#82B3D9;--bf-d:#3F5A73;--bf-flae:#263039;
+    --ob:#7FC4B4;--ob-d:#3E6058;--ob-flae:#253430;
+    --mono:ui-monospace,"Cascadia Code","SF Mono",Consolas,monospace;
+    --sans:ui-sans-serif,system-ui,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    --schatten:0 1px 2px rgba(0,0,0,.28);--schatten-hoch:0 10px 30px rgba(0,0,0,.5)}
+  *{box-sizing:border-box}html,body{margin:0;padding:0}
+  body{background:var(--void);color:var(--txt);font-family:var(--sans);font-size:15px;line-height:1.62;
+    background-image:radial-gradient(120% 50% at 100% 0%,rgba(138,117,38,.05),transparent 55%)}
+
+  .cmd{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;padding:12px 20px;
+    background:linear-gradient(180deg,var(--panelhi),var(--panel));border-bottom:1px solid var(--line2)}
+  .mark{width:30px;height:30px;position:relative;border:1px solid var(--gold-d);background:var(--panelhi);flex:none}
+  .mark::before,.mark::after{content:"";position:absolute;background:var(--gold)}
+  .mark::before{left:8px;top:14px;width:13px;height:1px;box-shadow:0 -5px 0 var(--gold-d),0 5px 0 var(--gold-d)}
+  .mark::after{left:14px;top:8px;width:1px;height:13px;box-shadow:-5px 0 0 var(--gold-d),5px 0 0 var(--gold-d)}
+  h1{margin:0;font-size:12.5px;letter-spacing:.24em;text-transform:uppercase;font-weight:700}
+  h1 span{color:var(--gold-b)}
+  .cmd .sp{flex:1}
+  .lnk{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--gold);border:1px solid var(--line3);
+    padding:8px 12px;text-decoration:none;background:var(--panelhi);white-space:nowrap}
+  .lnk:hover{color:var(--gold-b);border-color:var(--gold-d)}
+
+  .wrap{max-width:900px;margin:0 auto;padding:28px 20px 80px;display:flex;flex-direction:column;gap:32px}
+  .intro{border:1px solid var(--line2);background:linear-gradient(180deg,var(--void),var(--panel));padding:22px 24px;display:flex;flex-direction:column;gap:10px}
+  .intro h2{margin:0;font-size:19px;color:var(--gold-b);text-wrap:balance}
+  .intro p{margin:0;color:var(--muted);font-size:14.5px;max-width:66ch}
+  .stamp{font-family:var(--mono);font-size:10.5px;color:var(--dim);letter-spacing:.05em}
+
+  .gauges{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));border:1px solid var(--line2);background:var(--panel)}
+  .g{padding:14px 15px;border-right:1px solid var(--line);border-bottom:1px solid var(--line)}
+  .g .v{font-family:var(--mono);font-size:23px;font-weight:700;color:var(--gold-b);font-variant-numeric:tabular-nums;line-height:1.1}
+  .g .v.pos{color:var(--pos)}
+  .g .l{font-size:9.5px;letter-spacing:.13em;text-transform:uppercase;color:var(--dim);margin-top:5px}
+  .g .s{font-family:var(--mono);font-size:10.5px;color:var(--muted);margin-top:3px}
+
+  /* Inhaltsverzeichnis — nummeriert, damit man sich beim Reden auf
+     "Abschnitt 7" beziehen kann statt auf "irgendwo weiter unten" */
+  .inh{display:flex;flex-wrap:wrap;gap:7px}
+  .inh a{display:flex;align-items:center;gap:8px;font-size:12px;text-decoration:none;color:var(--txt);
+    border:1px solid var(--line2);background:var(--panelhi);padding:8px 12px;font-weight:600}
+  .inh a:hover{border-color:var(--gold);color:var(--gold-b);background:var(--gold-flae)}
+  .inh a i{font-style:normal;font-family:var(--mono);font-size:10.5px;color:var(--gold-b);font-weight:700}
+  section{display:flex;flex-direction:column;gap:15px;scroll-margin-top:70px}
+  h3{margin:0;font-size:11px;letter-spacing:.24em;text-transform:uppercase;color:var(--gold);font-weight:700;
+    padding-bottom:9px;border-bottom:1px solid var(--line2)}
+  h4{margin:0;font-size:15.5px;font-weight:650;text-wrap:balance}
+  p{margin:0;max-width:68ch}
+  .note{color:var(--muted);font-size:14px}
+  strong{color:var(--gold-b);font-weight:650}
+
+  .flow{display:flex;flex-direction:column;border:1px solid var(--line2);background:var(--panel)}
+  .stage{display:grid;grid-template-columns:42px 1fr;border-bottom:1px solid var(--line)}
+  .stage:last-child{border-bottom:0}
+  .stage .n{display:flex;align-items:flex-start;justify-content:center;padding:14px 0 0;font-family:var(--mono);
+    font-size:12px;color:var(--gold-d);border-right:1px solid var(--line);font-variant-numeric:tabular-nums}
+  .stage .b{padding:13px 16px;display:flex;flex-direction:column;gap:5px}
+  .stage .t{font-weight:650;font-size:14.5px}
+  .stage .d{color:var(--muted);font-size:13.5px}
+  .stage .m{font-family:var(--mono);font-size:11.5px;color:var(--gold);font-variant-numeric:tabular-nums}
+
+  .scroll{overflow-x:auto;border:1px solid var(--line2);background:var(--panel)}
+  table{width:100%;border-collapse:collapse;min-width:520px}
+  th{text-align:left;font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--dim);
+    padding:11px 13px;border-bottom:1px solid var(--line2);font-weight:700;white-space:nowrap}
+  td{padding:10px 13px;border-bottom:1px solid var(--line);font-size:13.5px;vertical-align:top}
+  tr:last-child td{border-bottom:0}
+  td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;color:var(--gold-b);white-space:nowrap}
+  td.k{font-family:var(--mono);font-size:12.5px;color:var(--muted);white-space:nowrap}
+
+  pre{margin:0;padding:15px 17px;overflow-x:auto;border:1px solid var(--line3);background:var(--panel2);
+    font-family:var(--mono);font-size:12.5px;line-height:1.85;color:var(--gold-b);font-variant-numeric:tabular-nums}
+  pre .c{color:var(--dim)}
+
+  .versus{display:grid;grid-template-columns:1fr 1fr;border:1px solid var(--line2);background:var(--panel)}
+  .vs{padding:17px 18px;display:flex;flex-direction:column;gap:11px}
+  .vs:first-child{border-right:1px solid var(--line2)}
+  .vs .cap{font-family:var(--mono);font-size:10px;letter-spacing:.18em;text-transform:uppercase;color:var(--dim)}
+  .vs .nm{font-size:17px;font-weight:700;color:var(--gold-b)}
+  .vs .price{font-family:var(--mono);font-size:13px;color:var(--muted);font-variant-numeric:tabular-nums}
+  .vs ul{margin:0;padding-left:17px;display:flex;flex-direction:column;gap:6px}
+  .vs li{font-size:13.5px;color:var(--muted)}
+  .vs li b{color:var(--txt);font-weight:600}
+  @media(max-width:640px){.versus{grid-template-columns:1fr}.vs:first-child{border-right:0;border-bottom:1px solid var(--line2)}}
+
+  .ledger{display:flex;flex-direction:column;border:1px solid var(--line2);background:var(--panel)}
+  .row{display:grid;grid-template-columns:4px 1fr;border-bottom:1px solid var(--line)}
+  .row:last-child{border-bottom:0}
+  .row .stripe{background:var(--gold-d)}
+  .row.krit .stripe{background:var(--neg)}
+  .row.mit .stripe{background:var(--warn)}
+  .row.offen .stripe{background:var(--neg)}
+  .row .body{padding:13px 16px;display:flex;flex-direction:column;gap:9px}
+  .row .ttl{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+  .row .ttl b{font-size:14.5px;font-weight:650}
+  .tag{font-family:var(--mono);font-size:9px;letter-spacing:.13em;text-transform:uppercase;padding:2px 7px;
+    border:1px solid var(--line3);color:var(--dim);white-space:nowrap}
+  .tag.krit{color:var(--neg);border-color:var(--neg)}
+  .tag.mit{color:var(--warn);border-color:var(--warn)}
+  .tag.offen{color:var(--neg);border-color:var(--neg)}
+  .ba{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--line)}
+  .ba div{padding:9px 12px;background:var(--panel2);font-size:13px}
+  .ba .lab{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;margin-bottom:4px}
+  .ba .vor .lab{color:var(--neg)}
+  .ba .jetzt .lab{color:var(--pos)}
+  .ba .jetzt{background:rgba(60,122,30,.07)}
+  @media(max-width:600px){.ba{grid-template-columns:1fr}}
+
+  .call{border-left:3px solid var(--gold-d);background:var(--panel2);padding:13px 16px;font-size:14px;color:var(--muted)}
+  .call.warn{border-left-color:var(--warn);background:rgba(169,102,12,.07)}
+  .call.bad{border-left-color:var(--neg);background:rgba(178,58,40,.07)}
+  .call.good{border-left-color:var(--pos);background:rgba(60,122,30,.07)}
+  .call b{color:var(--txt)}
+  code{font-family:var(--mono);font-size:12.5px;color:var(--gold-b);background:var(--void2);padding:1px 5px;border:1px solid var(--line)}
+  a{color:var(--gold)}
+  a:focus-visible,*:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+  .foot{border-top:1px solid var(--line2);padding-top:18px;color:var(--dim);font-size:12px;font-family:var(--mono)}
+  @media(max-width:560px){.wrap{padding:18px 14px 60px}}
+
+  /* ── Druck / PDF ──────────────────────────────────────────────────────
+     Auf Papier hilft der dunkle Terminal-Look nicht, deshalb hier heller
+     Grund mit schwarzer Schrift. Kästen bleiben zusammen statt mitten
+     im Satz umzubrechen. */
+  @media print{
+    @page{margin:14mm 12mm}
+    /* Auf Papier gilt eine eigene Palette: echtes Weiss und volles Schwarz,
+       weil Tinte anders traegt als ein Bildschirm. Alle Kennfarben sind
+       hier zusaetzlich abgedunkelt, damit sie im Ausdruck nicht ausbleichen. */
+    :root{--void:#fff;--void2:#fff;--panel:#fff;--panel2:#fafaf5;--panelhi:#fff;--sunken:#f0efe8;
+      --line:#ccc;--line2:#999;--line3:#777;
+      --txt:#000;--muted:#333;--dim:#666;--faint:#888;
+      --gold:#6b5c10;--gold-b:#403708;--gold-d:#8a7c3a;--gold-flae:#f7f4e6;
+      --pos:#2f5c00;--pos-d:#8aa863;--pos-flae:#f2f6ea;
+      --neg:#8a2c14;--neg-d:#c08a7e;--neg-flae:#faf0ed;
+      --warn:#7d4a00;--warn-d:#c9a468;--warn-flae:#faf4e8;
+      --info:#124a70;--info-d:#8fb0c8;--info-flae:#eef4f8;
+      --pm:#3f2a80;--pm-d:#a596d0;--pm-flae:#f2eefa;
+      --bf:#124a70;--bf-d:#8fb0c8;--bf-flae:#eef4f8;
+      --ob:#0a5449;--ob-d:#7fb5ab;--ob-flae:#eaf5f2;
+      --schatten:none;--schatten-hoch:none}
+    body{background:#fff;color:#000;font-size:10.5pt;line-height:1.45}
+    .cmd,.noprint{display:none!important}
+    .wrap{max-width:none;padding:0;gap:14px}
+    section{break-inside:auto}
+    h3{font-size:9pt;color:#000;border-bottom:1.5pt solid #000;margin-top:6pt}
+    h4{font-size:11pt}
+    .intro{border:1pt solid #999;background:#fff;page-break-after:avoid}
+    .intro h2{font-size:15pt;color:#000}
+    .gauges{border:1pt solid #999}
+    .g{border-color:#ddd}
+    .g .v{font-size:14pt;color:#000}
+    .stage,.row,.vs,.g{break-inside:avoid;page-break-inside:avoid}
+    .ba div{background:#fff}
+    .ba .jetzt{background:#f2f6ea}
+    pre{border:1pt solid #999;background:#fafaf5;color:#000;font-size:8.5pt;white-space:pre-wrap}
+    pre .c{color:#666}
+    table{font-size:9pt}
+    th{color:#000;border-bottom:1pt solid #000}
+    td.num,td.k{color:#000}
+    .call{background:#fafaf5;border-left:2.5pt solid #666}
+    .tag{border-color:#666;color:#333}
+    .scroll{overflow:visible;border:1pt solid #999}
+    a{color:#000;text-decoration:none}
+    a[href^="http"]::after{content:" (" attr(href) ")";font-size:7.5pt;color:#555;word-break:break-all}
+    .foot{border-top:1pt solid #999;color:#333}
+  }
+
+  /* ══ Redesign 4: runde, moderne Flaechen ══ */
+  .lnk,.btnlink,.intro,.status,.step,.codebox,.tokbox,.card,.kpi,.period,.fnlist,
+  .legende,.kasten,.zahlen,.gauges,.flow,.scroll,.versus,.ledger,pre,.mark,
+  .toc a,.inh a,.tag,.pruef,.call,.g,.lg,.z,.fn .was,.card h2,.gr .p,.hint,.warn,
+  .safe,.stamp,.period button,.msg,input,.btn,.tabs,.upd,.empty{border-radius:10px}
+  .period,.tabs{overflow:hidden}
+  .toc a i,.inh a i,.lg .sw,.swatch{border-radius:4px}
+  .status .dot,.dot{border-radius:50%}
+</style>
+</head>
+<body>
+  <div class="cmd">
+    <div class="mark"></div>
+    <h1>Such<span>logik</span></h1>
+    <div class="sp"></div>
+    <button class="lnk" id="pdfBtn" style="cursor:pointer;font-family:inherit">⤓ PDF herunterladen</button>
+    <a class="lnk" href="bridge-setup.html">Einrichtung</a>
+    <a class="lnk" href="funktionen.html">Alle Funktionen</a>
+    <a class="lnk" href="index.html">← Zurück zur App</a>
+  </div>
+
+  <div class="wrap">
+
+    <div class="intro">
+      <h2>Wie der Scanner sucht, wie er rechnet, und warum dabei kein Konto gesperrt wird</h2>
+      <p>Diese Seite erklärt das ganze Verfahren von vorn: welche zwei Bücher verglichen werden, in welcher Reihenfolge gesucht wird, wie die Gebühren beider Anbieter je einzelnem Markt in die Rechnung kommen, und wie aus alldem ein konkreter Vorschlag wird — wie viel Geld wohin, was es kostet, was übrig bleibt. Jede Formel steht mit einem durchgerechneten Beispiel dabei.</p>
+      <div class="stamp" id="stamp">Bridge 3.7 · Build 17 · Endpunkt bf-bridge unverändert</div>
+    </div>
+
+    <!-- Inhaltsverzeichnis: wird beim Laden automatisch aus den Ueberschriften
+         gebaut, kann also nie veralten, wenn Abschnitte dazukommen. -->
+    <nav class="inh" id="inhVerz" aria-label="Inhalt"></nav>
+
+    <section>
+      <h3>Das Wichtigste zuerst: nur Börsen, nie ein Buchmacher</h3>
+      <p>Beide Anbieter, die verglichen werden, sind <strong>Börsen</strong>. Das heißt: Die Wette läuft gegen andere Nutzer, die dagegenhalten. Der Anbieter ist nur Vermittler und verdient an der Gebühr — er verliert nichts, wenn du gewinnst.</p>
+      <div class="call good"><b>Deshalb droht hier kein Ausschluss.</b> Ein Buchmacher hält selbst dagegen und verliert an dir; wer dort dauerhaft gewinnt, bekommt sein Konto begrenzt oder geschlossen. An einer Börse ist dem Betreiber gleichgültig, wer gewinnt — er nimmt seine Gebühr in jedem Fall. Genau deshalb sind Buchmacher hier bewusst <b>nicht</b> angebunden, und das soll auch so bleiben.</p></div>
+      <div class="versus">
+        <div class="vs">
+          <span class="cap">Börse — hier verwendet</span>
+          <span class="nm">Betfair · Polymarket</span>
+          <ul>
+            <li>Du wettest gegen <b>andere Menschen</b></li>
+            <li>Der Betreiber nimmt eine <b>Gebühr</b> und hat kein eigenes Risiko</li>
+            <li>Dauerhaftes Gewinnen ist <b>kein Grund für eine Sperre</b></li>
+            <li>Der Einsatz ist durch die <b>Tiefe im Buch</b> begrenzt — es muss jemand dagegenhalten</li>
+          </ul>
+        </div>
+        <div class="vs">
+          <span class="cap">Buchmacher — bewusst nicht angebunden</span>
+          <span class="nm">bwin, Tipico und ähnliche</span>
+          <ul>
+            <li>Du wettest <b>gegen das Haus</b></li>
+            <li>Der Betreiber <b>verliert</b>, wenn du gewinnst</li>
+            <li>Wer gewinnt, wird <b>begrenzt oder gesperrt</b></li>
+            <li>Quoten wirken besser, sind es nach der Sperre aber nicht</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Die zwei Bücher sind sehr ungleich</h3>
+      <p>Das ist kein Schönheitsfehler, sondern bestimmt die ganze Suchreihenfolge.</p>
+      <div class="scroll">
+        <table>
+          <tr><th>&nbsp;</th><th>Betfair</th><th>Polymarket</th></tr>
+          <tr><td class="k">Umfang</td><td>einige hundert Märkte, fast nur Sport</td><td class="num">rund 2 100 Märkte</td></tr>
+          <tr><td class="k">Inhalt</td><td>Sport, klar strukturiert</td><td>zu etwa 90 % Politik und Wirtschaft</td></tr>
+          <tr><td class="k">Benennung</td><td>geordnet: <code>Lakers vs Celtics</code></td><td>Freitext: <code>Will the Lakers beat the Celtics?</code></td></tr>
+          <tr><td class="k">Kurse</td><td>je nach Schlüssel verzögert oder live</td><td>live</td></tr>
+          <tr><td class="k">Gebühr</td><td>Kommission auf den Gewinn, 2–7 % je Markt</td><td>Gebühr je Anteil, preisabhängig, 4/5/7 % je Markt</td></tr>
+        </table>
+      </div>
+      <div class="call"><b>Die Überschneidung ist strukturell klein.</b> Polymarket ist überwiegend Politik, Betfair fast nur Sport. Realistisch sind wenige Treffer am Tag und Renditen von 0,5 bis 5 % — nicht alle zwanzig Minuten eine Chance. Wer mehr verspricht, rechnet die Gebühren nicht mit.</div>
+    </section>
+
+    <section>
+      <h3>Arbitrage ohne zweites Buch — innerhalb Polymarkets</h3>
+      <p>Ein Ereignis mit vielen Ausgängen — etwa eine Wahl mit acht Kandidaten — führt je Kandidat einen eigenen JA/NEIN-Markt. Summieren sich <strong>alle JA-Preise auf unter 1 $</strong>, kauft man alle: genau einer gewinnt und zahlt 1 $ aus, der Rest ist Gewinn.</p>
+      <pre>Kandidat A: 30 ¢   Kandidat B: 30 ¢   Kandidat C: 35 ¢
+Summe: 95 ¢  →  Auszahlung 1 $ (abzüglich Gebühr des Gewinners)
+Rendite: rund <b>+3,8 %</b> — egal wer gewinnt</pre>
+      <div class="call good"><b>Hier kann die größte Fehlerquelle gar nicht auftreten.</b> Kein zweites Buch, keine Zuordnung zweier Märkte, keine Links, die danebengehen können. Ein Buch, ein Ereignis, eine Rechnung. Gezählt werden nur Events, die Polymarket selbst als <code>negRisk</code> kennzeichnet — dort garantiert die Börse, dass sich die Ausgänge gegenseitig ausschließen und genau einer eintritt. Ohne diese Garantie wäre „alle kaufen" keine Absicherung.</div>
+      <p class="note">Funde erscheinen als eigenes schmales Band über der Liste („alle kaufen ↗" führt auf die Event-Seite, wo alle Ausgänge untereinander stehen). Mehr als sechs Ausgänge werden übersprungen — die Übertragung kürzt die Beine auf sechs, und ein unvollständiges Ticket wäre gefährlicher als keines. Optional meldet die Bridge jeden Fund per <strong>Telegram</strong> aufs Handy (Token und Chat-ID in der Konfiguration) — sie läuft ja auch, wenn kein Browser offen ist.</p>
+    </section>
+
+    <section>
+      <h3>Warum bei Betfair angefangen wird</h3>
+      <p>Gesucht wird <strong>zuerst bei Betfair</strong>, und dann wird die passende Polymarket-Frage dazu gesucht — nicht umgekehrt.</p>
+      <div class="flow">
+        <div class="stage"><div class="n">1</div><div class="b">
+          <span class="t">Betfair ist die kleinere und geordnete Seite</span>
+          <span class="d">Ein Betfair-Markt heißt <code>Lakers vs Celtics</code>. Daraus lassen sich die zwei Teilnehmer sauber ablesen. Es gibt wenige Märkte, also wenige Ausgangspunkte — jeder einzelne kann gründlich geprüft werden.</span>
+        </div></div>
+        <div class="stage"><div class="n">2</div><div class="b">
+          <span class="t">Polymarket ist Freitext und viel größer</span>
+          <span class="d">Dort steht ein ganzer Satz: <code>Will the Lakers beat the Celtics?</code> Von 2 100 Freitextfragen auszugehen und für jede den passenden Sportmarkt zu suchen, erzeugt viel mehr Fehlpaarungen — bei jedem Versuch kann etwas Ähnliches danebengreifen.</span>
+        </div></div>
+        <div class="stage"><div class="n">3</div><div class="b">
+          <span class="t">Vom Geordneten ins Ungeordnete, nie andersherum</span>
+          <span class="d">Aus zwei bekannten Namen im Freitext zu suchen ist verlässlich. Aus einem Freitext auf zwei Namen zu schließen ist Raten. Diese Richtung war früher vertauscht und hat Fehlpaarungen erzeugt.</span>
+        </div></div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Wie oft gescannt wird — und warum schneller nicht besser ist</h3>
+      <p>Der <strong>verzögerte App-Key</strong> von Betfair liefert Kurse mit rund <strong>einer Minute Verzögerung</strong>. Wer damit alle 20 Sekunden fragt, bekommt zweimal von drei Malen exakt dieselben Zahlen — die Anfragen sind verschenkt.</p>
+      <div class="call good"><b>Deshalb nicht schneller, sondern breiter.</b> Derselbe Aufwand, über mehr Märkte verteilt. Mehr geprüfte Märkte heißt mehr Überschneidung mit Polymarket — und genau daraus entstehen Funde. Ein höherer Takt auf denselben paar Märkten bringt keinen einzigen zusätzlichen Treffer.</div>
+      <div class="scroll">
+        <table>
+          <tr><th>&nbsp;</th><th>Verzögerter Key</th><th>Live-Key</th></tr>
+          <tr><td class="k">Betfair-Takt</td><td class="num">alle 60 s</td><td class="num">alle 20 s</td></tr><tr><td class="k">Dauer je Durchlauf</td><td class="num">rund 11 s</td><td class="num">rund 11 s</td></tr>
+          <tr><td class="k">ganzer Bestand</td><td class="num">alle 120 s</td><td class="num">alle 150 s</td></tr>
+          <tr><td class="k">Märkte je Durchlauf</td><td class="num">bis 12 000</td><td class="num">bis 6 000</td></tr>
+          <tr><td class="k">Polymarket</td><td class="num">alle 20 s</td><td class="num">alle 20 s</td></tr>
+        </table>
+      </div>
+      <p class="note">Polymarket läuft in einem <strong>eigenen, schnelleren Takt</strong>. Diese Kurse sind echt live, unabhängig davon, welchen Betfair-Schlüssel man hat — sie an den verzögerten Takt zu koppeln hieße, die frischere Quelle künstlich auszubremsen.</p>
+      <p class="note">Bleibt in einem Durchlauf Kapazität übrig, wird sie mit <em>weiteren</em> Märkten aufgefüllt statt dieselben erneut zu fragen. Das Profil für den Live-Key ist bereits hinterlegt und greift automatisch, sobald ein Live-Schlüssel erkannt wird — dort zählt jede Sekunde, weil die Kurse dann wirklich aktuell sind.</p>
+
+      <h4>Wie lange ein Durchlauf dauert</h4>
+      <p>Betfair erlaubt <strong>200 Punkte je Anfrage</strong>, ein Kursabruf wiegt 5 Punkte — macht <strong>40 Märkte pro Anfrage</strong>. Das ist fest und lässt sich nicht umgehen. Der gemessene Bestand liegt bei rund <strong>4 250 Märkten</strong>, das sind 107 Anfragen für alles.</p>
+      <pre>4 250 Märkte ÷ 40 je Anfrage  =  107 Anfragen
+
+bei  4 Anfragen/s  →  26,8 s   <span class="c">bis Fassung 3.0</span>
+bei 10 Anfragen/s  →  <b>10,7 s</b>   <span class="c">ab Fassung 3.1</span></pre>
+      <p class="note">Betfairs dokumentierte Grenze von <strong>5 Anfragen je Sekunde gilt für einen einzelnen Markt</strong>, nicht für die Summe. Jeder Markt wird hier höchstens einmal pro Durchlauf gefragt, also etwa einmal pro Minute — davon sind wir um den Faktor 300 entfernt.</p>
+      <div class="call good"><b>Der kürzere Durchlauf hilft auch mit verzögertem Schlüssel.</b> Zwischen dem ersten und dem letzten gelesenen Markt liegen jetzt 11 statt 27 Sekunden. Beide Bücher werden also näher am selben Augenblick verglichen — und genau das entscheidet, ob eine gemeldete Chance beim Klicken noch da ist.</div>
+      <p class="note">Meldet Betfair dennoch eine Überlastung, wird der Takt sofort entschärft und danach in kleinen Schritten wieder herangetastet. Ohne diese Erholung bliebe die Bridge nach einer einzigen Drosselung bis zum Neustart langsam.</p>
+      <div class="call warn"><b>Zwei Sekunden je Durchlauf gehen nicht.</b> Dafür wären 54 Anfragen pro Sekunde nötig. Das ist der Bereich, in dem Betfair Zugänge sperrt — und ein gesperrter Schlüssel kostet alles, nicht nur Geschwindigkeit. Für echte Echtzeit gibt es einen anderen Weg: die Stream-Schnittstelle, bei der Betfair Änderungen von sich aus schickt, statt dass man fragt. Das lohnt sich erst mit einem Live-Key.</div>
+      <div class="call warn"><b>Was das nicht ändert.</b> Die Überschneidung zwischen Polymarket (überwiegend Politik) und Betfair (fast nur Sport) bleibt strukturell klein. Breiteres Scannen holt heraus, was da ist — es erzeugt keine Chancen, die es nicht gibt. Realistisch bleiben wenige Treffer am Tag bei 0,5 bis 5 % Rendite.</div>
+    </section>
+
+    <section>
+      <h3>Sechs Prüfungen, bevor überhaupt gerechnet wird</h3>
+      <p>Eine Paarung muss <strong>alle sechs</strong> bestehen. Fällt eine durch, wird die Chance verworfen und gar nicht erst angezeigt.</p>
+      <div class="flow">
+        <div class="stage"><div class="n">1</div><div class="b">
+          <span class="t">Jeder Teilnehmer über ein eigenes Wort getroffen</span>
+          <span class="d">Beide Namen müssen in der Frage vorkommen, und zwar über je ein tragendes Wort. Füllwörter wie „party", „seat" oder „house" zählen nicht mit.</span>
+          <span class="m">Ohne diese Regel wurden „Republican Party" und „Democratic Party" beide zu „party" — und jeder Wahlmarkt passte auf jeden anderen.</span>
+        </div></div>
+        <div class="stage"><div class="n">2</div><div class="b">
+          <span class="t">Steht nur ein Teilnehmer da: zwei Kontexttreffer</span>
+          <span class="d">Wird nur ein Name genannt, müssen zwei weitere inhaltliche Wörter passen. Jahreszahlen gelten nicht als Beleg.</span>
+          <span class="m">Ohne diese Regel wurde ein Wahlmarkt an einen MMA-Kampf gehängt, weil beide „da Silva" enthielten — bestätigt durch das Füllwort „da".</span>
+        </div></div>
+        <div class="stage"><div class="n">3</div><div class="b">
+          <span class="t">Gegenprobe rückwärts</span>
+          <span class="d">Es wird geprüft, ob unter allen anderen Polymarket-Fragen eine <em>besser</em> zum Betfair-Markt passt. Wenn ja, gilt die Paarung nicht. Der beste Treffer muss eindeutig der beste sein.</span>
+        </div></div>
+        <div class="stage"><div class="n">5</div><div class="b">
+          <span class="t">Zahlen belegen nichts</span>
+          <span class="d">Ein Betfair-Ausgang <code>200 - 250m</code> lieferte die Merkmale „200" und „250m". Das Wort „200" steht auch in <em>Will Bitcoin reach $200,000</em> — und schon galt ein Preisspannen-Markt als dieselbe Wette. Reine Zahlen zählen deshalb nicht mehr als Beleg; ein Name wird durch Buchstaben unterscheidbar, nicht durch Ziffern.</span>
+          <span class="m">Am 08.08.2026 im Betrieb aufgetreten. Namen wie „Man Utd 2" behalten ihren Wortteil.</span>
+        </div></div>
+        <div class="stage"><div class="n">6</div><div class="b">
+          <span class="t">Extreme Außenseiter aussortieren</span>
+          <span class="d">Eine Betfair-Quote über <strong>20</strong> bedeutet unter 5 % Wahrscheinlichkeit. Dort steht fast nichts im Buch, der Abstand zwischen Kauf- und Verkaufskurs ist groß, und eine rechnerische Rendite entsteht schon durch die Rundung des letzten Cents.</span>
+          <span class="m">„Conservatives @ 24" und „200 - 250m @ 250" waren genau solche Fälle — beide wurden als Chance gemeldet, beide waren keine.</span>
+        </div></div>
+        <div class="stage"><div class="n">4</div><div class="b">
+          <span class="t">Zeitabgleich</span>
+          <span class="d">Ist bei Betfair ein Anpfiff hinterlegt, dürfen beide höchstens zwölf Stunden auseinanderliegen. Fehlt die Zeitangabe, darf das Ereignis wenigstens nicht nach dem Auflösungstermin des Polymarket-Marktes liegen.</span>
+          <span class="m">Ohne diese Regel wurde ein Spiel von heute Abend mit einem Markt verglichen, der erst in Wochen entschieden wird.</span>
+        </div></div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Die Bestätigungsschleife — warum nichts sofort einsetzbar ist</h3>
+      <p>Die vier Prüfungen oben arbeiten auf einer <strong>Momentaufnahme</strong>. Das reicht nicht, um echtes Geld zu setzen. Drei Dinge können eine Chance vortäuschen, die es nie gab:</p>
+      <div class="flow">
+        <div class="stage"><div class="n">1</div><div class="b">
+          <span class="t">Ein Kurs reißt kurz aus</span>
+          <span class="d">Für einen Augenblick steht eine Quote falsch im Buch und ist im nächsten Moment wieder weg. Wer in diesem Augenblick setzt, setzt gegen einen Preis, den es nicht mehr gibt.</span>
+        </div></div>
+        <div class="stage"><div class="n">2</div><div class="b">
+          <span class="t">Die Zuordnung springt</span>
+          <span class="d">Beim nächsten Durchlauf passt plötzlich ein <em>anderer</em> Betfair-Markt besser zur selben Polymarket-Frage. Dann zeigen die beiden Links verschiedene Ereignisse — und aus einer Absicherung werden zwei blinde Wetten, die beide verlieren können.</span>
+        </div></div>
+        <div class="stage"><div class="n">3</div><div class="b">
+          <span class="t">Ein Buch liefert kurz veraltete Daten</span>
+          <span class="d">Die Zahlen sehen frisch aus, stammen aber von vorhin. Der Vorteil ist längst weg.</span>
+        </div></div>
+      </div>
+      <p>Deshalb wird jede Meldung über <strong>mehrere Durchläufe verfolgt</strong>, bevor sie einsetzbar ist:</p>
+      <div class="scroll">
+        <table>
+          <tr><th>Zustand</th><th>Was passiert</th><th>Setzen möglich?</th></tr>
+          <tr><td class="k">1. Sichtung</td><td>Als Kandidat vorgemerkt, Fingerabdruck der Paarung gespeichert</td><td>nein — „wird geprüft 1/2"</td></tr>
+          <tr><td class="k">2. Sichtung, gleich</td><td>Paarung unverändert, Vorteil durchgehend vorhanden</td><td><strong>ja</strong></td></tr>
+          <tr><td class="k">Zuordnung springt</td><td>Fingerabdruck weicht ab → Zählung beginnt bei null</td><td>nein — sofort wieder gesperrt</td></tr>
+          <tr><td class="k">Vorteil bricht ein</td><td>War zwischendurch bei null → gilt als unstet</td><td>nein</td></tr>
+          <tr><td class="k">3 Minuten nicht gesehen</td><td>Zählung verfällt, beginnt von vorn</td><td>nein</td></tr>
+        </table>
+      </div>
+      <p class="note">Der Fingerabdruck umfasst beide Bücher, beide Ausgänge und <strong>beide Links</strong>. Er ändert sich genau dann, wenn die Zuordnung wechselt. Preise dürfen schwanken — die Zuordnung nicht.</p>
+      <div class="call good"><b>Bewusst konservativ.</b> Lieber eine echte Chance verpassen als eine falsche setzen: eine verpasste Chance kostet nichts, eine falsche kostet den Einsatz. Solange eine Meldung nicht bestätigt ist, steht sie mit <code>◷ wird geprüft</code> in der Liste und der Setzen-Knopf im Ticket bleibt gesperrt. Der Alarm feuert ebenfalls erst nach der Bestätigung.</div>
+
+      <h4>Zwei getrennte Rechenwege müssen übereinstimmen</h4>
+      <p>Zusätzlich wird jede Meldung ein zweites Mal nachgerechnet — über eine <em>andere</em> Herleitung. Der erste Weg teilt den Einsatz über die Kehrwerte der Quoten, der zweite über die Quoten selbst:</p>
+      <pre>Weg 1:  E₁ = S × (1/q₁) / (1/q₁ + 1/q₂)
+Weg 2:  E₁ = S × q₂ / (q₁ + q₂)
+
+<span class="c">Beide müssen auf denselben Betrag kommen:</span>
+Weg 1:  1000 × 0,48900 / 0,96733 = <b>505,4414 €</b>
+Weg 2:  1000 × 2,09 / (2,045 + 2,09) = <b>505,4414 €</b></pre>
+      <p class="note">Weichen die zwei Wege um mehr als einen Cent voneinander ab, oder zahlen die beiden Ausgänge nicht denselben Betrag, wird die Meldung verworfen statt angezeigt. Ein Rechenfehler kann sich so nicht bis zum Einsatz durchschlagen — er müsste in zwei unabhängig hergeleiteten Formeln gleichzeitig auftreten.</p>
+    </section>
+
+    <section>
+      <h3>Die Rechnung, Schritt für Schritt</h3>
+
+      <h4>Schritt 1 — Quote und Wahrscheinlichkeit sind dasselbe in zwei Schreibweisen</h4>
+      <p>Betfair schreibt Quoten (<code>2,10</code>), Polymarket schreibt Preise in Prozent (<code>46,5 %</code>). Das lässt sich ineinander umrechnen:</p>
+      <pre>Quote = 1 / Preis          <span class="c">1 / 0,465 = 2,15</span>
+Preis = 1 / Quote          <span class="c">1 / 2,10  = 0,476  →  47,6 %</span></pre>
+      <p class="note">Ein Preis von 0,465 heißt: Der Markt hält diesen Ausgang für 46,5 % wahrscheinlich. Trittst du ein, bekommst du für 46,5 Cent einen ganzen Euro zurück.</p>
+
+      <h4>Schritt 2 — Wann ist es überhaupt Arbitrage?</h4>
+      <p>Man setzt auf <strong>beide</strong> Ausgänge, je einen auf einem anderen Buch. Genau einer tritt ein. Lohnend ist es, wenn die Kehrwerte der Quoten zusammen unter 1 liegen:</p>
+      <pre>1/Quote₁ + 1/Quote₂ &lt; 1</pre>
+      <p>Diese Summe ist der <strong>Arb-Wert</strong>, in der Liste als Prozent gezeigt. Unter 100 % ist ein Vorteil, darüber ein Verlust. Die Rendite folgt daraus:</p>
+      <pre>Rendite = 1 / (1/Quote₁ + 1/Quote₂) − 1</pre>
+      <div class="call warn"><b>Diese Formel allein führt in die Irre.</b> Sie gilt für Quoten <em>ohne</em> Gebühr. Beide Börsen nehmen aber welche — und zwar auf völlig verschiedene Weise. Deshalb wird nie mit den rohen Quoten gerechnet, sondern mit den Quoten nach Gebühr.</div>
+
+      <h4>Schritt 3 — Betfair: Kommission auf den Gewinn</h4>
+      <p>Betfair nimmt einen Anteil vom <strong>Nettogewinn</strong>, nicht vom Einsatz. Der Satz steht am einzelnen Markt und liegt zwischen 2 und 7 %.</p>
+      <pre>Quote nach Gebühr = 1 + (Quote − 1) × (1 − Satz)
+
+<span class="c">Beispiel: Quote 2,10 bei 5 % Kommission</span>
+= 1 + (2,10 − 1) × 0,95
+= 1 + 1,10 × 0,95
+= 1 + 1,045
+= <b>2,045</b></pre>
+
+      <h4>Schritt 4 — Polymarket: Gebühr je Anteil, preisabhängig</h4>
+      <p>Polymarket rechnet ganz anders: eine Gebühr <strong>je gekauftem Anteil</strong>, deren Höhe vom Preis abhängt. Sie ist bei einem Kurs um 50 % am höchsten — also genau dort, wo die meisten Chancen liegen.</p>
+      <pre>Gebühr je Anteil = Satz × kleinerer Wert von (Preis, 1 − Preis)
+Quote nach Gebühr = (1 − Gebühr je Anteil) / Preis
+
+<span class="c">Beispiel: Preis 0,465 bei 6 % Satz</span>
+kleinerer Wert von (0,465 · 0,535) = 0,465
+Gebühr je Anteil = 0,06 × 0,465 = 0,0279
+Quote nach Gebühr = (1 − 0,0279) / 0,465
+                  = 0,9721 / 0,465
+                  = <b>2,0906</b></pre>
+      <div class="call bad"><b>Eine unbekannte Gebühr wird nie als null behandelt.</b> Von rund 1 200 geprüften Märkten melden 1 088 eine Gebühr. Sie versehentlich auf 0 zu setzen, hat einmal aus einem echten Verlust von −0,52 % einen scheinbaren Gewinn von +0,46 % gemacht. Meldet ein Markt keinen Satz, wird er als unsicher behandelt, nicht als gebührenfrei.</div>
+
+      <h4>Schritt 5 — Jetzt erst die Entscheidung</h4>
+      <p>Mit den Quoten <em>nach</em> Gebühr wird die Bedingung aus Schritt 2 erneut geprüft:</p>
+      <pre>1/2,045 + 1/2,0906
+= 0,48900 + 0,47833
+= <b>0,96733</b>   <span class="c">also 96,73 % — unter 100 %, es bleibt etwas übrig</span>
+
+Rendite = 1 / 0,96733 − 1 = <b>0,0338</b>  →  <b>+3,38 %</b></pre>
+
+      <h4>Schritt 6 — Wie viel Geld wohin?</h4>
+      <p>Die Aufteilung ist <strong>nicht</strong> halbe-halbe. Sie wird so gewählt, dass beide Ausgänge <em>denselben</em> Betrag zurückzahlen — nur dann ist der Gewinn sicher, egal wie es ausgeht. Gerechnet wird mit den Quoten nach Gebühr:</p>
+      <pre>Einsatz₁ = Gesamt × (1/Quote₁ᴳ) / (1/Quote₁ᴳ + 1/Quote₂ᴳ)
+Einsatz₂ = Gesamt − Einsatz₁
+
+<span class="c">Bei 100 € Gesamteinsatz:</span>
+Einsatz₁ = 100 × 0,48900 / 0,96733 = <b>50,55 €</b>  → Betfair
+Einsatz₂ = 100 − 50,55             = <b>49,45 €</b>  → Polymarket</pre>
+      <p>Die Probe — beide Seiten müssen gleich auszahlen:</p>
+      <pre>Lakers gewinnen:  50,55 × 2,045   = <b>103,37 €</b>
+No gewinnt:       49,45 × 2,0906  = <b>103,38 €</b>
+                                     <span class="c">gleich, bis auf Rundung</span>
+Gewinn in beiden Fällen: rund <b>+3,37 €</b> auf 100 € Einsatz</pre>
+
+      <h4>Schritt 7 — Was die Gebühr tatsächlich kostet</h4>
+      <p>Für beide Bücher gilt dieselbe einfache Formel, obwohl sie völlig verschieden abrechnen:</p>
+      <pre>Gebühr = Einsatz × (Rohquote − Quote nach Gebühr)</pre>
+      <div class="scroll">
+        <table>
+          <tr><th>Seite</th><th>Rechnung</th><th>Gebühr</th><th>Gegenprobe</th></tr>
+          <tr>
+            <td class="k">Betfair</td>
+            <td class="k">50,55 × (2,10 − 2,045)</td>
+            <td class="num">2,78 €</td>
+            <td class="k">Gewinn 55,61 € × 5 % = 2,78 €</td>
+          </tr>
+          <tr>
+            <td class="k">Polymarket</td>
+            <td class="k">49,45 × (2,15 − 2,0906)</td>
+            <td class="num">2,97 €</td>
+            <td class="k">106,34 Anteile × 0,0279 = 2,97 €</td>
+          </tr>
+        </table>
+      </div>
+      <div class="call good"><b>Es fällt immer nur eine der beiden Gebühren an</b> — die der Seite, die gewinnt. Die andere Wette verliert und kostet keine Gebühr. Beide zu addieren wäre falsch und würde die Kosten fast verdoppeln. Dass die zwei Beträge verschieden hoch sind, ändert nichts am Gewinn: die Aufteilung aus Schritt 6 ist bereits mit den Quoten nach Gebühr gerechnet, deshalb bleibt unter dem Strich in beiden Fällen dasselbe übrig.</div>
+    </section>
+
+    <section>
+      <h3>Was im Wett-Ticket steht</h3>
+      <p>Klickst du eine Chance in der Liste an, erscheint links genau diese Rechnung mit deinen Zahlen — je Anbieter einzeln:</p>
+      <h4>Die zwei Fehler, die fast jeder beim ersten Mal macht</h4>
+      <div class="ledger">
+        <div class="row krit"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Fehler 1: gleich viel Geld auf beide Seiten</b><span class="tag krit">verhindert</span></div>
+          <p class="note">Klingt logisch, ist aber falsch. Steht JA bei 18 Cent und NEIN bei 83 Cent, bekommt man für denselben Betrag ganz <strong>verschiedene Stückzahlen</strong> — und ausgezahlt werden die Stücke, nicht das eingesetzte Geld. Das Ergebnis ist keine Absicherung, sondern eine gewöhnliche Wette: geht sie auf, gewinnt man viel, geht sie schief, ist alles weg.</p>
+          <pre>50 € auf Quote 2,045  →  102,25 €
+50 € auf Quote 2,090  →  104,50 €   <span class="c">ungleich — das ist eine Wette</span>
+
+50,54 € und 49,46 €   →  beide 103,36 €   <span class="c">gleich — das ist Arbitrage</span></pre>
+          <p class="note">Das Ticket rechnet die Aufteilung immer so, dass <strong>beide Ausgänge denselben Betrag</strong> zurückzahlen, und prüft es anschließend nach. Bei Polymarket steht zusätzlich die <strong>Stückzahl</strong> dabei — dort kauft man Anteile, nicht Euro.</p>
+        </div></div>
+        <div class="row krit"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Fehler 2: zweimal auf dieselbe Seite gesetzt</b><span class="tag krit">verhindert</span></div>
+          <p class="note">Zwei Bücher stellen dieselbe Sache oft <strong>umgekehrt</strong>: das eine fragt „wird X gewinnen", das andere „wird X verlieren". Dann ist JA beim einen dasselbe wie NEIN beim anderen. Wer im Eifer auf beiden Seiten JA kauft, wettet zweimal auf dasselbe — <strong>volles Risiko, null Absicherung</strong>, und beide Einsätze können verloren gehen.</p>
+          <p class="note">Deshalb steht im Ticket über allem die Gegenprobe: je Buch der Marktname <em>und der gewählte Ausgang</em>, jeder mit eigenem Link. Zusätzlich prüft das Programm, ob die beiden Ausgänge überhaupt verschieden lauten — stehen auf beiden Beinen dieselben Worte, bleibt der Einsatz gesperrt.</p>
+        </div></div>
+      </div>
+
+      <h4>Zwei Fallen, die den Gewinn auffressen — auch wenn die Rechnung stimmt</h4>
+      <div class="ledger">
+        <div class="row krit"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Der beste Preis gilt nur für eine kleine Menge</b><span class="tag krit">gesperrt</span></div>
+          <p class="note">Gerechnet wird mit dem besten Kaufpreis im Buch. Davon liegt aber nur eine begrenzte Menge da. Wer mehr kauft, bekommt den Rest zu schlechteren Preisen — dieser Aufschlag heißt <strong>Slippage</strong>, und er frisst genau die wenigen Prozent, um die es hier geht. Untersuchungen an Polymarket-Büchern zeigen, dass ein Großteil der Chancen auf sehr kleine Mengen begrenzt ist und ein zu großer Kauf schnell einen halben Prozentpunkt kostet.</p>
+          <p class="note">Deshalb wird die Tiefe <strong>je Bein einzeln</strong> geprüft. Das dünnste Bein bestimmt den Deckel: Liegen auf einer Seite nur 10 € zum genannten Preis, sind rund 20 € Gesamteinsatz möglich — nicht mehr. Reicht die Tiefe nicht, bleibt der Einsatz gesperrt und der mögliche Höchstbetrag steht dabei.</p>
+        </div></div>
+        <div class="row mit"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Beide Bücher können dasselbe Ereignis verschieden entscheiden</b><span class="tag mit">selbst prüfen</span></div>
+          <p class="note">Gleiche Frage heißt nicht gleiche Regel. Eine Stichzeit in einer anderen Zeitzone, eine engere Definition, eine später nachgereichte Bestätigung — und plötzlich gewinnt auf der einen Seite die eine Antwort, auf der anderen die andere. Dann greift die Absicherung nicht, und beide Einsätze können verloren sein.</p>
+          <p class="note">Polymarket entscheidet über ein <strong>Orakel</strong>. Dessen Spruch kann angefochten werden; bis zur endgültigen Klärung ist das Geld gebunden und das Ergebnis kann noch kippen. Das lässt sich nicht automatisch prüfen — deshalb steht es als fester Hinweis im Ticket: <b>vor dem Setzen die Auflösungsregeln beider Märkte lesen.</b></p>
+        </div></div>
+      </div>
+
+      <h4>Die Checkliste vor dem Einsatz</h4>
+      <p>Statt um Vertrauen zu bitten, legt das Ticket <strong>jede einzelne Bedingung offen</strong> — mit Ergebnis und Begründung. Sieben davon sind zwingend: ist auch nur eine offen, bleibt der Setzen-Knopf gesperrt.</p>
+      <div class="scroll">
+        <table>
+          <tr><th>Bedingung</th><th>Art</th><th>Wofür sie schützt</th></tr>
+          <tr><td class="k">Zuordnung bestätigt</td><td>zwingend</td><td>Paarung war über mehrere Durchläufe unverändert</td></tr>
+          <tr><td class="k">Zwei Rechenwege einig</td><td>zwingend</td><td>Ein Rechenfehler müsste in zwei Formeln gleichzeitig auftreten</td></tr>
+          <tr><td class="k">Beide Ausgänge zahlen gleich</td><td>zwingend</td><td>Nicht gleich viel Geld je Seite — gleiche Auszahlung</td><tr><td class="k">Gegensätzliche Ausgänge</td><td>zwingend</td><td>Nicht zweimal dieselbe Seite kaufen</td></tr></tr>
+          <tr><td class="k">Zwei verschiedene Börsen</td><td>zwingend</td><td>Innerhalb eines Buches gibt es keine Arbitrage</td></tr>
+          <tr><td class="k">Gebühren beider Seiten bekannt</td><td>zwingend</td><td>Ein fehlender Satz darf nie als 0 % durchgehen</td></tr>
+          <tr><td class="k">Rendite plausibel</td><td>zwingend</td><td>Über 20 % ist es ein Fehler, kein Fund</td></tr>
+          <tr><td class="k">Zwei echte Links</td><td>zwingend</td><td>Beide vorhanden und verschieden — sonst nicht nachprüfbar</td></tr>
+          <tr><td class="k">Tiefe zum besten Preis</td><td>zwingend</td><td>Das dünnste Bein deckelt den Einsatz — Schutz vor Slippage</td></tr>
+          <tr><td class="k">Kurse frisch</td><td>Hinweis</td><td>Alter der Daten</td></tr>
+          <tr><td class="k">Auszahlungsregeln</td><td>Hinweis</td><td>DNP-/Void-Risiko bei Nichtantreten</td></tr>
+        </table>
+      </div>
+      <div class="call warn"><b>Was diese Liste nicht leisten kann.</b> Sie prüft den Zustand in diesem Augenblick. Zwischen der Prüfung und deinem Klick auf beiden Seiten vergehen Sekunden, in denen sich ein Kurs bewegen kann. Deshalb bleibt der letzte Blick in die echten Bücher Pflicht — die Checkliste ersetzt ihn nicht, sie bereitet ihn vor.</div>
+
+      <h4>Zuerst: meinen beide Links dasselbe Ereignis?</h4>
+      <p>Ganz oben im Ticket steht die <strong>Gegenprobe</strong> — was jedes Buch den Markt nennt, mit dem Link direkt daneben. Bei Polymarket die Frage im Freitext, bei Betfair der strukturierte Marktname.</p>
+      <div class="call bad"><b>Der teuerste Fehler bei Arbitrage ist nicht eine falsche Quote, sondern eine falsche Paarung.</b> Zwei Links, die verschiedene Ereignisse meinen — dann ist es keine Absicherung, sondern zweimal blind gesetzt, und beide können verlieren. Der Scanner prüft das vierfach, aber vor dem Einsatz gehört es einmal mit eigenen Augen geprüft. Stimmen die beiden Zeilen nicht überein: <b>nicht setzen</b>.</div>
+      <div class="scroll">
+        <table>
+          <tr><th>Angabe</th><th>Bedeutung</th></tr>
+          <tr><td class="k">Dieselbe Wette?</td><td>Beide Marktnamen untereinander, jeder mit eigenem Link — die Gegenprobe von Hand</td></tr>
+          <tr><td class="k">Hier einzahlen</td><td>Der Betrag für <em>dieses</em> Buch, in Euro und als Anteil am Gesamteinsatz</td></tr>
+          <tr><td class="k">Quote</td><td>Die rohe Quote und daneben die Quote nach Abzug der Gebühr</td></tr>
+          <tr><td class="k">Gebührensatz</td><td>Der Satz <b>dieses einzelnen Marktes</b> — bei Betfair Kommission auf den Gewinn, bei Polymarket Gebühr je Anteil</td></tr>
+          <tr><td class="k">Gebühr, wenn diese Seite gewinnt</td><td>Was die Gebühr in Euro kostet, falls dieser Ausgang eintritt</td></tr>
+          <tr><td class="k">Tatsächliche Gebühr</td><td>Beide Beträge — mit dem Hinweis, dass nur einer davon anfällt</td></tr>
+          <tr><td class="k">Sicherer Gewinn</td><td>Was übrig bleibt, Gebühren bereits abgezogen, bei jedem Ausgang gleich</td></tr>
+          <tr><td class="k">Rendite</td><td>Derselbe Gewinn als Prozentsatz des Einsatzes</td></tr>
+        </table>
+      </div>
+      <p class="note">Darunter stehen die Direktlinks zu beiden Märkten. Gesetzt wird immer von Hand — das Programm setzt nichts selbst.</p>
+    </section>
+
+    <section>
+      <h3>Sicherheitsnetze</h3>
+      <div class="ledger">
+        <div class="row"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Obergrenze 20 % Rendite</b></div>
+          <p class="note">Zwei liquide Börsen liegen nie zweistellig auseinander. Was darüber liegt, ist keine Chance, sondern ein Fehler: eine Fehlpaarung, vertauschte Seiten oder ein bereits entschiedener Markt. Solche Meldungen werden verworfen und gezählt, nicht angezeigt.</p>
+        </div></div>
+        <div class="row"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Selbst nachrechnen statt vertrauen</b></div>
+          <p class="note">Auch was die Bridge als fertige Chance meldet, wird in der Website noch einmal gegengerechnet. Was dort nicht wirklich unter 1 liegt, wird nicht gezeigt — unabhängig davon, was mitgeliefert wurde.</p>
+        </div></div>
+        <div class="row"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Frische beider Kurse</b></div>
+          <p class="note">Ein alter Kurs ist kein Kurs. Beide Seiten müssen aktuell sein; veraltete Paarungen werden schon auf dem PC aussortiert.</p>
+        </div></div>
+        <div class="row mit"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>Einsatz durch die Tiefe im Buch begrenzt</b><span class="tag mit">wichtig</span></div>
+          <p class="note">An einer Börse muss jemand dagegenhalten. Liegen nur 340 € im Buch, lässt sich nicht mehr unterbringen — der Vorschlag wird entsprechend gedeckelt, auch wenn rechnerisch mehr ginge.</p>
+        </div></div>
+        <div class="row mit"><div class="stripe"></div><div class="body">
+          <div class="ttl"><b>DNP- und Void-Regeln</b><span class="tag mit">selbst prüfen</span></div>
+          <p class="note">Tritt jemand nicht an, zahlt Polymarket meist <em>nicht</em> zurück, Betfair dagegen schon. Die Markierung im Programm ist eine Faustregel, keine Garantie — bei größeren Beträgen die Marktregeln selbst lesen.</p>
+        </div></div>
+      </div>
+    </section>
+
+    <section>
+      <h3>Wenn eine Verbindung hakt</h3>
+      <p>Polymarket ist die Seite, die immer stehen muss: die meisten Märkte, live. Reißt sie ab, findet der Scanner nichts mehr — und das darf nicht wie „gerade keine Chancen" aussehen.</p>
+      <p>Deshalb steht über der Liste im Klartext, welche Quelle nicht liefert, seit wann und warum. Bei Polymarket zusätzlich der Hinweis, dass ohne sie gar nichts verglichen werden kann.</p>
+      <div class="scroll">
+        <table>
+          <tr><th>Meldung</th><th>Was dahintersteckt</th></tr>
+          <tr><td class="k">Keine Verbindung</td><td>Internet, VPN oder ein Werbeblocker unterbindet die Anfrage</td></tr>
+          <tr><td class="k">Zeitüberschreitung</td><td>Die Gegenstelle antwortet zu langsam</td></tr>
+          <tr><td class="k">Abgewiesen (HTTP 4xx)</td><td>Die Anfrage wurde nicht akzeptiert — meist ein Schlüsselproblem</td></tr>
+          <tr><td class="k">Gegenstelle hat eine Störung (HTTP 5xx)</td><td>Der Fehler liegt beim Anbieter, nicht bei dir</td></tr>
+          <tr><td class="k">Bridge läuft nicht mehr</td><td>Das Programm auf dem PC ist beendet oder der Rechner schläft</td></tr>
+          <tr><td class="k">Bridge läuft, liefert aber keine Betfair-Quoten</td><td>Die Bridge lebt, aber Betfair antwortet ihr nicht</td></tr>
+        </table>
+      </div>
+      <div class="call"><b>Betfair braucht ein Programm auf dem eigenen PC.</b> Betfair sperrt Anfragen aus Rechenzentren, deshalb kann die Website die Kurse nicht selbst holen. Das Programm liest beide Bücher, rechnet die Chancen dort aus und lädt sie hoch — dadurch füllt sich die Historie auch dann, wenn niemand die Seite offen hat.</div>
+    </section>
+
+    <section>
+      <h3>Jeder Link wird geprüft, bevor er gemeldet wird <span style="font-size:9px;letter-spacing:.1em;color:var(--pos)">NEU · Build 17</span></h3>
+      <p>Eine Chance ist nur so viel wert wie ihre Links: wer auf „öffnen" drückt, muss auf <strong>genau dem Markt</strong> landen, dessen Kurse gerechnet wurden. Deshalb prüft die Bridge ab Build 17 <strong>beide Links jeder Chance</strong>, bevor sie gemeldet wird — und derselbe Fund trägt bei jedem Klick denselben Link, weil beide Adressen fest aus Kennungen gebaut werden, nie aus einer Suche.</p>
+      <div class="scroll"><table>
+        <tr><th>Buch</th><th>Was geprüft wird</th><th>Wie</th></tr>
+        <tr><td class="k">Betfair</td><td>Der Link trägt exakt die marketId der gerechneten Kurse, diese Id steht im Katalog, der Markt ist nicht geschlossen.</td><td>ohne Netz, bei jedem Fund</td></tr>
+        <tr><td class="k">Polymarket</td><td>Der Markt-Slug aus dem Link wird bei Gamma nachgeschlagen und muss auf denselben Markt auflösen — gleiche Kennung <b>und</b> dasselbe Orderbuch-Token, dessen Preis gerechnet wurde.</td><td>übers Netz, Antwort wird 6 h gemerkt</td></tr>
+      </table></div>
+      <p class="note"><strong>Löst ein Link auf einen fremden Markt auf, wird die ganze Chance verworfen</strong> — lieber keine Meldung als eine mit falschem Link. Ist die Prüfung gerade nicht möglich (Netz), wird die Chance gemeldet und trägt im Wett-Ticket die Marke „Link ungeprüft" mit dem Grund. Geprüfte Beine tragen „✓ Link geprüft".</p>
+
+      <h3 style="margin-top:14px">Zu viel Daten? Teilen statt melden <span style="font-size:9px;letter-spacing:.1em;color:var(--pos)">NEU · Build 17</span></h3>
+      <p>Verlangt eine Katalog-Anfrage zu viel auf einmal, antwortet Betfair mit <strong>TOO_MUCH_DATA</strong> — oft versteckt hinter dem Sammelcode ANGX-0001. Das ist kein Fehler, sondern der Befehl, kleiner zu fragen. Bis Build 16 teilte die Bridge das Zeitfenster höchstens sieben Ebenen tief; reichte das nicht, fiel das Fenster mit sichtbarer Fehlermeldung aus dem Bestand.</p>
+      <p>Ab Build 17 wird <strong>so tief geteilt, wie das Fenster es hergibt</strong> — bis hinunter zu 2 Minuten, beim größten Fenster sind das etwa 20 Halbierungen. Das Teilen ist stiller Normalbetrieb, egal wie viel Betfair liefert. Scheitert ein 2-Minuten-Fenster nach Wartepause und zweitem Versuch immer noch, wird es ehrlich als Verlust verbucht und <em>nur dann</em> erscheint eine Warnung. Anmelde- und Netzfehler werden weiterhin gemeldet — die sind echte Fehler, kein Mengenproblem.</p>
+    </section>
+
+    <section>
+      <h3>Selbst nachprüfen</h3>
+      <p>Zwei Prüfprogramme rechnen die Logik mit Zahlen durch. Sie melden sich nirgends an und laden nichts hoch.</p>
+      <pre>node bridge/pruefung.js        <span class="c">158 Prüfungen — Suche, Zuordnung, Lay-Rechnung, Links, Fensterteilung</span>
+node oberflaeche-pruefung.js  <span class="c">103 Prüfungen — Anzeige, Gebühren, Aufteilung</span></pre>
+      <p class="note">Darunter die Gegenprobe, dass bei jeder gemeldeten Chance beide Ausgänge auf den Cent denselben Betrag zurückzahlen, dass die Gebühr beider Bücher aus zwei völlig verschiedenen Regeln dieselbe Formel ergibt, und dass wirklich nur Märkte verglichen werden, die es auf beiden Büchern gibt.</p>
+      <div class="call"><b>Diese Seite gehört zum Programm.</b> Ändert sich die Suchlogik, wird zuerst die Datei geändert, die man herunterlädt, und danach diese Erklärung nachgezogen. Was hier steht, gilt für die Fassung, die gerade zum Download bereitliegt.</div>
+    </section>
+
+    <div class="foot">Orion Panel · Bridge 3.7 / Build 17 · Endpunkt bf-bridge und Datenformat unverändert, alle Neuerungen additiv</div>
+  </div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="config.js?v=64"></script>
+<script src="pdf.js?v=52"></script>
+<script>
+// Inhaltsverzeichnis aus den Ueberschriften bauen — kann nie veralten
+(function(){
+  var nav=document.getElementById('inhVerz'); if(!nav) return;
+  var hs=document.querySelectorAll('.wrap section > h3');
+  var teile=[];
+  hs.forEach(function(h,i){
+    var id='abschnitt-'+(i+1);
+    (h.closest('section')||h).id = h.closest('section').id || id;
+    var ziel=h.closest('section').id;
+    var txt=(h.textContent||'').replace(/NEU · Build \d+/,'').trim();
+    teile.push('<a href="#'+ziel+'"><i>'+(i+1)+'</i>'+txt+'</a>');
+  });
+  nav.innerHTML=teile.join('');
+})();
+// PDF wird direkt erzeugt und heruntergeladen — kein Druckdialog.
+document.getElementById('pdfBtn').addEventListener('click', function(){
+  var b=this, alt=b.textContent;
+  b.disabled=true; b.textContent='erzeuge …';
+  setTimeout(function(){
+    try{
+      var seiten=window.orionPdf();
+      b.textContent='✓ '+seiten+' Seiten geladen';
+    }catch(e){
+      // Sollte die Erzeugung je scheitern, bleibt der Druckweg als Rückfall:
+      // dort "Als PDF speichern" wählen. Lieber ein Umweg als gar nichts.
+      console.error(e);
+      b.textContent='→ Druckdialog';
+      window.print();
+    }
+    setTimeout(function(){ b.textContent=alt; b.disabled=false; }, 2600);
+  }, 30);
+});
+
+(async function(){
+  var auth = await window.arRequireAuth();
+  if(!auth) return;
+  // Wenn eine Bridge läuft, die echten Zahlen statt der Beispielwerte zeigen
+  try{
+    var r = await fetch('https://noexklrgtqveiclijdwp.supabase.co/functions/v1/bf-bridge?meta=1');
+    var j = await r.json();
+    var s = j && j.stats || {};
+    if(s.zeit){
+      var art = s.key_art==='live' ? 'LIVE (Echtzeit)' : (s.key_art==='delayed' ? 'DELAYED (verzögert)' : 'Art unbekannt');
+      document.getElementById('stamp').textContent =
+        'Bridge v2 · letzter Lauf: ' + (s.bf_gelesen||0) + ' von ' + (s.bf_katalog||0) + ' Betfair-Märkten · '
+        + (s.pm_handelbar||0) + ' Polymarket handelbar · ' + (s.sweep_s||0) + ' s · Schlüssel: ' + art;
+    }
+  }catch(e){}
+})();
+</script>
+</body>
+</html>
