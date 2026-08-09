@@ -32,6 +32,11 @@
     return db('orion_funde?status=eq.vorbei&order=vorbei_seit.desc&limit=' + (grenze || 60));
   }
 
+  /* Was die Nachtwache zuletzt gesehen hat. */
+  function holeWache() {
+    return db('orion_wache?order=geprueft_am.desc&limit=1').then(function (z) { return z[0] || null; });
+  }
+
   /* Laeuft der Scanner ueberhaupt? */
   function holeLauf() {
     return db('orion_laeufe?order=gelaufen_am.desc&limit=1').then(function (z) { return z[0] || null; });
@@ -43,9 +48,9 @@
   }
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(60), holeLauf(), holeKalshi()])
+    return Promise.all([holeLive(), holeVerlauf(60), holeLauf(), holeKalshi(), holeWache()])
       .then(function (teile) {
-        var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3];
+        var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3], wache = teile[4];
         var jetzt = Date.now();
 
         var kaAlterS = ka && ka.updated_at ? Math.round((jetzt - Date.parse(ka.updated_at)) / 1000) : null;
@@ -97,7 +102,10 @@
             bf_match_odds: lauf ? lauf.bf_match_odds : null,
             paare: lauf ? lauf.paare : null,
             lauf_dauer_ms: lauf ? lauf.dauer_ms : null,
-            lauf_fehler: lauf ? lauf.fehler : null
+            lauf_fehler: lauf ? lauf.fehler : null,
+            wache_alter_s: wache ? Math.round((jetzt - Date.parse(wache.geprueft_am)) / 1000) : null,
+            wache_gut: wache ? wache.alles_gut : null,
+            wache_eingriff: wache ? wache.eingegriffen : null
           }
         };
       });

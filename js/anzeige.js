@@ -170,7 +170,10 @@
       { name: 'Scanner', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--gruen)' : 'var(--rot)' },
       { name: 'Kalshi · ohne Konto', wert: dauer(s.kalshi_alter_s),
         farbe: kalshiLaeuft ? 'var(--tuerkis)' : 'var(--rot)' },
-      { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
+      { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' },
+      { name: 'Nachtwache', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
+        farbe: (s.wache_gut === true && s.wache_alter_s !== null && s.wache_alter_s < 1800)
+          ? 'var(--gruen)' : 'var(--rot)' }
     ].map(function (k) {
       return '<div class="kachel"><div class="wert" style="color:' + (k.farbe || 'var(--text)') + '">' +
              txt(k.wert) + '</div><div class="name">' + txt(k.name) + '</div></div>';
@@ -246,6 +249,19 @@
     if (s.kalshi_alter_s === null || s.kalshi_alter_s > K.kalshiMaxAlterS) {
       warn += '<div class="warnung"><b>Kalshi-Daten sind ' + dauer(s.kalshi_alter_s) + ' alt.</b> ' +
               'Gesammelt wird alle 5 Minuten, ein Durchlauf dauert rund 52 Sekunden.</div>';
+    }
+    /* Die Nachtwache prueft die MASCHINE, nicht die Funde. Wenn sie selbst
+     * stehenbleibt, merkt niemand mehr einen Stillstand — deshalb wird auch
+     * ihr eigenes Alter angezeigt. */
+    if (s.wache_alter_s === null) {
+      warn += '<div class="warnung"><b>Die Nachtwache hat noch nie gelaufen.</b> ' +
+              'Sie sollte alle 10 Minuten nachsehen.</div>';
+    } else if (s.wache_alter_s > 1800) {
+      warn += '<div class="warnung"><b>Die Nachtwache meldet sich seit ' + dauer(s.wache_alter_s) + ' nicht.</b> ' +
+              'Dann ist auch ihren Angaben nicht mehr zu trauen.</div>';
+    } else if (s.wache_gut === false) {
+      warn += '<div class="warnung"><b>Die Nachtwache hat etwas beanstandet.</b>' +
+              (s.wache_eingriff ? ' Eingegriffen: ' + txt(s.wache_eingriff) : '') + '</div>';
     }
     setzeWennAnders(document.getElementById('warnungen'), warn);
 
