@@ -194,7 +194,7 @@ const O = {
   maxDataAge:   zahl(CFG.maxDataAgeSeconds, 0),   // 0 = automatisch nach Marktgeschwindigkeit
   scanPolymarket: CFG.scanPolymarket !== false,
   internalArb:  CFG.internalArb !== false,
-  uploadLimit:  zahl(CFG.uploadLimit, 4000),
+  uploadLimit:  zahl(CFG.uploadLimit, 8000),   // Build 18: war 4000, der Server nimmt 8000
   maxBookPerSweep: zahl(CFG.maxBookPerSweep, 6000)
 };
 
@@ -202,7 +202,7 @@ const O = {
    erkennt, ob auf einem PC noch eine veraltete Bridge läuft, und den Nutzer
    auffordern kann, die neue Datei zu holen. BEI JEDER inhaltlichen Änderung
    an der Suchlogik hochzählen — sonst merkt niemand, dass er alt ist. */
-const BRIDGE_BUILD = 17;
+const BRIDGE_BUILD = 18;
 const BRIDGE_VERSION = "3.7";
 
 const BF_LOGIN = 'https://identitysso.betfair.com/api/login';
@@ -1596,6 +1596,11 @@ function hochladeMaerkte() {
     raus.push({
       k: rs.map(x => x.n).join(' vs '), r: rs, mt: k.mt || '', ev: k.ev || '',
       st: k.start || null, ip: buch.inplay ? 1 : 0,
+      // Build 18, additiv: der ECHTE Kommissionssatz dieses Marktes.
+      // Steht laengst in k.satz (aus description.marketBaseRate), wurde aber
+      // nie mit hochgeladen. Ohne ihn rechnet der Server mit 7 % statt der
+      // echten 2 bis 5 % und drueckt jede Rendite nach unten.
+      sz: (typeof k.satz === 'number' && isFinite(k.satz)) ? k.satz : null,
       link: 'https://www.betfair.com/exchange/plus/market/' + mid
     });
   });
