@@ -102,6 +102,9 @@
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
         '<div class="titel">' + txt(f.titel) + '</div>' +
         '<div class="unter">' +
+          '<span class="chip ' + (f.buch === 'kalshi' ? 'ka' : 'bf') + '">' +
+            (f.buch === 'kalshi' ? 'Kalshi · kein Konto' : 'Betfair · Bridge') + '</span> ' +
+          (f.veraltet ? '<span class="chip rot">Kurse veraltet</span> ' : '') +
           '<span class="chip">' + txt(f.sportart) + '</span> ' +
           '<span class="chip">' + (imVerlauf ? 'beendet vor ' + seit(f.vorbei_seit) : 'endet in ' + bis(f.endet_am)) + '</span> ' +
           '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span> ' +
@@ -134,12 +137,15 @@
   function kacheln(s) {
     var scannerLaeuft = s.lauf_alter_s !== null && s.lauf_alter_s < welt.KONFIG.laufMaxAlterS;
     var bridgeLaeuft = s.bf_alter_s !== null && s.bf_alter_s < welt.KONFIG.bridgeMaxAlterS;
+    var kalshiLaeuft = s.kalshi_alter_s !== null && s.kalshi_alter_s < welt.KONFIG.kalshiMaxAlterS;
     return [
       { name: 'Chancen live', wert: s.chancen, farbe: s.chancen > 0 ? 'var(--gruen)' : 'var(--text-leise)' },
       { name: 'Knappe Paare', wert: s.knapp },
       { name: 'Im Verlauf', wert: s.verlauf },
       { name: 'Scanner', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--gruen)' : 'var(--rot)' },
-      { name: 'Bridge', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
+      { name: 'Kalshi · ohne Konto', wert: dauer(s.kalshi_alter_s),
+        farbe: kalshiLaeuft ? 'var(--tuerkis)' : 'var(--rot)' },
+      { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
     ].map(function (k) {
       return '<div class="kachel"><div class="wert" style="color:' + (k.farbe || 'var(--text)') + '">' +
              txt(k.wert) + '</div><div class="name">' + txt(k.name) + '</div></div>';
@@ -166,7 +172,12 @@
     if (s.bf_alter_s === null || s.bf_alter_s > K.bridgeMaxAlterS) {
       warn += '<div class="warnung"><b>Betfair-Daten sind ' + dauer(s.bf_alter_s) + ' alt.</b> ' +
               'Die Bridge auf dem Heim-PC lädt normalerweise im Minutentakt hoch. ' +
-              'Solange das so ist, sind die Quoten unten Geschichte, keine Kurse.</div>';
+              'Betfair-Zeilen zählen deshalb gerade nicht als Chance. ' +
+              '<b>Die Kalshi-Seite läuft davon unabhängig weiter</b> — sie braucht weder Konto noch PC.</div>';
+    }
+    if (s.kalshi_alter_s === null || s.kalshi_alter_s > K.kalshiMaxAlterS) {
+      warn += '<div class="warnung"><b>Kalshi-Daten sind ' + dauer(s.kalshi_alter_s) + ' alt.</b> ' +
+              'Gesammelt wird alle 5 Minuten, ein Durchlauf dauert rund 52 Sekunden.</div>';
     }
     setzeWennAnders(document.getElementById('warnungen'), warn);
 

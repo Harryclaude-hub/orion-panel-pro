@@ -181,6 +181,65 @@ nah('Auszahlung beidseitig gleich (Seite 1)', chance.s1 * chance.qe1, chance.aus
 nah('Auszahlung beidseitig gleich (Seite 2)', chance.s2 * chance.qe2, chance.auszahlung, 1e-9);
 nah('Gewinn = Auszahlung minus Einsatz',      chance.gewinn, chance.auszahlung - 500, 1e-9);
 
+/* ---------- Kalshi ----------
+ *
+ * Gebuehr = Satz * p * (1-p), anders geformt als bei Polymarket
+ * (dort min(p,1-p)^Exponent). Regelsatz 7 %. */
+
+nah('Kalshi p=0.50 bei 7 % -> 0.0175', R.gebuehrKalshi(0.50, 0.07), 0.0175);
+nah('Kalshi p=0.20 bei 7 % -> 0.0112', R.gebuehrKalshi(0.20, 0.07), 0.0112);
+nah('Kalshi p=0.80 gleich wie p=0.20', R.gebuehrKalshi(0.80, 0.07), R.gebuehrKalshi(0.20, 0.07));
+nah('Kalshi ohne Satz nimmt 7 %',      R.gebuehrKalshi(0.50, undefined), 0.0175);
+nah('Kalshi Satz 0 wird auch genommen', R.gebuehrKalshi(0.50, 0), 0);
+
+ok('Kalshi-Gebuehr ist bei p=0.50 am hoechsten',
+   R.gebuehrKalshi(0.50, 0.07) > R.gebuehrKalshi(0.30, 0.07) &&
+   R.gebuehrKalshi(0.50, 0.07) > R.gebuehrKalshi(0.70, 0.07));
+
+ok('Kalshi p=0 abgewiesen',   R.gebuehrKalshi(0, 0.07) === null);
+ok('Kalshi p=1 abgewiesen',   R.gebuehrKalshi(1, 0.07) === null);
+ok('Kalshi p=1.5 abgewiesen', R.gebuehrKalshi(1.5, 0.07) === null);
+ok('Kalshi p NaN abgewiesen', R.gebuehrKalshi(NaN, 0.07) === null);
+
+nah('Kalshi qE p=0.50 -> 1.965', R.qeKalshi(0.50, 0.07), (1 - 0.0175) / 0.5);
+nah('Kalshi qE ohne Gebuehr p=0.50 -> 2', R.qeKalshi(0.50, 0), 2);
+ok('Kalshi qE p=0 abgewiesen', R.qeKalshi(0, 0.07) === null);
+ok('Kalshi qE p=1 abgewiesen', R.qeKalshi(1, 0.07) === null);
+
+/* Die Kalshi-Gebuehr ist bei Zweikaempfen kleiner als die von Polymarket,
+ * weil p*(1-p) schneller faellt als min(p,1-p). Das gehoert gewusst. */
+ok('bei p=0.50 ist Kalshi guenstiger als Polymarket bei gleichem Satz',
+   R.gebuehrKalshi(0.50, 0.05) < R.gebuehrPm(0.50, 0.05, 1),
+   R.gebuehrKalshi(0.50, 0.05) + ' gegen ' + R.gebuehrPm(0.50, 0.05, 1));
+
+/* ---------- Polymarket gegen Kalshi ----------
+ * Zwei binaere Maerkte auf GEGENSAETZLICHE Ausgaenge desselben Ereignisses. */
+
+var kGut = R.pmGegenKalshi({ pmPreis: 0.45, pmSatz: 0.05, pmExponent: 1, kalshiPreis: 0.50, einsatz: 200 });
+ok('0.45 gegen 0.50 ist eine echte Chance', kGut !== null && kGut.istArbitrage === true);
+ok('als polymarket/kalshi markiert', kGut.seite1 === 'polymarket' && kGut.seite2 === 'kalshi');
+nah('Auszahlung beidseitig gleich (1)', kGut.s1 * kGut.qe1, kGut.auszahlung, 1e-9);
+nah('Auszahlung beidseitig gleich (2)', kGut.s2 * kGut.qe2, kGut.auszahlung, 1e-9);
+nah('Einsatzsumme bleibt 200', kGut.s1 + kGut.s2, 200, 1e-9);
+
+var kSchlecht = R.pmGegenKalshi({ pmPreis: 0.52, pmSatz: 0.05, pmExponent: 1, kalshiPreis: 0.52 });
+ok('0.52 gegen 0.52 ist KEINE Chance', kSchlecht.istArbitrage === false);
+
+/* Die Summe der beiden Preise entscheidet, aber erst NACH Gebuehren.
+ * 0.49 + 0.50 = 0.99 sieht gut aus, mit Gebuehren bleibt nichts. */
+var knapp = R.pmGegenKalshi({ pmPreis: 0.49, pmSatz: 0.05, pmExponent: 1, kalshiPreis: 0.50 });
+ok('0.49 + 0.50 traegt die Gebuehren nicht', knapp.istArbitrage === false,
+   'Rendite ' + knapp.rendite.toFixed(3) + ' %');
+
+ok('ohne Polymarket-Preis abgewiesen',
+   R.pmGegenKalshi({ pmSatz: 0.05, kalshiPreis: 0.5 }) === null);
+ok('ohne Kalshi-Preis abgewiesen',
+   R.pmGegenKalshi({ pmPreis: 0.45, pmSatz: 0.05 }) === null);
+ok('Kalshi-Preis 0 abgewiesen',
+   R.pmGegenKalshi({ pmPreis: 0.45, pmSatz: 0.05, kalshiPreis: 0 }) === null);
+ok('Kalshi-Preis 1 abgewiesen',
+   R.pmGegenKalshi({ pmPreis: 0.45, pmSatz: 0.05, kalshiPreis: 1 }) === null);
+
 /* ---------- Ergebnis ---------- */
 
 console.log('\nRechnung: ' + gut + ' von ' + (gut + schlecht) + ' Pruefungen bestanden');

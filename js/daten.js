@@ -37,14 +37,33 @@
     return db('orion_laeufe?order=gelaufen_am.desc&limit=1').then(function (z) { return z[0] || null; });
   }
 
+  /* Wie alt sind die oeffentlichen Kalshi-Kurse? */
+  function holeKalshi() {
+    return db('kalshi_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
+  }
+
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(60), holeLauf()])
+    return Promise.all([holeLive(), holeVerlauf(60), holeLauf(), holeKalshi()])
       .then(function (teile) {
-        var live = teile[0], verlauf = teile[1], lauf = teile[2];
+        var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3];
         var jetzt = Date.now();
 
-        var chancen = live.filter(function (f) { return f.rendite >= K.mindestRendite; });
-        var knapp = live.filter(function (f) { return f.rendite < K.mindestRendite; });
+        var kaAlterS = ka && ka.updated_at ? Math.round((jetzt - Date.parse(ka.updated_at)) / 1000) : null;
+        var bfAlterS = lauf ? lauf.bf_alter_s : null;
+
+        /* Frische JE BUCH. Ein einziger Schalter waere falsch: Kalshi kann
+         * frisch sein, waehrend die Bridge steht. Wer beides zusammenwirft,
+         * versteckt entweder echte Funde oder zeigt tote Kurse als Chance. */
+        function veraltet(f) {
+          if (f.buch === 'kalshi') return kaAlterS === null || kaAlterS > K.kalshiMaxAlterS;
+          return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
+        }
+
+        live.forEach(function (f) { f.veraltet = veraltet(f); });
+        verlauf.forEach(function (f) { f.veraltet = false; });
+
+        var chancen = live.filter(function (f) { return f.rendite >= K.mindestRendite && !f.veraltet; });
+        var knapp = live.filter(function (f) { return !(f.rendite >= K.mindestRendite && !f.veraltet); });
 
         return {
           chancen: chancen,
@@ -56,8 +75,12 @@
             knapp: knapp.length,
             live_gesamt: live.length,
             verlauf: verlauf.length,
+            kalshi_alter_s: kaAlterS,
+            kalshi_maerkte: ka && ka.stats ? ka.stats.maerkte : null,
+            aus_betfair: live.filter(function (f) { return f.buch !== 'kalshi'; }).length,
+            aus_kalshi: live.filter(function (f) { return f.buch === 'kalshi'; }).length,
             lauf_alter_s: lauf ? Math.round((jetzt - Date.parse(lauf.gelaufen_am)) / 1000) : null,
-            bf_alter_s: lauf ? lauf.bf_alter_s : null,
+            bf_alter_s: bfAlterS,
             pm_maerkte: lauf ? lauf.pm_maerkte : null,
             bf_match_odds: lauf ? lauf.bf_match_odds : null,
             paare: lauf ? lauf.paare : null,

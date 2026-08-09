@@ -86,6 +86,44 @@
     return qe > 1 ? qe : null;
   }
 
+  /* Kalshi.
+   * Gebuehr je Kontrakt, preisabhaengig, aber anders geformt als bei
+   * Polymarket:  Gebuehr = Satz * p * (1 - p)
+   * Kalshi rundet je Order auf den naechsten Cent AUF. Das ist zu unseren
+   * Ungunsten, also wird nicht abgerundet gerechnet.
+   * Veroeffentlichter Regelsatz: 7 %. Einzelne Serien liegen darunter,
+   * aber ein zu hoch angesetzter Satz erzeugt hoechstens eine verpasste
+   * Chance, ein zu niedriger eine erfundene.
+   * Die Gebuehr ist bei p = 0,50 am hoechsten, genau wie bei Polymarket. */
+  var KALSHI_SATZ = 0.07;
+
+  function gebuehrKalshi(preis, satz) {
+    if (!istZahl(preis) || preis <= 0 || preis >= 1) return null;
+    var s = istZahl(satz) && satz >= 0 && satz < 1 ? satz : KALSHI_SATZ;
+    return s * preis * (1 - preis);
+  }
+
+  function qeKalshi(preis, satz) {
+    if (!istZahl(preis) || preis <= 0 || preis >= 1) return null;
+    var g = gebuehrKalshi(preis, satz);
+    if (g === null) return null;
+    var qe = (1 - g) / preis;
+    return qe > 1 ? qe : null;
+  }
+
+  /* Zwei binaere Boersenmaerkte auf GEGENSAETZLICHE Ausgaenge desselben
+   * Ereignisses. Polymarket "Gewinnt X?" JA gegen Kalshi "Gewinnt X?" NEIN.
+   * Zusammen decken sie beide Ausgaenge ab, ohne dass irgendwo gelegt
+   * werden muss. */
+  function pmGegenKalshi(opt) {
+    var qeP = qePm(opt.pmPreis, opt.pmSatz, opt.pmExponent);
+    var qeK = qeKalshi(opt.kalshiPreis, opt.kalshiSatz);
+    if (qeP === null || qeK === null) return null;
+    var e = pruefe(qeP, qeK, opt.einsatz);
+    if (e) { e.seite1 = 'polymarket'; e.seite2 = 'kalshi'; }
+    return e;
+  }
+
   /* Kern: zwei Effektivquoten gegeneinander.
    * Gibt immer ein Ergebnis zurueck, auch wenn es keine Arbitrage ist,
    * damit der Aufrufer die Zahl sieht statt nur ein "nein". */
@@ -139,8 +177,12 @@
     maxHaftung: maxHaftung,
     gebuehrPm: gebuehrPm,
     qePm: qePm,
+    KALSHI_SATZ: KALSHI_SATZ,
+    gebuehrKalshi: gebuehrKalshi,
+    qeKalshi: qeKalshi,
     pruefe: pruefe,
-    pmGegenBf: pmGegenBf
+    pmGegenBf: pmGegenBf,
+    pmGegenKalshi: pmGegenKalshi
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;

@@ -31,6 +31,9 @@
 
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,
+    /* Kalshi wird alle 5 Minuten gesammelt, ein Durchlauf dauert 52 s.
+     * Alles unter 10 Minuten ist also Normalbetrieb. */
+    kalshiMaxAlterS: 600,
     laufMaxAlterS: 180,
 
     /* Betfair ist aus Oesterreich im Browser gesperrt. Die Marktnummer im

@@ -165,3 +165,8 @@ h2 {
 .fund.chance .analyse b { color: var(--gruen); }
 
 .knopf.kopieren { font-size: 14px; padding: 0 14px; }
+
+/* ---------- Buch-Kennzeichen ---------- */
+
+.chip.ka { color: var(--tuerkis); border-color: #35544F; }
+.chip.bf { color: var(--blau);    border-color: #3C4C5C; }

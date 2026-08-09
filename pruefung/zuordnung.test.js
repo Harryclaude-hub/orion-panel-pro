@@ -284,6 +284,52 @@ ok('ohne Draw gibt null',      Z.drawLaeufer([{ n: 'Liverpool', b: 1.5 }]) === n
 ok('leere Liste gibt null',    Z.drawLaeufer([]) === null);
 ok('null gibt null',           Z.drawLaeufer(null) === null);
 
+/* ---------- Kalshi ----------
+ *
+ * Alle Titel unten sind echte Kalshi-Titel vom 9.8.2026. */
+
+var kp1 = Z.kalshiPaar('Cruz Azul vs New York City Winner?');
+ok('Kalshi-Partie wird gelesen', kp1 && kp1[0] === 'cruz azul' && kp1[1] === 'new york city', JSON.stringify(kp1));
+
+var kp2 = Z.kalshiPaar("Golden State vs Los Angeles women's Pro Basketball game: Winner?");
+ok('Ligabeschreibung faellt weg', kp2 && kp2[0] === 'golden state' && kp2[1] === 'los angeles', JSON.stringify(kp2));
+
+var kp3 = Z.kalshiPaar('San Diego FC vs Tijuana de Caliente Winner?');
+ok('langer Vereinsname bleibt erhalten', kp3 && kp3[1] === 'tijuana de caliente', JSON.stringify(kp3));
+
+ok('Titel ohne Partie gibt null', Z.kalshiPaar('Ballon d Or Winner?') === null);
+ok('leerer Titel gibt null',      Z.kalshiPaar('') === null);
+
+/* Seite bestimmen */
+var partie = ['san diego', 'tijuana de caliente'];
+ok('Ausgang Heim -> a',            Z.seiteVon('San Diego FC', partie) === 'a', Z.seiteVon('San Diego FC', partie));
+ok('Ausgang Auswaerts -> b',       Z.seiteVon('Tijuana de Caliente', partie) === 'b');
+ok('Tie -> unentschieden',         Z.seiteVon('Tie', partie) === 'unentschieden');
+ok('Draw -> unentschieden',        Z.seiteVon('The Draw', partie) === 'unentschieden');
+ok('fremder Name gibt null',       Z.seiteVon('Real Madrid', partie) === null);
+ok('leerer Ausgang gibt null',     Z.seiteVon('', partie) === null);
+ok('ohne Partie gibt null',        Z.seiteVon('San Diego', null) === null);
+
+/* Der Fall, der einen direkten Namensvergleich scheitern laesst:
+ * Polymarket sagt "Club Tijuana", Kalshi sagt "Tijuana de Caliente". */
+var pmPartie = ['san diego', 'club tijuana'];
+ok('Polymarket-Name findet dieselbe Seite',  Z.seiteVon('Club Tijuana', pmPartie) === 'b');
+ok('Kalshi-Name findet dieselbe Seite',      Z.seiteVon('Tijuana de Caliente', partie) === 'b');
+ok('direkter Namensvergleich waere zu streng gewesen',
+   Z.namensgleichheit('Club Tijuana', 'Tijuana de Caliente') < 0.8,
+   Z.namensgleichheit('Club Tijuana', 'Tijuana de Caliente').toFixed(2));
+
+/* Seiten paaren */
+ok('gleiche Seite, gleiche Reihenfolge',   Z.gleicheSeite('a', 'a', false) === true);
+ok('andere Seite wird abgewiesen',         Z.gleicheSeite('a', 'b', false) === false);
+ok('vertauschte Partie: a passt zu b',     Z.gleicheSeite('a', 'b', true) === true);
+ok('vertauschte Partie: a passt NICHT zu a', Z.gleicheSeite('a', 'a', true) === false);
+ok('Unentschieden nur mit Unentschieden',  Z.gleicheSeite('unentschieden', 'unentschieden', false) === true);
+ok('Unentschieden passt nicht zu a',       Z.gleicheSeite('unentschieden', 'a', false) === false);
+ok('Unentschieden bleibt auch vertauscht gleich', Z.gleicheSeite('unentschieden', 'unentschieden', true) === true);
+ok('null wird abgewiesen',                 Z.gleicheSeite(null, 'a', false) === false);
+ok('beides null wird abgewiesen',          Z.gleicheSeite(null, null, false) === false);
+
 /* ---------- Ergebnis ---------- */
 
 console.log('\nZuordnung: ' + gut + ' von ' + (gut + schlecht) + ' Pruefungen bestanden');

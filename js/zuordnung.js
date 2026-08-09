@@ -228,8 +228,57 @@
     return null;
   }
 
+  /* ---------- Kalshi ----------
+   *
+   * Kalshi nennt einen Markt "Cruz Azul vs New York City Winner?" und sagt
+   * im Feld yes_sub_title, worauf JA sich bezieht ("New York City", "Tie").
+   * Die Namen weichen zwischen den Buechern staerker ab als innerhalb eines
+   * Buches: "Club Tijuana" bei Polymarket, "Tijuana de Caliente" bei Kalshi.
+   * Ein direkter Namensvergleich waere hier entweder zu streng oder zu lasch.
+   *
+   * Deshalb wird ueber die SEITE der Partie zugeordnet: erst wird bestimmt,
+   * ob ein Markt die erste Mannschaft, die zweite oder das Unentschieden
+   * meint, und dann werden nur gleiche Seiten gepaart. */
+
+  var KALSHI_ANHANG = /\s+(winner|women s|men s|to win|pro basketball|game)\b.*$/;
+
+  function kalshiPaar(titel) {
+    var s = norm(titel).split(':')[0].replace(KALSHI_ANHANG, '').trim();
+    return paar(s);
+  }
+
+  /* Welche Seite der Partie meint dieser Ausgang?
+   * Gibt 'a', 'b', 'unentschieden' oder null. */
+  function seiteVon(ausgang, partie) {
+    if (!partie) return null;
+    var a = norm(ausgang);
+    if (!a) return null;
+    if (/\b(tie|draw)\b/.test(a)) return 'unentschieden';
+    var zuA = namensgleichheit(a, partie[0]);
+    var zuB = namensgleichheit(a, partie[1]);
+    /* Der Ausgang muss klar zu EINER Seite gehoeren. Gleichstand heisst,
+     * dass die Namen nichts hergeben, und dann wird nicht geraten. */
+    if (zuA > zuB && zuA >= 0.5) return 'a';
+    if (zuB > zuA && zuB >= 0.5) return 'b';
+    return null;
+  }
+
+  /* Passen ein Polymarket-Markt und ein Kalshi-Markt auf denselben Ausgang?
+   * getauscht = die Partien stehen bei den Buechern in umgekehrter Reihenfolge. */
+  function gleicheSeite(pmSeite, kalshiSeite, getauscht) {
+    if (!pmSeite || !kalshiSeite) return false;
+    if (pmSeite === 'unentschieden' || kalshiSeite === 'unentschieden') {
+      return pmSeite === kalshiSeite;
+    }
+    if (!getauscht) return pmSeite === kalshiSeite;
+    return (pmSeite === 'a' && kalshiSeite === 'b') || (pmSeite === 'b' && kalshiSeite === 'a');
+  }
+
   var api = {
     norm: norm,
+    kalshiPaar: kalshiPaar,
+    seiteVon: seiteVon,
+    gleicheSeite: gleicheSeite,
     woerter: woerter,
     aehnlichkeit: aehnlichkeit,
     namensgleichheit: namensgleichheit,
