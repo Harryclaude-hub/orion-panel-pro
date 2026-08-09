@@ -131,3 +131,24 @@ button.gesperrt { opacity: .5; }
   .kopf h1 { font-size: 17px; }
   .fund .seite { flex: 1 1 100%; }
 }
+
+/* ---------- Verlauf: sichtbar anders als live, aber lesbar ---------- */
+
+.fund.alt { opacity: .78; border-style: dashed; }
+.fund.alt .titel { font-weight: 500; }
+
+h2 {
+  font-size: 16px; letter-spacing: .4px; text-transform: uppercase;
+  color: var(--text-leise); margin: 26px 0 10px; font-weight: 600;
+}
+
+#warnungen:empty { display: none; }
+
+/* ---------- Einstellungen ---------- */
+
+.fund label { display: block; margin: 12px 0 4px; }
+.fund input[type=text], .fund input[type=password] {
+  width: 100%; min-height: 44px; padding: 0 12px;
+  background: var(--karte-2); color: var(--text);
+  border: 1px solid var(--rand); border-radius: var(--rund); font-size: 16px;
+}

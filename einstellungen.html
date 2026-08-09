@@ -1,0 +1,85 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion Panel Pro — Einstellungen</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="css/stil.css?v=3">
+</head>
+<body>
+
+<div id="sperre">
+  <div class="kasten">
+    <h2>Orion Panel Pro</h2>
+    <input id="sperrwort" type="password" placeholder="Wort" autocomplete="off">
+    <button id="entsperren">Öffnen</button>
+    <div class="fehler" id="sperrfehler"></div>
+  </div>
+</div>
+
+<div class="huelle">
+
+  <header class="kopf">
+    <h1>Einstellungen</h1>
+    <span class="chip" id="stand">bereit</span>
+    <span class="luecke"></span>
+    <a class="knopf" href="index.html">Zurück zum Panel</a>
+  </header>
+
+  <div class="warnung">
+    <b>Diese Angaben bleiben in diesem Browser.</b>
+    Sie werden nicht in die Datenbank geschrieben und nicht hochgeladen.
+    Die Seite baut daraus die Datei <code>bridge-config.json</code>, die neben
+    der Bridge auf deinem PC liegt. Das ist Absicht: ein Betfair-Passwort in
+    einer Datenbank ist ein Zugang zu einem Geldkonto, der dort nichts zu
+    suchen hat.
+  </div>
+
+  <div class="fund">
+    <div class="titel">Betfair-Zugang</div>
+    <div class="unter">Alle vier Felder braucht die Bridge, um Kurse lesen zu dürfen.</div>
+
+    <label class="leise" for="bfUser">Benutzername</label>
+    <input id="bfUser" type="text" autocomplete="off" placeholder="dein Betfair-Benutzername">
+
+    <label class="leise" for="bfPass">Passwort</label>
+    <input id="bfPass" type="password" autocomplete="off" placeholder="dein Betfair-Passwort">
+
+    <label class="leise" for="bfKey">App Key</label>
+    <input id="bfKey" type="text" autocomplete="off" placeholder="Delayed- oder Live-Key aus dem Betfair-Konto">
+
+    <label class="leise" for="bridgeToken">Bridge-Token</label>
+    <input id="bridgeToken" type="text" autocomplete="off" placeholder="steht in profiles.bridge_token">
+
+    <div class="aktionen" style="margin-top:14px">
+      <button id="speichern">In diesem Browser merken</button>
+      <button id="herunterladen">bridge-config.json erzeugen</button>
+      <button id="loeschen">Aus diesem Browser löschen</button>
+    </div>
+    <div class="leise" id="rueckmeldung" style="margin-top:10px"></div>
+  </div>
+
+  <div class="fund">
+    <div class="titel">Warum die Bridge auf deinem PC läuft</div>
+    <div class="unter">Gemessen am 9. August 2026, nicht angenommen.</div>
+    <p class="leise">
+      Betfair beantwortet Anfragen aus Rechenzentren mit 403. Geprüft wurden acht
+      Wege: <code>api.betfair.com</code>, die Länderbörsen Australien und Spanien,
+      <code>historicdata</code>, die normale Anmeldung und sogar das öffentliche
+      <code>menu.json</code>. Alle geblockt. Erreichbar sind nur die
+      Zertifikats-Anmeldung und der Push-Strom.
+    </p>
+    <div class="aktionen">
+      <a class="knopf" target="_blank" rel="noopener"
+         href="https://noexklrgtqveiclijdwp.supabase.co/functions/v1/bf-erreichbar">Jetzt selbst nachmessen</a>
+    </div>
+  </div>
+
+</div>
+
+<script src="js/konfig.js?v=3"></script>
+<script src="js/sperre.js?v=3"></script>
+<script src="js/einstellungen.js?v=3"></script>
+</body>
+</html>

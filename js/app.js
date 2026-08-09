@@ -1,40 +1,54 @@
-/* Orion Panel — Ablauf */
+/* Orion Panel Pro — Ablauf
+ *
+ * Der Takt hier ist NUR das Ablesen. Gesucht und gerechnet wird auf dem
+ * Server in orion-lauf, jede Minute, auch wenn kein Browser offen ist.
+ * Deshalb sind zwei Sekunden hier billig: es ist eine kleine Abfrage,
+ * kein Scan.
+ */
 
 (function (welt) {
   'use strict';
 
   var laeuft = false;
-  var letzterLauf = 0;
+  var fehlerInFolge = 0;
 
-  function laden(grund) {
-    if (laeuft) { welt.Anzeige.stand('läuft schon', 'acht'); return; }
+  function laden(still) {
+    if (laeuft) return;
     laeuft = true;
-    welt.Anzeige.stand('lädt ' + (grund || '') + ' ...', 'acht');
+    if (!still) welt.Anzeige.stand('lädt ...', 'acht');
     var t0 = Date.now();
 
     welt.Daten.ladeAlles()
-      .then(function (ergebnis) {
-        welt.Anzeige.zeichne(ergebnis);
-        letzterLauf = Date.now();
-        welt.Anzeige.stand('fertig in ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s', 'gut');
-        welt.letztesErgebnis = ergebnis;   // fuer die Konsole, zum Nachmessen
+      .then(function (e) {
+        welt.Anzeige.zeichne(e);
+        fehlerInFolge = 0;
+        welt.letztesErgebnis = e;
+        welt.Anzeige.stand('live · ' + (Date.now() - t0) + ' ms', 'gut');
       })
-      .catch(function (e) {
-        welt.Anzeige.stand('Fehler: ' + e.message, 'rot');
-        var l = document.getElementById('liste');
-        if (l) l.innerHTML = '<div class="warnung">Laden fehlgeschlagen: ' + e.message +
-          '<br>Das ist keine Schoenfaerberei: wenn hier nichts steht, kamen keine Daten.</div>';
+      .catch(function (err) {
+        fehlerInFolge++;
+        welt.Anzeige.stand('Fehler (' + fehlerInFolge + '): ' + err.message, 'rot');
+        if (fehlerInFolge === 1) {
+          var w = document.getElementById('warnungen');
+          if (w) w.innerHTML = '<div class="warnung">Laden fehlgeschlagen: ' + err.message +
+            '<br>Das ist keine Schönfärberei: wenn hier nichts steht, kamen keine Daten.</div>';
+        }
       })
       .then(function () { laeuft = false; });
   }
 
   function start() {
-    document.getElementById('neuladen').addEventListener('click', function () {
-      laden('von Hand');
+    var knopf = document.getElementById('neuladen');
+    if (knopf) knopf.addEventListener('click', function () { laden(false); });
+
+    laden(false);
+    setInterval(function () { laden(true); }, welt.KONFIG.taktMs);
+
+    /* Beim Zurueckkommen auf den Tab sofort auffrischen, nicht bis zum
+     * naechsten Takt warten. */
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) laden(true);
     });
-    laden('zum Start');
-    // Der Server macht die Arbeit, der Browser fragt nur nach.
-    setInterval(function () { laden('automatisch'); }, 60000);
   }
 
   document.addEventListener('DOMContentLoaded', function () {

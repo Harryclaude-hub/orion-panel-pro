@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orion Panel Pro</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="css/stil.css?v=2">
+<link rel="stylesheet" href="css/stil.css?v=3">
 </head>
 <body>
 
@@ -24,29 +24,34 @@
     <h1>Orion Panel Pro</h1>
     <span class="chip" id="stand">bereit</span>
     <span class="luecke"></span>
-    <button id="neuladen">Neu laden</button>
-    <a class="knopf" href="logik.html">Wie es rechnet</a>
+    <button id="neuladen">Jetzt ablesen</button>
+    <a class="knopf" href="einstellungen.html">Einstellungen</a>
   </header>
 
   <div class="zeile-oben" id="kacheln"></div>
-
-  <div id="liste"></div>
+  <div id="warnungen"></div>
+  <div id="live"></div>
+  <div id="verlauf"></div>
 
   <p class="leise" style="margin-top:28px">
-    Polymarket-Bestand kommt aus <code>orion-scan</code> auf dem Server, nicht aus dem Browser.
-    Betfair-Quoten kommen aus <code>bridge_odds</code>, hochgeladen von der Bridge auf dem Heim-PC.
-    Betfair blockt Rechenzentren mit 403, deshalb muss dieser eine Schritt dort bleiben.
-    Betfair-Kommission ist nicht bekannt und wird mit 7 % gerechnet, dem ungünstigsten bekannten Satz.
+    Gesucht wird auf dem Server: <code>orion-lauf</code> läuft jede Minute über
+    <code>pg_cron</code> und legt jeden Fund in <code>orion_funde</code> ab, auch wenn
+    kein Browser offen ist. Diese Seite liest nur ab, alle zwei Sekunden.
+    Was nicht mehr gilt, wandert in den Verlauf statt zu verschwinden.
+    Betfair-Quoten kommen aus <code>bridge_odds</code> von der Bridge auf dem Heim-PC:
+    Betfair beantwortet Abfragen aus Rechenzentren mit 403.
+    Betfair-Kommission ist nicht bekannt und wird mit 7 % gerechnet, dem
+    ungünstigsten bekannten Satz.
   </p>
 
 </div>
 
-<script src="js/konfig.js?v=2"></script>
-<script src="js/rechnung.js?v=2"></script>
-<script src="js/zuordnung.js?v=2"></script>
-<script src="js/daten.js?v=2"></script>
-<script src="js/anzeige.js?v=2"></script>
-<script src="js/sperre.js?v=2"></script>
-<script src="js/app.js?v=2"></script>
+<script src="js/konfig.js?v=3"></script>
+<script src="js/rechnung.js?v=3"></script>
+<script src="js/zuordnung.js?v=3"></script>
+<script src="js/daten.js?v=3"></script>
+<script src="js/anzeige.js?v=3"></script>
+<script src="js/sperre.js?v=3"></script>
+<script src="js/app.js?v=3"></script>
 </body>
 </html>

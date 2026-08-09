@@ -1,25 +1,27 @@
-/* Orion Panel — Anzeige
+/* Orion Panel Pro — Anzeige
  *
  * Fehlerklasse 6: sekuendliches innerHTML auf Elementen unter der Maus
  * zerstoert den Hover-Zustand und laesst Klicks zwischen mousedown und
- * mouseup durchfallen. Regel: vor jedem Schreiben pruefen, ob sich der
- * Inhalt ueberhaupt geaendert hat.
+ * mouseup durchfallen. Bei zwei Sekunden Takt ist das keine Kleinigkeit
+ * mehr, sondern der Normalfall. Deshalb wird JEDER Block nur geschrieben,
+ * wenn sich sein Inhalt wirklich geaendert hat.
  *
- * Fehlerklasse 4: window.open nach asynchroner Arbeit wird blockiert.
- * Deshalb sind beide Marktlinks echte <a target="_blank">, kein JS-Öffner.
+ * Fehlerklasse 4: beide Marktlinks sind echte <a target="_blank">, kein
+ * JS-Oeffner. Eine Nutzergeste, die durch asynchrone Arbeit laeuft, gilt
+ * nicht mehr.
  *
- * Fehlerklasse 5: kein content-visibility, damit nichts springt oder
- * ueberlappt.
+ * Fehlerklasse 5: kein content-visibility.
  */
 
 (function (welt) {
   'use strict';
 
   function setzeWennAnders(el, html) {
-    if (!el) return;
-    if (el.dataset.stand === html) return;   // nichts geaendert, nicht anfassen
+    if (!el) return false;
+    if (el.dataset.stand === html) return false;
     el.dataset.stand = html;
     el.innerHTML = html;
+    return true;
   }
 
   function txt(s) {
@@ -28,133 +30,145 @@
       .replace(/"/g, '&quot;');
   }
 
-  function zeit(iso) {
-    var t = Date.parse(iso);
-    if (isNaN(t)) return '?';
-    var h = (t - Date.now()) / 3600000;
-    if (h < 0) return 'vorbei';
-    if (h < 1) return Math.round(h * 60) + ' min';
-    if (h < 48) return h.toFixed(1) + ' h';
-    return (h / 24).toFixed(1) + ' Tage';
+  function dauer(sekunden) {
+    if (sekunden === null || sekunden === undefined) return '?';
+    var s = Math.abs(sekunden);
+    if (s < 90) return Math.round(s) + ' s';
+    if (s < 5400) return Math.round(s / 60) + ' min';
+    if (s < 172800) return (s / 3600).toFixed(1) + ' h';
+    return (s / 86400).toFixed(1) + ' Tage';
   }
 
-  /* anzahlChancen wird uebergeben, damit Kachel und Liste NIE verschiedene
-   * Zahlen zeigen. Eine Kachel, die 1 sagt, waehrend darunter "keine Chance"
-   * steht, ist genau die Art Widerspruch, die Vertrauen kostet. */
-  function kacheln(s, anzahlChancen) {
+  function bis(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return '?';
+    var s = (t - Date.now()) / 1000;
+    return s < 0 ? 'vorbei' : dauer(s);
+  }
+
+  function seit(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return '?';
+    return dauer((Date.now() - t) / 1000);
+  }
+
+  /* Beide Links sind Pflicht (Uebergabe 8, Punkt 3): jede Zeile, auch die
+   * knappste, traegt beide und sie treffen denselben Markt. Fehlt einer,
+   * wird das gesagt statt still einen toten Knopf anzuzeigen. */
+  function aktionen(f) {
+    var h = '<div class="aktionen">';
+    if (f.pm_link) h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.pm_link) + '">Polymarket</a>';
+    else h += '<span class="knopf gesperrt" title="Kein Polymarket-Link im Fund">Polymarket fehlt</span>';
+    if (f.bf_link) h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bf_link) + '">Betfair über Broker</a>';
+    else h += '<span class="knopf gesperrt" title="Kein Betfair-Link im Fund">Betfair fehlt</span>';
+    h += '</div>';
+    return h;
+  }
+
+  function karte(f, imVerlauf) {
+    var chance = f.rendite >= welt.KONFIG.mindestRendite;
+    return '' +
+      '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
+        '<div class="titel">' + txt(f.titel) + '</div>' +
+        '<div class="unter">' +
+          '<span class="chip">' + txt(f.sportart) + '</span> ' +
+          '<span class="chip">' + (imVerlauf ? 'beendet vor ' + seit(f.vorbei_seit) : 'endet in ' + bis(f.endet_am)) + '</span> ' +
+          '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span> ' +
+          '<span class="chip' + (chance ? ' gut' : '') + '">Rendite ' + Number(f.rendite).toFixed(2) + ' %</span> ' +
+          '<span class="chip">beste ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span> ' +
+          '<span class="chip">gesehen seit ' + seit(f.zuerst_gesehen) + '</span>' +
+          (imVerlauf && f.vorbei_grund ? ' <span class="chip rot">' + txt(f.vorbei_grund) + '</span>' : '') +
+        '</div>' +
+        '<div class="seiten">' +
+          '<div class="seite pm">' +
+            '<div class="quelle">Polymarket</div>' +
+            '<div class="zahl">' + txt(f.pm_seite) + ' ' + Number(f.pm_preis).toFixed(3) + '</div>' +
+            '<div class="leise">' + txt(f.mannschaft) + '</div>' +
+          '</div>' +
+          '<div class="seite bf">' +
+            '<div class="quelle">Betfair</div>' +
+            '<div class="zahl">' + txt(f.bf_seite) + ' ' + Number(f.bf_quote).toFixed(2) + '</div>' +
+            '<div class="leise">' + txt(f.bf_name) + '</div>' +
+          '</div>' +
+        '</div>' +
+        '<div class="unter">Kehrwertsumme ' + Number(f.inv).toFixed(4) +
+          ' &middot; bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' / ' + Number(f.einsatz_2).toFixed(2) +
+          ' &rarr; Auszahlung ' + Number(f.auszahlung).toFixed(2) + '</div>' +
+        aktionen(f) +
+      '</div>';
+  }
+
+  function kacheln(s) {
+    var scannerLaeuft = s.lauf_alter_s !== null && s.lauf_alter_s < welt.KONFIG.laufMaxAlterS;
+    var bridgeLaeuft = s.bf_alter_s !== null && s.bf_alter_s < welt.KONFIG.bridgeMaxAlterS;
     return [
-      { name: 'Chancen jetzt', wert: anzahlChancen, farbe: anzahlChancen > 0 ? 'var(--gruen)' : 'var(--text-leise)' },
-      { name: 'Paare gerechnet', wert: s.gerechnet },
-      { name: 'Polymarket handelbar', wert: s.pm_handelbar, farbe: 'var(--violett)' },
-      { name: 'Betfair Match Odds', wert: s.bf_match_odds, farbe: 'var(--blau)' },
-      { name: 'Bridge-Daten alt', wert: alterText(s.bf_alter_s),
-        farbe: (s.bf_alter_s === null || s.bf_alter_s > welt.KONFIG.bridgeMaxAlterS) ? 'var(--rot)' : 'var(--gruen)' }
+      { name: 'Chancen live', wert: s.chancen, farbe: s.chancen > 0 ? 'var(--gruen)' : 'var(--text-leise)' },
+      { name: 'Knappe Paare', wert: s.knapp },
+      { name: 'Im Verlauf', wert: s.verlauf },
+      { name: 'Scanner', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--gruen)' : 'var(--rot)' },
+      { name: 'Bridge', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
     ].map(function (k) {
       return '<div class="kachel"><div class="wert" style="color:' + (k.farbe || 'var(--text)') + '">' +
              txt(k.wert) + '</div><div class="name">' + txt(k.name) + '</div></div>';
     }).join('');
   }
 
-  function fundKarte(f) {
-    var r = f.rechnung;
-    var chance = r.istArbitrage;
-    var rendite = r.rendite.toFixed(2) + ' %';
-
-    return '' +
-      '<div class="fund' + (chance ? ' chance' : '') + '">' +
-        '<div class="titel">' + txt(f.titel) + '</div>' +
-        '<div class="unter">' +
-          '<span class="chip">' + txt(f.tag) + '</span> ' +
-          '<span class="chip">endet in ' + txt(zeit(f.ende)) + '</span> ' +
-          '<span class="chip' + (f.score >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + f.score.toFixed(2) + '</span> ' +
-          '<span class="chip ' + (chance ? 'gut' : '') + '">Rendite ' + rendite + '</span>' +
-        '</div>' +
-        '<div class="seiten">' +
-          '<div class="seite pm">' +
-            '<div class="quelle">Polymarket</div>' +
-            '<div class="zahl">' + f.pmSeite + ' ' + f.pmPreis.toFixed(3) + '</div>' +
-            '<div class="leise">' + txt(f.mannschaft) + ' &middot; Effektivquote ' + r.qe1.toFixed(3) + '</div>' +
-          '</div>' +
-          '<div class="seite bf">' +
-            '<div class="quelle">Betfair</div>' +
-            '<div class="zahl">' + f.bfSeite + ' ' + Number(f.bfQuote).toFixed(2) + '</div>' +
-            '<div class="leise">' + txt(f.bfName) + ' &middot; Volumen ' + txt(f.bfVolumen) +
-              ' &middot; Effektivquote ' + r.qe2.toFixed(3) + '</div>' +
-          '</div>' +
-        '</div>' +
-        '<div class="unter">Summe der Kehrwerte ' + r.inv.toFixed(4) +
-          ' &middot; bei 100 Einsatz: ' + r.s1.toFixed(2) + ' / ' + r.s2.toFixed(2) +
-          ' &rarr; Auszahlung ' + r.auszahlung.toFixed(2) + '</div>' +
-        '<div class="aktionen">' +
-          '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.pmLink) + '">Polymarket öffnen</a>' +
-          '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bfLink) + '">Betfair über Broker öffnen</a>' +
-        '</div>' +
-      '</div>';
-  }
-
-  function alterText(s) {
-    if (s === null || s === undefined) return 'unbekannt';
-    if (s < 120) return s + ' s';
-    if (s < 7200) return Math.round(s / 60) + ' min';
-    return (s / 3600).toFixed(1) + ' h';
-  }
-
-  function zeichne(ergebnis) {
+  function zeichne(e) {
     var K = welt.KONFIG;
-    var s = ergebnis.statistik;
+    var s = e.statistik;
 
-    /* Veraltete Bridge-Daten sind keine Kurse mehr. Lieber ehrlich sagen,
-     * dass nichts Verlaessliches da ist, als eine Chance vorspielen. */
-    var veraltet = s.bf_alter_s === null || s.bf_alter_s > K.bridgeMaxAlterS;
+    setzeWennAnders(document.getElementById('kacheln'), kacheln(s));
 
-    /* Rauschen ist kein Fund: eine Chance braucht die Mindestrendite.
-     * Auf veralteten Daten gibt es gar keine Chance, nur alte Zahlen. */
-    var chancen = ergebnis.funde.filter(function (f) {
-      return f.rechnung.istArbitrage && f.rechnung.rendite >= K.mindestRendite;
-    });
-
-    setzeWennAnders(document.getElementById('kacheln'), kacheln(s, veraltet ? 0 : chancen.length));
-    var knapp = ergebnis.funde.filter(function (f) {
-      return !(f.rechnung.istArbitrage && f.rechnung.rendite >= K.mindestRendite);
-    }).slice(0, 25);
-
-    var html = '';
-
-    if (veraltet) {
-      html += '<div class="warnung"><b>Betfair-Daten sind ' + alterText(s.bf_alter_s) + ' alt.</b> ' +
+    var warn = '';
+    if (s.lauf_alter_s === null) {
+      warn += '<div class="warnung"><b>Der Scanner hat noch nie gelaufen.</b> ' +
+              'Er sollte jede Minute von selbst starten.</div>';
+    } else if (s.lauf_alter_s > K.laufMaxAlterS) {
+      warn += '<div class="warnung"><b>Der Scanner läuft seit ' + dauer(s.lauf_alter_s) + ' nicht mehr.</b> ' +
+              'Erwartet wird jede Minute ein Durchlauf.</div>';
+    }
+    if (s.lauf_fehler) {
+      warn += '<div class="warnung"><b>Letzter Lauf mit Fehler:</b> ' + txt(s.lauf_fehler) + '</div>';
+    }
+    if (s.bf_alter_s === null || s.bf_alter_s > K.bridgeMaxAlterS) {
+      warn += '<div class="warnung"><b>Betfair-Daten sind ' + dauer(s.bf_alter_s) + ' alt.</b> ' +
               'Die Bridge auf dem Heim-PC lädt normalerweise im Minutentakt hoch. ' +
-              'Solange das so ist, sind die Quoten unten Geschichte, keine Kurse. ' +
-              'Läuft die Bridge noch?</div>';
+              'Solange das so ist, sind die Quoten unten Geschichte, keine Kurse.</div>';
     }
+    setzeWennAnders(document.getElementById('warnungen'), warn);
 
-    if (!ergebnis.funde.length) {
-      html += '<div class="warnung">Keine zugeordneten Paare. Entweder liegen gerade keine ' +
-              'gemeinsamen Partien an, oder die Bridge hat nichts Passendes hochgeladen.</div>';
+    var live = '';
+    if (e.chancen.length) {
+      live += '<h2>Chancen (' + e.chancen.length + ')</h2>' +
+              e.chancen.map(function (f) { return karte(f, false); }).join('');
+    } else {
+      live += '<h2>Chancen (0)</h2><div class="warnung">Gerade keine Chance über ' +
+              K.mindestRendite.toFixed(2) + ' %. Das ist der Normalfall: zwei Börsen mit vielen ' +
+              'Teilnehmern liegen selten weit auseinander.</div>';
     }
-    if (chancen.length && !veraltet) {
-      html += '<h2>Echte Chancen (' + chancen.length + ')</h2>' + chancen.map(fundKarte).join('');
-    } else if (chancen.length && veraltet) {
-      html += '<h2>Chancen auf veralteten Daten (' + chancen.length + ') — nicht handeln</h2>' +
-              chancen.map(fundKarte).join('');
-    } else if (ergebnis.funde.length) {
-      html += '<div class="warnung">Gerade keine Chance über ' + K.mindestRendite.toFixed(2) + ' %. ' +
-              'Das ist der Normalfall: zwei Börsen mit vielen Teilnehmern liegen selten weit auseinander.</div>';
+    if (e.knapp.length) {
+      live += '<h2>Knappste Paare (' + e.knapp.length + ')</h2>' +
+              e.knapp.slice(0, 40).map(function (f) { return karte(f, false); }).join('');
     }
-    if (knapp.length) {
-      html += '<h2>Die knappsten Paare (' + knapp.length + ' von ' +
-              (ergebnis.funde.length - chancen.length) + ')</h2>' + knapp.map(fundKarte).join('');
-    }
+    setzeWennAnders(document.getElementById('live'), live);
 
-    setzeWennAnders(document.getElementById('liste'), html);
+    var verlauf = '<h2>Verlauf (' + e.verlauf.length + ')</h2>';
+    if (!e.verlauf.length) {
+      verlauf += '<p class="leise">Noch nichts beendet. Was hier verschwindet, landet hier.</p>';
+    } else {
+      verlauf += e.verlauf.map(function (f) { return karte(f, true); }).join('');
+    }
+    setzeWennAnders(document.getElementById('verlauf'), verlauf);
   }
 
   function stand(text, art) {
     var el = document.getElementById('stand');
     if (!el) return;
-    el.className = 'chip' + (art ? ' ' + art : '');
-    el.textContent = text;
+    var neu = 'chip' + (art ? ' ' + art : '');
+    if (el.className !== neu) el.className = neu;
+    if (el.textContent !== text) el.textContent = text;
   }
 
-  welt.Anzeige = { zeichne: zeichne, stand: stand, zeit: zeit, setzeWennAnders: setzeWennAnders };
+  welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, setzeWennAnders: setzeWennAnders };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
