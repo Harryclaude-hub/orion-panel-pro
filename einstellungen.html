@@ -28,17 +28,68 @@
   </header>
 
   <div class="warnung">
-    <b>Diese Angaben bleiben in diesem Browser.</b>
-    Sie werden nicht in die Datenbank geschrieben und nicht hochgeladen.
-    Die Seite baut daraus die Datei <code>bridge-config.json</code>, die neben
-    der Bridge auf deinem PC liegt. Das ist Absicht: ein Betfair-Passwort in
-    einer Datenbank ist ein Zugang zu einem Geldkonto, der dort nichts zu
-    suchen hat.
+    <b>Hier stehen ZWEI verschiedene Wege zu Betfair. Du brauchst nur einen.</b><br>
+    <b>Weg B</b> ist der, den du willst: alles auf dem Server, nichts auf deinem PC.
+    Dann bleibt der Kasten „Weg A" unten leer und du rührst ihn nicht an.<br>
+    Für <b>Polymarket und Kalshi</b> musst du auf dieser Seite gar nichts tun.
+    Die laufen ohne Konto und ohne Zugangsdaten.
+  </div>
+
+  <h2 style="margin-top:26px">Weg B — alles auf dem Server <span class="chip gut">empfohlen</span></h2>
+
+  <div class="fund chance">
+    <div class="titel">Schritt 1 · Zertifikat erzeugen</div>
+    <div class="unter">Kein Terminal, keine Eingabe. Ein Klick.</div>
+    <p class="leise">
+      Betfair lässt Maschinen nur mit einem Zertifikat an die Kurse. Der Knopf
+      erzeugt das Paar <b>auf dem Server</b>. Der private Schlüssel bleibt dort und
+      ist über diese Website nicht lesbar. Herunter kommt nur der öffentliche Teil.
+    </p>
+    <div class="aktionen">
+      <button id="zertErzeugen">Zertifikat erzeugen und herunterladen</button>
+      <button id="zertStand">Ist schon eines da?</button>
+    </div>
+    <div class="leise" id="zertMeldung" style="margin-top:10px"></div>
+    <p class="leise" style="margin-top:12px">
+      Danach: betfair.com öffnen &rarr; <b>My Account &rarr; Security Settings &rarr;
+      Automated Betting Program Access</b> &rarr; die Datei <code>betfair.crt</code>
+      hochladen. Das erlaubt dem Server, in deinem Namen <b>Kurse zu lesen</b>.
+    </p>
+  </div>
+
+  <div class="fund chance">
+    <div class="titel">Schritt 2 · Drei Werte in Supabase hinterlegen</div>
+    <div class="unter">Nicht hier eintragen. Im Supabase-Dashboard.</div>
+    <p class="leise">
+      Das Zertifikat allein genügt Betfair nicht, es will auch wissen, <b>wessen</b>
+      Konto es ist. Diese drei Werte gehören dorthin, wo nur der Server sie liest —
+      nicht in diese Website und nicht in die Datenbank:
+    </p>
+    <pre style="background:var(--karte-2);border:1px solid var(--rand);border-radius:8px;padding:10px 12px;font-size:14px;overflow-x:auto">BF_USERNAME    dein Betfair-Benutzername
+BF_PASSWORT    dein Betfair-Passwort
+BF_APP_KEY     dein App Key</pre>
+    <p class="leise">
+      Wo: <b>supabase.com</b> &rarr; Projekt <b>arbitrage-radar</b> &rarr; links
+      <b>Edge Functions</b> &rarr; <b>Secrets</b> &rarr; <b>Add new secret</b>.
+      Dreimal, je ein Name und ein Wert.
+    </p>
+    <div class="aktionen">
+      <a class="knopf" target="_blank" rel="noopener"
+         href="https://supabase.com/dashboard/project/noexklrgtqveiclijdwp/settings/functions">Supabase-Secrets öffnen</a>
+    </div>
+  </div>
+
+  <h2 style="margin-top:34px">Weg A — Bridge auf dem Heim-PC <span class="chip acht">nur falls Weg B scheitert</span></h2>
+
+  <div class="warnung">
+    Diese Felder brauchst du <b>nicht</b>, wenn Weg B läuft. Sie sind für die
+    alte Lösung: eine Datei, die neben der Bridge auf deinem PC liegt.
+    Was du hier eingibst, bleibt in diesem Browser und geht nie an den Server.
   </div>
 
   <div class="fund">
-    <div class="titel">Betfair-Zugang</div>
-    <div class="unter">Alle vier Felder braucht die Bridge, um Kurse lesen zu dürfen.</div>
+    <div class="titel">Betfair-Zugang für die Bridge</div>
+    <div class="unter">Nur ausfüllen, wenn du die Bridge auf dem PC betreiben willst.</div>
 
     <label class="leise" for="bfUser">Benutzername</label>
     <input id="bfUser" type="text" autocomplete="off" placeholder="dein Betfair-Benutzername">
@@ -61,28 +112,7 @@
   </div>
 
   <div class="fund">
-    <div class="titel">Betfair ohne Heim-PC — Zertifikat erzeugen</div>
-    <div class="unter">Kein Terminal nötig. Der Server erzeugt das Paar selbst.</div>
-    <p class="leise">
-      Betfair verlangt für den Maschinenzugang ein Zertifikatspaar. Der Knopf unten
-      erzeugt beides <b>auf dem Server</b>. Der private Schlüssel bleibt dort und ist
-      über diese Website nicht lesbar. Herunter kommt nur der öffentliche Teil —
-      genau der, den du in deinem Betfair-Konto hochlädst.
-    </p>
-    <div class="aktionen">
-      <button id="zertErzeugen">Zertifikat erzeugen und herunterladen</button>
-      <button id="zertStand">Ist schon eines da?</button>
-    </div>
-    <div class="leise" id="zertMeldung" style="margin-top:10px"></div>
-    <p class="leise" style="margin-top:12px">
-      Danach: Betfair öffnen &rarr; <b>My Account &rarr; Security Settings &rarr;
-      Automated Betting Program Access</b> &rarr; die heruntergeladene Datei
-      <code>betfair.crt</code> hochladen.
-    </p>
-  </div>
-
-  <div class="fund">
-    <div class="titel">Warum die Bridge auf deinem PC läuft</div>
+    <div class="titel">Warum Betfair überhaupt so umständlich ist</div>
     <div class="unter">Gemessen am 9. August 2026, nicht angenommen.</div>
     <p class="leise">
       Betfair beantwortet Anfragen aus Rechenzentren mit 403. Geprüft wurden acht
