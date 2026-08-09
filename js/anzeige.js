@@ -177,6 +177,49 @@
     }).join('');
   }
 
+  /* Welcher Bereich gerade offen ist. Bleibt ueber das Auffrischen hinweg
+   * stehen: bei zwei Sekunden Takt waere ein Zuruecksetzen unbenutzbar. */
+  var offenerBereich = 'chancen';
+  try {
+    var gemerkt = localStorage.getItem('orion-bereich');
+    if (gemerkt === 'chancen' || gemerkt === 'knapp' || gemerkt === 'verlauf') offenerBereich = gemerkt;
+  } catch (e) { /* Speicher gesperrt, dann eben der Standard */ }
+
+  function bereichZeigen(name) {
+    offenerBereich = name;
+    try { localStorage.setItem('orion-bereich', name); } catch (e) {}
+    ['chancen', 'knapp', 'verlauf'].forEach(function (b) {
+      var el = document.getElementById(b);
+      if (el) el.style.display = (b === name) ? '' : 'none';
+    });
+    var knoepfe = document.querySelectorAll('.reiter-knopf');
+    for (var i = 0; i < knoepfe.length; i++) {
+      knoepfe[i].classList.toggle('offen', knoepfe[i].getAttribute('data-bereich') === name);
+    }
+  }
+
+  function reiterZeichnen(e) {
+    var beschriftung = {
+      chancen: 'Chancen (' + e.chancen.length + ')',
+      knapp: 'Knappste Paare (' + e.knapp.length + ')',
+      verlauf: 'Verlauf (' + e.verlauf.length + ')'
+    };
+    var knoepfe = document.querySelectorAll('.reiter-knopf');
+    for (var i = 0; i < knoepfe.length; i++) {
+      var b = knoepfe[i].getAttribute('data-bereich');
+      /* Nur schreiben, wenn sich der Text wirklich geaendert hat: der Knopf
+       * kann gerade unter der Maus liegen (Fehlerklasse 6). */
+      if (knoepfe[i].textContent !== beschriftung[b]) knoepfe[i].textContent = beschriftung[b];
+    }
+    bereichZeigen(offenerBereich);
+  }
+
+  document.addEventListener('click', function (ev) {
+    var k = ev.target && ev.target.closest ? ev.target.closest('.reiter-knopf') : null;
+    if (!k) return;
+    bereichZeigen(k.getAttribute('data-bereich'));
+  });
+
   function zeichne(e) {
     var K = welt.KONFIG;
     var s = e.statistik;
@@ -206,28 +249,44 @@
     }
     setzeWennAnders(document.getElementById('warnungen'), warn);
 
-    var live = '';
+    /* Drei getrennte Bereiche statt einer langen Rolle. Der Verlauf stand
+     * vorher unter 187 knappen Paaren und war damit unauffindbar. */
+    var chancenHtml = '';
     if (e.chancen.length) {
-      live += '<h2>Chancen (' + e.chancen.length + ')</h2>' +
-              e.chancen.map(function (f) { return karte(f, false); }).join('');
+      chancenHtml = e.chancen.map(function (f) { return karte(f, false); }).join('');
     } else {
-      live += '<h2>Chancen (0)</h2><div class="warnung">Gerade keine Chance über ' +
-              K.mindestRendite.toFixed(2) + ' %. Das ist der Normalfall: zwei Börsen mit vielen ' +
-              'Teilnehmern liegen selten weit auseinander.</div>';
+      chancenHtml = '<div class="warnung">Gerade keine Chance über ' +
+        K.mindestRendite.toFixed(2) + ' %. Das ist der Normalfall: zwei Börsen mit vielen ' +
+        'Teilnehmern liegen selten weit auseinander. Unter <b>Knappste Paare</b> siehst du, ' +
+        'wie nah es dran ist.</div>';
     }
-    if (e.knapp.length) {
-      live += '<h2>Knappste Paare (' + e.knapp.length + ')</h2>' +
-              e.knapp.slice(0, 40).map(function (f) { return karte(f, false); }).join('');
-    }
-    setzeWennAnders(document.getElementById('live'), live);
+    setzeWennAnders(document.getElementById('chancen'), chancenHtml);
 
-    var verlauf = '<h2>Verlauf (' + e.verlauf.length + ')</h2>';
-    if (!e.verlauf.length) {
-      verlauf += '<p class="leise">Noch nichts beendet. Was hier verschwindet, landet hier.</p>';
+    var knappHtml = '';
+    if (e.knapp.length) {
+      knappHtml = '<p class="leise">Richtig zugeordnet und nachgerechnet, aber unter ' +
+        K.mindestRendite.toFixed(2) + ' % Rendite. Die Kehrwertsumme sagt alles: ' +
+        '<b>unter 1</b> heißt Gewinn unabhängig vom Ausgang, <b>über 1</b> heißt Verlust. ' +
+        'Gezeigt werden die ' + Math.min(40, e.knapp.length) + ' besten von ' + e.knapp.length + '.</p>' +
+        e.knapp.slice(0, 40).map(function (f) { return karte(f, false); }).join('');
     } else {
-      verlauf += e.verlauf.map(function (f) { return karte(f, true); }).join('');
+      knappHtml = '<p class="leise">Keine Paare. Entweder liegen gerade keine gemeinsamen ' +
+        'Partien an, oder eine Quelle ist stehengeblieben.</p>';
     }
-    setzeWennAnders(document.getElementById('verlauf'), verlauf);
+    setzeWennAnders(document.getElementById('knapp'), knappHtml);
+
+    var verlaufHtml = '<p class="leise">Was einmal galt und nicht mehr gilt. Ein Fund landet hier, ' +
+      'wenn er nicht mehr gefunden wird, wenn seine Partie vorbei ist, oder wenn er ' +
+      'eine Stunde lang nicht mehr bestätigt wurde. Mit Grund, erster Sichtung und ' +
+      'der besten je gesehenen Rendite.</p>';
+    if (!e.verlauf.length) {
+      verlaufHtml += '<p class="leise">Noch nichts beendet.</p>';
+    } else {
+      verlaufHtml += e.verlauf.map(function (f) { return karte(f, true); }).join('');
+    }
+    setzeWennAnders(document.getElementById('verlauf'), verlaufHtml);
+
+    reiterZeichnen(e);
   }
 
   function stand(text, art) {

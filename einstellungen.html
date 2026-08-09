@@ -61,6 +61,27 @@
   </div>
 
   <div class="fund">
+    <div class="titel">Betfair ohne Heim-PC — Zertifikat erzeugen</div>
+    <div class="unter">Kein Terminal nötig. Der Server erzeugt das Paar selbst.</div>
+    <p class="leise">
+      Betfair verlangt für den Maschinenzugang ein Zertifikatspaar. Der Knopf unten
+      erzeugt beides <b>auf dem Server</b>. Der private Schlüssel bleibt dort und ist
+      über diese Website nicht lesbar. Herunter kommt nur der öffentliche Teil —
+      genau der, den du in deinem Betfair-Konto hochlädst.
+    </p>
+    <div class="aktionen">
+      <button id="zertErzeugen">Zertifikat erzeugen und herunterladen</button>
+      <button id="zertStand">Ist schon eines da?</button>
+    </div>
+    <div class="leise" id="zertMeldung" style="margin-top:10px"></div>
+    <p class="leise" style="margin-top:12px">
+      Danach: Betfair öffnen &rarr; <b>My Account &rarr; Security Settings &rarr;
+      Automated Betting Program Access</b> &rarr; die heruntergeladene Datei
+      <code>betfair.crt</code> hochladen.
+    </p>
+  </div>
+
+  <div class="fund">
     <div class="titel">Warum die Bridge auf deinem PC läuft</div>
     <div class="unter">Gemessen am 9. August 2026, nicht angenommen.</div>
     <p class="leise">

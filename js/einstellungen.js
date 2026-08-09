@@ -100,12 +100,56 @@
     sagen('Aus diesem Browser gelöscht.', 'gut');
   }
 
+  /* ---------- Zertifikat, ohne Terminal ---------- */
+
+  function zertMeldung(text, art) {
+    var r = el('zertMeldung');
+    if (!r) return;
+    r.textContent = text;
+    r.style.color = art === 'gut' ? 'var(--gruen)' : (art === 'rot' ? 'var(--rot)' : 'var(--text-leise)');
+  }
+
+  function zertErzeugen() {
+    zertMeldung('Der Server erzeugt das Paar, das dauert einen Moment ...');
+    fetch(welt.KONFIG.supabase + '/functions/v1/orion-zertifikat', { method: 'POST' })
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok || !d.zertifikat) throw new Error(d.fehler || 'keine Antwort');
+        var blob = new Blob([d.zertifikat], { type: 'application/x-pem-file' });
+        var url = URL.createObjectURL(blob);
+        var a = document.createElement('a');
+        a.href = url; a.download = 'betfair.crt';
+        document.body.appendChild(a); a.click(); document.body.removeChild(a);
+        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+        zertMeldung('Fertig in ' + d.dauer_ms + ' ms. betfair.crt ist heruntergeladen. ' +
+                    'Der private Schlüssel bleibt auf dem Server.', 'gut');
+      })
+      .catch(function (e) { zertMeldung('Ging nicht: ' + e.message, 'rot'); });
+  }
+
+  function zertStand() {
+    zertMeldung('sehe nach ...');
+    fetch(welt.KONFIG.supabase + '/functions/v1/orion-zertifikat?stand=1')
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        if (!d.ok) throw new Error(d.fehler || 'keine Antwort');
+        zertMeldung(d.vorhanden
+          ? 'Ein Zertifikat liegt bereits auf dem Server, erzeugt am ' +
+            new Date(d.erstellt_am).toLocaleString('de-AT') +
+            '. Ein neues zu erzeugen ersetzt das alte — dann muss auch bei Betfair neu hochgeladen werden.'
+          : 'Noch keines vorhanden.', d.vorhanden ? 'gut' : null);
+      })
+      .catch(function (e) { zertMeldung('Ging nicht: ' + e.message, 'rot'); });
+  }
+
   function start() {
     var hatte = fuellen();
     sagen(hatte ? 'Gespeicherte Angaben geladen.' : 'Noch nichts gespeichert.');
     el('speichern').addEventListener('click', speichern);
     el('herunterladen').addEventListener('click', herunterladen);
     el('loeschen').addEventListener('click', loeschen);
+    if (el('zertErzeugen')) el('zertErzeugen').addEventListener('click', zertErzeugen);
+    if (el('zertStand')) el('zertStand').addEventListener('click', zertStand);
   }
 
   document.addEventListener('DOMContentLoaded', function () {

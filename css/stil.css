@@ -170,3 +170,22 @@ h2 {
 
 .chip.ka { color: var(--tuerkis); border-color: #35544F; }
 .chip.bf { color: var(--blau);    border-color: #3C4C5C; }
+
+/* ---------- Reiter ---------- */
+
+.reiter {
+  display: flex; gap: 8px; flex-wrap: wrap; margin: 18px 0 14px;
+  padding: 6px; background: var(--karte); border: 1px solid var(--rand);
+  border-radius: var(--rund);
+}
+.reiter-knopf {
+  flex: 1 1 auto; min-height: 44px; padding: 0 16px;
+  background: transparent; color: var(--text-leise);
+  border: 1px solid transparent; border-radius: var(--rund-chip);
+  font-size: 15px; cursor: pointer; white-space: nowrap;
+}
+.reiter-knopf:hover { background: var(--karte-2); color: var(--text); }
+.reiter-knopf.offen {
+  background: var(--karte-2); color: var(--text);
+  border-color: var(--rand); font-weight: 600;
+}
