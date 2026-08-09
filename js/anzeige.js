@@ -97,6 +97,29 @@
       '</div>';
   }
 
+  /* Was die Nachkontrolle zu diesem Fund sagt. Drei Zustaende, nicht zwei:
+   * geprueft und gut, geprueft und schlecht, ODER nicht pruefbar. Das dritte
+   * wegzulassen waere eine Luege — orbitexch und kalshi weisen Aufrufe aus
+   * Rechenzentren ab (403 und 429), das sagt nichts ueber den Link. */
+  function marke(zustand, jaText, neinText, offenText) {
+    if (zustand === true)  return '<span class="chip gut">' + jaText + '</span> ';
+    if (zustand === false) return '<span class="chip rot">' + neinText + '</span> ';
+    return '<span class="chip">' + offenText + '</span> ';
+  }
+
+  function pruefzeile(f) {
+    if (!f.geprueft_am) {
+      return '<div class="unter"><span class="chip acht">noch nicht nachgeprueft</span></div>';
+    }
+    return '<div class="unter">' +
+      marke(f.rechnung_ok, 'Rechnung nachgeprueft', 'Rechnung beanstandet', 'Rechnung offen') +
+      marke(f.pm_link_ok, 'Polymarket-Link lebt', 'Polymarket-Link tot', 'Polymarket-Link nicht pruefbar') +
+      marke(f.gegen_link_ok, 'Gegenlink lebt', 'Gegenlink tot', 'Gegenlink nicht pruefbar') +
+      '<span class="chip">geprueft vor ' + seit(f.geprueft_am) + '</span>' +
+      (f.rechnung_ok === false && f.rechnung_grund ? ' <span class="chip rot">' + txt(f.rechnung_grund) + '</span>' : '') +
+      '</div>';
+  }
+
   function karte(f, imVerlauf) {
     var chance = f.rendite >= welt.KONFIG.mindestRendite;
     return '' +
@@ -126,6 +149,7 @@
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
           '</div>' +
         '</div>' +
+        pruefzeile(f) +
         analyse(f, imVerlauf) +
         '<div class="unter">Kehrwertsumme ' + Number(f.inv).toFixed(4) +
           ' &middot; Aufteilung ' + Number(f.einsatz_1).toFixed(2) + ' / ' + Number(f.einsatz_2).toFixed(2) +
