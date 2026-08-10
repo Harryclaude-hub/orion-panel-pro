@@ -369,3 +369,114 @@ h2 {
 .gegenprobe.absage { border-color: #5A4634; background: #322C24; }
 .gegenprobe.absage .gp-wer { color: var(--text); }
 .gegenprobe.absage a { color: var(--gold); }
+
+/* ==========================================================================
+   ANBIETERFARBEN UND DER PULS
+   Hinzugefuegt 10.8.2026 spaet abends.
+
+   Jedes Buch bekommt seine eigene Farbe, damit man ohne Lesen erkennt, wer
+   hinter einer Zeile steckt. Betfairs Gelb auf Schwarz und Polymarkets Blau
+   sind deren bekannte Markenfarben; Kalshi und Smarkets sind nach ihrem
+   Auftritt GEWAEHLT, nicht aus einem Styleguide abgelesen. Wichtig war vor
+   allem, dass die vier auch fuer Farbenblinde unterscheidbar bleiben -
+   deshalb liegen sie weit auseinander in Ton UND Helligkeit.
+   ========================================================================== */
+:root {
+  --pm: #2d6cf6;   /* Polymarket - Blau */
+  --ka: #00c48c;   /* Kalshi     - Gruen */
+  --sm: #7b5cff;   /* Smarkets   - Violett */
+  --bf: #ffb80c;   /* Betfair    - Gelb */
+  --sx: #ff5c8a;   /* SX Bet     - Pink, vorgemerkt */
+
+  /* Guete einer Zeile. Nicht dekorativ: gruen heisst handelbar, gelb heisst
+     rechnerisch da aber zu duenn, grau heisst Menge unbekannt. */
+  --gut:  #00c48c;
+  --acht: #ffb80c;
+  --tot:  #6b7280;
+}
+
+.chip.pm, .seite.pm { border-color: var(--pm); }
+.chip.ka, .seite.ka { border-color: var(--ka); }
+.chip.sm, .seite.sm { border-color: var(--sm); }
+.chip.bf, .seite.bf { border-color: var(--bf); }
+.chip.pm { background: color-mix(in srgb, var(--pm) 18%, transparent); }
+.chip.ka { background: color-mix(in srgb, var(--ka) 18%, transparent); }
+.chip.sm { background: color-mix(in srgb, var(--sm) 18%, transparent); }
+.chip.bf { background: color-mix(in srgb, var(--bf) 18%, transparent); }
+.seite.pm { box-shadow: inset 3px 0 0 var(--pm); }
+.seite.ka { box-shadow: inset 3px 0 0 var(--ka); }
+.seite.sm { box-shadow: inset 3px 0 0 var(--sm); }
+.seite.bf { box-shadow: inset 3px 0 0 var(--bf); }
+
+/* ---------- Der Puls ---------- */
+.puls {
+  display: flex; align-items: center; gap: 26px;
+  margin: 18px 0 22px; padding: 20px 24px;
+  border: 1px solid rgba(255,255,255,.10); border-radius: 18px;
+  background:
+    radial-gradient(120% 160% at 0% 0%, rgba(45,108,246,.14), transparent 60%),
+    radial-gradient(120% 160% at 100% 100%, rgba(123,92,255,.14), transparent 60%),
+    rgba(255,255,255,.02);
+  overflow: hidden; position: relative;
+}
+.p-ring { position: relative; width: 132px; height: 132px; flex: 0 0 132px; }
+.p-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
+.p-bahn  { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 6; }
+.p-bogen { fill: none; stroke: url(#p-lauf); stroke-width: 6; stroke-linecap: round;
+           stroke-dasharray: 90 240; opacity: .95; }
+.p-bogen2{ fill: none; stroke: rgba(255,255,255,.16); stroke-width: 2; stroke-linecap: round;
+           stroke-dasharray: 30 220; }
+
+/* Der Ring dreht sich NUR, wenn der Scanner frisch gelaufen ist. */
+.puls.p-an  .p-bogen  { animation: p-dreh 2.4s linear infinite; }
+.puls.p-an  .p-bogen2 { animation: p-dreh 3.6s linear infinite reverse; }
+.puls.p-tot .p-bogen  { stroke: #ef4444; opacity: .5; }
+.puls.p-tot .p-bogen2 { stroke: rgba(239,68,68,.35); }
+@keyframes p-dreh { to { transform: rotate(360deg); } }
+.p-bogen, .p-bogen2 { transform-origin: 60px 60px; }
+
+.p-mitte { position: absolute; inset: 0; display: flex; flex-direction: column;
+           align-items: center; justify-content: center; pointer-events: none; }
+.p-zahl { font-size: 30px; font-weight: 700; letter-spacing: -.5px; line-height: 1; }
+.p-wort { font-size: 11px; opacity: .55; margin-top: 3px; }
+
+/* Ein Schlag, wenn ein NEUER Lauf angekommen ist. */
+.p-welle { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.p-welle.p-schlag { animation: p-schlag 1s ease-out 1; }
+@keyframes p-schlag {
+  0%   { box-shadow: 0 0 0 0 rgba(0,196,140,.45); }
+  100% { box-shadow: 0 0 0 28px rgba(0,196,140,0); }
+}
+
+.p-seite { flex: 1; min-width: 0; }
+.p-kopf { display: flex; align-items: center; gap: 9px; font-size: 15px; margin-bottom: 10px; }
+.p-led { width: 10px; height: 10px; border-radius: 50%; background: var(--tot); flex: 0 0 10px; }
+.p-led.p-gruen { background: var(--gut); box-shadow: 0 0 12px var(--gut); animation: p-blink 1.6s ease-in-out infinite; }
+.p-led.p-rot   { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+.p-led.p-grau  { background: var(--tot); }
+@keyframes p-blink { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
+
+.p-punkte { display: flex; gap: 10px; margin-bottom: 9px; }
+.p-punkt { width: 13px; height: 13px; border-radius: 50%; opacity: .22;
+           transition: opacity .3s, box-shadow .3s; }
+.p-punkt.pm { background: var(--pm); }
+.p-punkt.ka { background: var(--ka); }
+.p-punkt.sm { background: var(--sm); }
+.p-punkt.bf { background: var(--bf); }
+.p-punkt.p-frisch { opacity: 1; }
+.puls.p-an .p-punkt.p-frisch { animation: p-atmen 2.2s ease-in-out infinite; }
+.p-punkt.p-alt { opacity: .45; }
+/* Abgeschaltet heisst KEINE Aktualitaet - der Punkt bleibt stumm und blass. */
+.p-punkt.p-aus { opacity: .12; filter: grayscale(1); animation: none !important; }
+@keyframes p-atmen { 0%,100% { transform: scale(1); } 50% { transform: scale(1.28); } }
+
+.p-fuss { font-size: 12px; opacity: .6; }
+
+/* Wer Bewegung abgestellt hat, bekommt keine. Der Zustand bleibt lesbar,
+   er wird nur nicht animiert. */
+@media (prefers-reduced-motion: reduce) {
+  .p-bogen, .p-bogen2, .p-led, .p-punkt, .p-welle { animation: none !important; }
+}
+@media (max-width: 640px) {
+  .puls { flex-direction: column; align-items: flex-start; gap: 16px; }
+}

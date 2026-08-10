@@ -13,7 +13,7 @@
   <div class="kasten">
     <h2>Orion Panel Pro</h2>
     <input id="sperrwort" type="password" placeholder="Wort" autocomplete="off">
-    <button id="entsperren">ÃƒÆ’Ã¢â‚¬â€œffnen</button>
+    <button id="entsperren">Öffnen</button>
     <div class="fehler" id="sperrfehler"></div>
   </div>
 </div>
@@ -27,13 +27,18 @@
     <button id="neuladen">Jetzt ablesen</button>
     <button id="filter-knopf" class="knopf">Filter</button>
     <a class="knopf" href="logik.html">Wie gesucht wird</a>
-    <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â je Buch verschieden">Regelwerk</a>
+    <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall — je Buch verschieden">Regelwerk</a>
     <a class="knopf" href="einstellungen.html">Einstellungen</a>
   </header>
 
   <!-- Das Filterfeld blendet NUR aus, es sucht nichts ab. Unter jedem
        Reiter steht deshalb, wie viele Funde gerade versteckt sind. -->
   <aside id="filter-panel" aria-label="Filter"></aside>
+
+  <!-- Der Puls: läuft nur, wenn der Scanner WIRKLICH läuft. Steht er,
+       hält der Ring an und wird rot. Eine Animation, die immer läuft,
+       wäre Zierrat — und schlimmer: sie würde einen Ausfall verstecken. -->
+  <section id="orion-puls" class="puls"></section>
 
   <div id="tafel"></div>
   <div class="zeile-oben" id="kacheln"></div>
@@ -50,18 +55,18 @@
   <div id="verlauf"></div>
 
   <p class="leise" style="margin-top:28px">
-    Gesucht wird auf dem Server: <code>orion-lauf</code> lÃƒÆ’Ã‚Â¤uft jede Minute ÃƒÆ’Ã‚Â¼ber
+    Gesucht wird auf dem Server: <code>orion-lauf</code> läuft jede Minute über
     <code>pg_cron</code> und legt jeden Fund in <code>orion_funde</code> ab, auch wenn
     kein Browser offen ist. Diese Seite liest nur ab, alle zwei Sekunden.
     Was nicht mehr gilt, wandert in den Verlauf statt zu verschwinden.
-    Gesucht wird zwischen <b>drei BÃƒÆ’Ã‚Â¶rsen</b> ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â Polymarket, Kalshi und Smarkets.
-    Alle drei sind ohne Konto, ohne SchlÃƒÆ’Ã‚Â¼ssel und ohne eingeschalteten PC
+    Gesucht wird zwischen <b>drei Börsen</b> — Polymarket, Kalshi und Smarkets.
+    Alle drei sind ohne Konto, ohne Schlüssel und ohne eingeschalteten PC
     direkt aus Supabase erreichbar. Eine Arbitrage besteht immer aus
-    <b>genau zwei</b> BÃƒÆ’Ã‚Â¼chern; gibt es zur selben Frage mehrere brauchbare
+    <b>genau zwei</b> Büchern; gibt es zur selben Frage mehrere brauchbare
     Paare, wird daraus je eine eigene Karte.
     <b>Betfair ist seit dem 10.08.2026 abgeschaltet</b>: es antwortet aus
-    Rechenzentren mit 403, und der einzig offene Weg ÃƒÆ’Ã‚Â¼ber den Kursstrom
-    liefert Preise ohne Mannschaftsnamen ÃƒÂ¢Ã¢â€šÂ¬Ã¢â‚¬Â damit ist keine Zuordnung mÃƒÆ’Ã‚Â¶glich.
+    Rechenzentren mit 403, und der einzig offene Weg über den Kursstrom
+    liefert Preise ohne Mannschaftsnamen — damit ist keine Zuordnung möglich.
     Smarkets-Kommission ist mit 2 % angesetzt, dem dokumentierten
     Standardtarif; gemessen ist der Satz nicht.
   </p>
@@ -73,6 +78,7 @@
 <script src="js/zuordnung.js?v=8"></script>
 <script src="js/daten.js?v=8"></script>
 <script src="js/filter.js?v=8"></script>
+<script src="js/puls.js?v=8"></script>
 <script src="js/anzeige.js?v=8"></script>
 <script src="js/sperre.js?v=8"></script>
 <script src="js/app.js?v=8"></script>
