@@ -212,6 +212,19 @@
      * die Halbzeit gegen das Endergebnis gestellt — Regel 1 gebrochen,
      * mit einer Rendite, die nach etwas aussieht. */
     if (/^both teams to score$/.test(norm(teil))) return 'btts';
+    /* HALBZEIT. Unterschieden wird an der FRAGE, nicht am Teilnamen — die
+     * Teilnamen sind bei Halbzeit und zweiter Halbzeit identisch:
+     *   "Charlotte FC leading at halftime?"      g="Charlotte FC"   HALBZEIT
+     *   "Charlotte FC vs. CF Pachuca: Draw at halftime?"  g="Draw"  HALBZEIT
+     *   "Charlotte FC to win the second half?"   g="Charlotte FC"   ANDERE FRAGE
+     *   "Charlotte FC vs. CF Pachuca: Second half draw?"  g="Draw"  ANDERE FRAGE
+     * Am 10.8.2026 gemessen: 243 Halbzeit- gegen 240 Zweite-Halbzeit-Maerkte.
+     * Wer nur den Teilnamen ansieht, wirft beide in einen Topf und stellt
+     * die Pause gegen die Schlussphase — Regel 1 gebrochen. */
+    if (/\bsecond half\b/.test(f)) return null;
+    if (/\bat halftime\b/.test(f)) {
+      return norm(teil) === 'draw' ? 'hz_unentschieden' : 'hz_sieger';
+    }
     return null;
   }
 
@@ -285,6 +298,7 @@
     if (!marktTyp || typeof marktTyp !== 'object') return null;
     if (marktTyp.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
     if (marktTyp.name === 'BTTS') return { art: 'btts', linie: null };
+    if (marktTyp.name === 'HALF_TIME_WINNER_3_WAY') return { art: 'halbzeit', linie: null };
     if (marktTyp.name === 'OVER_UNDER') {
       var l = parseFloat(marktTyp.param);
       if (!isFinite(l)) return null;
@@ -349,7 +363,14 @@
       var j = nachTyp('YES');
       return j ? { score: 1, laeufer: j, weg: 'struktur' } : null;
     }
-    if (art !== 'sieger') return null;
+    if (art === 'hz_unentschieden') {
+      var hd = nachTyp('DRAW');
+      return hd ? { score: 1, laeufer: hd, weg: 'struktur' } : null;
+    }
+    /* Halbzeit-Sieger ist strukturell dasselbe wie der Endergebnis-Sieger:
+     * HOME/DRAW/AWAY, gemessen an 33 Maerkten. Deshalb faellt er unten in
+     * denselben Zweig. */
+    if (art !== 'sieger' && art !== 'hz_sieger') return null;
 
     /* Weg 1: Struktur. */
     var struktur = null;

@@ -173,8 +173,13 @@ ok('Spread wird abgewiesen',
    Z.marktArt('Spread: Cincinnati Reds (-1.5)') === null);
 ok('First 5 Innings wird abgewiesen',
    Z.marktArt('Cincinnati Reds winning after 5 innings?') === null);
-ok('Halbzeitstand wird abgewiesen',
-   Z.marktArt('Motherwell FC leading at halftime?') === null);
+/* Der Halbzeitstand wurde bis zum 10.8.2026 abgewiesen, weil es keine
+ * Zuordnungsregel gab. Seit Smarkets HALF_TIME_WINNER_3_WAY liefert, gibt
+ * es eine — ohne Teilnamen bleibt es aber weiterhin unbrauchbar. */
+ok('Halbzeitstand OHNE Teilnamen ergibt keinen brauchbaren Markt',
+   Z.marktArt('Motherwell FC leading at halftime?') === 'hz_sieger');
+ok('und mit Teilnamen ist es ein Halbzeit-Sieger',
+   Z.marktArt('Motherwell FC leading at halftime?', 'Motherwell FC') === 'hz_sieger');
 ok('zweite Halbzeit wird abgewiesen',
    Z.marktArt('Falkirk FC to win the second half?') === null);
 ok('Torschuetze wird abgewiesen',
@@ -553,8 +558,7 @@ ok('BTTS_AND_OVER wird NICHT als BTTS genommen',
    Z.smMarktArt({ name: 'BTTS_AND_OVER', param: '2.5' }) === null);
 ok('WINNER_AND_BTTS wird NICHT als BTTS genommen',
    Z.smMarktArt({ name: 'WINNER_AND_BTTS' }) === null);
-ok('HALF_TIME_WINNER_3_WAY wird (noch) NICHT genommen',
-   Z.smMarktArt({ name: 'HALF_TIME_WINNER_3_WAY' }) === null);
+/* HALF_TIME_WINNER_3_WAY wird seit dem 10.8.2026 benutzt, eigener Abschnitt unten. */
 
 /* Vertragswahl: die JA-Seite ist YES, gemessene Namen aus der API. */
 var vBtts = [
@@ -658,6 +662,63 @@ var kuerzel = Z.direktPaare(
   [{ id: 'y', partie: ['flamengo', 'ec vitoria salvador'], zeit: null }], 0.5);
 ok('die Flamengo-Falle greift auch bei direkter Paarung NICHT',
    kuerzel.paare.length === 0, kuerzel.paare.length);
+
+/* ---------- Halbzeit: die Frage entscheidet, nicht der Teilname ----------
+ * Am 10.8.2026 gemessen: 243 Halbzeit- gegen 240 Zweite-Halbzeit-Maerkte,
+ * mit IDENTISCHEN Teilnamen. Wer nur den Teilnamen ansieht, stellt die
+ * Pause gegen die Schlussphase. */
+
+ok('"leading at halftime?" ist ein Halbzeit-Sieger',
+   Z.marktArt('Charlotte FC leading at halftime?', 'Charlotte FC') === 'hz_sieger',
+   String(Z.marktArt('Charlotte FC leading at halftime?', 'Charlotte FC')));
+ok('"Draw at halftime?" ist ein Halbzeit-Unentschieden',
+   Z.marktArt('Charlotte FC vs. CF Pachuca: Draw at halftime?', 'Draw') === 'hz_unentschieden');
+
+ok('"to win the second half?" wird NICHT als Halbzeit genommen',
+   Z.marktArt('Charlotte FC to win the second half?', 'Charlotte FC') === null,
+   String(Z.marktArt('Charlotte FC to win the second half?', 'Charlotte FC')));
+ok('"Second half draw?" wird NICHT als Halbzeit genommen',
+   Z.marktArt('Charlotte FC vs. CF Pachuca: Second half draw?', 'Draw') === null);
+ok('gleicher Teilname, andere Frage -> anderes Ergebnis',
+   Z.marktArt('X leading at halftime?', 'Charlotte FC') !== Z.marktArt('X to win the second half?', 'Charlotte FC'));
+
+ok('Halbzeit verdraengt das Endergebnis nicht',
+   Z.marktArt('Will Charlotte FC win on 2026 08 11', 'Charlotte FC') === 'sieger');
+ok('Halbzeit verdraengt Ueber/Unter nicht',
+   Z.marktArt('irgendwas at halftime?', 'O/U 2.5') === 'ueber_unter');
+
+/* Smarkets-Seite: strukturell dasselbe wie das Endergebnis. */
+ok('HALF_TIME_WINNER_3_WAY wird erkannt',
+   Z.smMarktArt({ name: 'HALF_TIME_WINNER_3_WAY' }).art === 'halbzeit');
+ok('HALF_TIME_WINNER_3_WAY hat keine Linie',
+   Z.smMarktArt({ name: 'HALF_TIME_WINNER_3_WAY' }).linie === null);
+
+var vHz = [
+  { n: 'Plymouth Argyle', typ: 'HOME' },
+  { n: 'Draw',            typ: 'DRAW' },
+  { n: 'Exeter',          typ: 'AWAY' }
+];
+var hzD = Z.smLaeufer('hz_unentschieden', null, null, vHz, false, 0.8);
+ok('Halbzeit-Unentschieden nimmt den DRAW-Vertrag',
+   hzD !== null && hzD.laeufer.typ === 'DRAW');
+
+var hzH = Z.smLaeufer('hz_sieger', 'Plymouth Argyle FC', ['plymouth argyle fc', 'exeter city fc'], vHz, false, 0.8);
+ok('Halbzeit-Sieger findet HOME ueber dieselbe Struktur',
+   hzH !== null && hzH.laeufer.typ === 'HOME', hzH && hzH.laeufer.n);
+/* Getauschte Partie: die Struktur zeigt auf HOME, der Name aber eindeutig
+ * auf den AWAY-Vertrag "Exeter". Das ist ein echter Widerspruch — und genau
+ * dann darf NICHT gepaart werden. Mein erster Test erwartete hier HOME und
+ * war schlicht falsch gedacht. */
+var hzA = Z.smLaeufer('hz_sieger', 'Exeter City FC', ['plymouth argyle fc', 'exeter city fc'], vHz, true, 0.8);
+ok('Widerspruch bei getauschter Halbzeit-Partie wird NICHT gepaart',
+   hzA === null, hzA && hzA.laeufer.n);
+/* Ohne Widerspruch greift die Drehung: Smarkets fuehrt Exeter als HOME. */
+var vHzGedreht = [{ n: 'Exeter', typ: 'HOME' }, { n: 'Draw', typ: 'DRAW' }, { n: 'Plymouth Argyle', typ: 'AWAY' }];
+var hzB = Z.smLaeufer('hz_sieger', 'Exeter City FC', ['plymouth argyle fc', 'exeter city fc'], vHzGedreht, true, 0.8);
+ok('bei getauschter Partie ohne Widerspruch wird gedreht',
+   hzB !== null && hzB.laeufer.typ === 'HOME', hzB && hzB.laeufer.n);
+ok('Halbzeit-Sieger zieht keinen YES-Vertrag an',
+   Z.smLaeufer('hz_sieger', 'Yes', ['a', 'b'], vBtts, false, 0.8) === null);
 
 /* ---------- Ergebnis ---------- */
 

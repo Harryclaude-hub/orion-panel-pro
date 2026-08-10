@@ -284,7 +284,7 @@ einstellungen.html    Weg B (Zertifikat + Secrets) und Weg A (Bridge)
 logik.html            erklärt die Suche, als Textdatei herunterladbar
 js/konfig.js          alle Schwellen + die Bücher an EINER Stelle
 js/rechnung.js        Quoten, Gebühren, Aufteilung   171 Prüfungen
-js/zuordnung.js       Marktpaarung                   222 Prüfungen
+js/zuordnung.js       Marktpaarung                   236 Prüfungen
 js/daten.js           liest ab, filtert, richtet Broker-Links
 js/anzeige.js         Tafel, Karten, Gegenprobe, Puffer
 js/sperre.js          Sperrbildschirm, Overlay wird ENTFERNT + Wache
@@ -353,10 +353,10 @@ Funktionen: `orion_uebersicht()`, `orion_bf_maerkte()`,
 
 ```
 node pruefung/rechnung.test.js     171 Prüfungen
-node pruefung/zuordnung.test.js    222 Prüfungen
+node pruefung/zuordnung.test.js    236 Prüfungen
 node bridge/pruefung.js            158 Prüfungen
                                    ───
-                                   551 Prüfungen
+                                   565 Prüfungen
 ```
 
 Jede Schutzregel hat einen Test, der sie **auslöst**, nicht nur einen, der
@@ -494,12 +494,25 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
    ungewichtet. Die **Rendite bleibt richtig** — sie ist ein Verhältnis —,
    aber die Mengenbegrenzung ist um den Wechselkurs daneben, rund 25 %.
    Ungemessen, unkorrigiert.
-4. **96ex und Orbit: endgültig erledigt.** Am 10.8. abends frisch gemessen:
+4. **HALBZEIT: halb fertig.** Zuordnung und Prüfstand stehen
+   (`hz_sieger`, `hz_unentschieden`, Smarkets `HALF_TIME_WINNER_3_WAY`),
+   der Sammler holt 56 Halbzeitmärkte. **`orion-lauf` nutzt sie noch
+   nicht** — dort fehlt die Kandidatenliste. Das ist der nächste Schritt.
+   Gemessen: 243 Polymarket-Halbzeitmärkte gegen 240 Zweite-Halbzeit-Märkte
+   mit IDENTISCHEN Teilnamen; unterschieden wird an der FRAGE
+   (`at halftime` gegen `second half`), nie am Teilnamen.
+5. **96ex und Orbit: endgültig erledigt.** 21 Wege gemessen. Am 10.8. abends frisch gemessen:
    96ex antwortet mit **Connection refused** — der Server lehnt die
    TCP-Verbindung ab, da läuft nichts mehr. Orbit gibt auf allen vier Wegen
    **403 von CloudFront**, inklusive Startseite. Ein Konto ändert daran
    nichts: der Block greift vor jeder Anmeldung. Nachmessen:
    `curl -s .../functions/v1/broker-machbar`
+   Am 10.8. abends zusätzlich geprüft: alle Länderdomains (au/it/ro/bg),
+   `sports.` und `ips.betfair.com`, und der öffentliche Lese-Endpunkt
+   `/www/sports/exchange/readonly/v1/bymarket`, den der Browser OHNE Konto
+   benutzt — **alle 403 oder Verbindung abgelehnt**. Orbit und 96ex sind
+   Oberflächen auf Betfairs Orderbuch, kein eigenes Buch; eine erreichbare
+   Oberfläche gibt es nicht.
 5. **BTTS ist gebaut, bringt aber nichts.** Gemessen: 42 Paare, alle mit
    Zuordnung 1,00 und richtigem Spiel — aber Renditen von **−4 % bis −8 %**.
    Die beiden Bücher bepreisen „beide treffen" weit auseinander. Die Deckung
