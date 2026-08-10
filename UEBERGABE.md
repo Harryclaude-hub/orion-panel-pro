@@ -224,6 +224,14 @@ KEIN Heim-PC mehr beteiligt. bf-bridge und bridge_odds bleiben unangetastet
 (Regel 6), werden aber nicht mehr gelesen: BETFAIR_AKTIV = false.
 ```
 
+### Genutzte Fragen
+
+`sieger` · `unentschieden` · `ueber_unter` · `btts` · `hz_sieger` ·
+`hz_unentschieden` — Stand 10.8.2026 abends. Halbzeit unterscheidet sich
+von der zweiten Halbzeit **nur an der FRAGE** (`at halftime` gegen
+`second half`), nie am Teilnamen: gemessen 243 gegen 240 Märkte mit
+identischen Teilnamen.
+
 ### Zwei Durchgänge (Umbau vom 10.8.2026, abends)
 
 1. **Anker Polymarket** — zu jedem Polymarket-Markt ein Gegenstück. Dort gibt
@@ -494,13 +502,12 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
    ungewichtet. Die **Rendite bleibt richtig** — sie ist ein Verhältnis —,
    aber die Mengenbegrenzung ist um den Wechselkurs daneben, rund 25 %.
    Ungemessen, unkorrigiert.
-4. **HALBZEIT: halb fertig.** Zuordnung und Prüfstand stehen
-   (`hz_sieger`, `hz_unentschieden`, Smarkets `HALF_TIME_WINNER_3_WAY`),
-   der Sammler holt 56 Halbzeitmärkte. **`orion-lauf` nutzt sie noch
-   nicht** — dort fehlt die Kandidatenliste. Das ist der nächste Schritt.
-   Gemessen: 243 Polymarket-Halbzeitmärkte gegen 240 Zweite-Halbzeit-Märkte
-   mit IDENTISCHEN Teilnamen; unterschieden wird an der FRAGE
-   (`at halftime` gegen `second half`), nie am Teilnamen.
+4. **Weitere Markttypen.** Genutzt sind sechs Fragen: `sieger`,
+   `unentschieden`, `ueber_unter`, `btts`, `hz_sieger`, `hz_unentschieden`.
+   Smarkets bietet **163** Markttypen an, vier haben eine geprüfte Regel.
+   Ungenutzt liegen u. a. CORRECT_SCORE, DOUBLE_CHANCE, WINNER_DNB,
+   ASIAN_HANDICAP, Ecken und Halbzeit-Über/Unter. Jeder braucht eine eigene
+   Zuordnungsregel plus Prüfstand.
 5. **96ex und Orbit: endgültig erledigt.** 21 Wege gemessen. Am 10.8. abends frisch gemessen:
    96ex antwortet mit **Connection refused** — der Server lehnt die
    TCP-Verbindung ab, da läuft nichts mehr. Orbit gibt auf allen vier Wegen
@@ -513,10 +520,12 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
    benutzt — **alle 403 oder Verbindung abgelehnt**. Orbit und 96ex sind
    Oberflächen auf Betfairs Orderbuch, kein eigenes Buch; eine erreichbare
    Oberfläche gibt es nicht.
-5. **BTTS ist gebaut, bringt aber nichts.** Gemessen: 42 Paare, alle mit
-   Zuordnung 1,00 und richtigem Spiel — aber Renditen von **−4 % bis −8 %**.
-   Die beiden Bücher bepreisen „beide treffen" weit auseinander. Die Deckung
-   kostet nichts und bleibt, eine Chance ist bisher nicht dabei.
+5. **BTTS und Halbzeit sind gebaut, bringen aber nichts.** Beide gemessen,
+   beide mit Zuordnung 1,00 und richtigem Spiel — aber:
+   BTTS 42 Paare bei **−4 % bis −8 %**, Halbzeit 86 Paare bei
+   **−3 % bis −7 %**. Bei diesen Fragen stehen die Bücher weit auseinander,
+   deshalb landet keine Zeile über der Rauschgrenze von −1 %. Die Deckung
+   kostet nichts und bleibt; eine Chance ist bisher nicht dabei.
 6. **Nicht-Sport (Politik, Krypto).** Gemessen und **bewusst nicht gebaut**:
    4.779 gegen 4.990 Märkte ergaben 13 vermeintliche Treffer, **alle falsch**
    ($64.000 gegen $64.750, teils verschiedene Tage). Titelähnlichkeit ist
