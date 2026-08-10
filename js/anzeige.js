@@ -118,6 +118,130 @@
                                   : g.toFixed(2) + ' Verlust')) + '</span>';
   }
 
+  /* ---------- Die Gegenprobe ----------
+   *
+   * Der gefaehrlichste denkbare Fehler ist nicht eine falsche Rendite, sondern
+   * zwei Wetten auf DENSELBEN Ausgang. Dann ist es keine Absicherung, sondern
+   * doppeltes Risiko — und die Rechnung sieht trotzdem gut aus.
+   *
+   * Deshalb steht auf jeder Karte im Klartext, was in welchem Fall passiert.
+   * Wenn beide Seiten im selben Fall zahlen, wird gewarnt statt gerechnet.
+   */
+  function ausgaenge(f) {
+    var name = f.mannschaft || 'diese Seite';
+    var pmJa = String(f.pm_seite || '').toUpperCase();
+    var pmZahltWenn, gegenZahltWenn;
+
+    // Polymarket: JA/UEBER zahlt beim Eintreten, NEIN/UNTER beim Ausbleiben.
+    if (pmJa === 'JA' || pmJa === 'ÜBER') pmZahltWenn = true;
+    else if (pmJa === 'NEIN' || pmJa === 'UNTER') pmZahltWenn = false;
+    else pmZahltWenn = null;
+
+    // Gegenbuch: Back und Ja zahlen beim Eintreten, Lay und Nein beim Ausbleiben.
+    var gs = String(f.bf_seite || '');
+    if (gs === 'Back' || gs === 'Ja') gegenZahltWenn = true;
+    else if (gs === 'Lay' || gs === 'Nein') gegenZahltWenn = false;
+    else gegenZahltWenn = null;
+
+    return { name: name, pm: pmZahltWenn, gegen: gegenZahltWenn,
+             gedeckt: pmZahltWenn !== null && gegenZahltWenn !== null && pmZahltWenn !== gegenZahltWenn };
+  }
+
+  function gegenprobe(f) {
+    var a = ausgaenge(f);
+    var aus = Number(f.auszahlung);
+    var e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2);
+    var gesamt = e1 + e2;
+    if (!(gesamt > 0)) return '';
+
+    if (!a.gedeckt) {
+      return '<div class="warnung"><b>Achtung: beide Seiten zeigen in dieselbe Richtung.</b> ' +
+             'Damit wäre nur ein Ausgang gedeckt und der andere gar nicht — das ist keine ' +
+             'Absicherung, sondern doppeltes Risiko. Diese Zeile nicht handeln.</div>';
+    }
+
+    var wennEin = a.pm ? 'Polymarket' : 'Gegenbuch';
+    var wennAus = a.pm ? 'Gegenbuch' : 'Polymarket';
+
+    return '<div class="gegenprobe">' +
+      '<div class="gp-zeile"><span class="gp-fall">Wenn <b>' + txt(a.name) + '</b> eintritt</span>' +
+        '<span class="gp-wer">' + wennEin + ' zahlt</span>' +
+        '<span class="gp-zahl">' + aus.toFixed(2) + '</span></div>' +
+      '<div class="gp-zeile"><span class="gp-fall">Wenn <b>' + txt(a.name) + '</b> NICHT eintritt</span>' +
+        '<span class="gp-wer">' + wennAus + ' zahlt</span>' +
+        '<span class="gp-zahl">' + aus.toFixed(2) + '</span></div>' +
+      '<div class="gp-fuss">Beide Ausgänge zahlen <b>denselben</b> Betrag — genau dafür ist die ' +
+        'Aufteilung <b>' + (100 * e1 / gesamt).toFixed(1) + ' % Polymarket / ' +
+        (100 * e2 / gesamt).toFixed(1) + ' % Gegenbuch</b> und nicht 50/50.</div>' +
+      '</div>';
+  }
+
+  /* Die Rendite in Worten. Eine Zahl mit Minus davor beantwortet die Frage
+   * nicht, die man beim Hinsehen hat: lohnt sich das oder nicht. */
+  function renditeText(f) {
+    var r = Number(f.rendite);
+    var inv = Number(f.inv);
+    var schwelle = welt.KONFIG.mindestRendite;
+    var pmG = (Number(f.pm_gebuehr) * 100).toFixed(1);
+    var ggG = (Number(f.bf_gebuehr) * 100).toFixed(1);
+
+    if (r >= schwelle) {
+      return '<div class="urteil gut"><b>Lohnt sich: +' + r.toFixed(2) + ' %.</b> ' +
+        'Beide Seiten zusammen kosten ' + (inv * 100).toFixed(2) + ' % dessen, was sie zurückzahlen. ' +
+        'Der Rest ist Gewinn, egal wie es ausgeht.</div>';
+    }
+    if (r >= 0) {
+      return '<div class="urteil"><b>Zu knapp: +' + r.toFixed(2) + ' %.</b> ' +
+        'Rechnerisch über null, aber unter ' + schwelle.toFixed(2) + ' %. ' +
+        'Bis beide Seiten gesetzt sind, ist so ein Vorsprung meist weg.</div>';
+    }
+    /* Wie viel davon sind die Gebuehren? Ausgerechnet, nicht behauptet.
+     * Dieselben Formeln ohne Gebuehrensatz, dann vergleichen. */
+    var ohne = renditeOhneGebuehren(f);
+    var schuld;
+    if (ohne === null) schuld = null;
+    else if (ohne > 0.005) {
+      schuld = 'Ohne Gebühren wären es +' + ohne.toFixed(2) + ' % — die Gebühren allein ' +
+               'machen aus einem Gewinn einen Verlust.';
+    } else if (ohne > -0.005) {
+      /* Genau null ist kein Gewinn. Beide Buecher stehen exakt gleich, und
+       * dann kostet jede Gebuehr unmittelbar Geld. */
+      schuld = 'Ohne Gebühren stünde es genau bei null — beide Bücher sind sich einig. ' +
+               'Was die Gebühren kosten, ist damit direkt der Verlust.';
+    } else {
+      schuld = 'Auch ohne Gebühren wären es ' + ohne.toFixed(2) + ' % — hier liegen die ' +
+               'beiden Bücher schlicht zu nah beieinander.';
+    }
+
+    return '<div class="urteil"><b>Lohnt sich nicht: ' + r.toFixed(2) + ' %.</b> ' +
+      'Beide Seiten zusammen kosten ' + (inv * 100).toFixed(2) + ' % dessen, was sie zurückzahlen — ' +
+      'also mehr als sie einbringen. Gebühren: ' +
+      pmG + ' % bei Polymarket, ' + ggG + ' % beim Gegenbuch. ' +
+      (schuld || '') + '</div>';
+  }
+
+  /* Was bliebe ohne jede Gebühr? Nur so laesst sich sagen, ob die Gebuehren
+   * schuld sind oder ob die beiden Buecher einfach gleich teuer stehen. */
+  function renditeOhneGebuehren(f) {
+    var p = Number(f.pm_preis), q = Number(f.bf_quote);
+    if (!(p > 0 && p < 1)) return null;
+    var qe1 = 1 / p;
+    var qe2;
+    if (f.buch === 'kalshi') {
+      if (!(q > 0 && q < 1)) return null;
+      qe2 = 1 / q;                       // Kalshi rechnet in Preisen, nicht in Quoten
+    } else if (f.bf_seite === 'Lay') {
+      if (!(q > 1)) return null;
+      qe2 = 1 + 1 / (q - 1);
+    } else {
+      if (!(q > 1)) return null;
+      qe2 = q;
+    }
+    var inv = 1 / qe1 + 1 / qe2;
+    if (!(inv > 0)) return null;
+    return (1 / inv - 1) * 100;
+  }
+
   function analyse(f, imVerlauf) {
     var gewinn = Number(f.auszahlung) - 100;
     return '<div class="analyse">' +
@@ -194,11 +318,12 @@
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
           '</div>' +
         '</div>' +
+        renditeText(f) +
+        gegenprobe(f) +
         pruefzeile(f) +
         analyse(f, imVerlauf) +
-        '<div class="unter">Kehrwertsumme ' + Number(f.inv).toFixed(4) +
-          ' &middot; Aufteilung ' + Number(f.einsatz_1).toFixed(2) + ' / ' + Number(f.einsatz_2).toFixed(2) +
-          ' &rarr; Auszahlung ' + Number(f.auszahlung).toFixed(2) +
+        '<div class="unter leise">Bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' auf Polymarket, ' +
+          Number(f.einsatz_2).toFixed(2) + ' aufs Gegenbuch &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
           ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
         aktionen(f) +
       '</div>';

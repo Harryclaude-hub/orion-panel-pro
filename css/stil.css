@@ -209,3 +209,35 @@ h2 {
 @media (max-width: 520px) {
   .fund .stempel { font-size: 15px; }
 }
+
+/* ---------- Urteil und Gegenprobe ---------- */
+
+.urteil {
+  padding: 10px 12px; margin-bottom: 10px;
+  border: 1px solid var(--rand); border-left: 3px solid var(--text-leise);
+  border-radius: var(--rund-chip); background: var(--karte-2);
+  font-size: 14px; color: var(--text-leise); line-height: 1.5;
+}
+.urteil b { color: var(--text); }
+.urteil.gut { border-left-color: var(--gruen); }
+.urteil.gut b { color: var(--gruen); }
+
+.gegenprobe {
+  padding: 10px 12px; margin-bottom: 10px;
+  border: 1px solid var(--rand); border-radius: var(--rund-chip);
+  background: var(--karte-2); font-size: 14px;
+}
+.gp-zeile {
+  display: flex; gap: 10px; align-items: baseline; flex-wrap: wrap;
+  padding: 3px 0;
+}
+.gp-fall { flex: 1 1 220px; color: var(--text); }
+.gp-wer  { color: var(--text-leise); }
+.gp-zahl {
+  font-weight: 600; color: var(--gold); font-variant-numeric: tabular-nums;
+  min-width: 72px; text-align: right;
+}
+.gp-fuss {
+  margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rand);
+  color: var(--text-leise); font-size: 13px; line-height: 1.5;
+}
