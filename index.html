@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orion Panel Pro</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="css/stil.css?v=5">
+<link rel="stylesheet" href="css/stil.css?v=6">
 </head>
 <body>
 
@@ -13,7 +13,7 @@
   <div class="kasten">
     <h2>Orion Panel Pro</h2>
     <input id="sperrwort" type="password" placeholder="Wort" autocomplete="off">
-    <button id="entsperren">Öffnen</button>
+    <button id="entsperren">Ã–ffnen</button>
     <div class="fehler" id="sperrfehler"></div>
   </div>
 </div>
@@ -27,7 +27,7 @@
     <button id="neuladen">Jetzt ablesen</button>
     <button id="filter-knopf" class="knopf">Filter</button>
     <a class="knopf" href="logik.html">Wie gesucht wird</a>
-    <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall — je Buch verschieden">Regelwerk</a>
+    <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall â€” je Buch verschieden">Regelwerk</a>
     <a class="knopf" href="einstellungen.html">Einstellungen</a>
   </header>
 
@@ -50,31 +50,31 @@
   <div id="verlauf"></div>
 
   <p class="leise" style="margin-top:28px">
-    Gesucht wird auf dem Server: <code>orion-lauf</code> läuft jede Minute über
+    Gesucht wird auf dem Server: <code>orion-lauf</code> lÃ¤uft jede Minute Ã¼ber
     <code>pg_cron</code> und legt jeden Fund in <code>orion_funde</code> ab, auch wenn
     kein Browser offen ist. Diese Seite liest nur ab, alle zwei Sekunden.
     Was nicht mehr gilt, wandert in den Verlauf statt zu verschwinden.
-    Gesucht wird zwischen <b>drei Börsen</b> — Polymarket, Kalshi und Smarkets.
-    Alle drei sind ohne Konto, ohne Schlüssel und ohne eingeschalteten PC
+    Gesucht wird zwischen <b>drei BÃ¶rsen</b> â€” Polymarket, Kalshi und Smarkets.
+    Alle drei sind ohne Konto, ohne SchlÃ¼ssel und ohne eingeschalteten PC
     direkt aus Supabase erreichbar. Eine Arbitrage besteht immer aus
-    <b>genau zwei</b> Büchern; gibt es zur selben Frage mehrere brauchbare
+    <b>genau zwei</b> BÃ¼chern; gibt es zur selben Frage mehrere brauchbare
     Paare, wird daraus je eine eigene Karte.
     <b>Betfair ist seit dem 10.08.2026 abgeschaltet</b>: es antwortet aus
-    Rechenzentren mit 403, und der einzig offene Weg über den Kursstrom
-    liefert Preise ohne Mannschaftsnamen — damit ist keine Zuordnung möglich.
+    Rechenzentren mit 403, und der einzig offene Weg Ã¼ber den Kursstrom
+    liefert Preise ohne Mannschaftsnamen â€” damit ist keine Zuordnung mÃ¶glich.
     Smarkets-Kommission ist mit 2 % angesetzt, dem dokumentierten
     Standardtarif; gemessen ist der Satz nicht.
   </p>
 
 </div>
 
-<script src="js/konfig.js?v=5"></script>
-<script src="js/rechnung.js?v=5"></script>
-<script src="js/zuordnung.js?v=5"></script>
-<script src="js/daten.js?v=5"></script>
-<script src="js/filter.js?v=5"></script>
-<script src="js/anzeige.js?v=5"></script>
-<script src="js/sperre.js?v=5"></script>
-<script src="js/app.js?v=5"></script>
+<script src="js/konfig.js?v=6"></script>
+<script src="js/rechnung.js?v=6"></script>
+<script src="js/zuordnung.js?v=6"></script>
+<script src="js/daten.js?v=6"></script>
+<script src="js/filter.js?v=6"></script>
+<script src="js/anzeige.js?v=6"></script>
+<script src="js/sperre.js?v=6"></script>
+<script src="js/app.js?v=6"></script>
 </body>
 </html>
