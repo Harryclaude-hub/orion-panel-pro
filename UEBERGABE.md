@@ -224,7 +224,31 @@ KEIN Heim-PC mehr beteiligt. bf-bridge und bridge_odds bleiben unangetastet
 (Regel 6), werden aber nicht mehr gelesen: BETFAIR_AKTIV = false.
 ```
 
-### Das Seiten-Modell (Umbau vom 10.8.2026)
+### Zwei Durchgänge (Umbau vom 10.8.2026, abends)
+
+1. **Anker Polymarket** — zu jedem Polymarket-Markt ein Gegenstück. Dort gibt
+   es immer zwei Belege: Partie und Läufer.
+2. **Ohne Anker** — Smarkets direkt gegen Kalshi, für Partien, die Polymarket
+   nicht führt. Gemessen war das nötig: von 110 Smarkets-Partien waren 78
+   unsichtbar, von 225 Kalshi-Partien 204, von 21 gemeinsamen wurden 14 nie
+   gepaart. Erster Lauf: **74 offene Partien, 11 Paare, 0 mehrdeutig.**
+
+**Im zweiten Durchgang fällt ein Beleg weg. Ersatz ist die EINDEUTIGKEIT**
+(`Z.direktPaare`): trifft eine Partie mehr als eine auf der Gegenseite — oder
+wird selbst von mehr als einer getroffen — wird gar nicht gepaart. Das ist
+strenger als „nimm den besten Treffer", und genau dieser Griff erzeugte am
+9.8. die 16,02-%-Fehlpaarung. Gemessen bei 109 × 95 Vergleichen: 18
+Kandidaten, 0 mehrdeutig auf beiden Seiten.
+
+**KEIN enger Zeitfilter**, obwohl beide Bücher Zeiten liefern. Kalshis
+Ticker-Datum liegt bei manchen Serien bis zu zwei Tage neben dem Anstoß:
+`Ind. Medellín vs Millonarios` 47 h, `Unión Santa Fe vs Central Córdoba`
+48 h — **beides richtige Paare**. Ein enger Filter hätte sie verworfen,
+darunter eine laufende Chance. Die Schranke steht bei 5 Tagen und wehrt nur
+Absurdes ab. `schliesst` taugt gar nicht: gerundeter Marktschluss, bis 54 h
+nach dem Anstoß.
+
+### Das Seiten-Modell
 
 Vorher suchte `orion-lauf` genau zwei Paarungen: Polymarket gegen Betfair und
 Polymarket gegen Kalshi. Mit dem dritten Buch wären das sechs — und Betfair
@@ -260,7 +284,7 @@ einstellungen.html    Weg B (Zertifikat + Secrets) und Weg A (Bridge)
 logik.html            erklärt die Suche, als Textdatei herunterladbar
 js/konfig.js          alle Schwellen + die Bücher an EINER Stelle
 js/rechnung.js        Quoten, Gebühren, Aufteilung   171 Prüfungen
-js/zuordnung.js       Marktpaarung                   197 Prüfungen
+js/zuordnung.js       Marktpaarung                   222 Prüfungen
 js/daten.js           liest ab, filtert, richtet Broker-Links
 js/anzeige.js         Tafel, Karten, Gegenprobe, Puffer
 js/sperre.js          Sperrbildschirm, Overlay wird ENTFERNT + Wache
@@ -329,10 +353,10 @@ Funktionen: `orion_uebersicht()`, `orion_bf_maerkte()`,
 
 ```
 node pruefung/rechnung.test.js     171 Prüfungen
-node pruefung/zuordnung.test.js    197 Prüfungen
+node pruefung/zuordnung.test.js    222 Prüfungen
 node bridge/pruefung.js            158 Prüfungen
                                    ───
-                                   526 Prüfungen
+                                   551 Prüfungen
 ```
 
 Jede Schutzregel hat einen Test, der sie **auslöst**, nicht nur einen, der
@@ -470,10 +494,12 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
    ungewichtet. Die **Rendite bleibt richtig** — sie ist ein Verhältnis —,
    aber die Mengenbegrenzung ist um den Wechselkurs daneben, rund 25 %.
    Ungemessen, unkorrigiert.
-4. **Partien, die Polymarket nicht führt.** Anker der Paarung ist weiterhin
-   der Polymarket-Titel. Kalshi gegen Smarkets entsteht nur transitiv über
-   eine Partie, die Polymarket ebenfalls führt. Wie viel dabei liegen
-   bleibt, ist ungemessen.
+4. **96ex und Orbit: endgültig erledigt.** Am 10.8. abends frisch gemessen:
+   96ex antwortet mit **Connection refused** — der Server lehnt die
+   TCP-Verbindung ab, da läuft nichts mehr. Orbit gibt auf allen vier Wegen
+   **403 von CloudFront**, inklusive Startseite. Ein Konto ändert daran
+   nichts: der Block greift vor jeder Anmeldung. Nachmessen:
+   `curl -s .../functions/v1/broker-machbar`
 5. **BTTS ist gebaut, bringt aber nichts.** Gemessen: 42 Paare, alle mit
    Zuordnung 1,00 und richtigem Spiel — aber Renditen von **−4 % bis −8 %**.
    Die beiden Bücher bepreisen „beide treffen" weit auseinander. Die Deckung

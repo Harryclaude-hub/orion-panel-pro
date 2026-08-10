@@ -572,6 +572,93 @@ ok('BTTS zieht NICHT den HOME-Vertrag an',
 ok('ein Siegermarkt zieht NICHT den YES-Vertrag an',
    Z.smLaeufer('sieger', 'Yes', ['a', 'b'], vBtts, false, 0.8) === null);
 
+/* ---------- Kalshi-Zeit aus dem Ticker ----------
+ * Zwei Formen, beide am 10.8.2026 in echten Daten gemessen. */
+
+var z1 = Z.kalshiZeit('KXEFLCUPGAME-26AUG10PAEXC');
+ok('Ticker ohne Uhrzeit wird gelesen', z1 !== null);
+ok('und als Datum ohne Uhrzeit gekennzeichnet', z1 && z1.genau === false);
+ok('das Datum stimmt (2026-08-10)',
+   z1 && new Date(z1.zeit).toISOString().slice(0, 10) === '2026-08-10',
+   z1 && new Date(z1.zeit).toISOString());
+
+var z2 = Z.kalshiZeit('KXLOLGAME-26AUG110400DNFHLE');
+ok('Ticker mit Uhrzeit wird gelesen', z2 !== null);
+ok('und als genau gekennzeichnet', z2 && z2.genau === true);
+ok('Datum und Uhrzeit stimmen (2026-08-11 04:00)',
+   z2 && new Date(z2.zeit).toISOString().slice(0, 16) === '2026-08-11T04:00',
+   z2 && new Date(z2.zeit).toISOString());
+
+ok('unbekannter Monat wird abgewiesen', Z.kalshiZeit('KXX-26XYZ10ABC') === null);
+ok('unsinnige Stunde wird abgewiesen',  Z.kalshiZeit('KXX-26AUG109999ABC') === null);
+ok('Ticker ohne Datum ergibt null',     Z.kalshiZeit('KXNOPE-ABCDEF') === null);
+ok('null ergibt null',                  Z.kalshiZeit(null) === null);
+
+/* ---------- Direkte Paarung: EINDEUTIGKEIT ist die Absicherung ---------- */
+
+var A = [
+  { id: 'a1', partie: ['plymouth', 'exeter'],  zeit: Date.UTC(2026, 7, 10, 19, 0) },
+  { id: 'a2', partie: ['caracas', 'la guaira'], zeit: Date.UTC(2026, 7, 10, 22, 0) }
+];
+var B = [
+  { id: 'b1', partie: ['plymouth', 'exeter'],  zeit: Date.UTC(2026, 7, 10, 0, 0) },
+  { id: 'b2', partie: ['caracas', 'la guaira'], zeit: Date.UTC(2026, 7, 10, 0, 0) }
+];
+var r1 = Z.direktPaare(A, B, 0.5);
+ok('zwei saubere Partien ergeben zwei Paare', r1.paare.length === 2, r1.paare.length);
+ok('keine davon mehrdeutig', r1.mehrdeutig === 0);
+
+/* DIE Regel muss ausgeloest werden: zwei gleiche Partien auf einer Seite. */
+var Bdoppelt = B.concat([{ id: 'b3', partie: ['plymouth', 'exeter'], zeit: Date.UTC(2026, 7, 10, 0, 0) }]);
+var r2 = Z.direktPaare(A, Bdoppelt, 0.5);
+ok('MEHRDEUTIG wird NICHT gepaart', r2.paare.length === 1, r2.paare.length);
+ok('und die Mehrdeutigkeit wird gezaehlt', r2.mehrdeutig === 2, r2.mehrdeutig);
+ok('das eindeutige Paar ueberlebt trotzdem',
+   r2.paare.length === 1 && r2.paare[0].a.id === 'a2');
+
+/* Gekreuzte Reihenfolge muss erkannt werden. */
+var r3 = Z.direktPaare(
+  [{ id: 'x', partie: ['juventus turin', 'palermo'], zeit: null }],
+  [{ id: 'y', partie: ['palermo', 'juventus turin'], zeit: null }], 0.5);
+ok('gekreuzte Partie wird gefunden', r3.paare.length === 1);
+ok('und als getauscht gekennzeichnet', r3.paare.length === 1 && r3.paare[0].getauscht === true);
+
+/* Zeitschranke: grob, aber vorhanden. */
+var weit = Z.direktPaare(
+  [{ id: 'x', partie: ['plymouth', 'exeter'], zeit: Date.UTC(2026, 7, 10) }],
+  [{ id: 'y', partie: ['plymouth', 'exeter'], zeit: Date.UTC(2026, 7, 25) }], 0.5);
+ok('15 Tage Abstand wird abgewiesen', weit.paare.length === 0, weit.paare.length);
+ok('und als zu weit gezaehlt', weit.zuWeit === 1);
+
+/* Die gemessenen 47-h-Faelle muessen DURCHKOMMEN — ein enger Filter haette
+ * echte Paare verworfen, darunter eine laufende Chance. */
+var real = Z.direktPaare(
+  [{ id: 'sm', partie: ['independiente medellin', 'millonarios'], zeit: Date.UTC(2026, 7, 12, 1, 0) }],
+  [{ id: 'ka', partie: ['ind medellin', 'millonarios'], zeit: Date.UTC(2026, 7, 10, 0, 0) }], 0.5);
+ok('49 h Abstand kommt durch (gemessener echter Fall)', real.paare.length === 1, real.paare.length);
+
+/* Fehlende Zeit ist unbekannt, nicht falsch. */
+var ohneZeit = Z.direktPaare(
+  [{ id: 'x', partie: ['plymouth', 'exeter'], zeit: null }],
+  [{ id: 'y', partie: ['plymouth', 'exeter'], zeit: Date.UTC(2030, 0, 1) }], 0.5);
+ok('fehlende Zeit weist NICHT ab', ohneZeit.paare.length === 1);
+
+/* Verschiedene Partien duerfen sich nicht treffen. */
+var fremd = Z.direktPaare(
+  [{ id: 'x', partie: ['plymouth', 'exeter'], zeit: null }],
+  [{ id: 'y', partie: ['bayern muenchen', 'dortmund'], zeit: null }], 0.5);
+ok('verschiedene Partien ergeben kein Paar', fremd.paare.length === 0);
+
+ok('leere Listen ergeben nichts', Z.direktPaare([], B, 0.5).paare.length === 0);
+ok('null ergibt nichts',          Z.direktPaare(null, null, 0.5).paare.length === 0);
+
+/* Regel 5 gilt auch hier: Vereinskuerzel sind kein Namensbeleg. */
+var kuerzel = Z.direktPaare(
+  [{ id: 'x', partie: ['cruzeiro ec', 'cr flamengo'], zeit: null }],
+  [{ id: 'y', partie: ['flamengo', 'ec vitoria salvador'], zeit: null }], 0.5);
+ok('die Flamengo-Falle greift auch bei direkter Paarung NICHT',
+   kuerzel.paare.length === 0, kuerzel.paare.length);
+
 /* ---------- Ergebnis ---------- */
 
 console.log('\nZuordnung: ' + gut + ' von ' + (gut + schlecht) + ' Pruefungen bestanden');

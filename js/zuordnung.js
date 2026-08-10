@@ -387,6 +387,100 @@
     return aus;
   }
 
+  /* ---------- Zwei Buecher DIREKT, ohne Polymarket als Anker ----------
+   *
+   * Bis zum 10.8.2026 lief der Scanner ueber die Polymarket-Maerkte und
+   * suchte zu jedem ein Gegenstueck. Was Polymarket nicht fuehrt, gab es
+   * nicht. Gemessen: von 110 Smarkets-Partien waren 78 unsichtbar, von 225
+   * Kalshi-Partien 204, und von 21 gemeinsamen Partien wurden 14 nie
+   * gepaart — zwei Drittel.
+   *
+   * Die Gefahr dabei ist die Fehlpaarung. Bei Polymarket als Anker gab es
+   * immer zwei Belege; hier faellt einer weg. Als Ersatz dient die
+   * EINDEUTIGKEIT:
+   *
+   *   Trifft eine Partie mehr als eine auf der Gegenseite — oder wird sie
+   *   selbst von mehr als einer getroffen — wird GAR NICHT gepaart.
+   *
+   * Das ist strenger als "nimm den besten Treffer". Der beste Treffer waere
+   * genau der Griff, aus dem am 9.8. die 16,02-%-Fehlpaarung entstand
+   * (Cruzeiro/Flamengo). Gemessen bei 109 x 95 Vergleichen: 18 Kandidaten,
+   * 0 mehrdeutig auf beiden Seiten.
+   *
+   * Warum KEIN enger Zeitfilter, obwohl beide Buecher Zeiten liefern:
+   * gemessen liegt Kalshis Ticker-Datum bei manchen Serien bis zu zwei Tage
+   * neben dem Anstoss.
+   *     Ind. Medellin vs Millonarios   Namensgleichheit 1,00   47 h Abstand
+   *     Union Santa Fe vs Central Cba  Namensgleichheit 1,00   48 h Abstand
+   * Beides sind RICHTIGE Paare. Ein enger Filter haette sie verworfen. Die
+   * Zeitschranke ist deshalb grob und wehrt nur Absurdes ab. */
+  var DIREKT_MAX_STUNDEN = 120;   // fuenf Tage
+
+  /* Kalshi kodiert Datum und manchmal die Uhrzeit im Ereignis-Ticker:
+   *   KXEFLCUPGAME-26AUG10PAEXC     -> 2026-08-10, ohne Uhrzeit
+   *   KXLOLGAME-26AUG110400DNFHLE   -> 2026-08-11 04:00
+   * Nach dem Tag folgen entweder vier Ziffern (Uhrzeit) oder Buchstaben.
+   * `schliesst` taugt NICHT als Ersatz: das ist ein gerundeter Marktschluss,
+   * gemessen bis 54 h nach dem Anstoss. */
+  var MONATE = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5,
+                 jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
+  function kalshiZeit(ev) {
+    var m = String(ev == null ? '' : ev).match(/-(\d{2})([A-Za-z]{3})(\d{2})(\d{4})?(?=[A-Za-z]|$)/);
+    if (!m) return null;
+    var mon = MONATE[m[2].toLowerCase()];
+    if (mon === undefined) return null;
+    var std = m[4] ? Number(m[4].slice(0, 2)) : 0;
+    var min = m[4] ? Number(m[4].slice(2)) : 0;
+    if (std > 23 || min > 59) return null;
+    var t = Date.UTC(2000 + Number(m[1]), mon, Number(m[3]), std, min);
+    return isFinite(t) ? { zeit: t, genau: !!m[4] } : null;
+  }
+
+  /* Zwei Listen von Partien gegeneinander. Jeder Eintrag braucht:
+   *     { id: eindeutig, partie: [a, b], zeit: ms oder null }
+   * Zurueck kommen NUR eindeutige Paare. */
+  function direktPaare(listeA, listeB, schwelle, maxStunden) {
+    var grenze = typeof schwelle === 'number' ? schwelle : 0.5;
+    var fenster = (typeof maxStunden === 'number' ? maxStunden : DIREKT_MAX_STUNDEN) * 3600000;
+    var aus = { paare: [], mehrdeutig: 0, zuWeit: 0 };
+    if (!listeA || !listeB || !listeA.length || !listeB.length) return aus;
+
+    var kand = [];
+    for (var i = 0; i < listeA.length; i++) {
+      var a = listeA[i];
+      if (!a || !a.partie) continue;
+      for (var j = 0; j < listeB.length; j++) {
+        var b = listeB[j];
+        if (!b || !b.partie) continue;
+        var gerade = Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1]));
+        var kreuz  = Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0]));
+        var wert = Math.max(gerade, kreuz);
+        if (wert < grenze) continue;
+        /* Zeit nur pruefen, wenn BEIDE eine haben. Fehlende Zeit ist kein
+         * Grund abzuweisen — sie ist unbekannt, nicht falsch. */
+        if (typeof a.zeit === 'number' && typeof b.zeit === 'number' &&
+            isFinite(a.zeit) && isFinite(b.zeit) && Math.abs(a.zeit - b.zeit) > fenster) {
+          aus.zuWeit++;
+          continue;
+        }
+        kand.push({ a: a, b: b, score: wert, getauscht: kreuz > gerade });
+      }
+    }
+
+    /* Eindeutigkeit auf BEIDEN Seiten. */
+    var zaehlA = {}, zaehlB = {};
+    for (var k = 0; k < kand.length; k++) {
+      zaehlA[kand[k].a.id] = (zaehlA[kand[k].a.id] || 0) + 1;
+      zaehlB[kand[k].b.id] = (zaehlB[kand[k].b.id] || 0) + 1;
+    }
+    for (var n = 0; n < kand.length; n++) {
+      if (zaehlA[kand[n].a.id] > 1 || zaehlB[kand[n].b.id] > 1) { aus.mehrdeutig++; continue; }
+      aus.paare.push(kand[n]);
+    }
+    return aus;
+  }
+
   /* ---------- Kalshi ----------
    *
    * Kalshi nennt einen Markt "Cruz Azul vs New York City Winner?" und sagt
@@ -454,7 +548,10 @@
     drawLaeufer: drawLaeufer,
     smMarktArt: smMarktArt,
     smLaeufer: smLaeufer,
-    smOuKandidaten: smOuKandidaten
+    smOuKandidaten: smOuKandidaten,
+    kalshiZeit: kalshiZeit,
+    direktPaare: direktPaare,
+    DIREKT_MAX_STUNDEN: DIREKT_MAX_STUNDEN
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;
