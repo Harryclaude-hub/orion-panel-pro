@@ -189,3 +189,23 @@ h2 {
   background: var(--karte-2); color: var(--text);
   border-color: var(--rand); font-weight: 600;
 }
+
+/* ---------- Kopfzeile mit Zeitstempel ---------- */
+
+.fund .kopfzeile {
+  display: flex; align-items: flex-start; gap: 12px;
+  justify-content: space-between; margin-bottom: 4px;
+}
+.fund .kopfzeile .titel { margin-bottom: 0; flex: 1 1 auto; min-width: 0; }
+.fund .stempel {
+  flex: 0 0 auto; text-align: right; line-height: 1.25;
+  font-size: 17px; font-weight: 600; color: var(--gold);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.fund .stempel-zwei {
+  display: block; font-size: 12px; font-weight: 400; color: var(--text-leise);
+}
+
+@media (max-width: 520px) {
+  .fund .stempel { font-size: 15px; }
+}

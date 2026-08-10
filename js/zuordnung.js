@@ -22,7 +22,23 @@
     vs: 1, v: 1, win: 1, wins: 1, match: 1, game: 1,
     // Vereinsbeiwerk, das nichts unterscheidet
     fc: 1, cf: 1, sc: 1, ac: 1, afc: 1, ss: 1, as: 1, fk: 1, cd: 1, sk: 1,
-    club: 1, city: 1, united: 1, town: 1, county: 1, athletic: 1, real: 1
+    club: 1, city: 1, united: 1, town: 1, county: 1, athletic: 1, real: 1,
+
+    /* Weitere Vereinskuerzel. Am 10.8.2026 gemessen, warum das noetig ist:
+     *
+     *   Polymarket:  Cruzeiro EC vs. CR Flamengo
+     *   Betfair:     Flamengo v EC Vitoria Salvador     <- ein ANDERES Spiel
+     *
+     * Das wurde mit Score 0,50 gepaart und meldete 16,02 % Rendite. Verbunden
+     * hat die beiden allein das Kuerzel "ec" (Esporte Clube) zusammen mit
+     * "flamengo" ueber Kreuz. Mit "ec" und "cr" als Stoppwoerter faellt der
+     * Score auf 0,00.
+     *
+     * Die Schwelle anzuheben waere der falsche Eingriff gewesen: dieselbe
+     * Messung zeigt richtige Paare bei 0,50 ("Independiente Medellin" gegen
+     * "Ind. Medellin"), die dabei mit verloren gegangen waeren. */
+    ec: 1, cr: 1, ca: 1, ad: 1, sd: 1, mh: 1, cs: 1, ks: 1,
+    nk: 1, hk: 1, bk: 1, if: 1, ec1: 0
   };
 
   function norm(s) {

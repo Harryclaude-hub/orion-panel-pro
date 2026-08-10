@@ -284,6 +284,50 @@ ok('ohne Draw gibt null',      Z.drawLaeufer([{ n: 'Liverpool', b: 1.5 }]) === n
 ok('leere Liste gibt null',    Z.drawLaeufer([]) === null);
 ok('null gibt null',           Z.drawLaeufer(null) === null);
 
+/* ---------- Vereinskuerzel: die Fehlpaarung vom 10.8.2026 ----------
+ *
+ * Echter Fall aus dem laufenden Betrieb. Gemeldet wurden 16,02 % Rendite.
+ *
+ *   Polymarket:  Cruzeiro EC vs. CR Flamengo
+ *   Betfair:     Flamengo v EC Vitoria Salvador     <- ANDERES Spiel
+ *
+ * Verbunden allein durch "ec" und "flamengo" ueber Kreuz. */
+
+var kuerzelBf = [{
+  k: 'Flamengo vs EC Vitoria Salvador vs The Draw',
+  ev: 'Flamengo v EC Vitoria Salvador',
+  mt: 'MATCH_ODDS',
+  r: [{ n: 'Flamengo', b: 1.5, l: 1.6 }, { n: 'EC Vitoria Salvador', b: 6, l: 6.4 }, { n: 'The Draw', b: 6.6, l: 7 }]
+}];
+
+ok('"ec" zaehlt nicht als Namensbeleg', Z.woerter('Cruzeiro EC').indexOf('ec') === -1,
+   JSON.stringify(Z.woerter('Cruzeiro EC')));
+ok('"cr" zaehlt nicht als Namensbeleg', Z.woerter('CR Flamengo').indexOf('cr') === -1,
+   JSON.stringify(Z.woerter('CR Flamengo')));
+ok('"cruzeiro" bleibt erhalten',        Z.woerter('Cruzeiro EC').indexOf('cruzeiro') !== -1);
+ok('"flamengo" bleibt erhalten',        Z.woerter('CR Flamengo').indexOf('flamengo') !== -1);
+
+var fehl = Z.besterTreffer('cruzeiro ec', 'cr flamengo', kuerzelBf, 0.5);
+ok('Cruzeiro gegen Flamengo trifft NICHT Flamengo gegen Vitoria', fehl === null,
+   fehl ? 'Score ' + fehl.score.toFixed(2) : 'null');
+
+/* Und die richtigen Paare mit demselben Muster muessen erhalten bleiben.
+ * Die Schwelle anzuheben haette genau diese mit weggeworfen. */
+var medellinBf = [{
+  k: 'Ind. Medellin vs Millonarios vs The Draw', ev: 'Ind. Medellin v Millonarios', mt: 'MATCH_ODDS',
+  r: [{ n: 'Ind. Medellin', b: 2.1, l: 2.2 }, { n: 'Millonarios', b: 3.4, l: 3.6 }, { n: 'The Draw', b: 3.1, l: 3.3 }]
+}];
+var medellin = Z.besterTreffer('independiente medellin', 'millonarios fc', medellinBf, 0.5);
+ok('abgekuerzter Vereinsname wird weiter gefunden', medellin !== null,
+   medellin ? 'Score ' + medellin.score.toFixed(2) : 'null');
+
+var zvezdaBf = [{
+  k: 'Crvena Zvezda vs Hapoel Beer Sheva vs The Draw', ev: 'Crvena Zvezda v Hapoel Beer Sheva', mt: 'MATCH_ODDS',
+  r: [{ n: 'Crvena Zvezda', b: 1.7, l: 1.8 }, { n: 'Hapoel Beer Sheva', b: 5, l: 5.4 }, { n: 'The Draw', b: 3.9, l: 4.1 }]
+}];
+ok('Crvena Zvezda trotz "FK" und "MH" gefunden',
+   Z.besterTreffer('fk crvena zvezda', "mh hapoel be'er sheva", zvezdaBf, 0.5) !== null);
+
 /* ---------- Kalshi ----------
  *
  * Alle Titel unten sind echte Kalshi-Titel vom 9.8.2026. */

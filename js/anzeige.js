@@ -74,6 +74,22 @@
     return h;
   }
 
+  /* Nur die Uhrzeit, gross und oben rechts. Datum kommt dazu, wenn der
+   * Eintrag nicht von heute ist — sonst liest man 23:14 und denkt \"gerade
+   * eben\", obwohl es von vorgestern ist. */
+  function uhrzeit(iso) {
+    var t = Date.parse(iso);
+    if (isNaN(t)) return '?';
+    var d = new Date(t);
+    function zwei(n) { return (n < 10 ? '0' : '') + n; }
+    var heute = new Date();
+    var gleicherTag = d.getDate() === heute.getDate() &&
+                      d.getMonth() === heute.getMonth() &&
+                      d.getFullYear() === heute.getFullYear();
+    var uhr = zwei(d.getHours()) + ':' + zwei(d.getMinutes());
+    return gleicherTag ? uhr : zwei(d.getDate()) + '.' + zwei(d.getMonth() + 1) + '. ' + uhr;
+  }
+
   function zeitpunkt(iso) {
     var t = Date.parse(iso);
     if (isNaN(t)) return '?';
@@ -124,7 +140,17 @@
     var chance = f.rendite >= welt.KONFIG.mindestRendite;
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
-        '<div class="titel">' + txt(f.titel) + '</div>' +
+        '<div class="kopfzeile">' +
+          '<div class="titel">' + txt(f.titel) + '</div>' +
+          /* Uhrzeit oben rechts: WANN dieser Eintrag entstanden ist.
+           * Nicht die letzte Sichtung, sondern die erste — das ist die Frage
+           * "seit wann gibt es das", nicht "wann habe ich zuletzt hingesehen". */
+          '<div class="stempel" title="Zuerst gesehen am ' + txt(zeitpunkt(f.zuerst_gesehen)) + '">' +
+            uhrzeit(f.zuerst_gesehen) +
+            (imVerlauf ? '<span class="stempel-zwei">beendet ' + uhrzeit(f.vorbei_seit) + '</span>'
+                       : '<span class="stempel-zwei">vor ' + seit(f.zuerst_gesehen) + '</span>') +
+          '</div>' +
+        '</div>' +
         '<div class="unter">' +
           '<span class="chip ' + (f.buch === 'kalshi' ? 'ka' : 'bf') + '">' +
             (f.buch === 'kalshi' ? 'Kalshi · kein Konto' : 'Betfair · Bridge') + '</span> ' +
@@ -203,7 +229,8 @@
 
   function reiterZeichnen(e) {
     var beschriftung = {
-      chancen: 'Chancen (' + e.chancen.length + ')',
+      chancen: 'Chancen (' + e.chancen.length + ')' +
+               (e.veraltetHoch && e.veraltetHoch.length ? ' + ' + e.veraltetHoch.length + ' veraltet' : ''),
       knapp: 'Knappste Paare (' + e.knapp.length + ')',
       verlauf: 'Verlauf (' + e.verlauf.length + ')'
     };
@@ -271,10 +298,26 @@
     if (e.chancen.length) {
       chancenHtml = e.chancen.map(function (f) { return karte(f, false); }).join('');
     } else {
-      chancenHtml = '<div class="warnung">Gerade keine Chance über ' +
+      chancenHtml = '<div class="warnung">Gerade keine handelbare Chance über ' +
         K.mindestRendite.toFixed(2) + ' %. Das ist der Normalfall: zwei Börsen mit vielen ' +
         'Teilnehmern liegen selten weit auseinander. Unter <b>Knappste Paare</b> siehst du, ' +
         'wie nah es dran ist.</div>';
+    }
+
+    /* Funde ueber der Schwelle auf VERALTETEN Kursen. Die gehoeren weder zu
+     * den Chancen noch zu den knappen Paaren. Vorher landeten sie unter
+     * "Knappste Paare" und standen dort mit +16 % zwischen lauter
+     * Minuswerten, ohne dass irgendwo stand warum. */
+    if (e.veraltetHoch && e.veraltetHoch.length) {
+      chancenHtml = '<div class="warnung"><b>' + e.veraltetHoch.length +
+        (e.veraltetHoch.length === 1 ? ' Fund liegt' : ' Funde liegen') +
+        ' über der Schwelle, aber auf veralteten Kursen.</b> ' +
+        'Nicht handelbar: die Gegenquote ist Stunden alt, in Wirklichkeit steht dort längst ' +
+        'ein anderer Kurs. Je höher die Rendite auf alten Daten, desto wahrscheinlicher ' +
+        'ist sie nur der Beweis, dass die Zahl alt ist.</div>' +
+        e.veraltetHoch.map(function (f) { return karte(f, false); }).join('') +
+        (e.chancen.length ? '<h2>Handelbar</h2>' : '') +
+        chancenHtml;
     }
     setzeWennAnders(document.getElementById('chancen'), chancenHtml);
 
