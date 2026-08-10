@@ -1,4 +1,10 @@
-// Spiegel von js/zuordnung.js. Geprueft: pruefung/zuordnung.test.js, 179 Pruefungen.
+// Spiegel von js/zuordnung.js. Geprueft: pruefung/zuordnung.test.js, 275 Pruefungen.
+//
+// ACHTUNG: Diese Datei und js/zuordnung.js muessen sich GLEICH VERHALTEN.
+// Der Prüfstand pruefung/spiegel.test.js haelt beide Fassungen gegeneinander:
+// gleiche Funktionen, gleiche Konstanten, gleiche Ergebnisse auf denselben
+// Eingaben. Er schlaegt auch an, wenn eine Seite eine Funktion hat, die der
+// anderen fehlt — genau der Fall, der am 10.8.2026 unbemerkt blieb.
 
 const STOPP: Record<string, number> = {
   will: 1, does: 1, did: 1, would: 1, shall: 1, can: 1, is: 1, are: 1, be: 1,
@@ -6,12 +12,10 @@ const STOPP: Record<string, number> = {
   vs: 1, v: 1, win: 1, wins: 1, match: 1, game: 1,
   fc: 1, cf: 1, sc: 1, ac: 1, afc: 1, ss: 1, as: 1, fk: 1, cd: 1, sk: 1,
   club: 1, city: 1, united: 1, town: 1, county: 1, athletic: 1, real: 1,
-  /* Vereinskuerzel. Am 10.8.2026 gemessen:
-   *   Polymarket:  Cruzeiro EC vs. CR Flamengo
-   *   Betfair:     Flamengo v EC Vitoria Salvador   <- ein ANDERES Spiel
-   * Gepaart mit 0,50, gemeldet mit 16,02 % Rendite. */
   ec: 1, cr: 1, ca: 1, ad: 1, sd: 1, mh: 1, cs: 1, ks: 1,
-  nk: 1, hk: 1, bk: 1, if: 1
+  nk: 1, hk: 1, bk: 1, if: 1,
+  goals: 1, goal: 1, points: 1, point: 1, runs: 1, sets: 1, set: 1,
+  games: 1, innings: 1, corners: 1, total: 1, over: 1, under: 1
 };
 
 export function norm(s: unknown): string {
@@ -48,6 +52,36 @@ export function namensgleichheitW(A: string[], B: string[]): number {
 export function aehnlichkeit(a: unknown, b: unknown): number { return aehnlichkeitW(woerter(a), woerter(b)); }
 export function namensgleichheit(a: unknown, b: unknown): number { return namensgleichheitW(woerter(a), woerter(b)); }
 
+/* Ueber/Unter gibt es in vier Ausfuehrungen, und sie sind VERSCHIEDENE
+ * Fragen. Der Teilname muss GENAU passen, mit Anker vorn und hinten.
+ * Am 10.8.2026 im 72h-Fenster gemessen:
+ *     "O/U 2.5"                        276   gesamtes Spiel
+ *     "1st Half O/U 0.5"               138   erste Halbzeit
+ *     "2nd Half O/U 0.5"               138   zweite Halbzeit
+ *     "Total Corners: O/U 7.5"         259   Ecken
+ *     "1st Half Total Corners: O/U"    111   ANDERE Frage, keine Regel
+ *     "FK Bodo/Glimt O/U 0.5"            9   Torkonto EINER Mannschaft
+ * Ohne "^" ginge "1st Half Total Corners" als Ecken des ganzen Spiels durch,
+ * ohne "$" das Torkonto einer Mannschaft als Spielsumme. */
+const OU_MUSTER: Array<{ art: string; muster: RegExp }> = [
+  { art: 'ueber_unter',       muster: /^O\/U\s*(\d+(?:\.\d+)?)$/i },
+  { art: 'hz1_ueber_unter',   muster: /^1st Half O\/U\s*(\d+(?:\.\d+)?)$/i },
+  { art: 'hz2_ueber_unter',   muster: /^2nd Half O\/U\s*(\d+(?:\.\d+)?)$/i },
+  { art: 'ecken_ueber_unter', muster: /^Total Corners:\s*O\/U\s*(\d+(?:\.\d+)?)$/i }
+];
+
+export function ouArt(teil: unknown): { art: string; linie: number } | null {
+  const s = String(teil == null ? '' : teil).trim();
+  for (const m of OU_MUSTER) {
+    const t = s.match(m.muster);
+    if (t) {
+      const l = parseFloat(t[1]);
+      if (isFinite(l)) return { art: m.art, linie: l };
+    }
+  }
+  return null;
+}
+
 export function ouLinie(teil: unknown): number | null {
   const m = String(teil == null ? '' : teil).trim().match(/^O\/U\s*(\d+(?:\.\d+)?)$/i);
   return m ? parseFloat(m[1]) : null;
@@ -57,21 +91,21 @@ export function bfOuLinie(mt: unknown): number | null {
   return m ? parseFloat(m[1] + '.' + m[2]) : null;
 }
 
-export type Art = 'sieger' | 'unentschieden' | 'ueber_unter' | 'btts' | null;
+export type Art = string | null;
 
 export function marktArt(frage: unknown, teil?: unknown): Art {
   const f = norm(frage);
   if (/\bwin on \d{4} \d{2} \d{2}\b/.test(f)) return 'sieger';
   if (/end in a draw/.test(f)) return 'unentschieden';
-  if (ouLinie(teil) !== null) return 'ueber_unter';
-  /* Beide Mannschaften treffen. Der Teilname muss GENAU passen.
-   * Gemessen am 10.8.2026 stehen im selben Ereignis, mit demselben Titel:
-   *     "Both Teams to Score"                  44   <- das Endergebnis
-   *     "Both Teams to Score in First Half"    44   <- ANDERE Frage
-   *     "Both Teams to Score in Second Half"   44   <- ANDERE Frage
-   * Sie unterscheiden sich NUR im Teilnamen. Ein Teilstring-Test haette
-   * alle drei gegen denselben Smarkets-Markt gepaart. */
+  const ou = ouArt(teil);
+  if (ou) return ou.art;
   if (/^both teams to score$/.test(norm(teil))) return 'btts';
+  /* HALBZEIT an der FRAGE, nicht am Teilnamen — die Teilnamen sind bei
+   * Halbzeit und zweiter Halbzeit IDENTISCH (243 gegen 240 Maerkte). */
+  if (/\bsecond half\b/.test(f)) return null;
+  if (/\bat halftime\b/.test(f)) {
+    return norm(teil) === 'draw' ? 'hz_unentschieden' : 'hz_sieger';
+  }
   return null;
 }
 
@@ -147,73 +181,58 @@ export function bfSatzVon(bf: BfMarkt | null): number | null {
   return x;
 }
 
-/* ---------- Smarkets ----------
- *
- * Smarkets ist das erste Buch, das die Struktur MITLIEFERT:
- *   market_type   { name: 'WINNER_3_WAY' } | { name: 'OVER_UNDER', param: '2.5' }
- *   contract_type { name: 'HOME' | 'DRAW' | 'AWAY' | 'OVER' | 'UNDER' }
- * Bei Betfair muss die Linie aus "OVER_UNDER_25" geklaubt werden, hier steht
- * sie als Zahl da. Das ist kein Komfort, sondern weniger Ratefehler. */
+/* ---------- Smarkets ---------- */
+
+/* Vier Ueber/Unter-Typen, EXAKT beim Namen genommen. Smarkets fuehrt daneben
+ * SECOND_HALF_HOME_TEAM_OVER_UNDER (Torkonto EINER Mannschaft),
+ * AWAY_CORNERS_OVER_UNDER (Ecken EINER Mannschaft) und CORNERS_HANDICAP.
+ * Ein Praefix-Vergleich haette alle drei mitgenommen. */
+const SM_OU_TYP: Record<string, string> = {
+  OVER_UNDER: 'ueber_unter',
+  FIRST_HALF_OVER_UNDER: 'hz1_ueber_unter',
+  SECOND_HALF_OVER_UNDER: 'hz2_ueber_unter',
+  CORNERS_OVER_UNDER: 'ecken_ueber_unter'
+};
+
 export function smMarktArt(marktTyp: any): { art: string; linie: number | null } | null {
   if (!marktTyp || typeof marktTyp !== 'object') return null;
   if (marktTyp.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
+  if (marktTyp.name === 'HALF_TIME_WINNER_3_WAY') return { art: 'halbzeit', linie: null };
   if (marktTyp.name === 'BTTS') return { art: 'btts', linie: null };
-  if (marktTyp.name === 'OVER_UNDER') {
+  if (Object.prototype.hasOwnProperty.call(SM_OU_TYP, marktTyp.name)) {
     const l = parseFloat(marktTyp.param);
     if (!isFinite(l)) return null;
-    return { art: 'ueber_unter', linie: l };
+    return { art: SM_OU_TYP[marktTyp.name], linie: l };
   }
   return null;
 }
 
-/* Den passenden Smarkets-Vertrag zu einem Polymarket-Ausgang finden.
- *
- * ZWEI WEGE, und der zweite ist ein VETO — nicht eine Pflicht:
- *
- *   STRUKTUR  Auf welcher Seite des POLYMARKET-Titels steht die Mannschaft?
- *             Dort steht ihr Name woertlich. War die Partie ueber Kreuz
- *             getroffen, wird die Seite gedreht. contract_type HOME/AWAY
- *             liefert dann den Vertrag.
- *             Gemessen am 10.8.2026: bei 124 von 124 Spielen entspricht die
- *             Reihenfolge in "X vs Y" genau HOME/AWAY. Keine Abweichung.
- *   NAME      laeuferZu wie bei Betfair, Schwelle 0,80.
- *
- * Zeigen BEIDE Wege auf einen Vertrag und es ist NICHT derselbe, wird gar
- * nicht gepaart. Ein Widerspruch ist kein Grund, sich fuer einen Weg zu
- * entscheiden, sondern einer, die Finger davon zu lassen.
- *
- * Warum der Name nicht Pflicht bleibt wie in Regel 3: er verwirft gemessene
- * 17 von 60 RICHTIGEN Paaren, weil die Buecher verschieden lang benennen —
- * "CD Nacional" gegen "Nacional da Madeira" ergibt 0,33. Die zweite
- * Absicherung faellt nicht weg, sie wechselt die Rolle.
- * Gemessen: 0 Widersprueche bei 60 Paaren. */
+/* Struktur entscheidet, Name hat ein VETO. Bei 124 von 124 Spielen entspricht
+ * "X vs Y" genau HOME/AWAY; 0 Widersprueche bei 60 Paaren. */
 export function smLaeufer(
   art: string, pmTeil: unknown, pmPartie: [string, string] | null,
   vertraege: any[], getauscht: boolean, schwelle = 0.8, namePflicht = false
 ) {
   if (!vertraege || !vertraege.length) return null;
-
   const nachTyp = (t: string) => {
     for (const v of vertraege) if (v.typ === t) return v;
     return null;
   };
-
-  if (art === 'unentschieden') {
+  if (art === 'unentschieden' || art === 'hz_unentschieden') {
     const d = nachTyp('DRAW');
     return d ? { score: 1, laeufer: d, weg: 'struktur' } : null;
   }
-  if (art === 'ueber_unter') {
+  /* Jede Ueber/Unter-Frage hat dieselbe Form: OVER ist die JA-Seite. */
+  if (art === 'ueber_unter' || art === 'hz1_ueber_unter' ||
+      art === 'hz2_ueber_unter' || art === 'ecken_ueber_unter') {
     const o = nachTyp('OVER');
     return o ? { score: 1, laeufer: o, weg: 'struktur' } : null;
   }
-  /* Beide Mannschaften treffen: Polymarket fragt Ja/Nein, Smarkets hat die
-   * Vertraege YES und NO. Keine Mannschaft zuzuordnen — die Frage gilt der
-   * ganzen Partie. */
   if (art === 'btts') {
     const j = nachTyp('YES');
     return j ? { score: 1, laeufer: j, weg: 'struktur' } : null;
   }
-  if (art !== 'sieger') return null;
+  if (art !== 'sieger' && art !== 'hz_sieger') return null;
 
   let struktur: any = null;
   const seite = seiteVon(pmTeil, pmPartie);
@@ -223,13 +242,10 @@ export function smLaeufer(
   }
 
   /* Der Namensweg darf bei einem Siegermarkt NUR auf HOME oder AWAY zeigen.
-   * Ohne diese Fessel griff er den Vertrag "Yes" eines BTTS-Marktes ab,
-   * weil "Yes" gegen "Yes" die Gleichheit 1,00 ergibt — eine perfekte
-   * Punktzahl auf eine voellig andere Frage. */
+   * Sonst griff er den Vertrag "Yes" eines BTTS-Marktes ab. */
   let perName = laeuferZu(String(pmTeil || ''), vertraege as any, schwelle);
   if (perName && perName.laeufer.typ !== 'HOME' && perName.laeufer.typ !== 'AWAY') perName = null;
 
-  // Widerspruch = nicht paaren.
   if (struktur && perName && perName.laeufer !== struktur) return null;
 
   if (namePflicht) return perName ? { score: perName.score, laeufer: perName.laeufer, weg: 'name' } : null;
@@ -238,10 +254,67 @@ export function smLaeufer(
   return null;
 }
 
-/* Gleiche Linie gegen gleiche Linie, sonst gar nicht (Regel 1). */
 export function smOuKandidaten(smListe: any[], linie: number | null): any[] {
   if (!smListe || typeof linie !== 'number' || !isFinite(linie)) return [];
   return smListe.filter(m => m.linie === linie);
+}
+
+/* ---------- Zwei Buecher DIREKT, ohne Polymarket als Anker ----------
+ *
+ * Ersatz fuer den fehlenden zweiten Beleg ist die EINDEUTIGKEIT.
+ * Gemessen bei 109 x 95 Vergleichen: 18 Kandidaten, 0 mehrdeutig.
+ * KEIN enger Zeitfilter: Kalshis Ticker-Datum liegt bei manchen Serien bis
+ * zu zwei Tage neben dem Anstoss (47 h, 48 h — beides RICHTIGE Paare). */
+export const DIREKT_MAX_STUNDEN = 120;
+
+const MONATE: Record<string, number> = { jan:0, feb:1, mar:2, apr:3, may:4, jun:5,
+                                         jul:6, aug:7, sep:8, oct:9, nov:10, dec:11 };
+
+export function kalshiZeit(ev: unknown): { zeit: number; genau: boolean } | null {
+  const m = String(ev == null ? '' : ev).match(/-(\d{2})([A-Za-z]{3})(\d{2})(\d{4})?(?=[A-Za-z]|$)/);
+  if (!m) return null;
+  const mon = MONATE[m[2].toLowerCase()];
+  if (mon === undefined) return null;
+  const std = m[4] ? Number(m[4].slice(0, 2)) : 0;
+  const min = m[4] ? Number(m[4].slice(2)) : 0;
+  if (std > 23 || min > 59) return null;
+  const t = Date.UTC(2000 + Number(m[1]), mon, Number(m[3]), std, min);
+  return isFinite(t) ? { zeit: t, genau: !!m[4] } : null;
+}
+
+export function direktPaare(listeA: any[], listeB: any[], schwelle = 0.5, maxStunden = DIREKT_MAX_STUNDEN) {
+  const fenster = maxStunden * 3600000;
+  const aus = { paare: [] as any[], mehrdeutig: 0, zuWeit: 0 };
+  if (!listeA || !listeB || !listeA.length || !listeB.length) return aus;
+
+  const kand: any[] = [];
+  for (const a of listeA) {
+    if (!a || !a.partie) continue;
+    for (const b of listeB) {
+      if (!b || !b.partie) continue;
+      const gerade = Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1]));
+      const kreuz  = Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0]));
+      const wert = Math.max(gerade, kreuz);
+      if (wert < schwelle) continue;
+      if (typeof a.zeit === 'number' && typeof b.zeit === 'number' &&
+          isFinite(a.zeit) && isFinite(b.zeit) && Math.abs(a.zeit - b.zeit) > fenster) {
+        aus.zuWeit++;
+        continue;
+      }
+      kand.push({ a, b, score: wert, getauscht: kreuz > gerade });
+    }
+  }
+
+  const zaehlA: Record<string, number> = {}, zaehlB: Record<string, number> = {};
+  for (const k of kand) {
+    zaehlA[k.a.id] = (zaehlA[k.a.id] || 0) + 1;
+    zaehlB[k.b.id] = (zaehlB[k.b.id] || 0) + 1;
+  }
+  for (const k of kand) {
+    if (zaehlA[k.a.id] > 1 || zaehlB[k.b.id] > 1) { aus.mehrdeutig++; continue; }
+    aus.paare.push(k);
+  }
+  return aus;
 }
 
 /* ---------- Kalshi ---------- */

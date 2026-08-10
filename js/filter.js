@@ -16,25 +16,44 @@
 
   var SCHLUESSEL = 'orion-filter';
 
-  /* Die Marktart steht NICHT in der Datenbank, sie wird aus der Bezeichnung
-   * abgelesen, die orion-lauf schreibt (Variable `bez`). Das ist eine
-   * Kopplung an eine Anzeigezeichenkette und damit die schwaechste Stelle
-   * hier. Aendert sich `bez` im Scanner, greift dieser Filter ins Leere —
-   * er wuerde dann alles als "sieger" zaehlen, nicht abstuerzen.
-   * Sauber waere eine eigene Spalte; steht als offener Punkt. */
+  /* Die Marktart kommt seit dem 10.8.2026 aus der SPALTE `art`, die der
+   * Scanner schreibt.
+   *
+   * Vorher wurde sie aus dem Anzeigetext `mannschaft` abgelesen. Das war
+   * nicht nur unsauber, es war falsch: die Ableitung kannte vier Arten,
+   * laufen tun neun. "Barcelona führt zur Halbzeit" und "1. Halbzeit
+   * Über/Unter 0.5" fielen still in "sieger" bzw. "ueber_unter" — wer nach
+   * Sieger filterte, bekam Halbzeit-Wetten mitgeliefert, ohne es zu merken.
+   *
+   * Der alte Weg bleibt als RUECKFALL fuer Zeilen, die vor der Umstellung
+   * geschrieben wurden und deshalb `art = null` tragen. Er bleibt dabei so
+   * grob wie er war — das ist kein Mangel, sondern ehrlich: fuer diese alten
+   * Zeilen IST die Art nicht besser bekannt. */
   function artVon(f) {
+    if (f && f.art) return String(f.art);
     var m = String(f && f.mannschaft || '');
     if (m === 'Unentschieden') return 'unentschieden';
+    if (m === 'Unentschieden zur Halbzeit') return 'hz_unentschieden';
     if (m === 'Beide Mannschaften treffen') return 'btts';
+    if (m.indexOf('1. Halbzeit Über/Unter') === 0) return 'hz1_ueber_unter';
+    if (m.indexOf('2. Halbzeit Über/Unter') === 0) return 'hz2_ueber_unter';
+    if (m.indexOf('Ecken Über/Unter') === 0) return 'ecken_ueber_unter';
     if (m.indexOf('Über/Unter') === 0) return 'ueber_unter';
+    if (/ führt zur Halbzeit$/.test(m)) return 'hz_sieger';
     return 'sieger';
   }
 
+  /* Alle neun genutzten Fragearten. Die Reihenfolge folgt der Uebergabe. */
   var ARTEN = [
-    { id: 'sieger',        name: 'Sieger' },
-    { id: 'unentschieden', name: 'Unentschieden' },
-    { id: 'ueber_unter',   name: 'Über/Unter' },
-    { id: 'btts',          name: 'Beide treffen' }
+    { id: 'sieger',            name: 'Sieger' },
+    { id: 'unentschieden',     name: 'Unentschieden' },
+    { id: 'hz_sieger',         name: 'Sieger zur Halbzeit' },
+    { id: 'hz_unentschieden',  name: 'Unentschieden zur Halbzeit' },
+    { id: 'btts',              name: 'Beide treffen' },
+    { id: 'ueber_unter',       name: 'Über/Unter' },
+    { id: 'hz1_ueber_unter',   name: 'Über/Unter 1. Halbzeit' },
+    { id: 'hz2_ueber_unter',   name: 'Über/Unter 2. Halbzeit' },
+    { id: 'ecken_ueber_unter', name: 'Ecken Über/Unter' }
   ];
 
   var SPORTARTEN = [

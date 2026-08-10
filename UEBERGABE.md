@@ -6,8 +6,10 @@
 > Sie aktualisiert sich NICHT von selbst. Eine veraltete Übergabe ist
 > schlimmer als keine, weil man ihr glaubt.
 
-Stand: **10. August 2026, Abend**, Commit `0dfd66e`. Dieser Text reicht, um
-ohne Vorwissen weiterzuarbeiten. Alle Zahlen darin sind gemessen.
+Stand: **10. August 2026, spät abends**, Commit `d2fd551` + die Arbeit dieses
+Abends. Dieser Text reicht, um ohne Vorwissen weiterzuarbeiten. Alle Zahlen
+darin sind gemessen; was nicht gemessen ist, steht ausdrücklich als
+ungemessen da.
 
 **Live:** https://saifokaram1-hub.github.io/orion-panel-pro/
 **Repo:** `saifokaram1-hub/orion-panel-pro` · lokal `C:\Users\Home\orion-panel-pro`
@@ -128,6 +130,70 @@ ein.
 
 **Fallstrick Paginierung:** `pagination.next_page` ist ein **Query-String**,
 kein Pfad. An den Host gehängt bekommt man 50 Spiele statt 124.
+
+### Die Gebühren — was sie kosten, in Geld
+
+Seit dem 10.8. abends trägt **jede Zeile den Gebührenbetrag**, nicht nur den
+Satz. Der Satz steckte immer schon in `qe`; sichtbar war er, der Betrag nie.
+
+**Eine Formel für alle vier Gebührenarten:**
+
+```
+Betrag = Einsatz * (Quote OHNE Gebühr - Quote MIT Gebühr)
+```
+
+Das ist genau die Differenz der beiden Auszahlungen. Sie braucht weder Satz
+noch Exponent, nur die Quote ohne Gebühr:
+
+| Form | Buch | Quote ohne Gebühr | wie gerechnet wird |
+|---|---|---|---|
+| `anteil` | Polymarket | `1/Preis` | je Anteil, preisabhängig |
+| `kontrakt` | Kalshi | `1/Preis` | je Kontrakt, preisabhängig |
+| `back` | Börse Back | `Quote` | Kommission auf den Nettogewinn |
+| `lay` | Börse Lay | `L/(L-1)` | Kommission auf den Nettogewinn |
+
+Gegen echte Daten geprüft: **54 von 54 Zeilen** unabhängig nachgerechnet,
+0 Abweichungen. `null` heißt „nicht ausrechenbar", NICHT 0 — dieselbe Regel
+wie bei der unbekannten Menge.
+
+**Der Befund, den das sichtbar macht** (live gemessen, 10.8. spät):
+
+```
+Frageart         Rendite    Gebühren   ohne Gebühren
+sieger           -0,565 %    1,896        +1,331 %
+unentschieden    -0,382 %    1,777        +1,394 %
+```
+
+**Die Bücher liegen im Schnitt 1,3 % auseinander — die Gebühren fressen das
+vollständig auf.** Nicht die Zuordnung ist die Grenze und nicht das Tempo,
+sondern die Gebühr. Das ist der wichtigste Satz dieser Übergabe.
+
+### Die Sätze, Stand 10.8.2026
+
+| Buch | Satz | Form | Herkunft |
+|---|---|---|---|
+| Polymarket | `rate 0,05` · `exponent 1` | je Anteil | **gemessen** an 929 Sportmärkten aus `feeSchedule`; dazu `takerOnly: true`, `rebateRate: 0,15` |
+| Kalshi | 0,07 | `0,07 * C * P * (1-P)` | Formel in Kalshis Tarif bestätigt |
+| Smarkets | 0,02 | Kommission je Markt | dokumentierter Standardtarif, **nicht gemessen** (kein Konto) |
+| unbekannt | 0,07 | Rückfall | Regel 2 |
+
+**Drei Dinge, die dabei ungemessen bleiben und Geld bedeuten:**
+
+1. **Polymarket, Widerspruch.** Die API sagt `exponent 1`, also 2,50 je 100
+   Anteile bei p = 0,50. Mehrere Sekundärquellen nennen für Sport 1,25 —
+   das entspräche `rate * p * (1-p)` statt `rate * min(p,1-p)`. Nicht
+   aufgelöst. Der Code rechnet die **höhere** Variante; ein zu hoher Satz
+   kostet höchstens eine verpasste Chance, ein zu niedriger erfindet eine.
+2. **Maker zahlt weniger.** Kalshis Maker-Gebühr ist ein Viertel der
+   Taker-Gebühr, Polymarket nimmt von Makern gar nichts (`takerOnly`). Der
+   Scanner rechnet immer als Taker — richtig, denn wer zum Briefkurs kauft,
+   IST Taker. Wer mit Limit ins Buch legt, zahlt weniger, trägt aber das
+   Risiko, nur auf einer Seite gefüllt zu werden.
+3. **Smarkets 0 % für 60 Tage.** Neukunden bekommen mit Aktionscode 60 Tage
+   ohne Kommission, Vieltrader dauerhaft 1 %. Bei einem Schnitt von 1,3 %
+   Abstand zwischen den Büchern entscheidet genau das über Plus oder Minus.
+   Der in Abschnitt 2 genannte Select-Tarif von 3 % ließ sich in der Suche
+   vom 10.8. **nicht mehr bestätigen** — ungeklärt, deshalb bleibt 2 %.
 
 ### Währung
 
@@ -314,12 +380,38 @@ Funktionen: `orion_uebersicht()`, `orion_bf_maerkte()`,
 ## 5. Was geprüft ist
 
 ```
-node pruefung/rechnung.test.js     171 Prüfungen
-node pruefung/zuordnung.test.js    275 Prüfungen
-node bridge/pruefung.js            158 Prüfungen
-                                   ───
-                                   604 Prüfungen
+node pruefung/rechnung.test.js       171 Prüfungen
+node pruefung/zuordnung.test.js      275 Prüfungen
+node bridge/pruefung.js              158 Prüfungen
+node pruefung/spiegel.test.js     13 985 Prüfungen   <- NEU
+                                  ──────
+                                  14 589 Prüfungen
 ```
+
+**Der Spiegel-Prüfstand** hält die Browser-Fassung gegen die Server-Fassung:
+gleiche Funktionen, gleiche Konstanten, gleiche Ergebnisse auf denselben
+Eingaben — mit Rändern (null, NaN, Werte auf der Schwelle). Er schlägt in
+drei Fällen an, und der erste ist der wichtigste:
+
+1. **Eine Funktion fehlt auf einer Seite.** Genau das war am 10.8. der Fall.
+2. Eine Konstante hat verschiedene Werte.
+3. Dieselbe Eingabe liefert verschiedene Ergebnisse.
+
+Absichtliche Unterschiede stehen in `NUR_SERVER` / `NUR_BROWSER` — **jeder
+mit Grund**. Eine Ausnahme ohne Grund wird beim nächsten Mal blind erweitert.
+
+**Er ist gegen den echten Fehler geprüft**, nicht nur gegen gedachte: mit
+der alten `zuordnung.ts` aus `HEAD` meldet er 107 Abweichungen und Exitcode 1.
+Dabei kam ein Fehler heraus, den niemand gesucht hatte — der alten
+Repo-Fassung fehlten die **Sportbegriffe in der Stoppwortliste**:
+
+```
+aehnlichkeit("Under 3.5 Goals vs Over 3.5 Goals", "Under 2.5 Goals")
+   Browser 0   gegen   Server 1
+```
+
+Zwei verschiedene Über/Unter-Märkte mit Ähnlichkeit 1,00 — die Fehlerklasse
+aus Regel 5. Live war das nie, ein Deploy aus dem Repo hätte es erzeugt.
 
 Jede Schutzregel hat einen Test, der sie **auslöst**, nicht nur einen, der
 sie umgeht.
@@ -405,7 +497,38 @@ Deckung kostet nichts und bleibt.
    `WINNER_DNB`, `ASIAN_HANDICAP`, Halbzeit-Ecken. Bei Polymarket ungenutzt:
    111 „1st Half Total Corners", 111 „2nd Half Total Corners", 80 „Neither",
    79 „Any Other Score".
-3. **SX Bet** — der einzige offene Faden aus ~50 gemessenen Wegen.
+3. **SX Bet — am 10.8. abends gemessen, jetzt der wichtigste Kandidat.**
+
+   Der Grund ist Abschnitt 2: die Gebühren fressen den ganzen Abstand
+   zwischen den Büchern. SX Bet nimmt laut eigener Dokumentation **0 %
+   Kommission auf Einzelwetten** (5 % nur auf Parlay-Gewinn, den wir nicht
+   nutzen). Ein Buch ohne Gebühr ist bei 1,3 % Abstand kein weiteres Buch,
+   sondern ein anderer Rechenfall.
+
+   **Gemessen** (Preiskodierung war der offene Punkt):
+   ```
+   percentageOdds ist ein Anteil von 10^20
+       48500000000000000000 / 1e20 = 0,485
+   isMakerBettingOutcomeOne sagt, auf welche Seite der STELLER setzt;
+       der Nehmer zahlt (1 - p)
+   totalBetSize in USDC mit 6 Dezimalen
+       780530000 = 780,53 USDC   <- in EINEM Auftrag
+   Kehrwertsumme  Nehmerseite 110,4 %  ·  Stellerseite 89,6 %
+       dieselbe Richtung wie bei Smarkets (Back über, Lay unter 100 %)
+   ```
+   Die **Tiefe** ist der eigentliche Punkt: 780 USDC gegen die 2,94 und
+   14,64, die wir bei Smarkets und Kalshi messen.
+
+   Die Kodierung ist damit **zweifach** belegt (Wertebereich und Richtung
+   der Kehrwertsummen), nicht dreifach wie bei Smarkets — es fehlt der
+   Abgleich gegen einen zweiten Endpunkt.
+
+   **Weiter ungemessen:** ob die 0 % auch für uns gelten (Quelle ist die
+   Anbieterdoku, kein Konto), ob auf USDC-Schienen gehandelt werden soll,
+   und wie zuverlässig die Tiefe über den Tag steht. `sx-proxy` liegt
+   bereits als Edge Function vor.
+
+   Der alte Stand, zur Einordnung — SX Bet war schon vorher erreichbar:
    Krypto-Sportbörse mit echtem Orderbuch, aus Supabase erreichbar,
    öffentliche API **ohne Schlüssel**:
    ```
@@ -421,16 +544,47 @@ Deckung kostet nichts und bleibt.
 4. **Kaltstart-Fehler.** `orion-lauf` scheiterte früher gelegentlich mit
    `WORKER_RESOURCE_LIMIT`. Seit Smarkets ausgelagert ist, läuft er in 3,8 s.
    Ob der Fehler weg ist, ist **nicht über mehrere Tage gemessen**.
-5. **Die Spiegel laufen auseinander.** `rechnung.ts`/`zuordnung.ts` sind
-   Kopien der JS-Dateien. Am 10.8. dreimal auseinandergelaufen (`maxEinsatz`,
-   `kalshiIndex`, Halbzeit). Jedes Mal nachgezogen, aber es fehlt ein
-   Prüfstand, der beide Fassungen gegeneinander hält.
+5. ~~**Die Spiegel laufen auseinander.**~~ **ERLEDIGT am 10.8. abends.**
+   `pruefung/spiegel.test.js`, 13 985 Prüfungen, siehe Abschnitt 5.
+
+   Dabei kam heraus, dass das Problem größer war als gedacht: nicht die
+   Spiegel liefen auseinander, sondern **Repo und Deployment**. Die deployte
+   `orion-lauf` v13 hatte neun Fragearten, `direktPaare`, `ouArt` und
+   `kalshiZeit`; die Fassung im Repo hatte **nichts davon**. Ein Re-Deploy
+   aus dem Repo hätte den Scanner von neun Fragen auf vier zurückgeworfen
+   und den ankerlosen Durchgang stillgelegt — ohne dass ein Test angeschlagen
+   hätte, denn die 604 Prüfungen testeten nur die JS-Seite.
+
+   Repo und Deployment sind jetzt gleich (v14). **Wer künftig deployt,
+   lässt vorher `node pruefung/spiegel.test.js` laufen.**
 6. **Polymarket bleibt Anker für alles außer Sieger.** Halbzeit, BTTS und
    Über/Unter laufen nur über PM-Partien; Smarkets gegen Kalshi wird nur beim
    Siegermarkt direkt gepaart.
-7. **Die Marktart steht nicht in der Datenbank.** `js/filter.js` liest sie
-   aus dem Anzeigetext `mannschaft` ab — Kopplung an eine Zeichenkette, die
-   der Scanner schreibt. Eine eigene Spalte wäre sauber.
+7. ~~**Die Marktart steht nicht in der Datenbank.**~~ **ERLEDIGT am 10.8.
+   abends.** Spalte `orion_funde.art`, vom Scanner geschrieben, mit Index.
+
+   Es war kein Schönheitsfehler, sondern ein falsch zählender Filter:
+   `artVon()` kannte **vier** Arten, laufen tun **neun**. „Barcelona führt
+   zur Halbzeit" und „1. Halbzeit Über/Unter 0.5" fielen still in „Sieger"
+   bzw. „Über/Unter" — wer nach Sieger filterte, bekam Halbzeit-Wetten
+   mitgeliefert, ohne es zu merken. Das Filterfeld bietet jetzt alle neun an.
+
+   Der alte Weg bleibt als **Rückfall** für Zeilen mit `art = null`, die vor
+   der Umstellung geschrieben wurden. Er bleibt so grob wie er war — für
+   diese Zeilen IST die Art nicht besser bekannt.
+
+8. **Correct Score, Double Chance, Draw No Bet — NICHT angefasst.**
+   Am Abend des 10.8. bewusst liegen gelassen, nicht vergessen. Eine neue
+   Frageart braucht Messung, Regel und einen Trockenlauf gegen echte Daten
+   mit jeder Zuordnung einzeln; halb gemacht wäre sie ein Risiko für genau
+   den Mehrtageslauf, der gerade läuft. Der Rahmen steht (`art`-Spalte,
+   Spiegel-Prüfstand), der nächste kann direkt anfangen.
+
+   Nach dem Gebührenbefund ist die Erwartung ohnehin gedämpft: BTTS,
+   Halbzeit und die drei neuen Über/Unter liefern −3 % bis −10 %, und der
+   Grund ist nicht die Frageart, sondern der Abstand zwischen den Büchern
+   minus Gebühr. Eine zehnte Frageart ändert daran nichts. **Ein Buch ohne
+   Gebühr schon.**
 
 ---
 

@@ -435,6 +435,119 @@
     return (1 / inv - 1) * 100;
   }
 
+  /* ---------- Was die Gebühren KOSTEN ----------
+   *
+   * Bis zum 10.8.2026 war der Gebührensatz sichtbar, der Betrag nie. Wer
+   * "+0,71 %" las, sah nicht, dass davon vorher 2 % Kommission abgezogen
+   * wurden und wie viel das in Geld ist. Jedes Buch nimmt anders:
+   *
+   *     Polymarket   je Anteil, preisabhängig, am höchsten bei p ≈ 0,50
+   *     Kalshi       je Kontrakt, preisabhängig
+   *     Smarkets     Kommission auf den Nettogewinn je Markt
+   *
+   * Deshalb steht die Gebühr jetzt auf JEDER Karte: je Buch der Satz, der
+   * Betrag, und ob der Satz gemessen oder nur übernommen ist. Dazu die
+   * Hochrechnung auf den handelbaren Einsatz — das ist die Zahl, die man
+   * tatsächlich zahlt, nicht die auf den Musterlauf über 100.
+   *
+   * Vorrang haben die Werte, die der Scanner ausgerechnet und gespeichert
+   * hat. Für Zeilen von vor der Umstellung steht dort null; die werden hier
+   * nachgerechnet, aus denselben Formeln. */
+  function gebuehrForm(info, buchName, seiteText) {
+    if (info.art === 'preis') return buchName === 'kalshi' ? 'kontrakt' : 'anteil';
+    return String(seiteText || '').toLowerCase() === 'lay' ? 'lay' : 'back';
+  }
+
+  /* Betrag einer Seite. gespeichert hat Vorrang, sonst wird gerechnet.
+   * null heisst "nicht ausrechenbar" — nicht null Euro. */
+  function gebuehrBetragSeite(f, welcheSeite) {
+    var gespeichert = welcheSeite === 1 ? f.pm_gebuehr_betrag : f.bf_gebuehr_betrag;
+    if (gespeichert !== null && gespeichert !== undefined && isFinite(Number(gespeichert))) {
+      return Number(gespeichert);
+    }
+    if (!welt.Rechnung || !welt.Rechnung.gebuehrBetrag) return null;
+    var info    = welcheSeite === 1 ? buch1(f) : buch2(f);
+    var name    = welcheSeite === 1 ? (f.buch_1 || 'polymarket') : (f.buch || 'betfair');
+    var roh     = welcheSeite === 1 ? f.pm_preis : f.bf_quote;
+    var seite   = welcheSeite === 1 ? f.pm_seite : f.bf_seite;
+    var einsatz = Number(welcheSeite === 1 ? f.einsatz_1 : f.einsatz_2);
+    var qe      = welcheSeite === 1 ? qeEinsWert(f) : qeZweiWert(f);
+    if (qe === null || !isFinite(einsatz)) return null;
+    return welt.Rechnung.gebuehrBetrag(gebuehrForm(info, name, seite), einsatz, Number(roh), qe);
+  }
+
+  function gebuehrZeile(f) {
+    var b1 = buch1(f), b2 = buch2(f);
+    var s1 = Number(f.pm_gebuehr), s2 = Number(f.bf_gebuehr);
+    var g1 = gebuehrBetragSeite(f, 1), g2 = gebuehrBetragSeite(f, 2);
+
+    /* Gemessen oder übernommen. Ein übernommener Satz ist kein Fehler, aber
+     * er ist auch kein Messwert — und darf nicht so aussehen. */
+    function herkunft(echt) {
+      return echt === true
+        ? '<span class="chip gut" title="Satz kommt vom Buch selbst mit.">gemessen</span>'
+        : '<span class="chip acht" title="Satz ist der dokumentierte Standardtarif, nicht am Konto nachgemessen. Ein höherer Tarif macht dünne Funde zu Verlusten.">angenommen</span>';
+    }
+
+    function eine(info, satz, betrag, echt, seiteText) {
+      var art = String(seiteText || '').toLowerCase() === 'lay' ? 'auf den Nettogewinn'
+              : info.art === 'quote' ? 'auf den Nettogewinn'
+              : 'je Anteil';
+      return '<div class="gp-zeile">' +
+        '<span class="chip ' + txt(info.chip) + '">' + txt(info.name) + '</span> ' +
+        '<b>' + (isFinite(satz) ? (satz * 100).toFixed(2) + ' %' : '?') + '</b> ' + art + ' &middot; ' +
+        '<b>' + (betrag === null ? 'nicht ausrechenbar' : betrag.toFixed(3)) + '</b> ' +
+        (betrag === null ? '' : 'bei 100 Einsatz') + ' ' + herkunft(echt) +
+      '</div>';
+    }
+
+    var summe = (g1 === null || g2 === null) ? null : g1 + g2;
+
+    /* Was die Gebühren die Rendite kosten. Ohne diese Zahl bleibt der Betrag
+     * eine Nebenbemerkung; mit ihr sieht man, ob die Gebühr der Grund ist,
+     * dass sich etwas nicht lohnt. */
+    var ohne = renditeOhneGebuehren(f);
+    var r = Number(f.rendite);
+    var kostet = (ohne === null || !isFinite(r)) ? null : ohne - r;
+
+    /* Hochrechnung auf das, was wirklich hineinpasst. */
+    var max = f.max_einsatz;
+    var hoch = '';
+    if (summe !== null && max !== null && max !== undefined && isFinite(Number(max)) && Number(max) > 0) {
+      var faktor = Number(max) / 100;
+      /* ACHTUNG bei der Beschriftung: `rendite` ist bereits NACH Gebühr.
+       * Der Gewinn hier ist also das, was ÜBRIG BLEIBT — nicht der Ertrag,
+       * von dem die Gebühr noch abginge. Wer das verwechselt, zieht die
+       * Gebühr zweimal ab und hält gute Funde für schlechte. */
+      var gewinnNach = Number(max) * r / 100;
+      var gebuehrEcht = summe * faktor;
+      hoch = '<div class="gp-fuss">Auf den handelbaren Einsatz von ' + Number(max).toFixed(2) +
+             ' hochgerechnet: <b>' + gebuehrEcht.toFixed(3) + '</b> Gebühr &middot; ' +
+             '<b>' + (gewinnNach >= 0 ? '+' : '') + gewinnNach.toFixed(3) + '</b> Gewinn, ' +
+             'der davon übrig bleibt' +
+             (gewinnNach > 0 && gebuehrEcht > gewinnNach
+               ? ' — die Gebühr ist damit <b>größer als der Gewinn</b>.'
+               : '.') +
+             '</div>';
+    } else if (summe !== null) {
+      hoch = '<div class="gp-fuss">Wie viel Gebühr tatsächlich anfällt, hängt am Einsatz. ' +
+             'Der ist hier <b>nicht bekannt</b> — die Menge im Orderbuch fehlt, ' +
+             'deshalb wird nicht hochgerechnet.</div>';
+    }
+
+    return '<div class="gegenprobe">' +
+      '<div class="gp-fuss" style="margin:0 0 6px">Was die <b>Gebühren</b> kosten — ' +
+        'jedes Buch nimmt anders, und der Satz steckt bereits in beiden Effektivquoten:</div>' +
+      eine(b1, s1, g1, f.pm_gebuehr_echt, f.pm_seite) +
+      eine(b2, s2, g2, f.bf_gebuehr_echt, f.bf_seite) +
+      '<div class="gp-zeile"><b>Zusammen ' +
+        (summe === null ? 'nicht ausrechenbar' : summe.toFixed(3) + ' bei 100 Einsatz') + '</b>' +
+        (kostet === null ? '' : ' &middot; sie kosten <b>' + kostet.toFixed(2) +
+           ' Prozentpunkte</b> Rendite') +
+      '</div>' + hoch +
+    '</div>';
+  }
+
   function analyse(f, imVerlauf) {
     var gewinn = Number(f.auszahlung) - 100;
     return '<div class="analyse">' +
@@ -520,6 +633,7 @@
           '</div>' +
         '</div>' +
         renditeText(f) +
+        gebuehrZeile(f) +
         gegenprobe(f) +
         absageZeile(f) +
         pruefzeile(f) +

@@ -1,32 +1,21 @@
-// orion-lauf — der Scanner. pg_cron, jede Minute, serverseitig.
+// orion-lauf — der Scanner. pg_cron, alle 15 Sekunden, serverseitig.
 //
-// UMBAU vom 10.8.2026: von "Polymarket gegen den Rest" auf "jedes Buch
-// gegen jedes".
+// ZWEI DURCHGAENGE:
+//   1. ANKER POLYMARKET — fuer jeden Polymarket-Markt ein Gegenstueck bei
+//      Smarkets und Kalshi. Dort gibt es immer zwei Belege: Partie und Laeufer.
+//   2. OHNE ANKER — Smarkets direkt gegen Kalshi. Ersatz fuer den fehlenden
+//      zweiten Beleg ist die EINDEUTIGKEIT in Z.direktPaare.
 //
-// Vorher wurden genau zwei Paarungen gesucht: Polymarket gegen Betfair und
-// Polymarket gegen Kalshi. Mit Smarkets als drittem Buch sind es sechs, und
-// Betfair gegen Smarkets ist genauso eine Arbitrage wie Polymarket gegen
-// Betfair. Es waere Unsinn, die Haelfte davon liegen zu lassen.
+// GENUTZTE FRAGEN (Regel 1: nur gleiche Frage gegen gleiche Frage):
+//   sieger · unentschieden · hz_sieger · hz_unentschieden · btts
+//   ueber_unter · hz1_ueber_unter · hz2_ueber_unter · ecken_ueber_unter
 //
-// DAS NEUE MODELL — eine SEITE statt eines Buchpaares:
-// Zu jeder Frage ("Gewinnt Team A?") liefert jedes Buch bis zu zwei Seiten:
-//     JA    Polymarket JA-Anteil · Kalshi Yes · Betfair/Smarkets BACK
-//     NEIN  Polymarket NEIN-Anteil · Kalshi No · Betfair/Smarkets LAY
-// Jede Seite traegt ihre Effektivquote NACH Gebuehr. Danach wird jede
-// JA-Seite gegen jede NEIN-Seite eines ANDEREN Buches gerechnet.
-//
-// Was dabei erzwungen wird (R.chance):
-//   - genau ZWEI Buecher, nie eins, nie drei
-//   - immer JA gegen NEIN, nie zweimal dasselbe
-//   - Gebuehr steckt schon in qe, es gibt keine Zeile ohne Gebuehr
-//
-// Mehrere Kombinationen zur selben Partie ergeben MEHRERE Zeilen. Jede hat
-// eigene Links, eigene Einsaetze und eine eigene Rendite — eine gemeinsame
-// Karte waere gelogen.
-//
-// SPEICHER: lief regelmaessig ins Rechenlimit (HTTP 546). Deshalb wird
-// Smarkets NICHT hier geholt, sondern von orion-smarkets eingesammelt und
-// hier nur abgelesen — dasselbe Muster wie bei Kalshi.
+// DAS MODELL — eine SEITE statt eines Buchpaares:
+//     JA    Polymarket JA-Anteil · Kalshi Yes · Boerse BACK
+//     NEIN  Polymarket NEIN-Anteil · Kalshi No · Boerse LAY
+// Jede Seite traegt ihre Effektivquote NACH Gebuehr. Danach jede JA-Seite
+// gegen jede NEIN-Seite eines ANDEREN Buches (R.chance erzwingt: genau zwei
+// Buecher, immer JA gegen NEIN).
 
 import * as R from './rechnung.ts';
 import * as Z from './zuordnung.ts';
@@ -36,27 +25,11 @@ const FENSTER_H = 72;
 const SCHWELLE = 0.5;
 const LAEUFER_SCHWELLE = 0.8;
 const BROKER = 'https://www.orbitexch.com/customer/sport/1/market/{id}';
-
-// Ab hier abwaerts ist es Rauschen und wird gar nicht erst gespeichert.
-// Ohne diese Grenze entstuenden aus sechs Paarungen je Markt Zehntausende
-// Zeilen je Minute, von denen fast alle tief im Minus liegen.
 const RAUSCH_GRENZE = -1.0;
 
-// BETFAIR ABGESCHALTET am 10.8.2026. Der Code bleibt vollstaendig stehen.
-//
-// Betfair ist das einzige Buch, das einen laufenden Heim-PC braucht, und aus
-// Supabase gemessen gesperrt: 5 von 8 Wegen antworten 403 von Cloudflare,
-// auch die oeffentliche Startseite, VOR jeder Anmeldung.
-//
-// Der letzte offene Weg waere Zertifikat -> Stream gewesen. Er ist eine
-// Sackgasse: Betfairs eigenes Stream-Schema hat in RunnerDefinition nur
-// sortPriority, removalDate, id, hc, adjustmentFactor, bsp, status. KEIN
-// Feld im ganzen Schema traegt einen Namen. Der Stream liefert Preise zu
-// einer selectionId, ohne zu sagen, welche Mannschaft das ist — und Namen
-// gibt es nur ueber listMarketCatalogue auf api.betfair.com, also 403.
-// Ohne Namen keine Zuordnung.
-//
-// Loest Betfair die Sperre je: hier auf true, sonst nichts.
+// BETFAIR ABGESCHALTET am 10.8.2026. Code bleibt stehen.
+// Rund 50 Wege gemessen — alle 403 oder nicht erreichbar. Der Kursstrom
+// waere ohnehin wertlos: sein Schema traegt in KEINEM Feld einen Namen.
 const BETFAIR_AKTIV = false;
 
 const URL_SUPA = Deno.env.get('SUPABASE_URL')!;
@@ -108,19 +81,12 @@ function zahlOderNull(x: unknown): number | null {
   return isFinite(n) ? n : null;
 }
 
-// Eine SEITE: ein fertiges Angebot eines Buches, Gebuehr schon eingerechnet.
 interface Seite {
-  buch: string;
-  richtung: 'ja' | 'nein';
-  qe: number;
-  geld: number | null;
-  roh: number;            // was angezeigt wird: Preis (pm/ka) oder Quote (bf/sm)
-  gebuehr: number;
-  gebuehr_echt: boolean;
-  name: string;           // Laeufer- bzw. Ausgangsname
-  seite_text: string;     // "JA" / "NEIN" / "Back" / "Lay"
-  link: string;
-  partie: string;
+  buch: string; richtung: 'ja' | 'nein'; qe: number; geld: number | null; roh: number;
+  gebuehr: number; gebuehr_echt: boolean; name: string; seite_text: string;
+  link: string; partie: string;
+  // Wie die Gebuehr dieser Seite in Geld ausgerechnet wird (R.gebuehrBetrag).
+  gebuehr_form: R.GebuehrForm;
 }
 
 Deno.serve(async () => {
@@ -132,7 +98,7 @@ Deno.serve(async () => {
   try {
     // ---------- Polymarket ----------
     const nachId = new Map<string, any>();
-    const jeArt: Record<string, number> = { sieger: 0, unentschieden: 0, ueber_unter: 0, btts: 0 };
+    const jeArt: Record<string, number> = {};
     for (const tag of TAGS) {
       for (let off = 0; off < 3000; off += 100) {
         const r = await wiederholt(`https://gamma-api.polymarket.com/events?closed=false&active=true&limit=100&offset=${off}&tag_slug=${tag}`,
@@ -149,7 +115,7 @@ Deno.serve(async () => {
             if (isNaN(ende) || ende <= jetzt || ende > grenze) continue;
             const id = String(m.id);
             if (nachId.has(id)) continue;
-            jeArt[art]++;
+            jeArt[art] = (jeArt[art] || 0) + 1;
             nachId.set(id, {
               id, art, frage: m.question, teil: m.groupItemTitle || null,
               titel: ev.title, tag, ende: new Date(ende).toISOString(),
@@ -189,9 +155,7 @@ Deno.serve(async () => {
       }
     }
 
-    // ---------- Betfair, in der Datenbank vorgefiltert ----------
-    // Wird gar nicht erst geladen, wenn abgeschaltet: das spart je Lauf
-    // eine RPC ueber rund 1000 Maerkte.
+    // ---------- Betfair ----------
     let bfImFenster: Z.BfMarkt[] = [];
     let bfAlterS: number | null = null;
     if (BETFAIR_AKTIV) {
@@ -223,14 +187,57 @@ Deno.serve(async () => {
     const smZeile = smZeilen[0] || { maerkte: [], updated_at: null };
     const smAlterS = smZeile.updated_at ? Math.round((jetzt - Date.parse(smZeile.updated_at)) / 1000) : null;
     const smAlle = smZeile.maerkte || [];
-    const smSieger = smAlle.filter((m: any) => m.art === 'sieger');
-    const smOu = smAlle.filter((m: any) => m.art === 'ueber_unter');
-    const smBtts = smAlle.filter((m: any) => m.art === 'btts');
+    const smNachArt: Record<string, any[]> = {};
+    for (const m of smAlle) (smNachArt[m.art] = smNachArt[m.art] || []).push(m);
+    const smSieger = smNachArt['sieger'] || [];
+    const smHalbzeit = smNachArt['halbzeit'] || [];
+    const smBtts = smNachArt['btts'] || [];
 
     const zeilen: any[] = [];
     const jePaarung: Record<string, number> = {};
     let mitMenge = 0;
+    const smGesehen = new Set<string>();
 
+    function schreibe(a: Seite, b: Seite, e: any, opt: {
+      schluessel: string; marktId: string; titel: string; frage: string;
+      bez: string; art: string; sport: string; ende: string; zuordnung: number;
+    }) {
+      const paarung = KUERZEL[a.buch] + '>' + KUERZEL[b.buch];
+      jePaarung[paarung] = (jePaarung[paarung] || 0) + 1;
+      if (e.maxEinsatz !== null && e.maxEinsatz !== undefined) mitMenge++;
+
+      /* GEBUEHR IN GELD, je Seite und in Summe.
+       *
+       * Die Gebuehr steckte bisher nur in qe — sichtbar war der Satz, nie der
+       * Betrag. Wer 0,71 % Rendite sieht, soll auch sehen, dass davon vorher
+       * 2 % Kommission abgezogen wurden und wie viel das in Geld ist.
+       * Bezugsgroesse ist der Musterlauf ueber 100 (e.einsatz), damit die
+       * Zahlen zwischen Zeilen vergleichbar bleiben. */
+      const gA = R.gebuehrBetrag(a.gebuehr_form, e.s1, a.roh, a.qe);
+      const gB = R.gebuehrBetrag(b.gebuehr_form, e.s2, b.roh, b.qe);
+      const gSumme = (gA === null || gB === null) ? null : gA + gB;
+
+      zeilen.push({
+        schluessel: opt.schluessel,
+        buch_1: a.buch, buch: b.buch,
+        markt_id: opt.marktId, titel: opt.titel, frage: opt.frage,
+        mannschaft: opt.bez, art: opt.art, sportart: opt.sport, weg: paarung,
+        pm_seite: a.seite_text, pm_preis: a.roh, pm_link: a.link,
+        bf_name: b.name, bf_seite: b.seite_text, bf_quote: b.roh,
+        bf_link: b.link, bf_partie: b.partie,
+        zuordnung: opt.zuordnung, rendite: e.rendite, inv: e.inv,
+        einsatz_1: e.s1, einsatz_2: e.s2, auszahlung: e.auszahlung,
+        pm_gebuehr: a.gebuehr, bf_gebuehr: b.gebuehr,
+        pm_gebuehr_echt: a.gebuehr_echt, bf_gebuehr_echt: b.gebuehr_echt,
+        pm_gebuehr_betrag: gA, bf_gebuehr_betrag: gB, gebuehr_gesamt: gSumme,
+        pm_menge: a.geld, gegen_menge: b.geld,
+        max_einsatz: e.maxEinsatz === undefined ? null : e.maxEinsatz,
+        max_gewinn: e.maxGewinn === undefined ? null : e.maxGewinn,
+        endet_am: opt.ende, zuletzt_gesehen: new Date().toISOString(), status: 'live'
+      });
+    }
+
+    // ================= DURCHGANG 1: Anker Polymarket =================
     for (const m of maerkte) {
       const p = Z.paar(m.titel);
       if (!p) continue;
@@ -239,33 +246,42 @@ Deno.serve(async () => {
       const ask = buch.map((x: any) => x.p);
       const mengen = buch.map((x: any) => x.menge);
 
-      const bez = m.art === 'unentschieden' ? 'Unentschieden'
-                : m.art === 'btts'         ? 'Beide Mannschaften treffen'
-                : m.art === 'ueber_unter'  ? ('Über/Unter ' + Z.ouLinie(m.teil)) : m.teil;
+      const istHzSieger = m.art === 'hz_sieger' || m.art === 'hz_unentschieden';
+      const ou = Z.ouArt(m.teil);          // {art, linie} bei allen vier Ueber/Unter
+      const istOu = ou !== null && ou.art === m.art;
+
+      const bez = m.art === 'unentschieden'     ? 'Unentschieden'
+                : m.art === 'btts'              ? 'Beide Mannschaften treffen'
+                : m.art === 'hz_unentschieden'  ? 'Unentschieden zur Halbzeit'
+                : m.art === 'hz_sieger'         ? (m.teil + ' führt zur Halbzeit')
+                : m.art === 'ueber_unter'       ? ('Über/Unter ' + (ou ? ou.linie : '?'))
+                : m.art === 'hz1_ueber_unter'   ? ('1. Halbzeit Über/Unter ' + (ou ? ou.linie : '?'))
+                : m.art === 'hz2_ueber_unter'   ? ('2. Halbzeit Über/Unter ' + (ou ? ou.linie : '?'))
+                : m.art === 'ecken_ueber_unter' ? ('Ecken Über/Unter ' + (ou ? ou.linie : '?'))
+                : m.teil;
       const seiten: Seite[] = [];
 
-      // ----- Polymarket: beide Anteile -----
       const pmLink = `https://polymarket.com/event/${m.evSlug}/${m.mSlug}`;
+      const pmEcht = m.satz !== null && m.satz !== undefined;
       const qeJa = R.qePm(ask[0], m.satz, m.expo);
       const qeNein = R.qePm(ask[1], m.satz, m.expo);
       if (qeJa !== null) seiten.push({
         buch: 'polymarket', richtung: 'ja', qe: qeJa, geld: mengen[0] * ask[0], roh: ask[0],
-        gebuehr: R.gebuehrSicher(m.satz), gebuehr_echt: m.satz !== null && m.satz !== undefined,
-        name: bez, seite_text: m.art === 'ueber_unter' ? 'ÜBER' : 'JA', link: pmLink, partie: m.titel
+        gebuehr: R.gebuehrSicher(m.satz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
+        name: bez, seite_text: istOu ? 'ÜBER' : 'JA', link: pmLink, partie: m.titel
       });
       if (qeNein !== null) seiten.push({
         buch: 'polymarket', richtung: 'nein', qe: qeNein, geld: mengen[1] * ask[1], roh: ask[1],
-        gebuehr: R.gebuehrSicher(m.satz), gebuehr_echt: m.satz !== null && m.satz !== undefined,
-        name: bez, seite_text: m.art === 'ueber_unter' ? 'UNTER' : 'NEIN', link: pmLink, partie: m.titel
+        gebuehr: R.gebuehrSicher(m.satz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
+        name: bez, seite_text: istOu ? 'UNTER' : 'NEIN', link: pmLink, partie: m.titel
       });
 
       // ----- Betfair -----
-      // Betfair kennt kein BTTS in unserer Zuordnung: der Markttyp
-      // BOTH_TEAMS_TO_SCORE existiert dort zwar, hat aber keine geprüfte
-      // Regel. Keine Regel, keine Paarung.
-      const bfKand = m.art === 'btts' ? []
-                   : m.art === 'ueber_unter' ? Z.ouKandidaten(bfOu, Z.ouLinie(m.teil))
-                   : bfSieger;
+      // Nur die drei Fragen, fuer die es dort eine gepruefte Regel gibt.
+      // Halbzeit, BTTS, Halbzeit-Ueber/Unter und Ecken haben keine.
+      const bfKand = m.art === 'ueber_unter' ? Z.ouKandidaten(bfOu, ou ? ou.linie : null)
+                   : (m.art === 'sieger' || m.art === 'unentschieden') ? bfSieger
+                   : [];
       if (bfKand.length) {
         const tr = Z.besterTreffer(p[0], p[1], bfKand, SCHWELLE);
         if (tr) {
@@ -281,15 +297,16 @@ Deno.serve(async () => {
             if (qb !== null) seiten.push({
               buch: 'betfair', richtung: 'ja', qe: qb, geld: zahlOderNull(lauf.laeufer.bs),
               roh: lauf.laeufer.b, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: satz !== null,
+              gebuehr_form: 'back',
               name: lauf.laeufer.n, seite_text: 'Back', link, partie
             });
             if (ql !== null) {
-              // Beim Legen begrenzt die HAFTUNG, nicht der Einsatz des Gegenuebers.
               const ls = zahlOderNull(lauf.laeufer.ls);
               seiten.push({
                 buch: 'betfair', richtung: 'nein', qe: ql,
                 geld: ls === null ? null : ls * (lauf.laeufer.l - 1),
                 roh: lauf.laeufer.l, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: satz !== null,
+                gebuehr_form: 'lay',
                 name: lauf.laeufer.n, seite_text: 'Lay', link, partie
               });
             }
@@ -298,14 +315,18 @@ Deno.serve(async () => {
       }
 
       // ----- Smarkets -----
-      const smKand = m.art === 'btts' ? smBtts
-                   : m.art === 'ueber_unter' ? Z.smOuKandidaten(smOu, Z.ouLinie(m.teil))
+      // Ueber/Unter: gleiche ART und gleiche LINIE gegen gleiche.
+      const smKand = istHzSieger ? smHalbzeit
+                   : m.art === 'btts' ? smBtts
+                   : istOu ? Z.smOuKandidaten(smNachArt[m.art] || [], ou!.linie)
                    : smSieger;
       if (smKand.length) {
-        const tr = Z.besterTreffer(p[0], p[1], smKand, SCHWELLE);
+        const tr = Z.besterTreffer(p[0], p[1], smKand as any, SCHWELLE);
         if (tr) {
           const lauf = Z.smLaeufer(m.art, m.teil, p, (tr.bf as any).r, tr.getauscht, LAEUFER_SCHWELLE);
           if (lauf) {
+            // Nur SIEGERMAERKTE decken eine Partie fuer den zweiten Durchgang ab.
+            if (m.art === 'sieger' || m.art === 'unentschieden') smGesehen.add(tr.bf.ev);
             const satz = (tr.bf as any).sz;
             const echt = (tr.bf as any).sz_echt === true;
             const link = (tr.bf as any).link;
@@ -315,6 +336,7 @@ Deno.serve(async () => {
             if (qb !== null) seiten.push({
               buch: 'smarkets', richtung: 'ja', qe: qb, geld: zahlOderNull(lauf.laeufer.bs),
               roh: lauf.laeufer.b, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: echt,
+              gebuehr_form: 'back',
               name: lauf.laeufer.n, seite_text: 'Back', link, partie
             });
             if (ql !== null) {
@@ -323,6 +345,7 @@ Deno.serve(async () => {
                 buch: 'smarkets', richtung: 'nein', qe: ql,
                 geld: ls === null ? null : ls * (lauf.laeufer.l - 1),
                 roh: lauf.laeufer.l, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: echt,
+                gebuehr_form: 'lay',
                 name: lauf.laeufer.n, seite_text: 'Lay', link, partie
               });
             }
@@ -331,8 +354,6 @@ Deno.serve(async () => {
       }
 
       // ----- Kalshi: nur Sieger und Unentschieden -----
-      // Kalshi fuehrt weder Ueber/Unter noch BTTS in einer Form, fuer die
-      // es hier eine geprüfte Zuordnung gaebe.
       if (m.art === 'sieger' || m.art === 'unentschieden') {
         const pmSeite: Z.Seite = m.art === 'unentschieden' ? 'unentschieden' : Z.seiteVon(m.teil, p);
         if (pmSeite) {
@@ -352,13 +373,13 @@ Deno.serve(async () => {
             if (qJa !== null) seiten.push({
               buch: 'kalshi', richtung: 'ja', qe: qJa,
               geld: kMenge === null ? null : kMenge * k.ja, roh: k.ja,
-              gebuehr: R.KALSHI_SATZ, gebuehr_echt: false,
+              gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
               name: k.jaName, seite_text: 'Ja', link, partie: k.titel
             });
             if (qNein !== null) seiten.push({
               buch: 'kalshi', richtung: 'nein', qe: qNein,
               geld: kMenge === null ? null : kMenge * k.nein, roh: k.nein,
-              gebuehr: R.KALSHI_SATZ, gebuehr_echt: false,
+              gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
               name: k.jaName, seite_text: 'Nein', link, partie: k.titel
             });
             break;
@@ -366,28 +387,92 @@ Deno.serve(async () => {
         }
       }
 
-      // ----- Jede JA-Seite gegen jede NEIN-Seite eines ANDEREN Buches -----
       for (const treffer of R.alleChancen(seiten, RAUSCH_GRENZE)) {
         const a = treffer.ja as Seite, b = treffer.nein as Seite, e = treffer.ergebnis;
-        const paarung = KUERZEL[a.buch] + '>' + KUERZEL[b.buch];
-        jePaarung[paarung] = (jePaarung[paarung] || 0) + 1;
-        if (e.maxEinsatz !== null) mitMenge++;
-
-        zeilen.push({
-          schluessel: paarung + ':' + m.id,
-          buch_1: a.buch, buch: b.buch,
-          markt_id: m.id, titel: m.titel, frage: m.frage,
-          mannschaft: bez, sportart: m.tag, weg: paarung,
-          pm_seite: a.seite_text, pm_preis: a.roh, pm_link: a.link,
-          bf_name: b.name, bf_seite: b.seite_text, bf_quote: b.roh,
-          bf_link: b.link, bf_partie: b.partie,
-          zuordnung: 1, rendite: e.rendite, inv: e.inv,
-          einsatz_1: e.s1, einsatz_2: e.s2, auszahlung: e.auszahlung,
-          pm_gebuehr: a.gebuehr, bf_gebuehr: b.gebuehr, bf_gebuehr_echt: b.gebuehr_echt,
-          pm_menge: a.geld, gegen_menge: b.geld,
-          max_einsatz: e.maxEinsatz, max_gewinn: e.maxGewinn,
-          endet_am: m.ende, zuletzt_gesehen: new Date().toISOString(), status: 'live'
+        schreibe(a, b, e, {
+          schluessel: KUERZEL[a.buch] + '>' + KUERZEL[b.buch] + ':' + m.id,
+          marktId: m.id, titel: m.titel, frage: m.frage, bez, art: m.art, sport: m.tag,
+          ende: m.ende, zuordnung: 1
         });
+      }
+    }
+
+    // ========= DURCHGANG 2: Smarkets gegen Kalshi, OHNE Polymarket =========
+    const smNachPartie = new Map<string, any>();
+    for (const m of smSieger) if (!smNachPartie.has(m.ev)) smNachPartie.set(m.ev, m);
+    const offen: any[] = [];
+    for (const [ev, m] of smNachPartie) {
+      if (smGesehen.has(ev)) continue;
+      const pp = Z.paar(ev);
+      if (!pp) continue;
+      const t = Date.parse(m.st || '');
+      offen.push({ id: ev, partie: pp, zeit: isFinite(t) ? t : null, markt: m });
+    }
+    const kaNachPartie = new Map<string, any>();
+    for (const k of kalshi) {
+      const pp = Z.kalshiPaar(k.titel);
+      if (!pp) continue;
+      const z = Z.kalshiZeit(k.ev);
+      if (!kaNachPartie.has(k.ev)) {
+        kaNachPartie.set(k.ev, { id: k.ev, partie: pp, zeit: z ? z.zeit : null, titel: k.titel, ausgaenge: [] });
+      }
+      kaNachPartie.get(k.ev).ausgaenge.push(k);
+    }
+    const direkt = Z.direktPaare(offen, [...kaNachPartie.values()], SCHWELLE);
+
+    for (const pr of direkt.paare) {
+      const smM = pr.a.markt, kaE = pr.b;
+      for (const k of kaE.ausgaenge) {
+        const kSeite = Z.seiteVon(k.jaName, kaE.partie);
+        if (!kSeite) continue;
+        const seite = kSeite === 'unentschieden' ? 'DRAW'
+                    : ((pr.getauscht ? (kSeite === 'a' ? 'b' : 'a') : kSeite) === 'a' ? 'HOME' : 'AWAY');
+        const v = (smM.r || []).find((x: any) => x.typ === seite);
+        if (!v) continue;
+
+        const seiten: Seite[] = [];
+        const kLink = kalshiLink(k);
+        const qJa = R.qeKalshi(k.ja), qNein = R.qeKalshi(k.nein);
+        const kMenge = zahlOderNull(k.jaMenge);
+        if (qJa !== null) seiten.push({
+          buch: 'kalshi', richtung: 'ja', qe: qJa, geld: kMenge === null ? null : kMenge * k.ja,
+          roh: k.ja, gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
+          name: k.jaName, seite_text: 'Ja', link: kLink, partie: k.titel
+        });
+        if (qNein !== null) seiten.push({
+          buch: 'kalshi', richtung: 'nein', qe: qNein, geld: kMenge === null ? null : kMenge * k.nein,
+          roh: k.nein, gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
+          name: k.jaName, seite_text: 'Nein', link: kLink, partie: k.titel
+        });
+        const qb = R.qeBack(v.b, smM.sz), ql = R.qeLay(v.l, smM.sz);
+        if (qb !== null) seiten.push({
+          buch: 'smarkets', richtung: 'ja', qe: qb, geld: zahlOderNull(v.bs), roh: v.b,
+          gebuehr: R.gebuehrSicher(smM.sz), gebuehr_echt: smM.sz_echt === true,
+          gebuehr_form: 'back',
+          name: v.n, seite_text: 'Back', link: smM.link, partie: smM.ev
+        });
+        if (ql !== null) {
+          const ls = zahlOderNull(v.ls);
+          seiten.push({
+            buch: 'smarkets', richtung: 'nein', qe: ql,
+            geld: ls === null ? null : ls * (v.l - 1), roh: v.l,
+            gebuehr: R.gebuehrSicher(smM.sz), gebuehr_echt: smM.sz_echt === true,
+            gebuehr_form: 'lay',
+            name: v.n, seite_text: 'Lay', link: smM.link, partie: smM.ev
+          });
+        }
+
+        const bez = seite === 'DRAW' ? 'Unentschieden' : v.n;
+        for (const treffer of R.alleChancen(seiten, RAUSCH_GRENZE)) {
+          const a = treffer.ja as Seite, b = treffer.nein as Seite, e = treffer.ergebnis;
+          schreibe(a, b, e, {
+            schluessel: KUERZEL[a.buch] + '>' + KUERZEL[b.buch] + '#' + k.ticker,
+            marktId: String(k.ticker), titel: smM.ev, frage: k.titel,
+            bez, art: seite === 'DRAW' ? 'unentschieden' : 'sieger',
+            sport: 'soccer', ende: smM.st || new Date(grenze).toISOString(),
+            zuordnung: pr.score
+          });
+        }
       }
     }
 
@@ -426,12 +511,24 @@ Deno.serve(async () => {
       })
     });
 
+    const smJeArt: Record<string, number> = {};
+    for (const k of Object.keys(smNachArt)) smJeArt[k] = smNachArt[k].length;
+
     return new Response(JSON.stringify({
       ok: true, dauer_ms: Date.now() - t0,
+      betfair_aktiv: BETFAIR_AKTIV,
       pm_maerkte: maerkte.length, je_art: jeArt,
-      bf_geladen: bfImFenster.length, bf_alter_s: bfAlterS,
       kalshi_maerkte: kalshi.length, kalshi_alter_s: kaAlterS,
       smarkets_maerkte: smAlle.length, smarkets_alter_s: smAlterS,
+      smarkets_je_art: smJeArt,
+      anker_smarkets_partien: smGesehen.size,
+      direkt: {
+        offene_smarkets_partien: offen.length,
+        kalshi_partien: kaNachPartie.size,
+        paare: direkt.paare.length,
+        mehrdeutig_verworfen: direkt.mehrdeutig,
+        zeitlich_zu_weit: direkt.zuWeit
+      },
       paare: zeilen.length, je_paarung: jePaarung,
       mit_bekannter_menge: mitMenge, chancen, beendet
     }, null, 1), { headers: kopf });

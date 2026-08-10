@@ -198,6 +198,67 @@
     return Math.min(geld1 / a1, geld2 / a2);
   }
 
+  /* ---------- Was die Gebuehr in GELD kostet ----------
+   *
+   * Bis zum 10.8.2026 steckte die Gebuehr nur in qe. Sichtbar war der SATZ,
+   * nie der BETRAG. Wer 0,71 % Rendite liest, soll auch sehen, wie viel
+   * Kommission vorher abgezogen wurde — sonst ist die Zahl zwar richtig,
+   * aber nicht nachvollziehbar. Und jedes Buch nimmt anders: Polymarket je
+   * Anteil und preisabhaengig, Kalshi je Kontrakt, die Boersen als
+   * Kommission auf den Nettogewinn.
+   *
+   * EINE Formel fuer alle vier Gebuehrenarten:
+   *
+   *     Betrag = Einsatz * (Quote OHNE Gebuehr - Quote MIT Gebuehr)
+   *
+   * Das ist exakt die Differenz der beiden Auszahlungen, denn die Auszahlung
+   * ist immer Einsatz * qe. Sie braucht weder den Satz noch den Exponenten
+   * noch eine Fallunterscheidung in der Rechnung selbst — nur die Auskunft,
+   * wie die Quote OHNE Gebuehr aussaehe:
+   *
+   *     anteil    Polymarket   1/Preis        Gebuehr je Anteil
+   *     kontrakt  Kalshi       1/Preis        Gebuehr je Kontrakt
+   *     back      Boerse Back  Quote          Kommission auf den Nettogewinn
+   *     lay       Boerse Lay   L/(L-1)        Kommission auf den Nettogewinn
+   *
+   * Nachgerechnet fuer jede Form:
+   *     anteil    qe = (1-g)/p        -> Differenz g/p       * Einsatz
+   *     kontrakt  qe = (1-g)/p        -> Differenz g/p       * Einsatz
+   *     back      qe = 1+(q-1)(1-g)   -> Differenz (q-1)g    * Einsatz
+   *     lay       qe = 1+(1-g)/(L-1)  -> Differenz g/(L-1)   * Einsatz
+   *
+   * null heisst NICHT "keine Gebuehr", sondern "nicht ausrechenbar". Eine
+   * Gebuehr, die man nicht beziffern kann, wird nicht als 0 gezeigt —
+   * das waere dieselbe Luege wie eine unbekannte Menge als "unbegrenzt". */
+  function quoteOhneGebuehr(form, roh) {
+    if (!istZahl(roh)) return null;
+    if (form === 'anteil' || form === 'kontrakt') {
+      if (roh <= 0 || roh >= 1) return null;
+      return 1 / roh;
+    }
+    if (form === 'back') {
+      if (roh <= 1) return null;
+      return roh;
+    }
+    if (form === 'lay') {
+      if (roh <= 1) return null;
+      return roh / (roh - 1);
+    }
+    return null;
+  }
+
+  function gebuehrBetrag(form, einsatz, roh, qe) {
+    if (!istZahl(einsatz) || einsatz <= 0) return null;
+    if (!istZahl(qe) || qe <= 1) return null;
+    var ohne = quoteOhneGebuehr(form, roh);
+    if (ohne === null) return null;
+    var d = ohne - qe;
+    /* Kleine negative Werte sind Rundung, nicht Gewinn. Grosse waeren ein
+     * Fehler in der Seite — dann lieber null als eine erfundene Zahl. */
+    if (d < -1e-9) return null;
+    return einsatz * (d < 0 ? 0 : d);
+  }
+
   /* Kern: zwei Effektivquoten gegeneinander.
    * Gibt immer ein Ergebnis zurueck, auch wenn es keine Arbitrage ist,
    * damit der Aufrufer die Zahl sieht statt nur ein "nein". */
@@ -308,6 +369,8 @@
     smQuote: smQuote,
     smGeld: smGeld,
     maxEinsatz: maxEinsatz,
+    quoteOhneGebuehr: quoteOhneGebuehr,
+    gebuehrBetrag: gebuehrBetrag,
     chance: chance,
     alleChancen: alleChancen,
     gebuehrSicher: gebuehrSicher,
