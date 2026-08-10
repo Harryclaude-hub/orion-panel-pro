@@ -41,6 +41,9 @@
     var knopf = document.getElementById('neuladen');
     if (knopf) knopf.addEventListener('click', function () { laden(false); });
 
+    /* Erst nach dem Entsperren: vorher gibt es die Knoepfe noch nicht. */
+    if (welt.Filter) welt.Filter.start();
+
     laden(false);
     setInterval(function () { laden(true); }, welt.KONFIG.taktMs);
 

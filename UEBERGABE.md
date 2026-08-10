@@ -374,6 +374,35 @@ deckt beide Richtungen ab.
 
 ## 6. Stand der Anzeige
 
+### Filterfeld (10.8.2026)
+
+Rechts, auf- und zuklappbar, Einstellung überlebt Auffrischung und Neustart
+(`localStorage`, Schlüssel `orion-filter`). Gefiltert wird nach:
+Fundzeit (15 min / 1 h / 6 h / 24 h), Anpfiff bzw. Ende der Partie
+(3 / 12 / 24 h), Mindestrendite, handelbarem Mindesteinsatz, bekannter Menge,
+Büchern, Frageart und Sportart.
+
+**Zwei Regeln, die dabei nicht gebrochen werden dürfen:**
+
+1. **Der Filter blendet NUR aus, er sucht nichts ab.** Unter jedem Reiter
+   steht deshalb, wie viele Funde gerade versteckt sind. Ein Filter, der
+   stillschweigend etwas verschluckt, ist eine Falle — dann sähe „0 Chancen"
+   mit Filter genauso aus wie „0 Chancen" ohne.
+2. **Beim Buchfilter müssen BEIDE Seiten erlaubt sein.** Eine Arbitrage
+   braucht zwei Bücher; eine Zeile zu zeigen, deren Gegenseite man abgewählt
+   hat, wäre wertlos.
+
+Fallstrick beim Bauen, hier festgehalten: `zeichne(e)` darf `e.chancen`
+und Geschwister **nicht überschreiben**. `app.js` merkt sich genau dieses
+Objekt als `welt.letztesErgebnis`; wer hineinschreibt, filtert beim nächsten
+Zeichnen eine bereits gefilterte Liste noch einmal, und die Liste schrumpft
+bei jedem Klick weiter. Es wird mit lokalen Variablen gearbeitet.
+
+Die Marktart steht **nicht** in der Datenbank, sondern wird in `filter.js`
+aus dem Anzeigetext `mannschaft` abgelesen. Das ist die schwächste Stelle
+des Filters — eine eigene Spalte wäre sauber (offener Punkt).
+
+
 Drei Reiter: **Chancen**, **Knappste Paare**, **Verlauf**.
 Ganz oben eine **Anbietertafel**, nach Umfang sortiert (kleinstes Buch
 zuerst, als Engstelle markiert), mit Ampel, Aktualität, Umfang, Funden,

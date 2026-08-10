@@ -787,11 +787,37 @@
 
     /* Drei getrennte Bereiche statt einer langen Rolle. Der Verlauf stand
      * vorher unter 187 knappen Paaren und war damit unauffindbar. */
-    var chancenHtml = '';
-    if (e.chancen.length) {
-      chancenHtml = e.chancen.map(function (f) { return karte(f, false); }).join('');
+    /* Der Filter blendet NUR aus. Was er versteckt, wird darunter gezaehlt —
+     * sonst sieht "0 Chancen" mit gesetztem Filter genauso aus wie "0
+     * Chancen" ohne, und das waere eine Falle. */
+    var F = welt.Filter;
+    function gefiltert(liste, imVerlauf) {
+      return F ? F.anwenden(liste, imVerlauf) : { sichtbar: liste, weg: 0 };
+    }
+    function versteckt(n) {
+      if (!n) return '';
+      return '<p class="leise"><b>' + n + (n === 1 ? ' Fund ist' : ' Funde sind') +
+             ' durch den Filter ausgeblendet.</b> Gesucht wurde trotzdem danach — ' +
+             'der Filter ändert nur die Anzeige, nicht den Scan.</p>';
+    }
+
+    /* NICHT in e hineinschreiben: app.js merkt sich genau dieses Objekt als
+     * welt.letztesErgebnis. Wer hier e.chancen ersetzt, filtert beim
+     * naechsten Zeichnen eine bereits gefilterte Liste noch einmal — die
+     * Liste wuerde bei jedem Klick weiter schrumpfen. */
+    var gChancen = gefiltert(e.chancen, false);
+    var gKnapp   = gefiltert(e.knapp, false);
+    var gVerlauf = gefiltert(e.verlauf, true);
+    var zChancen = gChancen.sichtbar, zKnapp = gKnapp.sichtbar, zVerlauf = gVerlauf.sichtbar;
+
+    var chancenHtml = versteckt(gChancen.weg);
+    if (zChancen.length) {
+      chancenHtml += zChancen.map(function (f) { return karte(f, false); }).join('');
+    } else if (gChancen.weg) {
+      chancenHtml += '<div class="warnung">Alle Chancen sind gerade ausgefiltert. ' +
+        'Setz den Filter zurück, wenn du alles sehen willst.</div>';
     } else {
-      chancenHtml = '<div class="warnung">Gerade keine handelbare Chance über ' +
+      chancenHtml += '<div class="warnung">Gerade keine handelbare Chance über ' +
         K.mindestRendite.toFixed(2) + ' %. Das ist der Normalfall: zwei Börsen mit vielen ' +
         'Teilnehmern liegen selten weit auseinander. Unter <b>Knappste Paare</b> siehst du, ' +
         'wie nah es dran ist.</div>';
@@ -801,7 +827,7 @@
      * den Chancen noch zu den knappen Paaren. Vorher landeten sie unter
      * "Knappste Paare" und standen dort mit +16 % zwischen lauter
      * Minuswerten, ohne dass irgendwo stand warum. */
-    if (e.veraltetHoch && e.veraltetHoch.length) {
+    if (e.veraltetHoch && e.veraltetHoch.length && !gChancen.weg) {
       chancenHtml = '<div class="warnung"><b>' + e.veraltetHoch.length +
         (e.veraltetHoch.length === 1 ? ' Fund liegt' : ' Funde liegen') +
         ' über der Schwelle, aber auf veralteten Kursen.</b> ' +
@@ -809,23 +835,23 @@
         'ein anderer Kurs. Je höher die Rendite auf alten Daten, desto wahrscheinlicher ' +
         'ist sie nur der Beweis, dass die Zahl alt ist.</div>' +
         e.veraltetHoch.map(function (f) { return karte(f, false); }).join('') +
-        (e.chancen.length ? '<h2>Handelbar</h2>' : '') +
+        (zChancen.length ? '<h2>Handelbar</h2>' : '') +
         chancenHtml;
     }
     setzeWennAnders(document.getElementById('chancen'), chancenHtml);
 
-    var knappHtml = '';
-    if (e.knapp.length) {
-      knappHtml = '<p class="leise">Knapp daneben: richtig zugeordnet, nachgerechnet, aber unter ' +
+    var knappHtml = versteckt(gKnapp.weg);
+    if (zKnapp.length) {
+      knappHtml += '<p class="leise">Knapp daneben: richtig zugeordnet, nachgerechnet, aber unter ' +
         K.mindestRendite.toFixed(2) + ' % Rendite. Die Kehrwertsumme sagt alles: ' +
         '<b>unter 1</b> heißt Gewinn unabhängig vom Ausgang, <b>über 1</b> heißt Verlust. ' +
-        'Alle ' + e.knapp.length + ', beste zuerst. Alles unter ' + K.rauschGrenze.toFixed(1) +
+        'Alle ' + zKnapp.length + ', beste zuerst. Alles unter ' + K.rauschGrenze.toFixed(1) +
         ' % wird nicht mehr gezeigt und auch nicht mehr aufbewahrt' +
         (s.rauschen ? ' — gerade ' + s.rauschen + ' Zeilen' : '') + '.</p>' +
-        e.knapp.map(function (f) { return karte(f, false); }).join('');
+        zKnapp.map(function (f) { return karte(f, false); }).join('');
     } else {
-      knappHtml = '<p class="leise">Keine Paare. Entweder liegen gerade keine gemeinsamen ' +
-        'Partien an, oder eine Quelle ist stehengeblieben.</p>';
+      knappHtml += '<p class="leise">Keine Paare. Entweder liegen gerade keine gemeinsamen ' +
+        'Partien an, eine Quelle ist stehengeblieben, oder der Filter lässt nichts durch.</p>';
     }
     setzeWennAnders(document.getElementById('knapp'), knappHtml);
 
@@ -833,15 +859,16 @@
       K.verlaufMinRendite.toFixed(0) + ' % erreicht hat, wird gelöscht statt aufbewahrt. ' +
       'Ein Fund landet hier, wenn er nicht mehr gefunden wird, wenn seine Partie vorbei ist, ' +
       'oder wenn er eine Stunde lang nicht mehr bestätigt wurde. Sortiert nach Beendigung, ' +
-      'mit der besten je gesehenen Rendite.</p>';
-    if (!e.verlauf.length) {
+      'mit der besten je gesehenen Rendite.</p>' + versteckt(gVerlauf.weg);
+    if (!zVerlauf.length) {
       verlaufHtml += '<p class="leise">Noch nichts im Plus beendet.</p>';
     } else {
-      verlaufHtml += e.verlauf.map(function (f) { return karte(f, true); }).join('');
+      verlaufHtml += zVerlauf.map(function (f) { return karte(f, true); }).join('');
     }
     setzeWennAnders(document.getElementById('verlauf'), verlaufHtml);
 
-    reiterZeichnen(e);
+    reiterZeichnen({ chancen: zChancen, knapp: zKnapp, verlauf: zVerlauf,
+                     veraltetHoch: e.veraltetHoch || [] });
   }
 
   function stand(text, art) {

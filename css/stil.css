@@ -289,3 +289,62 @@ h2 {
 @media (max-width: 700px) {
   .tafel table { min-width: 620px; }
 }
+
+/* ---------- Filterfeld ----------
+   Rechts, aufklappbar. Es filtert NUR die Anzeige — deshalb steht unter
+   jedem Reiter, wie viele Funde gerade versteckt sind. Ein Filter, der
+   stillschweigend etwas verschluckt, ist eine Falle. */
+
+#filter-knopf.an { color: var(--gold); border-color: #5A5034; }
+
+#filter-panel {
+  position: fixed; top: 0; right: 0; bottom: 0; width: 300px; z-index: 40;
+  background: var(--karte); border-left: 1px solid var(--rand);
+  overflow-y: auto; padding: 0;
+  transform: translateX(100%); transition: transform .18s ease;
+  box-shadow: -12px 0 32px rgba(0,0,0,.35);
+}
+#filter-panel.offen { transform: translateX(0); }
+
+.f-kopf {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 16px; border-bottom: 1px solid var(--rand);
+  position: sticky; top: 0; background: var(--karte);
+}
+.f-zu {
+  background: none; border: none; color: var(--text-leise);
+  font-size: 22px; line-height: 1; cursor: pointer; padding: 0 4px;
+}
+.f-zu:hover { color: var(--text); }
+
+.f-koerper { padding: 14px 16px 40px; }
+.f-gruppe { margin-bottom: 20px; }
+.f-titel {
+  font-size: 12px; text-transform: uppercase; letter-spacing: .5px;
+  color: var(--text-leise); margin-bottom: 8px;
+}
+.f-zeile {
+  display: flex; align-items: center; gap: 8px;
+  padding: 3px 0; font-size: 14px; cursor: pointer;
+}
+.f-hinweis { font-size: 12px; color: var(--text-leise); margin-top: 6px; line-height: 1.4; }
+
+.f-knoepfe { display: flex; flex-wrap: wrap; gap: 6px; }
+.f-knopf {
+  padding: 5px 10px; font-size: 13px; cursor: pointer;
+  background: var(--karte-2); color: var(--text-leise);
+  border: 1px solid var(--rand); border-radius: var(--rund-chip);
+}
+.f-knopf:hover { color: var(--text); }
+.f-knopf.offen { color: var(--gold); border-color: #5A5034; background: transparent; }
+
+#filter-panel input[type=number] {
+  width: 92px; padding: 5px 8px; font-size: 14px;
+  background: var(--karte-2); color: var(--text);
+  border: 1px solid var(--rand); border-radius: var(--rund-chip);
+}
+
+/* Auf schmalen Schirmen das ganze Feld, sonst bleibt nichts zum Lesen. */
+@media (max-width: 700px) {
+  #filter-panel { width: 100%; }
+}
