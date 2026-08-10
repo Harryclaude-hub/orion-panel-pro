@@ -432,8 +432,7 @@ ok('OVER_UNDER mit Unsinn als Linie wird abgewiesen',
    Z.smMarktArt({ name: 'OVER_UNDER', param: 'zwei' }) === null);
 ok('CORRECT_SCORE wird NICHT benutzt',
    Z.smMarktArt({ name: 'CORRECT_SCORE' }) === null);
-ok('BTTS wird NICHT benutzt',
-   Z.smMarktArt({ name: 'BTTS' }) === null);
+/* BTTS wird seit dem 10.8.2026 benutzt — siehe eigener Abschnitt unten. */
 ok('WINNER_AND_BTTS wird NICHT benutzt (zusammengesetzte Frage)',
    Z.smMarktArt({ name: 'WINNER_AND_BTTS' }) === null);
 ok('null wird abgewiesen', Z.smMarktArt(null) === null);
@@ -518,6 +517,60 @@ ok('leere Vertragsliste ergibt nichts', Z.smLaeufer('sieger', 'X', pSieger, [], 
 ok('unbekannte Art ergibt nichts',      Z.smLaeufer('quatsch', 'X', pSieger, vSieger, false, 0.8) === null);
 ok('Mannschaft, die zu keiner Seite passt, ergibt nichts',
    Z.smLaeufer('sieger', 'FC Erfunden', pSieger, vSieger, false, 0.8) === null);
+
+/* ---------- BTTS: der Anker MUSS exakt sein ----------
+ * Am 10.8.2026 gemessen: im selben Ereignis, unter demselben Titel, stehen
+ * "Both Teams to Score" (44), "... in First Half" (44) und
+ * "... in Second Half" (44). Sie unterscheiden sich NUR im Teilnamen.
+ * Ein Teilstring-Test haette alle drei gegen denselben Smarkets-Markt
+ * gepaart — Halbzeit gegen Endergebnis, Regel 1 gebrochen. */
+
+ok('"Both Teams to Score" wird erkannt',
+   Z.marktArt('Seattle Sounders FC vs. CD Guadalajara: Both Teams to Score', 'Both Teams to Score') === 'btts');
+ok('Kleinschreibung stoert nicht',
+   Z.marktArt('x', 'both teams to score') === 'btts');
+ok('Leerzeichen am Rand stoeren nicht',
+   Z.marktArt('x', '  Both Teams to Score  ') === 'btts');
+
+ok('ERSTE HALBZEIT wird NICHT als BTTS gepaart',
+   Z.marktArt('x', 'Both Teams to Score in First Half') === null,
+   String(Z.marktArt('x', 'Both Teams to Score in First Half')));
+ok('ZWEITE HALBZEIT wird NICHT als BTTS gepaart',
+   Z.marktArt('x', 'Both Teams to Score in Second Half') === null,
+   String(Z.marktArt('x', 'Both Teams to Score in Second Half')));
+ok('Zusatz vorne wird NICHT als BTTS gepaart',
+   Z.marktArt('x', 'First Half Both Teams to Score') === null);
+ok('leerer Teilname ergibt kein BTTS',  Z.marktArt('x', '') === null);
+ok('null als Teilname ergibt kein BTTS', Z.marktArt('x', null) === null);
+ok('BTTS verdraengt Ueber/Unter nicht', Z.marktArt('x', 'O/U 2.5') === 'ueber_unter');
+
+/* Smarkets-Seite */
+ok('Smarkets BTTS wird als btts erkannt',
+   Z.smMarktArt({ name: 'BTTS' }).art === 'btts');
+ok('BTTS hat keine Linie',
+   Z.smMarktArt({ name: 'BTTS' }).linie === null);
+ok('BTTS_AND_OVER wird NICHT als BTTS genommen',
+   Z.smMarktArt({ name: 'BTTS_AND_OVER', param: '2.5' }) === null);
+ok('WINNER_AND_BTTS wird NICHT als BTTS genommen',
+   Z.smMarktArt({ name: 'WINNER_AND_BTTS' }) === null);
+ok('HALF_TIME_WINNER_3_WAY wird (noch) NICHT genommen',
+   Z.smMarktArt({ name: 'HALF_TIME_WINNER_3_WAY' }) === null);
+
+/* Vertragswahl: die JA-Seite ist YES, gemessene Namen aus der API. */
+var vBtts = [
+  { n: 'Yes', typ: 'YES' },
+  { n: 'No',  typ: 'NO' }
+];
+var lB = Z.smLaeufer('btts', null, null, vBtts, false, 0.8);
+ok('BTTS nimmt den YES-Vertrag als JA-Seite',
+   lB !== null && lB.laeufer.typ === 'YES', lB && lB.laeufer.n);
+ok('und meldet den Weg als Struktur', lB !== null && lB.weg === 'struktur');
+ok('fehlt YES, gibt es kein Paar',
+   Z.smLaeufer('btts', null, null, [{ n: 'No', typ: 'NO' }], false, 0.8) === null);
+ok('BTTS zieht NICHT den HOME-Vertrag an',
+   Z.smLaeufer('btts', null, null, vSieger, false, 0.8) === null);
+ok('ein Siegermarkt zieht NICHT den YES-Vertrag an',
+   Z.smLaeufer('sieger', 'Yes', ['a', 'b'], vBtts, false, 0.8) === null);
 
 /* ---------- Ergebnis ---------- */
 

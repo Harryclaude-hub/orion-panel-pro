@@ -202,6 +202,16 @@
      * eine andere Frage als Betfairs OVER_UNDER_15, das fuer das Spiel gilt.
      * Deshalb muss der Teilname GENAU "O/U x.x" sein, ohne Vorsatz. */
     if (ouLinie(teil) !== null) return 'ueber_unter';
+    /* Beide Mannschaften treffen. Der Teilname muss GENAU passen.
+     * Gemessen am 10.8.2026 stehen im selben Ereignis, mit demselben Titel:
+     *     "Both Teams to Score"                  44   <- das Endergebnis
+     *     "Both Teams to Score in First Half"    44   <- ANDERE Frage
+     *     "Both Teams to Score in Second Half"   44   <- ANDERE Frage
+     * Sie unterscheiden sich NUR im Teilnamen. Ein Test mit Teilstring
+     * haette alle drei gegen denselben Smarkets-Markt gepaart und damit
+     * die Halbzeit gegen das Endergebnis gestellt — Regel 1 gebrochen,
+     * mit einer Rendite, die nach etwas aussieht. */
+    if (/^both teams to score$/.test(norm(teil))) return 'btts';
     return null;
   }
 
@@ -274,11 +284,14 @@
   function smMarktArt(marktTyp) {
     if (!marktTyp || typeof marktTyp !== 'object') return null;
     if (marktTyp.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
+    if (marktTyp.name === 'BTTS') return { art: 'btts', linie: null };
     if (marktTyp.name === 'OVER_UNDER') {
       var l = parseFloat(marktTyp.param);
       if (!isFinite(l)) return null;
       return { art: 'ueber_unter', linie: l };
     }
+    /* Alles andere hat noch keine Zuordnungsregel. 163 Markttypen bietet
+     * Smarkets an; wer hier raet, baut Fehlpaarungen. */
     return null;
   }
 
@@ -329,6 +342,13 @@
       var o = nachTyp('OVER');
       return o ? { score: 1, laeufer: o, weg: 'struktur' } : null;
     }
+    /* Beide Mannschaften treffen: Polymarket fragt Ja/Nein, Smarkets hat
+     * die Vertraege YES und NO. Die JA-Seite ist YES. Hier gibt es keine
+     * Mannschaft zuzuordnen — die Frage gilt der ganzen Partie. */
+    if (art === 'btts') {
+      var j = nachTyp('YES');
+      return j ? { score: 1, laeufer: j, weg: 'struktur' } : null;
+    }
     if (art !== 'sieger') return null;
 
     /* Weg 1: Struktur. */
@@ -340,7 +360,12 @@
     }
 
     /* Weg 2: Name. */
+    /* Der Namensweg darf bei einem Siegermarkt NUR auf HOME oder AWAY
+     * zeigen. Ohne diese Fessel griff er den Vertrag "Yes" eines
+     * BTTS-Marktes ab, weil "Yes" gegen "Yes" die Gleichheit 1,00 ergibt —
+     * eine perfekte Punktzahl auf eine voellig andere Frage. */
     var perName = laeuferZu(pmTeil, vertraege, grenze);
+    if (perName && perName.laeufer.typ !== 'HOME' && perName.laeufer.typ !== 'AWAY') perName = null;
 
     /* Widerspruch = nicht paaren. */
     if (struktur && perName && perName.laeufer !== struktur) return null;

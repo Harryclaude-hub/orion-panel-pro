@@ -149,13 +149,37 @@
          * veraltet sind, ist weder eine Chance noch ein knappes Paar — er ist
          * eine alte Zahl. Ihn unter "Knappste Paare" zu stecken war irrefuehrend:
          * dort stand dann +16 % zwischen lauter Minuswerten, ohne Erklaerung. */
-        var chancen = live.filter(function (f) { return f.rendite >= K.mindestRendite && !f.veraltet; });
+        /* Zu duenn: Rendite stimmt, aber es passt fast nichts hinein.
+         *
+         * Gemessen am 10.8.2026: der beste Kurs im Smarkets-Orderbuch war
+         * ein Auftrag ueber 0,0035 GBP. Er zog die Kehrwertsumme unter
+         * 100 % und haette eine Chance vorgetaeuscht, die mit dem naechsten
+         * echten Kurs keine ist.
+         *
+         * Solche Zeilen werden NICHT versteckt — sie wandern zu den knappen
+         * Paaren und tragen dort eine Marke. Unbekannte Menge bleibt
+         * unbekannt und zaehlt NICHT als zu duenn: das waere eine
+         * Unterstellung. */
+        function zuDuenn(f) {
+          var m = Number(f.max_einsatz);
+          return f.max_einsatz !== null && isFinite(m) && m < K.mindestEinsatz;
+        }
+        live.forEach(function (f) { f.zu_duenn = zuDuenn(f); });
+        verlauf.forEach(function (f) { f.zu_duenn = zuDuenn(f); });
+
+        var chancen = live.filter(function (f) {
+          return f.rendite >= K.mindestRendite && !f.veraltet && !f.zu_duenn;
+        });
         var veraltetHoch = live.filter(function (f) { return f.rendite >= K.mindestRendite && f.veraltet; });
         /* Nur Gruenes und knapp Danebengegangenes. Alles unter der
          * Rauschgrenze wird nicht gezeigt — es sagt nichts, ausser dass zwei
          * Buecher eben verschieden stehen. */
         var knapp = live.filter(function (f) {
-          return f.rendite < K.mindestRendite && f.rendite >= K.rauschGrenze;
+          if (f.veraltet) return false;
+          /* Zu duenne Zeilen mit guter Rendite gehoeren hierher, nicht in
+           * die Chancen — und schon gar nicht ins Nichts. */
+          if (f.rendite >= K.mindestRendite) return f.zu_duenn;
+          return f.rendite >= K.rauschGrenze;
         });
         var rauschen = live.filter(function (f) { return f.rendite < K.rauschGrenze; }).length;
 
@@ -169,6 +193,7 @@
           statistik: {
             chancen: chancen.length,
             veraltet_hoch: veraltetHoch.length,
+            zu_duenn: live.filter(function (f) { return f.rendite >= K.mindestRendite && f.zu_duenn; }).length,
             knapp: knapp.length,
             rauschen: rauschen,
             live_gesamt: live.length,

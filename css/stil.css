@@ -282,6 +282,9 @@ h2 {
 .punkt.gruen { background: var(--gruen); }
 .punkt.gelb  { background: var(--orange); }
 .punkt.rot   { background: var(--rot); }
+/* Abgeschaltet ist nicht kaputt: grau statt rot, damit die Ampel nicht
+   einen Ausfall behauptet, wo eine Entscheidung steht. */
+.punkt.aus   { background: transparent; border: 2px solid var(--text-leise); }
 
 @media (max-width: 700px) {
   .tafel table { min-width: 620px; }

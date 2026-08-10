@@ -94,10 +94,15 @@ Deno.serve(async () => {
     // Nur Fragen, die es woanders GENAUSO gibt (Regel 1).
     // Correct Score, Both Teams To Score, Winner-and-Over und der ganze Rest
     // bleiben liegen, solange es keine eigene Zuordnungsregel dafuer gibt.
+    // Von 163 angebotenen Markttypen haben genau drei eine geprüfte
+    // Zuordnungsregel. Wer hier raet, baut Fehlpaarungen.
+    // BTTS_AND_OVER und WINNER_AND_BTTS sehen aehnlich aus, sind aber
+    // ZUSAMMENGESETZTE Fragen und deshalb ausdruecklich nicht dabei.
     function art(m: any): { art: string; linie: number | null } | null {
       const t = m.market_type;
       if (!t || typeof t !== 'object') return null;
       if (t.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
+      if (t.name === 'BTTS') return { art: 'btts', linie: null };
       if (t.name === 'OVER_UNDER') {
         const l = parseFloat(t.param);
         return isFinite(l) ? { art: 'ueber_unter', linie: l } : null;
@@ -170,6 +175,7 @@ Deno.serve(async () => {
       maerkte_genutzt: genutzt.length,
       mit_quoten: aus.length,
       sieger: aus.filter(x => x.art === 'sieger').length,
+      btts: aus.filter(x => x.art === 'btts').length,
       ueber_unter: aus.filter(x => x.art === 'ueber_unter').length,
       ohne_quote: ohneQuote,
       dauer_ms: Date.now() - t0

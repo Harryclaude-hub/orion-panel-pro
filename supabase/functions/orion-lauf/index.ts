@@ -42,6 +42,23 @@ const BROKER = 'https://www.orbitexch.com/customer/sport/1/market/{id}';
 // Zeilen je Minute, von denen fast alle tief im Minus liegen.
 const RAUSCH_GRENZE = -1.0;
 
+// BETFAIR ABGESCHALTET am 10.8.2026. Der Code bleibt vollstaendig stehen.
+//
+// Betfair ist das einzige Buch, das einen laufenden Heim-PC braucht, und aus
+// Supabase gemessen gesperrt: 5 von 8 Wegen antworten 403 von Cloudflare,
+// auch die oeffentliche Startseite, VOR jeder Anmeldung.
+//
+// Der letzte offene Weg waere Zertifikat -> Stream gewesen. Er ist eine
+// Sackgasse: Betfairs eigenes Stream-Schema hat in RunnerDefinition nur
+// sortPriority, removalDate, id, hc, adjustmentFactor, bsp, status. KEIN
+// Feld im ganzen Schema traegt einen Namen. Der Stream liefert Preise zu
+// einer selectionId, ohne zu sagen, welche Mannschaft das ist — und Namen
+// gibt es nur ueber listMarketCatalogue auf api.betfair.com, also 403.
+// Ohne Namen keine Zuordnung.
+//
+// Loest Betfair die Sperre je: hier auf true, sonst nichts.
+const BETFAIR_AKTIV = false;
+
 const URL_SUPA = Deno.env.get('SUPABASE_URL')!;
 const DIENST = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
 
@@ -115,7 +132,7 @@ Deno.serve(async () => {
   try {
     // ---------- Polymarket ----------
     const nachId = new Map<string, any>();
-    const jeArt: Record<string, number> = { sieger: 0, unentschieden: 0, ueber_unter: 0 };
+    const jeArt: Record<string, number> = { sieger: 0, unentschieden: 0, ueber_unter: 0, btts: 0 };
     for (const tag of TAGS) {
       for (let off = 0; off < 3000; off += 100) {
         const r = await wiederholt(`https://gamma-api.polymarket.com/events?closed=false&active=true&limit=100&offset=${off}&tag_slug=${tag}`,
@@ -173,13 +190,19 @@ Deno.serve(async () => {
     }
 
     // ---------- Betfair, in der Datenbank vorgefiltert ----------
-    const bfR = await fetch(`${URL_SUPA}/rest/v1/rpc/orion_bf_maerkte`, {
-      method: 'POST', headers: dbKopf(), body: JSON.stringify({ fenster_h: FENSTER_H })
-    });
-    const bfImFenster: Z.BfMarkt[] = bfR.ok ? (await bfR.json() || []) : [];
-    const zeitR = await fetch(`${URL_SUPA}/rest/v1/bridge_odds?id=eq.1&select=updated_at`, { headers: dbKopf() });
-    const zeitZ = zeitR.ok ? await zeitR.json() : [];
-    const bfAlterS = zeitZ[0]?.updated_at ? Math.round((jetzt - Date.parse(zeitZ[0].updated_at)) / 1000) : null;
+    // Wird gar nicht erst geladen, wenn abgeschaltet: das spart je Lauf
+    // eine RPC ueber rund 1000 Maerkte.
+    let bfImFenster: Z.BfMarkt[] = [];
+    let bfAlterS: number | null = null;
+    if (BETFAIR_AKTIV) {
+      const bfR = await fetch(`${URL_SUPA}/rest/v1/rpc/orion_bf_maerkte`, {
+        method: 'POST', headers: dbKopf(), body: JSON.stringify({ fenster_h: FENSTER_H })
+      });
+      bfImFenster = bfR.ok ? (await bfR.json() || []) : [];
+      const zeitR = await fetch(`${URL_SUPA}/rest/v1/bridge_odds?id=eq.1&select=updated_at`, { headers: dbKopf() });
+      const zeitZ = zeitR.ok ? await zeitR.json() : [];
+      bfAlterS = zeitZ[0]?.updated_at ? Math.round((jetzt - Date.parse(zeitZ[0].updated_at)) / 1000) : null;
+    }
     const bfSieger = bfImFenster.filter(m => m.mt === 'MATCH_ODDS');
     const bfOu = bfImFenster.filter(m => Z.bfOuLinie(m.mt) !== null);
 
@@ -202,6 +225,7 @@ Deno.serve(async () => {
     const smAlle = smZeile.maerkte || [];
     const smSieger = smAlle.filter((m: any) => m.art === 'sieger');
     const smOu = smAlle.filter((m: any) => m.art === 'ueber_unter');
+    const smBtts = smAlle.filter((m: any) => m.art === 'btts');
 
     const zeilen: any[] = [];
     const jePaarung: Record<string, number> = {};
@@ -216,6 +240,7 @@ Deno.serve(async () => {
       const mengen = buch.map((x: any) => x.menge);
 
       const bez = m.art === 'unentschieden' ? 'Unentschieden'
+                : m.art === 'btts'         ? 'Beide Mannschaften treffen'
                 : m.art === 'ueber_unter'  ? ('Über/Unter ' + Z.ouLinie(m.teil)) : m.teil;
       const seiten: Seite[] = [];
 
@@ -235,7 +260,12 @@ Deno.serve(async () => {
       });
 
       // ----- Betfair -----
-      const bfKand = m.art === 'ueber_unter' ? Z.ouKandidaten(bfOu, Z.ouLinie(m.teil)) : bfSieger;
+      // Betfair kennt kein BTTS in unserer Zuordnung: der Markttyp
+      // BOTH_TEAMS_TO_SCORE existiert dort zwar, hat aber keine geprüfte
+      // Regel. Keine Regel, keine Paarung.
+      const bfKand = m.art === 'btts' ? []
+                   : m.art === 'ueber_unter' ? Z.ouKandidaten(bfOu, Z.ouLinie(m.teil))
+                   : bfSieger;
       if (bfKand.length) {
         const tr = Z.besterTreffer(p[0], p[1], bfKand, SCHWELLE);
         if (tr) {
@@ -268,7 +298,9 @@ Deno.serve(async () => {
       }
 
       // ----- Smarkets -----
-      const smKand = m.art === 'ueber_unter' ? Z.smOuKandidaten(smOu, Z.ouLinie(m.teil)) : smSieger;
+      const smKand = m.art === 'btts' ? smBtts
+                   : m.art === 'ueber_unter' ? Z.smOuKandidaten(smOu, Z.ouLinie(m.teil))
+                   : smSieger;
       if (smKand.length) {
         const tr = Z.besterTreffer(p[0], p[1], smKand, SCHWELLE);
         if (tr) {
@@ -298,8 +330,10 @@ Deno.serve(async () => {
         }
       }
 
-      // ----- Kalshi (kein Ueber/Unter) -----
-      if (m.art !== 'ueber_unter') {
+      // ----- Kalshi: nur Sieger und Unentschieden -----
+      // Kalshi fuehrt weder Ueber/Unter noch BTTS in einer Form, fuer die
+      // es hier eine geprüfte Zuordnung gaebe.
+      if (m.art === 'sieger' || m.art === 'unentschieden') {
         const pmSeite: Z.Seite = m.art === 'unentschieden' ? 'unentschieden' : Z.seiteVon(m.teil, p);
         if (pmSeite) {
           const A = Z.woerter(p[0]), B = Z.woerter(p[1]);

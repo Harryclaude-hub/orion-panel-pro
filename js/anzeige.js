@@ -451,6 +451,8 @@
           '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +
             (buch2(f).konto ? ' · ' + txt(buch2(f).konto) : '') + '</span> ' +
           (f.veraltet ? '<span class="chip rot">Kurse veraltet</span> ' : '') +
+          (f.zu_duenn ? '<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
+             (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span> ' : '') +
           '<span class="chip">' + txt(f.sportart) + '</span> ' +
           '<span class="chip">' + (imVerlauf ? 'beendet vor ' + seit(f.vorbei_seit) : 'endet in ' + bis(f.endet_am)) + '</span> ' +
           '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span> ' +
@@ -613,6 +615,13 @@
       r.groesse = isFinite(Number(r.zahl)) ? Number(r.zahl) : (k.umfang || 0);
       if (r.buch === 'betfair' && r.hinweis === null) {
         r.hinweis = r.zustand === 'rot' ? 'Bridge steht — Heim-PC' : 'läuft auf dem Heim-PC';
+      }
+      /* ABGESCHALTET ist nicht KAPUTT. Ein rotes Licht wuerde behaupten,
+       * da sei etwas ausgefallen — dabei ist es eine Entscheidung. */
+      if (k.aktiv === false) {
+        r.zustand = 'aus';
+        r.funde = 0;
+        r.hinweis = '<b>abgeschaltet</b> · ' + txt(k.grund || '');
       }
     });
     reihen.sort(function (a, b) { return a.groesse - b.groesse; });

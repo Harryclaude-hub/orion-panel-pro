@@ -29,6 +29,20 @@
     /* Ab welcher Rendite ein Fund als Chance gilt. */
     mindestRendite: 0.5,
 
+    /* Ab welchem handelbaren Betrag ein Fund ueberhaupt als Chance zaehlt.
+     *
+     * Gemessen am 10.8.2026 im Smarkets-Orderbuch eines BTTS-Marktes:
+     *     YES offers  price 5291, quantity 67        <- 0,0035 GBP
+     *                 price 5405, quantity 3700277   <- der echte Kurs
+     * Der beste Preis im Buch war ein STAUBAUFTRAG. Er zog die
+     * Kehrwertsumme auf 99,21 % und haette eine Arbitrage vorgetaeuscht,
+     * die mit dem naechsten echten Kurs bei 100,35 % liegt — also keine ist.
+     *
+     * Eine Rendite ohne Menge ist keine Chance, sondern eine Zahl. Solche
+     * Zeilen werden NICHT geloescht — sie bekommen eine Marke und fallen
+     * aus der Chancen-Zaehlung. Verschweigen waere schlimmer als zeigen. */
+    mindestEinsatz: 5,
+
     /* Ab hier abwaerts ist es Rauschen und wird gar nicht mehr gezeigt.
      * Ausdruecklicher Wunsch: nur Gruenes und knapp Danebengegangenes.
      * Gemessen am 10.8.2026: von 558 Verlaufszeilen lagen 438 unter -1 %,
@@ -69,8 +83,30 @@
                     konto: 'kein Konto', umfang: 390 },
       smarkets:   { name: 'Smarkets',   kurz: 'SM', chip: 'sm', art: 'quote',
                     konto: 'kein Konto', umfang: 797 },
+      /* ABGESCHALTET am 10.8.2026, nicht geloescht.
+       *
+       * Betfair ist das einzige Buch, das einen laufenden Heim-PC braucht.
+       * Aus Supabase ist es gemessen gesperrt: 5 von 8 Wegen antworten mit
+       * 403 von Cloudflare, auch die oeffentliche Startseite, und zwar VOR
+       * jeder Anmeldung.
+       *
+       * Der letzte offene Weg waere Zertifikat -> Stream gewesen. Er ist
+       * eine SACKGASSE, und das ist keine Vermutung: Betfairs eigenes
+       * Stream-Schema (ESASwaggerSchema.json) hat in RunnerDefinition nur
+       * sortPriority, removalDate, id, hc, adjustmentFactor, bsp, status —
+       * und in MarketDefinition nur eventId, eventTypeId, marketType und
+       * Verwandtes. KEIN einziges Feld im ganzen Schema traegt einen Namen.
+       * Der Stream liefert Preise zu einer selectionId, ohne zu sagen,
+       * welche Mannschaft das ist. Namen gibt es nur ueber
+       * listMarketCatalogue, und das liegt auf api.betfair.com — 403.
+       *
+       * Ohne Namen keine Zuordnung. Damit sind alle neun gemessenen Wege
+       * erschoepft. Der Code bleibt stehen, falls Betfair die Sperre je
+       * loest: dann reicht aktiv: true. */
       betfair:    { name: 'Betfair',    kurz: 'BF', chip: 'bf', art: 'quote',
-                    konto: 'Konto + Bridge', umfang: 1189, ueberBroker: true }
+                    konto: 'Konto + Bridge', umfang: 1189, ueberBroker: true,
+                    aktiv: false,
+                    grund: 'aus Supabase gesperrt (403), Stream liefert keine Namen' }
     },
 
     /* Ab wann etwas als stehengeblieben gilt. */

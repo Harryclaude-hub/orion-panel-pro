@@ -57,13 +57,21 @@ export function bfOuLinie(mt: unknown): number | null {
   return m ? parseFloat(m[1] + '.' + m[2]) : null;
 }
 
-export type Art = 'sieger' | 'unentschieden' | 'ueber_unter' | null;
+export type Art = 'sieger' | 'unentschieden' | 'ueber_unter' | 'btts' | null;
 
 export function marktArt(frage: unknown, teil?: unknown): Art {
   const f = norm(frage);
   if (/\bwin on \d{4} \d{2} \d{2}\b/.test(f)) return 'sieger';
   if (/end in a draw/.test(f)) return 'unentschieden';
   if (ouLinie(teil) !== null) return 'ueber_unter';
+  /* Beide Mannschaften treffen. Der Teilname muss GENAU passen.
+   * Gemessen am 10.8.2026 stehen im selben Ereignis, mit demselben Titel:
+   *     "Both Teams to Score"                  44   <- das Endergebnis
+   *     "Both Teams to Score in First Half"    44   <- ANDERE Frage
+   *     "Both Teams to Score in Second Half"   44   <- ANDERE Frage
+   * Sie unterscheiden sich NUR im Teilnamen. Ein Teilstring-Test haette
+   * alle drei gegen denselben Smarkets-Markt gepaart. */
+  if (/^both teams to score$/.test(norm(teil))) return 'btts';
   return null;
 }
 
@@ -149,6 +157,7 @@ export function bfSatzVon(bf: BfMarkt | null): number | null {
 export function smMarktArt(marktTyp: any): { art: string; linie: number | null } | null {
   if (!marktTyp || typeof marktTyp !== 'object') return null;
   if (marktTyp.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
+  if (marktTyp.name === 'BTTS') return { art: 'btts', linie: null };
   if (marktTyp.name === 'OVER_UNDER') {
     const l = parseFloat(marktTyp.param);
     if (!isFinite(l)) return null;
@@ -197,6 +206,13 @@ export function smLaeufer(
     const o = nachTyp('OVER');
     return o ? { score: 1, laeufer: o, weg: 'struktur' } : null;
   }
+  /* Beide Mannschaften treffen: Polymarket fragt Ja/Nein, Smarkets hat die
+   * Vertraege YES und NO. Keine Mannschaft zuzuordnen — die Frage gilt der
+   * ganzen Partie. */
+  if (art === 'btts') {
+    const j = nachTyp('YES');
+    return j ? { score: 1, laeufer: j, weg: 'struktur' } : null;
+  }
   if (art !== 'sieger') return null;
 
   let struktur: any = null;
@@ -206,7 +222,12 @@ export function smLaeufer(
     struktur = nachTyp(smSeite === 'a' ? 'HOME' : 'AWAY');
   }
 
-  const perName = laeuferZu(String(pmTeil || ''), vertraege as any, schwelle);
+  /* Der Namensweg darf bei einem Siegermarkt NUR auf HOME oder AWAY zeigen.
+   * Ohne diese Fessel griff er den Vertrag "Yes" eines BTTS-Marktes ab,
+   * weil "Yes" gegen "Yes" die Gleichheit 1,00 ergibt — eine perfekte
+   * Punktzahl auf eine voellig andere Frage. */
+  let perName = laeuferZu(String(pmTeil || ''), vertraege as any, schwelle);
+  if (perName && perName.laeufer.typ !== 'HOME' && perName.laeufer.typ !== 'AWAY') perName = null;
 
   // Widerspruch = nicht paaren.
   if (struktur && perName && perName.laeufer !== struktur) return null;
