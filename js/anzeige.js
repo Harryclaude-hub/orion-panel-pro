@@ -100,10 +100,29 @@
 
   /* Die Analysezeile: was, wie viel, seit wann, bis wann. Alles in einer
    * Zeile, damit man einen Fund beurteilen kann ohne zu rechnen. */
+  /* Wie viel Geld passt hinein? Die wichtigste Risikozahl nach der Rendite.
+   * Drei Zustaende: bekannt, unbekannt, oder nichts mehr da. \"Unbekannt\"
+   * darf nie wie \"unbegrenzt\" aussehen. */
+  function menge(f) {
+    if (f.max_einsatz === null || f.max_einsatz === undefined) {
+      return '<span title="Eine der beiden Seiten meldet keine Menge">Menge unbekannt</span>';
+    }
+    var e = Number(f.max_einsatz);
+    if (!(e > 0)) return '<span class="rot">nichts mehr verfügbar</span>';
+    var g = f.max_gewinn === null || f.max_gewinn === undefined ? null : Number(f.max_gewinn);
+    /* "-54,68 Gewinn" ist Unsinn. Bei Minus ist es ein Verlust, und genau so
+     * muss es dastehen — sonst liest man ueber das Vorzeichen hinweg. */
+    return '<span><b>max. ' + (e >= 1000 ? Math.round(e).toLocaleString('de-AT') : e.toFixed(0)) +
+           '</b> Einsatz möglich' + (g === null ? '' :
+             ' &rarr; ' + (g >= 0 ? '+' + g.toFixed(2) + ' Gewinn'
+                                  : g.toFixed(2) + ' Verlust')) + '</span>';
+  }
+
   function analyse(f, imVerlauf) {
     var gewinn = Number(f.auszahlung) - 100;
     return '<div class="analyse">' +
       '<span><b>' + Number(f.rendite).toFixed(2) + ' %</b> Rendite</span>' +
+      menge(f) +
       '<span>' + (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' auf 100 Einsatz</span>' +
       '<span>beste bisher ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span>' +
       '<span>gefunden ' + zeitpunkt(f.zuerst_gesehen) + ' (vor ' + seit(f.zuerst_gesehen) + ')</span>' +
