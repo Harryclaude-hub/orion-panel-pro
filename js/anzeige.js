@@ -118,6 +118,75 @@
                                   : g.toFixed(2) + ' Verlust')) + '</span>';
   }
 
+  /* ---------- Effektivquoten ----------
+   *
+   * Der Grund, warum Nachrechnen von Hand bisher manchmal nicht aufging:
+   * in derselben Zeile steht einmal "Lay 4.90" und einmal "Nein 0.810".
+   * Optisch dasselbe Feld, inhaltlich voellig Verschiedenes — eine Quote
+   * gegen einen Anteilspreis. Wer beide gleich behandelt, kommt zwangslaeufig
+   * auf eine andere Zahl als das Programm.
+   *
+   * Deshalb steht jetzt unter jeder Seite die EFFEKTIVQUOTE. Die sind
+   * vergleichbar, und mit ihnen geht die Rechnung von Hand auf:
+   *   1/qe1 + 1/qe2 = Kehrwertsumme,  darunter 1 heisst Gewinn.
+   */
+  function qePmWert(f) {
+    var p = Number(f.pm_preis), s = Number(f.pm_gebuehr);
+    if (!(p > 0 && p < 1) || !isFinite(s)) return null;
+    return (1 - s * Math.min(p, 1 - p)) / p;
+  }
+  function qeGegenWert(f) {
+    var q = Number(f.bf_quote), s = Number(f.bf_gebuehr);
+    if (!isFinite(q) || !isFinite(s)) return null;
+    if (f.buch === 'kalshi') {
+      if (!(q > 0 && q < 1)) return null;
+      return (1 - s * q * (1 - q)) / q;
+    }
+    if (f.bf_seite === 'Lay') {
+      if (!(q > 1)) return null;
+      return 1 + (1 - s) / (q - 1);
+    }
+    if (!(q > 1)) return null;
+    return 1 + (q - 1) * (1 - s);
+  }
+  function qeEins(f) { var x = qePmWert(f);   return x === null ? '?' : x.toFixed(3); }
+  function qeZwei(f) { var x = qeGegenWert(f); return x === null ? '?' : x.toFixed(3); }
+
+  /* ---------- Puffer ----------
+   *
+   * Wie weit darf sich ein Kurs bewegen, bevor die Arbitrage kippt? Bei
+   * 0,3 % Rendite reicht ein Tick, bei 3 % hat man Luft. Ohne diese Zahl
+   * sieht eine knappe Chance genauso aus wie eine belastbare.
+   *
+   * Gerechnet wird der Polymarket-Preis: wie weit darf er steigen, bis die
+   * Kehrwertsumme 1 erreicht? Das ist die Seite, die man zuerst kauft.
+   */
+  function puffer(f) {
+    var qe2 = qeGegenWert(f);
+    var s = Number(f.pm_gebuehr);
+    var p = Number(f.pm_preis);
+    if (qe2 === null || !isFinite(s) || !(p > 0 && p < 1)) return null;
+    var rest = 1 - 1 / qe2;                 // so viel Kehrwert darf Seite 1 hoechstens haben
+    if (!(rest > 0)) return null;
+    var qeNoetig = 1 / rest;                // ... also mindestens diese Effektivquote
+    /* qe = (1 - s*min(p,1-p))/p nach p aufloesen. Unterhalb 0,5 ist
+     * min(p,1-p) = p, also qe = (1-s*p)/p = 1/p - s  ->  p = 1/(qe+s). */
+    var pMax = 1 / (qeNoetig + s);
+    if (!(pMax > 0)) return null;
+    return { pMax: pMax, prozent: (pMax - p) / p * 100 };
+  }
+
+  function pufferText(f) {
+    var pu = puffer(f);
+    if (!pu) return '<span>Puffer unbekannt</span>';
+    if (pu.prozent <= 0) {
+      return '<span>kein Puffer &mdash; der Preis müsste um ' + Math.abs(pu.prozent).toFixed(1) +
+             ' % <b>fallen</b>, damit es aufgeht</span>';
+    }
+    return '<span>Puffer: Polymarket darf bis <b>' + pu.pMax.toFixed(3) + '</b> steigen ' +
+           '(+' + pu.prozent.toFixed(1) + ' %), dann ist es aufgebraucht</span>';
+  }
+
   /* ---------- Die Gegenprobe ----------
    *
    * Der gefaehrlichste denkbare Fehler ist nicht eine falsche Rendite, sondern
@@ -247,6 +316,7 @@
     return '<div class="analyse">' +
       '<span><b>' + Number(f.rendite).toFixed(2) + ' %</b> Rendite</span>' +
       menge(f) +
+      pufferText(f) +
       '<span>' + (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' auf 100 Einsatz</span>' +
       '<span>beste bisher ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span>' +
       '<span>gefunden ' + zeitpunkt(f.zuerst_gesehen) + ' (vor ' + seit(f.zuerst_gesehen) + ')</span>' +
@@ -311,11 +381,14 @@
             '<div class="quelle">Polymarket</div>' +
             '<div class="zahl">' + txt(f.pm_seite) + ' ' + Number(f.pm_preis).toFixed(3) + '</div>' +
             '<div class="leise">' + txt(f.mannschaft) + '</div>' +
+            '<div class="leise">Anteilspreis &middot; Effektivquote <b>' + qeEins(f) + '</b></div>' +
           '</div>' +
           '<div class="seite bf">' +
             '<div class="quelle">' + (f.buch === 'kalshi' ? 'Kalshi' : 'Betfair') + '</div>' +
-            '<div class="zahl">' + txt(f.bf_seite) + ' ' + Number(f.bf_quote).toFixed(2) + '</div>' +
+            '<div class="zahl">' + txt(f.bf_seite) + ' ' + Number(f.bf_quote).toFixed(f.buch === 'kalshi' ? 3 : 2) + '</div>' +
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
+            '<div class="leise">' + (f.buch === 'kalshi' ? 'Kontraktpreis' : 'Quote') +
+              ' &middot; Effektivquote <b>' + qeZwei(f) + '</b></div>' +
           '</div>' +
         '</div>' +
         renditeText(f) +
@@ -470,8 +543,8 @@
       knappHtml = '<p class="leise">Richtig zugeordnet und nachgerechnet, aber unter ' +
         K.mindestRendite.toFixed(2) + ' % Rendite. Die Kehrwertsumme sagt alles: ' +
         '<b>unter 1</b> heißt Gewinn unabhängig vom Ausgang, <b>über 1</b> heißt Verlust. ' +
-        'Gezeigt werden die ' + Math.min(40, e.knapp.length) + ' besten von ' + e.knapp.length + '.</p>' +
-        e.knapp.slice(0, 40).map(function (f) { return karte(f, false); }).join('');
+        'Alle ' + e.knapp.length + ', beste zuerst.</p>' +
+        e.knapp.map(function (f) { return karte(f, false); }).join('');
     } else {
       knappHtml = '<p class="leise">Keine Paare. Entweder liegen gerade keine gemeinsamen ' +
         'Partien an, oder eine Quelle ist stehengeblieben.</p>';

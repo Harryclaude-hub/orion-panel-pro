@@ -24,12 +24,12 @@
 
   /* Was gerade gilt. Absteigend nach Rendite, das Beste oben. */
   function holeLive() {
-    return db('orion_funde?status=eq.live&order=rendite.desc&limit=300');
+    return db('orion_funde?status=eq.live&order=rendite.desc&limit=1000');
   }
 
   /* Was einmal galt und nicht mehr. Neueste Beendigung zuerst. */
   function holeVerlauf(grenze) {
-    return db('orion_funde?status=eq.vorbei&order=vorbei_seit.desc&limit=' + (grenze || 60));
+    return db('orion_funde?status=eq.vorbei&order=vorbei_seit.desc&limit=' + (grenze || 500));
   }
 
   /* Was die Nachtwache zuletzt gesehen hat. */
@@ -48,7 +48,7 @@
   }
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(60), holeLauf(), holeKalshi(), holeWache()])
+    return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3], wache = teile[4];
         var jetzt = Date.now();
