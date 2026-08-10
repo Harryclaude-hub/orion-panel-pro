@@ -348,3 +348,18 @@ h2 {
 @media (max-width: 700px) {
   #filter-panel { width: 100%; }
 }
+
+/* ---------- Regelwerk-Seite ----------
+   Listen innerhalb einer Karte. Die Regeln der Buecher sind Text, kein
+   Zahlenwerk — deshalb lesbare Zeilenhoehe statt Tabellendichte. */
+
+.fund ul, .fund ol { margin: 8px 0 12px; padding-left: 22px; line-height: 1.6; }
+.fund li { margin-bottom: 7px; }
+.fund li b { color: var(--text); }
+.rot { color: var(--rot); }
+.fund li.rot, .fund li.rot b { color: var(--rot); }
+.urteil {
+  padding: 12px 14px; margin: 10px 0;
+  background: var(--karte-2); border: 1px solid var(--rand);
+  border-radius: var(--rund-chip); font-size: 15px; line-height: 1.55;
+}

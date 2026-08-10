@@ -497,11 +497,17 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
 2. **Anpfiffzeit anzeigen.** Ein Markt, der in 8 Stunden endet, dessen Spiel
    aber in 20 Minuten beginnt, ist etwas völlig anderes. Smarkets liefert
    `st` bereits mit und es wird gespeichert — es fehlt nur die Anzeige.
-3. **Währungen werden gemischt.** Smarkets rechnet in **GBP**, Polymarket
-   und Kalshi in **USD**. `max_einsatz` und `max_gewinn` mischen das
-   ungewichtet. Die **Rendite bleibt richtig** — sie ist ein Verhältnis —,
-   aber die Mengenbegrenzung ist um den Wechselkurs daneben, rund 25 %.
-   Ungemessen, unkorrigiert.
+3. **Währungen: ERLEDIGT am 10.8.2026 abends.** Smarkets rechnet in GBP,
+   Polymarket und Kalshi in USD. Der Sammler rechnet jetzt an der Quelle um,
+   damit alles nachgelagert in USD liegt. Kurs kommt live von
+   `api.frankfurter.dev` (EZB-Daten), Rückfall `open.er-api.com`; Kurs,
+   Stand und Quelle stehen in `smarkets_snapshot.stats`.
+   Gemessen am 10.8.: **1 GBP = 1,3504 USD** — die Mischung war also rund
+   **35 %** daneben, nicht 25 % wie zuvor geschätzt. Die Rendite war nie
+   betroffen (sie ist ein Verhältnis), wohl aber `max_einsatz`.
+   **Ohne Kurs wird NICHT geschrieben:** dann bleibt die letzte gute Aufnahme
+   stehen und Smarkets veraltet sichtbar, statt still falsche Beträge zu
+   liefern.
 4. **Weitere Markttypen.** Genutzt sind sechs Fragen: `sieger`,
    `unentschieden`, `ueber_unter`, `btts`, `hz_sieger`, `hz_unentschieden`.
    Smarkets bietet **163** Markttypen an, vier haben eine geprüfte Regel.
@@ -539,6 +545,30 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
    nur serverseitig, `kalshiIndex`/`aehnlichkeitW` ebenso. Beides wurde
    nachgezogen, aber es fehlt weiterhin ein Prüfstand, der beide Fassungen
    gegeneinander hält. Das ist der Grund, warum es überhaupt passieren konnte.
+
+---
+
+## 7b. SX Bet — der einzige offene Faden
+
+Von rund 50 gemessenen Wegen über vier Runden ist genau einer offen
+geblieben. **Krypto-Sportbörse mit echtem Orderbuch**, aus Supabase
+erreichbar, öffentliche API **ohne Schlüssel**. Am 10.8. gemessen:
+
+```
+GET api.sx.bet/sports                    200  Soccer = sportId 5
+GET api.sx.bet/markets/active?sportIds=5 200
+    teamOneName "Santa Clara"  teamTwoName "Nacional Madeira"
+    outcomeOneName "Tie"       outcomeTwoName "Not tie"
+    gameTime 1786389300        outcomeVoidName "NO_CONTEST"
+```
+
+Das ist mehr, als Betfairs Kursstrom je geliefert hätte: **Namen und exakte
+Anstoßzeit**. Der erste gefundene Markt ist eine Partie, die wir bei Smarkets
+und Kalshi bereits führen.
+
+**Ungemessen:** Preiskodierung, Markttiefe, Gebühren, Überschneidung im
+Ganzen — und die Vorfrage, ob auf Krypto-Schienen (USDC) gehandelt werden
+soll. Das ist ein eigener Bauschritt mit eigener Messung, kein Anhängsel.
 
 ---
 
