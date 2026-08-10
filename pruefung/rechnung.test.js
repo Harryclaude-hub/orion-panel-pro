@@ -240,6 +240,122 @@ ok('Kalshi-Preis 0 abgewiesen',
 ok('Kalshi-Preis 1 abgewiesen',
    R.pmGegenKalshi({ pmPreis: 0.45, pmSatz: 0.05, kalshiPreis: 1 }) === null);
 
+/* ---------- Smarkets: Preiskodierung ----------
+ * Alle Werte sind am 10.8.2026 aus der API gemessen, nicht ausgedacht.
+ * Jeder Preis traf exakt die Smarkets-Quotenleiter. */
+
+nah('Preis 4032 ergibt Quote 2,48', R.smQuote(4032), 2.4801587301587302, 1e-9);
+nah('Preis 2500 ergibt Quote 4,00', R.smQuote(2500), 4);
+nah('Preis 5000 ergibt Quote 2,00', R.smQuote(5000), 2);
+/* Die eigentliche Aussage ist nicht eine Nachkommastelle, sondern dass
+ * jeder gemessene Preis auf der Smarkets-QUOTENLEITER landet. Genau das
+ * wurde am 10.8. geprueft: 2,40 / 3,50 / 1,78 / 2,10 / 3,25 — kein
+ * einziger Ausreisser. Deshalb wird gegen die Leiter geprueft, mit der
+ * Toleranz einer halben Sprosse. */
+nah('Preis 2857 landet auf Leitersprosse 3,50', R.smQuote(2857), 3.50, 5e-3);
+nah('Preis 4167 landet auf Leitersprosse 2,40', R.smQuote(4167), 2.40, 5e-3);
+nah('Preis 5618 landet auf Leitersprosse 1,78', R.smQuote(5618), 1.78, 5e-3);
+nah('Preis 4762 landet auf Leitersprosse 2,10', R.smQuote(4762), 2.10, 5e-3);
+nah('Preis 3077 landet auf Leitersprosse 3,25', R.smQuote(3077), 3.25, 5e-3);
+
+/* Die Randmarken. Dahinter steht kein handelbares Volumen, sondern
+ * eine Platzhalterzeile. Wer sie durchlaesst, rechnet mit Quote 10000. */
+ok('Randpreis 1 wird abgewiesen',    R.smQuote(1) === null);
+ok('Randpreis 9999 wird abgewiesen', R.smQuote(9999) === null);
+ok('Preis 0 wird abgewiesen',        R.smQuote(0) === null);
+ok('negativer Preis wird abgewiesen', R.smQuote(-4000) === null);
+ok('Preis 9902 liegt schon ausserhalb', R.smQuote(9902) === null);
+ok('Preis 9901 ist noch gueltig (Quote 1,01)', R.smQuote(9901) !== null);
+ok('Preis 10 ist noch gueltig (Quote 1000)',   R.smQuote(10) !== null);
+ok('Text als Preis wird abgewiesen', R.smQuote('4032') === null);
+ok('null als Preis wird abgewiesen', R.smQuote(null) === null);
+
+/* Kehrwertsumme als Gegenprobe: die Back-Seite eines echten Siegermarktes
+ * muss UEBER 100 % liegen, die Lay-Seite darunter. Genau das wurde
+ * gemessen (101,03 % / 98,72 %). Waere die Kodierung anders herum,
+ * kaeme hier Unsinn heraus. */
+var backSumme = 1 / R.smQuote(4132) + 1 / R.smQuote(3030) + 1 / R.smQuote(2941);
+var laySumme  = 1 / R.smQuote(4032) + 1 / R.smQuote(2941) + 1 / R.smQuote(2899);
+ok('Back-Seite liegt ueber 100 %',  backSumme > 1.0 && backSumme < 1.02, backSumme);
+ok('Lay-Seite liegt unter 100 %',   laySumme < 1.0 && laySumme > 0.98, laySumme);
+
+/* ---------- Smarkets: Menge ist AUSZAHLUNG, nicht Einsatz ---------- */
+
+nah('quantity 400000 zu 2500 ergibt 10 GBP Einsatz', R.smGeld(400000, 2500), 10);
+nah('quantity 1645980 zu 4032 ergibt 66,37 GBP', R.smGeld(1645980, 4032), 66.36591360000001, 1e-6);
+ok('die Platzhaltermarke 2147483646 ist KEINE Menge',
+   R.smGeld(2147483646, 4032) === null);
+ok('Menge 0 ergibt nichts',        R.smGeld(0, 4032) === null);
+ok('negative Menge ergibt nichts', R.smGeld(-100, 4032) === null);
+ok('Menge zu einem Randpreis ergibt nichts', R.smGeld(500000, 9999) === null);
+ok('Text als Menge ergibt nichts', R.smGeld('400000', 2500) === null);
+
+/* ---------- Smarkets: Gebuehr hat dieselbe Form wie Betfair ---------- */
+
+ok('der Standardsatz ist 2 %', R.SMARKETS_SATZ === 0.02);
+nah('Back 3,00 bei 2 % ergibt qE 2,96', R.qeBack(3, R.SMARKETS_SATZ), 2.96);
+nah('Lay 3,00 bei 2 % ergibt qE 1,49',  R.qeLay(3, R.SMARKETS_SATZ), 1.49);
+/* Wer bei Select landet, zahlt 3 % — und das darf sichtbar weniger sein. */
+ok('3 % ergibt eine schlechtere Quote als 2 %',
+   R.qeBack(3, 0.03) < R.qeBack(3, 0.02));
+
+/* ---------- Genau zwei Buecher ---------- */
+
+var ja  = { buch: 'polymarket', richtung: 'ja',   qe: 2.20, geld: 500 };
+var nein = { buch: 'smarkets',  richtung: 'nein', qe: 2.10, geld: 500 };
+
+ok('zwei verschiedene Buecher ergeben eine Chance', R.chance(ja, nein) !== null);
+ok('dasselbe Buch gegen sich selbst ist KEINE Arbitrage',
+   R.chance(ja, { buch: 'polymarket', richtung: 'nein', qe: 2.10, geld: 500 }) === null);
+ok('zweimal JA ist keine Absicherung',
+   R.chance(ja, { buch: 'smarkets', richtung: 'ja', qe: 2.10, geld: 500 }) === null);
+ok('zweimal NEIN ist keine Absicherung',
+   R.chance({ buch: 'kalshi', richtung: 'nein', qe: 2.2, geld: 5 }, nein) === null);
+ok('Seite ohne Buch wird abgewiesen',
+   R.chance({ richtung: 'ja', qe: 2.2, geld: 5 }, nein) === null);
+ok('fehlende Seite wird abgewiesen', R.chance(ja, null) === null);
+
+var c = R.chance(ja, nein);
+ok('die Chance nennt beide Buecher', c.seite1 === 'polymarket' && c.seite2 === 'smarkets');
+ok('1/2,20 + 1/2,10 liegt unter 1, also Arbitrage', c.istArbitrage === true, c.inv);
+ok('beide Ausgaenge zahlen gleich',
+   Math.abs(c.s1 * c.qe1 - c.s2 * c.qe2) < 1e-9, c.s1 * c.qe1 - c.s2 * c.qe2);
+
+/* Menge: die duennere Seite begrenzt, und Unbekanntes bleibt unbekannt. */
+var duenn = R.chance(ja, { buch: 'smarkets', richtung: 'nein', qe: 2.10, geld: 12 });
+ok('die duennere Seite begrenzt den Einsatz', duenn.maxEinsatz < 30, duenn.maxEinsatz);
+var ohneMenge = R.chance(ja, { buch: 'smarkets', richtung: 'nein', qe: 2.10, geld: null });
+ok('unbekannte Menge heisst null, nicht unbegrenzt', ohneMenge.maxEinsatz === null);
+ok('und dann gibt es auch keinen Maximalgewinn',    ohneMenge.maxGewinn === null);
+
+/* ---------- Alle Kombinationen ---------- */
+
+var seiten = [
+  { buch: 'polymarket', richtung: 'ja',   qe: 2.20, geld: 500 },
+  { buch: 'polymarket', richtung: 'nein', qe: 1.90, geld: 500 },
+  { buch: 'smarkets',   richtung: 'ja',   qe: 2.05, geld: 500 },
+  { buch: 'smarkets',   richtung: 'nein', qe: 2.10, geld: 500 },
+  { buch: 'betfair',    richtung: 'ja',   qe: 2.15, geld: 500 },
+  { buch: 'betfair',    richtung: 'nein', qe: 1.95, geld: 500 }
+];
+var alle = R.alleChancen(seiten, null);
+ok('drei Buecher ergeben sechs gerichtete Paarungen', alle.length === 6, alle.length);
+ok('kein Paar nutzt zweimal dasselbe Buch',
+   alle.every(function (x) { return x.ja.buch !== x.nein.buch; }));
+ok('jedes Paar ist JA gegen NEIN',
+   alle.every(function (x) { return x.ja.richtung === 'ja' && x.nein.richtung === 'nein'; }));
+ok('die beste Rendite steht vorn',
+   alle[0].ergebnis.rendite >= alle[alle.length - 1].ergebnis.rendite);
+
+var nurPlus = R.alleChancen(seiten, 0.5);
+ok('mit Mindestrendite bleibt nur uebrig, was sie erreicht',
+   nurPlus.every(function (x) { return x.ergebnis.rendite >= 0.5; }));
+ok('und es sind weniger als ohne Filter', nurPlus.length < alle.length, nurPlus.length);
+ok('leere Liste ergibt keine Paarung', R.alleChancen([], null).length === 0);
+ok('null ergibt keine Paarung',        R.alleChancen(null, null).length === 0);
+ok('ein einziges Buch ergibt keine Paarung',
+   R.alleChancen([seiten[0], seiten[1]], null).length === 0);
+
 /* ---------- Ergebnis ---------- */
 
 console.log('\nRechnung: ' + gut + ' von ' + (gut + schlecht) + ' Pruefungen bestanden');

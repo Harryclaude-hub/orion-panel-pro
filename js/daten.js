@@ -69,22 +69,42 @@
     return db('kalshi_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
   }
 
+  /* Wie alt ist der Smarkets-Schnappschuss? */
+  function holeSmarkets() {
+    return db('smarkets_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
+  }
+
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache(), holeUebersicht()])
+    return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache(),
+                        holeUebersicht(), holeSmarkets()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3], wache = teile[4];
-        var uebersicht = teile[5];
+        var uebersicht = teile[5], sm = teile[6];
         var jetzt = Date.now();
 
         var kaAlterS = ka && ka.updated_at ? Math.round((jetzt - Date.parse(ka.updated_at)) / 1000) : null;
+        var smAlterS = sm && sm.updated_at ? Math.round((jetzt - Date.parse(sm.updated_at)) / 1000) : null;
         var bfAlterS = lauf ? lauf.bf_alter_s : null;
+        var laufAlterS = lauf ? Math.round((jetzt - Date.parse(lauf.gelaufen_am)) / 1000) : null;
 
         /* Frische JE BUCH. Ein einziger Schalter waere falsch: Kalshi kann
          * frisch sein, waehrend die Bridge steht. Wer beides zusammenwirft,
-         * versteckt entweder echte Funde oder zeigt tote Kurse als Chance. */
+         * versteckt entweder echte Funde oder zeigt tote Kurse als Chance.
+         *
+         * Seit dem Umbau auf "jedes Buch gegen jedes" hat eine Zeile ZWEI
+         * Buecher, die beide alt sein koennen — buch_1 ist nicht mehr immer
+         * Polymarket. Veraltet ist eine Zeile, sobald EINE ihrer Seiten
+         * veraltet ist. */
+        function buchVeraltet(name) {
+          if (name === 'kalshi')   return kaAlterS === null || kaAlterS > K.kalshiMaxAlterS;
+          if (name === 'smarkets') return smAlterS === null || smAlterS > K.smarketsMaxAlterS;
+          if (name === 'betfair')  return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
+          /* Polymarket wird bei JEDEM Lauf frisch geholt. Seine Frische ist
+           * die Frische des Scanners. */
+          return laufAlterS === null || laufAlterS > K.laufMaxAlterS;
+        }
         function veraltet(f) {
-          if (f.buch === 'kalshi') return kaAlterS === null || kaAlterS > K.kalshiMaxAlterS;
-          return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
+          return buchVeraltet(f.buch_1 || 'polymarket') || buchVeraltet(f.buch || 'betfair');
         }
 
         /* Broker-Adresse an EINER Stelle festlegen, hier beim Anzeigen.
@@ -92,11 +112,21 @@
          * antwortete am 9.8.2026 gar nicht mehr (HTTP 000, dreimal 21 s
          * Zeitueberschreitung). Wer den Broker wechselt, aendert nur
          * KONFIG.brokerMuster und alle Zeilen stimmen wieder, auch die
-         * alten im Verlauf. */
+         * alten im Verlauf.
+         *
+         * NUR fuer Betfair. Kalshi und Smarkets sind direkt erreichbar, und
+         * Polymarket ohnehin. Frueher stand hier "alles ausser Kalshi" —
+         * das haette einen Smarkets-Link stillschweigend nach Orbit
+         * umgebogen, sobald Betfair auf Seite 2 nicht mehr gesetzt ist. */
         function brokerRichten(f) {
-          if (f.buch === 'kalshi') return;              // Kalshi hat keinen Broker
-          var m = String(f.bf_link || '').match(/market\/([\d.]+)/);
-          if (m) f.bf_link = K.brokerMuster.replace('{id}', m[1]);
+          if ((f.buch_1 || 'polymarket') === 'betfair') {
+            var m1 = String(f.pm_link || '').match(/market\/([\d.]+)/);
+            if (m1) f.pm_link = K.brokerMuster.replace('{id}', m1[1]);
+          }
+          if ((f.buch || 'betfair') === 'betfair') {
+            var m2 = String(f.bf_link || '').match(/market\/([\d.]+)/);
+            if (m2) f.bf_link = K.brokerMuster.replace('{id}', m2[1]);
+          }
         }
 
         live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); });
@@ -145,9 +175,30 @@
             verlauf: verlauf.length,
             kalshi_alter_s: kaAlterS,
             kalshi_maerkte: ka && ka.stats ? ka.stats.maerkte : null,
-            aus_betfair: live.filter(function (f) { return f.buch !== 'kalshi'; }).length,
-            aus_kalshi: live.filter(function (f) { return f.buch === 'kalshi'; }).length,
-            lauf_alter_s: lauf ? Math.round((jetzt - Date.parse(lauf.gelaufen_am)) / 1000) : null,
+            smarkets_alter_s: smAlterS,
+            smarkets_maerkte: sm && sm.stats ? sm.stats.mit_quoten : null,
+            smarkets_spiele: sm && sm.stats ? sm.stats.spiele : null,
+            /* Je Buch zaehlen, egal auf WELCHER Seite es steht. Eine Zeile
+             * mit zwei Buechern zaehlt bei beiden. */
+            je_buch: (function () {
+              var z = {};
+              live.forEach(function (f) {
+                [f.buch_1 || 'polymarket', f.buch || 'betfair'].forEach(function (b) {
+                  z[b] = (z[b] || 0) + 1;
+                });
+              });
+              return z;
+            })(),
+            /* Welche Buchpaarungen laufen gerade. */
+            je_paarung: (function () {
+              var z = {};
+              live.forEach(function (f) {
+                var s = (f.buch_1 || 'polymarket') + ' → ' + (f.buch || 'betfair');
+                z[s] = (z[s] || 0) + 1;
+              });
+              return z;
+            })(),
+            lauf_alter_s: laufAlterS,
             bf_alter_s: bfAlterS,
             pm_maerkte: lauf ? lauf.pm_maerkte : null,
             bf_match_odds: lauf ? lauf.bf_match_odds : null,

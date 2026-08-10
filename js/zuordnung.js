@@ -260,6 +260,108 @@
     return null;
   }
 
+  /* ---------- Smarkets ----------
+   *
+   * Smarkets ist das erste Buch, das die Struktur MITLIEFERT, statt sie im
+   * Namen zu verstecken:
+   *   market_type   { name: 'WINNER_3_WAY' }  oder
+   *                 { name: 'OVER_UNDER', param: '2.5' }
+   *   contract_type { name: 'HOME' | 'DRAW' | 'AWAY' | 'OVER' | 'UNDER' }
+   *
+   * Bei Betfair muss die Linie aus "OVER_UNDER_25" geklaubt werden, hier
+   * steht sie als Zahl da. Das ist kein Komfort, sondern weniger Ratefehler.
+   */
+  function smMarktArt(marktTyp) {
+    if (!marktTyp || typeof marktTyp !== 'object') return null;
+    if (marktTyp.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
+    if (marktTyp.name === 'OVER_UNDER') {
+      var l = parseFloat(marktTyp.param);
+      if (!isFinite(l)) return null;
+      return { art: 'ueber_unter', linie: l };
+    }
+    return null;
+  }
+
+  /* Den passenden Smarkets-Vertrag zu einem Polymarket-Ausgang finden.
+   *
+   * ZWEI WEGE, und der zweite ist ein VETO — nicht eine Pflicht:
+   *
+   *   STRUKTUR  Auf welcher Seite des POLYMARKET-Titels steht die
+   *             Mannschaft? Dort steht ihr Name woertlich, das ist die
+   *             sicherste Auskunft, die es gibt. War die Partie ueber Kreuz
+   *             getroffen, wird die Seite gedreht. Dann liefert
+   *             contract_type HOME/AWAY den Vertrag.
+   *             Gemessen am 10.8.2026: bei 124 von 124 Spielen entspricht
+   *             die Reihenfolge in "X vs Y" genau HOME/AWAY. Keine Abweichung.
+   *
+   *   NAME      laeuferZu wie bei Betfair, Schwelle 0,80.
+   *
+   * Zeigen BEIDE Wege auf einen Vertrag und es ist NICHT derselbe, wird gar
+   * nicht gepaart. Ein Widerspruch ist kein Grund, sich fuer einen Weg zu
+   * entscheiden, sondern einer, die Finger davon zu lassen.
+   *
+   * Warum der Name nicht Pflicht bleibt wie in Regel 3: er verwirft
+   * gemessene 17 von 60 RICHTIGEN Paaren, weil die Buecher verschieden
+   * lang benennen — "CD Nacional" gegen "Nacional da Madeira" ergibt 0,33,
+   * "Minnesota United FC" gegen "Minnesota Utd" ergibt 0,50. Die zweite
+   * Absicherung faellt dabei nicht weg, sie wechselt die Rolle.
+   * Gemessen: 0 Widersprueche bei 60 Paaren.
+   *
+   * Wer zurueck auf streng will, setzt namePflicht = true. */
+  function smLaeufer(art, pmTeil, pmPartie, vertraege, getauscht, schwelle, namePflicht) {
+    if (!vertraege || !vertraege.length) return null;
+    var grenze = typeof schwelle === 'number' ? schwelle : 0.8;
+
+    function nachTyp(t) {
+      for (var i = 0; i < vertraege.length; i++) {
+        if (vertraege[i].typ === t) return vertraege[i];
+      }
+      return null;
+    }
+
+    /* Unentschieden und Ueber/Unter sind eindeutig ausgezeichnet.
+     * Da gibt es nichts zu vergleichen und nichts zu verwechseln. */
+    if (art === 'unentschieden') {
+      var d = nachTyp('DRAW');
+      return d ? { score: 1, laeufer: d, weg: 'struktur' } : null;
+    }
+    if (art === 'ueber_unter') {
+      var o = nachTyp('OVER');
+      return o ? { score: 1, laeufer: o, weg: 'struktur' } : null;
+    }
+    if (art !== 'sieger') return null;
+
+    /* Weg 1: Struktur. */
+    var struktur = null;
+    var seite = seiteVon(pmTeil, pmPartie);
+    if (seite === 'a' || seite === 'b') {
+      var smSeite = getauscht ? (seite === 'a' ? 'b' : 'a') : seite;
+      struktur = nachTyp(smSeite === 'a' ? 'HOME' : 'AWAY');
+    }
+
+    /* Weg 2: Name. */
+    var perName = laeuferZu(pmTeil, vertraege, grenze);
+
+    /* Widerspruch = nicht paaren. */
+    if (struktur && perName && perName.laeufer !== struktur) return null;
+
+    if (namePflicht) return perName ? { score: perName.score, laeufer: perName.laeufer, weg: 'name' } : null;
+    if (struktur) return { score: perName ? perName.score : 1, laeufer: struktur, weg: perName ? 'beide' : 'struktur' };
+    if (perName) return { score: perName.score, laeufer: perName.laeufer, weg: 'name' };
+    return null;
+  }
+
+  /* Smarkets-Kandidaten fuer eine Ueber/Unter-Linie.
+   * Gleiche Linie gegen gleiche Linie, sonst gar nicht (Regel 1). */
+  function smOuKandidaten(smListe, linie) {
+    var aus = [];
+    if (!smListe || typeof linie !== 'number' || !isFinite(linie)) return aus;
+    for (var i = 0; i < smListe.length; i++) {
+      if (smListe[i].linie === linie) aus.push(smListe[i]);
+    }
+    return aus;
+  }
+
   /* ---------- Kalshi ----------
    *
    * Kalshi nennt einen Markt "Cruz Azul vs New York City Winner?" und sagt
@@ -324,7 +426,10 @@
     ohneAnhang: ohneAnhang,
     besterTreffer: besterTreffer,
     laeuferZu: laeuferZu,
-    drawLaeufer: drawLaeufer
+    drawLaeufer: drawLaeufer,
+    smMarktArt: smMarktArt,
+    smLaeufer: smLaeufer,
+    smOuKandidaten: smOuKandidaten
   };
 
   if (typeof module === 'object' && module.exports) module.exports = api;

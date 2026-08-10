@@ -124,6 +124,80 @@
     return e;
   }
 
+  /* Smarkets.
+   * Echte Boerse. Kommission auf den NETTOGEWINN JE MARKT — dieselbe Form
+   * wie bei Betfair, deshalb gelten qeBack und qeLay unveraendert und es
+   * braucht keine eigene Formel.
+   *
+   * Der Satz ist NICHT gemessen. Es gibt kein Konto, und die oeffentliche
+   * API gibt ihn nicht heraus. 2 % ist der dokumentierte Standard-Tarif.
+   * Daneben bestehen 1 % (Pro) und 3 % (Select) — Letzterer trifft genau
+   * die besonders profitablen Konten. Deshalb wird jeder Fund mit
+   * gebuehr_echt = false gekennzeichnet: die Zahl ist uebernommen,
+   * nicht nachgemessen. Wer auf Select rutscht, muss hier 0.03 eintragen,
+   * sonst rechnen sich duenne Funde still ins Plus. */
+  var SMARKETS_SATZ = 0.02;
+
+  /* Preis -> Quote. Gemessen am 10.8.2026:
+   *   price ist die implizite Wahrscheinlichkeit in Hundertstel-Prozent,
+   *   4032 = 40,32 % = Quote 2,48.
+   * Dreifach belegt: Quotenleiter, Kehrwertsumme (Back 101,0 % / Lay 98,7 %)
+   * und der Endpunkt last_executed_prices, der fuer 2899 den Wert "28.99"
+   * meldet.
+   * Gueltig ist nur die Leiter 1,01 bis 1000. Ausserhalb liegen die
+   * Randmarken 1 und 9999, hinter denen kein handelbares Volumen steht. */
+  var SM_PREIS_MIN = 10;
+  var SM_PREIS_MAX = 9901;
+
+  function smQuote(preis) {
+    if (!istZahl(preis)) return null;
+    if (preis < SM_PREIS_MIN || preis > SM_PREIS_MAX) return null;
+    return 10000 / preis;
+  }
+
+  /* Menge -> Geld.
+   * Die API meldet quantity als AUSZAHLUNG, nicht als Einsatz: laut
+   * offiziellem SDK ist "quantity = 400000" gleich 40,0000 GBP Auszahlung.
+   * Der Einsatz ist also Auszahlung * Wahrscheinlichkeit:
+   *     Geld = quantity * price / 10^8
+   * Wer das verwechselt, liegt bei Quote 5,0 um den Faktor 5 daneben.
+   *
+   * 2147483646 (2^31 - 2) ist eine Platzhaltermarke, keine Menge. Sie
+   * steht nur an den Randpreisen. Unbekannt ist nicht unbegrenzt: null. */
+  var SM_PLATZHALTER = 2147483646;
+
+  function smGeld(menge, preis) {
+    if (!istZahl(menge) || menge <= 0) return null;
+    if (menge === SM_PLATZHALTER) return null;
+    if (smQuote(preis) === null) return null;
+    return menge * preis / 1e8;
+  }
+
+  /* Wie viel Geld passt wirklich hinein?
+   *
+   * Eine Rendite ohne Menge ist keine Chance, sondern eine Zahl: wenn auf
+   * einer Seite 12 Euro liegen, sind auch 3 % nur 36 Cent. Begrenzend ist
+   * immer die duennere der beiden Seiten, gemessen an ihrem ANTEIL am
+   * Gesamteinsatz.
+   *
+   * geld1/geld2 sind bereits in Waehrung:
+   *   Polymarket   Anteile * Preis
+   *   Kalshi       Kontrakte * Preis
+   *   Betfair back verfuegbarer Betrag
+   *   Betfair lay  Haftung = Volumen * (Quote - 1)
+   *   Smarkets     smGeld(), bei Lay die Haftung
+   *
+   * Fehlt eine der beiden Mengen, gibt es KEINE Schaetzung:
+   * null heisst "nicht bekannt", nicht "unbegrenzt". */
+  function maxEinsatz(e, geld1, geld2) {
+    if (!e || !istZahl(geld1) || !istZahl(geld2)) return null;
+    if (geld1 <= 0 || geld2 <= 0) return 0;
+    var a1 = e.s1 / e.einsatz;
+    var a2 = e.s2 / e.einsatz;
+    if (!(a1 > 0) || !(a2 > 0)) return null;
+    return Math.min(geld1 / a1, geld2 / a2);
+  }
+
   /* Kern: zwei Effektivquoten gegeneinander.
    * Gibt immer ein Ergebnis zurueck, auch wenn es keine Arbitrage ist,
    * damit der Aufrufer die Zahl sieht statt nur ein "nein". */
@@ -168,8 +242,74 @@
     return e;
   }
 
+  /* ---------- Der allgemeine Weg: zwei beliebige Buecher ----------
+   *
+   * Bis hierher war alles auf Polymarket zugeschnitten: pmGegenBf,
+   * pmGegenKalshi. Mit dem dritten Buch reicht das nicht mehr. Zwischen
+   * vier Buechern gibt es sechs Paarungen, nicht zwei, und Betfair gegen
+   * Smarkets ist genauso eine Arbitrage wie Polymarket gegen Betfair.
+   *
+   * Eine SEITE ist ein fertig gerechnetes Angebot eines Buches:
+   *   { buch: 'smarkets', richtung: 'ja'|'nein', qe: 2.31, geld: 88.40, ... }
+   * qe ist bereits NACH Gebuehr. Wer eine Seite baut, hat die Gebuehr
+   * schon eingerechnet — hier wird nichts mehr nachgeholt.
+   *
+   * Regeln, die hier durchgesetzt werden:
+   *   - GENAU zwei Buecher. Nicht eins, nicht drei.
+   *   - Die beiden Seiten muessen GEGENSAETZLICH sein (ja gegen nein).
+   *     Zweimal JA ist keine Absicherung, sondern die doppelte Wette.
+   *   - Dasselbe Buch gegen sich selbst ist keine Arbitrage. */
+  function chance(a, b, einsatz) {
+    if (!a || !b) return null;
+    if (!a.buch || !b.buch) return null;
+    if (a.buch === b.buch) return null;
+    if (a.richtung !== 'ja' || b.richtung !== 'nein') return null;
+
+    var e = pruefe(a.qe, b.qe, einsatz);
+    if (!e) return null;
+
+    e.seite1 = a.buch;
+    e.seite2 = b.buch;
+    e.maxEinsatz = maxEinsatz(e, a.geld, b.geld);
+    e.maxGewinn = e.maxEinsatz === null ? null : e.maxEinsatz * e.rendite / 100;
+    return e;
+  }
+
+  /* Alle Paarungen einer Liste von Seiten, die zum selben Ausgang gehoeren.
+   * Aus n Buechern werden bis zu n*(n-1) gerichtete Paare — jedes davon
+   * ist eine eigene Anzeige, denn jede hat eigene Links, eigene Einsaetze
+   * und eine eigene Rendite.
+   *
+   * minRendite filtert, was gar nicht erst gezeigt werden soll. Ohne
+   * Filter (null) kommt alles zurueck, auch Minus — das braucht die
+   * Ansicht "Knappste Paare". */
+  function alleChancen(seiten, minRendite, einsatz) {
+    var aus = [];
+    if (!seiten || !seiten.length) return aus;
+    for (var i = 0; i < seiten.length; i++) {
+      for (var j = 0; j < seiten.length; j++) {
+        if (i === j) continue;
+        var e = chance(seiten[i], seiten[j], einsatz);
+        if (!e) continue;
+        if (istZahl(minRendite) && e.rendite < minRendite) continue;
+        aus.push({ ja: seiten[i], nein: seiten[j], ergebnis: e });
+      }
+    }
+    aus.sort(function (x, y) { return y.ergebnis.rendite - x.ergebnis.rendite; });
+    return aus;
+  }
+
   var api = {
     GEBUEHR_UNBEKANNT: GEBUEHR_UNBEKANNT,
+    SMARKETS_SATZ: SMARKETS_SATZ,
+    SM_PREIS_MIN: SM_PREIS_MIN,
+    SM_PREIS_MAX: SM_PREIS_MAX,
+    SM_PLATZHALTER: SM_PLATZHALTER,
+    smQuote: smQuote,
+    smGeld: smGeld,
+    maxEinsatz: maxEinsatz,
+    chance: chance,
+    alleChancen: alleChancen,
     gebuehrSicher: gebuehrSicher,
     qeBack: qeBack,
     qeLay: qeLay,

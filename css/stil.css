@@ -166,10 +166,19 @@ h2 {
 
 .knopf.kopieren { font-size: 14px; padding: 0 14px; }
 
-/* ---------- Buch-Kennzeichen ---------- */
+/* ---------- Buch-Kennzeichen ----------
+ *
+ * Vier Buecher, vier Farben. Seit dem Umbau auf "jedes Buch gegen jedes"
+ * kann JEDES davon auf JEDER Seite der Karte stehen — die Farbe haengt am
+ * Buch, nicht mehr an der Position. */
 
 .chip.ka { color: var(--tuerkis); border-color: #35544F; }
 .chip.bf { color: var(--blau);    border-color: #3C4C5C; }
+.chip.sm { color: var(--gold);    border-color: #5A5034; }
+.chip.leise { color: var(--text-leise); border-color: var(--rand); }
+
+.fund .seite.ka .quelle { color: var(--tuerkis); }
+.fund .seite.sm .quelle { color: var(--gold); }
 
 /* ---------- Reiter ---------- */
 

@@ -52,26 +52,59 @@
     return dauer((Date.now() - t) / 1000);
   }
 
+  /* ---------- Wer ist Seite 1, wer Seite 2? ----------
+   *
+   * Bis zum 10.8.2026 war Seite 1 IMMER Polymarket, deshalb stand das Wort
+   * hier ueberall fest im Text. Seit dem Umbau auf "jedes Buch gegen jedes"
+   * kann dort auch Betfair oder Smarkets stehen — eine Zeile
+   * smarkets → polymarket mit der Aufschrift "Polymarket" auf der
+   * Smarkets-Seite waere schlicht falsch beschriftet.
+   *
+   * Alle Angaben kommen aus KONFIG.buecher, damit ein viertes Buch nur dort
+   * eingetragen werden muss. */
+  var UNBEKANNT = { name: 'unbekanntes Buch', kurz: '??', chip: '', art: 'quote', konto: '' };
+
+  function buchInfo(name) {
+    var k = welt.KONFIG || {};
+    return (k.buecher && k.buecher[name]) || UNBEKANNT;
+  }
+  function buch1(f) { return buchInfo(f.buch_1 || 'polymarket'); }
+  function buch2(f) { return buchInfo(f.buch || 'betfair'); }
+
+  /* Preis oder Quote? Ein Anteilspreis hat drei Nachkommastellen und liegt
+   * unter 1, eine Dezimalquote hat zwei und liegt darueber. Beides gleich
+   * zu formatieren macht die Karte unlesbar. */
+  function wertText(info, wert) {
+    var n = Number(wert);
+    if (!isFinite(n)) return '—';
+    return info.art === 'preis' ? n.toFixed(3) : n.toFixed(2);
+  }
+  function wertName(info) {
+    return info.art === 'preis' ? 'Anteilspreis' : 'Quote';
+  }
+
   /* Beide Links sind Pflicht (Uebergabe 8, Punkt 3): jede Zeile, auch die
    * knappste, traegt beide und sie treffen denselben Markt. Fehlt einer,
    * wird das gesagt statt still einen toten Knopf anzuzeigen. */
+  function linkKnopf(url, info) {
+    /* Betfair ist aus Oesterreich gesperrt, deshalb der Umweg ueber Orbit.
+     * Alle anderen Buecher werden direkt geoeffnet. */
+    var beschriftung = info.ueberBroker ? (info.name + ' über Orbit') : (info.name + ' öffnen');
+    if (!url) {
+      return '<span class="knopf gesperrt" title="Kein ' + txt(info.name) +
+             '-Link im Fund">' + txt(info.name) + ' fehlt</span>';
+    }
+    return '<a class="knopf" target="_blank" rel="noopener" href="' + txt(url) + '">' +
+             txt(beschriftung) + '</a>' +
+           '<button class="knopf kopieren" data-link="' + txt(url) +
+             '" title="' + txt(info.name) + '-Link kopieren">Link kopieren</button>';
+  }
+
   function aktionen(f) {
-    var h = '<div class="aktionen">';
-    if (f.pm_link) {
-      h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.pm_link) + '">Polymarket öffnen</a>' +
-           '<button class="knopf kopieren" data-link="' + txt(f.pm_link) + '" title="Polymarket-Link kopieren">Link kopieren</button>';
-    } else {
-      h += '<span class="knopf gesperrt" title="Kein Polymarket-Link im Fund">Polymarket fehlt</span>';
-    }
-    if (f.bf_link) {
-      h += '<a class="knopf" target="_blank" rel="noopener" href="' + txt(f.bf_link) + '">' +
-             (f.buch === 'kalshi' ? 'Kalshi öffnen' : 'Betfair über Orbit') + '</a>' +
-           '<button class="knopf kopieren" data-link="' + txt(f.bf_link) + '" title="Gegenbuch-Link kopieren">Link kopieren</button>';
-    } else {
-      h += '<span class="knopf gesperrt" title="Kein Link im Fund">Gegenbuch-Link fehlt</span>';
-    }
-    h += '</div>';
-    return h;
+    return '<div class="aktionen">' +
+             linkKnopf(f.pm_link, buch1(f)) +
+             linkKnopf(f.bf_link, buch2(f)) +
+           '</div>';
   }
 
   /* Nur die Uhrzeit, gross und oben rechts. Datum kommt dazu, wenn der
@@ -130,27 +163,35 @@
    * vergleichbar, und mit ihnen geht die Rechnung von Hand auf:
    *   1/qe1 + 1/qe2 = Kehrwertsumme,  darunter 1 heisst Gewinn.
    */
-  function qePmWert(f) {
-    var p = Number(f.pm_preis), s = Number(f.pm_gebuehr);
-    if (!(p > 0 && p < 1) || !isFinite(s)) return null;
-    return (1 - s * Math.min(p, 1 - p)) / p;
-  }
-  function qeGegenWert(f) {
-    var q = Number(f.bf_quote), s = Number(f.bf_gebuehr);
-    if (!isFinite(q) || !isFinite(s)) return null;
-    if (f.buch === 'kalshi') {
-      if (!(q > 0 && q < 1)) return null;
-      return (1 - s * q * (1 - q)) / q;
+  /* Effektivquote EINER Seite, nach Gebuehr. Welche Formel gilt, haengt am
+   * Buch und an der Seite — nicht mehr an der Annahme, Seite 1 sei
+   * Polymarket:
+   *   Polymarket   Gebuehr = s * min(p, 1-p)
+   *   Kalshi       Gebuehr = s * p * (1-p)
+   *   Boerse Back  qE = 1 + (q-1) * (1-s)
+   *   Boerse Lay   qE = 1 + (1-s) / (q-1) */
+  function qeSeiteWert(buchName, info, wert, satz, seiteText) {
+    var x = Number(wert), s = Number(satz);
+    if (!isFinite(x) || !isFinite(s)) return null;
+    if (info.art === 'preis') {
+      if (!(x > 0 && x < 1)) return null;
+      var g = buchName === 'kalshi' ? s * x * (1 - x) : s * Math.min(x, 1 - x);
+      var qe = (1 - g) / x;
+      return qe > 1 ? qe : null;
     }
-    if (f.bf_seite === 'Lay') {
-      if (!(q > 1)) return null;
-      return 1 + (1 - s) / (q - 1);
-    }
-    if (!(q > 1)) return null;
-    return 1 + (q - 1) * (1 - s);
+    if (!(x > 1)) return null;
+    return String(seiteText || '').toLowerCase() === 'lay'
+      ? 1 + (1 - s) / (x - 1)
+      : 1 + (x - 1) * (1 - s);
   }
-  function qeEins(f) { var x = qePmWert(f);   return x === null ? '?' : x.toFixed(3); }
-  function qeZwei(f) { var x = qeGegenWert(f); return x === null ? '?' : x.toFixed(3); }
+  function qeEinsWert(f) {
+    return qeSeiteWert(f.buch_1 || 'polymarket', buch1(f), f.pm_preis, f.pm_gebuehr, f.pm_seite);
+  }
+  function qeZweiWert(f) {
+    return qeSeiteWert(f.buch || 'betfair', buch2(f), f.bf_quote, f.bf_gebuehr, f.bf_seite);
+  }
+  function qeEins(f) { var x = qeEinsWert(f); return x === null ? '?' : x.toFixed(3); }
+  function qeZwei(f) { var x = qeZweiWert(f); return x === null ? '?' : x.toFixed(3); }
 
   /* ---------- Puffer ----------
    *
@@ -158,33 +199,64 @@
    * 0,3 % Rendite reicht ein Tick, bei 3 % hat man Luft. Ohne diese Zahl
    * sieht eine knappe Chance genauso aus wie eine belastbare.
    *
-   * Gerechnet wird der Polymarket-Preis: wie weit darf er steigen, bis die
+   * Gerechnet wird auf SEITE 1: wie weit darf ihr Kurs sich bewegen, bis die
    * Kehrwertsumme 1 erreicht? Das ist die Seite, die man zuerst kauft.
+   *
+   * In welche RICHTUNG das schlechter wird, haengt vom Buch ab und darf
+   * nicht geraten werden:
+   *   Anteilspreis  teurer = schlechter  -> er darf STEIGEN
+   *   Back-Quote    kleiner = schlechter -> sie darf FALLEN
+   *   Lay-Quote     groesser = schlechter (mehr Haftung) -> sie darf STEIGEN
    */
   function puffer(f) {
-    var qe2 = qeGegenWert(f);
+    var qe2 = qeZweiWert(f);
     var s = Number(f.pm_gebuehr);
-    var p = Number(f.pm_preis);
-    if (qe2 === null || !isFinite(s) || !(p > 0 && p < 1)) return null;
+    var x = Number(f.pm_preis);
+    var info = buch1(f);
+    if (qe2 === null || !isFinite(s) || !isFinite(x)) return null;
+
     var rest = 1 - 1 / qe2;                 // so viel Kehrwert darf Seite 1 hoechstens haben
     if (!(rest > 0)) return null;
     var qeNoetig = 1 / rest;                // ... also mindestens diese Effektivquote
-    /* qe = (1 - s*min(p,1-p))/p nach p aufloesen. Unterhalb 0,5 ist
-     * min(p,1-p) = p, also qe = (1-s*p)/p = 1/p - s  ->  p = 1/(qe+s). */
-    var pMax = 1 / (qeNoetig + s);
-    if (!(pMax > 0)) return null;
-    return { pMax: pMax, prozent: (pMax - p) / p * 100 };
+
+    var grenze, richtung;
+    if (info.art === 'preis') {
+      if (!(x > 0 && x < 1)) return null;
+      /* qe = (1 - s*min(p,1-p))/p. Unterhalb 0,5 ist min(p,1-p) = p, also
+       * qe = 1/p - s  ->  p = 1/(qe+s). */
+      grenze = 1 / (qeNoetig + s);
+      richtung = 'steigen';
+    } else if (String(f.pm_seite || '').toLowerCase() === 'lay') {
+      if (!(x > 1)) return null;
+      /* qe = 1 + (1-s)/(q-1)  ->  q = 1 + (1-s)/(qe-1) */
+      if (!(qeNoetig > 1)) return null;
+      grenze = 1 + (1 - s) / (qeNoetig - 1);
+      richtung = 'steigen';
+    } else {
+      if (!(x > 1)) return null;
+      /* qe = 1 + (q-1)(1-s)  ->  q = 1 + (qe-1)/(1-s) */
+      if (!(1 - s > 0)) return null;
+      grenze = 1 + (qeNoetig - 1) / (1 - s);
+      richtung = 'fallen';
+    }
+    if (!(grenze > 0)) return null;
+
+    /* Puffer ist immer der Abstand IN DIE ERLAUBTE RICHTUNG. */
+    var prozent = richtung === 'steigen' ? (grenze - x) / x * 100 : (x - grenze) / x * 100;
+    return { grenze: grenze, prozent: prozent, richtung: richtung, art: info.art, name: info.name };
   }
 
   function pufferText(f) {
     var pu = puffer(f);
     if (!pu) return '<span>Puffer unbekannt</span>';
+    var stellen = pu.art === 'preis' ? 3 : 2;
+    var gegen = pu.richtung === 'steigen' ? 'fallen' : 'steigen';
     if (pu.prozent <= 0) {
-      return '<span>kein Puffer &mdash; der Preis müsste um ' + Math.abs(pu.prozent).toFixed(1) +
-             ' % <b>fallen</b>, damit es aufgeht</span>';
+      return '<span>kein Puffer &mdash; ' + txt(pu.name) + ' müsste um ' +
+             Math.abs(pu.prozent).toFixed(1) + ' % <b>' + gegen + '</b>, damit es aufgeht</span>';
     }
-    return '<span>Puffer: Polymarket darf bis <b>' + pu.pMax.toFixed(3) + '</b> steigen ' +
-           '(+' + pu.prozent.toFixed(1) + ' %), dann ist es aufgebraucht</span>';
+    return '<span>Puffer: ' + txt(pu.name) + ' darf bis <b>' + pu.grenze.toFixed(stellen) + '</b> ' +
+           pu.richtung + ' (' + pu.prozent.toFixed(1) + ' %), dann ist es aufgebraucht</span>';
   }
 
   /* ---------- Die Gegenprobe ----------
@@ -196,24 +268,28 @@
    * Deshalb steht auf jeder Karte im Klartext, was in welchem Fall passiert.
    * Wenn beide Seiten im selben Fall zahlen, wird gewarnt statt gerechnet.
    */
+  /* Zahlt diese Seite, wenn das Ereignis EINTRITT?
+   *
+   * Gilt fuer JEDES Buch und JEDE Seite, denn seit dem Umbau kann auf Seite 1
+   * auch "Back" oder "Lay" stehen und nicht nur "JA"/"NEIN":
+   *   zahlt beim Eintreten   JA · ÜBER · Ja · Back
+   *   zahlt beim Ausbleiben  NEIN · UNTER · Nein · Lay
+   * Alles andere ergibt null — und null heisst "unbekannt", nicht "nein".
+   * Eine Seite, die man nicht einordnen kann, darf nicht als gedeckt gelten. */
+  function zahltBeiEintritt(seiteText) {
+    var s = String(seiteText || '').trim().toUpperCase();
+    if (s === 'JA' || s === 'ÜBER' || s === 'UBER' || s === 'BACK') return true;
+    if (s === 'NEIN' || s === 'UNTER' || s === 'LAY') return false;
+    return null;
+  }
+
   function ausgaenge(f) {
     var name = f.mannschaft || 'diese Seite';
-    var pmJa = String(f.pm_seite || '').toUpperCase();
-    var pmZahltWenn, gegenZahltWenn;
+    var einsZahltWenn = zahltBeiEintritt(f.pm_seite);
+    var zweiZahltWenn = zahltBeiEintritt(f.bf_seite);
 
-    // Polymarket: JA/UEBER zahlt beim Eintreten, NEIN/UNTER beim Ausbleiben.
-    if (pmJa === 'JA' || pmJa === 'ÜBER') pmZahltWenn = true;
-    else if (pmJa === 'NEIN' || pmJa === 'UNTER') pmZahltWenn = false;
-    else pmZahltWenn = null;
-
-    // Gegenbuch: Back und Ja zahlen beim Eintreten, Lay und Nein beim Ausbleiben.
-    var gs = String(f.bf_seite || '');
-    if (gs === 'Back' || gs === 'Ja') gegenZahltWenn = true;
-    else if (gs === 'Lay' || gs === 'Nein') gegenZahltWenn = false;
-    else gegenZahltWenn = null;
-
-    return { name: name, pm: pmZahltWenn, gegen: gegenZahltWenn,
-             gedeckt: pmZahltWenn !== null && gegenZahltWenn !== null && pmZahltWenn !== gegenZahltWenn };
+    return { name: name, pm: einsZahltWenn, gegen: zweiZahltWenn,
+             gedeckt: einsZahltWenn !== null && zweiZahltWenn !== null && einsZahltWenn !== zweiZahltWenn };
   }
 
   function gegenprobe(f) {
@@ -229,8 +305,8 @@
              'Absicherung, sondern doppeltes Risiko. Diese Zeile nicht handeln.</div>';
     }
 
-    var wennEin = a.pm ? 'Polymarket' : 'Gegenbuch';
-    var wennAus = a.pm ? 'Gegenbuch' : 'Polymarket';
+    var wennEin = a.pm ? buch1(f).name : buch2(f).name;
+    var wennAus = a.pm ? buch2(f).name : buch1(f).name;
 
     return '<div class="gegenprobe">' +
       '<div class="gp-zeile"><span class="gp-fall">Wenn <b>' + txt(a.name) + '</b> eintritt</span>' +
@@ -240,8 +316,8 @@
         '<span class="gp-wer">' + wennAus + ' zahlt</span>' +
         '<span class="gp-zahl">' + aus.toFixed(2) + '</span></div>' +
       '<div class="gp-fuss">Beide Ausgänge zahlen <b>denselben</b> Betrag — genau dafür ist die ' +
-        'Aufteilung <b>' + (100 * e1 / gesamt).toFixed(1) + ' % Polymarket / ' +
-        (100 * e2 / gesamt).toFixed(1) + ' % Gegenbuch</b> und nicht 50/50.</div>' +
+        'Aufteilung <b>' + (100 * e1 / gesamt).toFixed(1) + ' % ' + txt(buch1(f).name) + ' / ' +
+        (100 * e2 / gesamt).toFixed(1) + ' % ' + txt(buch2(f).name) + '</b> und nicht 50/50.</div>' +
       '</div>';
   }
 
@@ -285,27 +361,32 @@
     return '<div class="urteil"><b>Lohnt sich nicht: ' + r.toFixed(2) + ' %.</b> ' +
       'Beide Seiten zusammen kosten ' + (inv * 100).toFixed(2) + ' % dessen, was sie zurückzahlen — ' +
       'also mehr als sie einbringen. Gebühren: ' +
-      pmG + ' % bei Polymarket, ' + ggG + ' % beim Gegenbuch. ' +
+      pmG + ' % bei ' + buch1(f).name + ', ' + ggG + ' % bei ' + buch2(f).name + '. ' +
       (schuld || '') + '</div>';
   }
 
   /* Was bliebe ohne jede Gebühr? Nur so laesst sich sagen, ob die Gebuehren
-   * schuld sind oder ob die beiden Buecher einfach gleich teuer stehen. */
-  function renditeOhneGebuehren(f) {
-    var p = Number(f.pm_preis), q = Number(f.bf_quote);
-    if (!(p > 0 && p < 1)) return null;
-    var qe1 = 1 / p;
-    var qe2;
-    if (f.buch === 'kalshi') {
-      if (!(q > 0 && q < 1)) return null;
-      qe2 = 1 / q;                       // Kalshi rechnet in Preisen, nicht in Quoten
-    } else if (f.bf_seite === 'Lay') {
-      if (!(q > 1)) return null;
-      qe2 = 1 + 1 / (q - 1);
-    } else {
-      if (!(q > 1)) return null;
-      qe2 = q;
+   * schuld sind oder ob die beiden Buecher einfach gleich teuer stehen.
+   *
+   * Welche Formel gilt, haengt am BUCH und an der SEITE, nicht mehr an der
+   * Annahme "Seite 1 ist Polymarket":
+   *   preis  Anteil zwischen 0 und 1        qE = 1/p
+   *   quote  Back                           qE = q
+   *   quote  Lay (dagegenhalten)            qE = 1 + 1/(q-1) */
+  function qeOhneGebuehr(info, wert, seiteText) {
+    var x = Number(wert);
+    if (info.art === 'preis') {
+      if (!(x > 0 && x < 1)) return null;
+      return 1 / x;
     }
+    if (!(x > 1)) return null;
+    return String(seiteText || '').toLowerCase() === 'lay' ? 1 + 1 / (x - 1) : x;
+  }
+
+  function renditeOhneGebuehren(f) {
+    var qe1 = qeOhneGebuehr(buch1(f), f.pm_preis, f.pm_seite);
+    var qe2 = qeOhneGebuehr(buch2(f), f.bf_quote, f.bf_seite);
+    if (qe1 === null || qe2 === null) return null;
     var inv = 1 / qe1 + 1 / qe2;
     if (!(inv > 0)) return null;
     return (1 / inv - 1) * 100;
@@ -342,7 +423,7 @@
     }
     return '<div class="unter">' +
       marke(f.rechnung_ok, 'Rechnung nachgeprueft', 'Rechnung beanstandet', 'Rechnung offen') +
-      marke(f.pm_link_ok, 'Polymarket-Link lebt', 'Polymarket-Link tot', 'Polymarket-Link nicht pruefbar') +
+      marke(f.pm_link_ok, buch1(f).name + '-Link lebt', buch1(f).name + '-Link tot', buch1(f).name + '-Link nicht pruefbar') +
       marke(f.gegen_link_ok, 'Gegenlink lebt', 'Gegenlink tot', 'Gegenlink nicht pruefbar') +
       '<span class="chip">geprueft vor ' + seit(f.geprueft_am) + '</span>' +
       (f.rechnung_ok === false && f.rechnung_grund ? ' <span class="chip rot">' + txt(f.rechnung_grund) + '</span>' : '') +
@@ -365,8 +446,10 @@
           '</div>' +
         '</div>' +
         '<div class="unter">' +
-          '<span class="chip ' + (f.buch === 'kalshi' ? 'ka' : 'bf') + '">' +
-            (f.buch === 'kalshi' ? 'Kalshi · kein Konto' : 'Betfair · Bridge') + '</span> ' +
+          '<span class="chip ' + txt(buch1(f).chip) + '">' + txt(buch1(f).name) + '</span> ' +
+          '<span class="chip leise">gegen</span> ' +
+          '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +
+            (buch2(f).konto ? ' · ' + txt(buch2(f).konto) : '') + '</span> ' +
           (f.veraltet ? '<span class="chip rot">Kurse veraltet</span> ' : '') +
           '<span class="chip">' + txt(f.sportart) + '</span> ' +
           '<span class="chip">' + (imVerlauf ? 'beendet vor ' + seit(f.vorbei_seit) : 'endet in ' + bis(f.endet_am)) + '</span> ' +
@@ -377,17 +460,17 @@
           (imVerlauf && f.vorbei_grund ? ' <span class="chip rot">' + txt(f.vorbei_grund) + '</span>' : '') +
         '</div>' +
         '<div class="seiten">' +
-          '<div class="seite pm">' +
-            '<div class="quelle">Polymarket</div>' +
-            '<div class="zahl">' + txt(f.pm_seite) + ' ' + Number(f.pm_preis).toFixed(3) + '</div>' +
+          '<div class="seite ' + txt(buch1(f).chip) + '">' +
+            '<div class="quelle">' + txt(buch1(f).name) + '</div>' +
+            '<div class="zahl">' + txt(f.pm_seite) + ' ' + wertText(buch1(f), f.pm_preis) + '</div>' +
             '<div class="leise">' + txt(f.mannschaft) + '</div>' +
-            '<div class="leise">Anteilspreis &middot; Effektivquote <b>' + qeEins(f) + '</b></div>' +
+            '<div class="leise">' + wertName(buch1(f)) + ' &middot; Effektivquote <b>' + qeEins(f) + '</b></div>' +
           '</div>' +
-          '<div class="seite bf">' +
-            '<div class="quelle">' + (f.buch === 'kalshi' ? 'Kalshi' : 'Betfair') + '</div>' +
-            '<div class="zahl">' + txt(f.bf_seite) + ' ' + Number(f.bf_quote).toFixed(f.buch === 'kalshi' ? 3 : 2) + '</div>' +
+          '<div class="seite ' + txt(buch2(f).chip) + '">' +
+            '<div class="quelle">' + txt(buch2(f).name) + '</div>' +
+            '<div class="zahl">' + txt(f.bf_seite) + ' ' + wertText(buch2(f), f.bf_quote) + '</div>' +
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
-            '<div class="leise">' + (f.buch === 'kalshi' ? 'Kontraktpreis' : 'Quote') +
+            '<div class="leise">' + wertName(buch2(f)) +
               ' &middot; Effektivquote <b>' + qeZwei(f) + '</b></div>' +
           '</div>' +
         '</div>' +
@@ -395,8 +478,9 @@
         gegenprobe(f) +
         pruefzeile(f) +
         analyse(f, imVerlauf) +
-        '<div class="unter leise">Bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' auf Polymarket, ' +
-          Number(f.einsatz_2).toFixed(2) + ' aufs Gegenbuch &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
+        '<div class="unter leise">Bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' auf ' +
+          txt(buch1(f).name) + ', ' + Number(f.einsatz_2).toFixed(2) + ' auf ' + txt(buch2(f).name) +
+          ' &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
           ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
         aktionen(f) +
       '</div>';
@@ -425,6 +509,29 @@
       '</tr>';
   }
 
+  /* Welche BUCHPAARUNGEN laufen gerade?
+   *
+   * Eine Arbitrage besteht immer aus genau zwei Buechern. Bei vier Buechern
+   * gibt es zwoelf gerichtete Paarungen — und es ist ein Unterschied, ob
+   * gerade nur Polymarket gegen Betfair laeuft oder auch Kalshi gegen
+   * Smarkets. Ohne diese Zeile sieht man nur die Summe und merkt nicht,
+   * wenn eine ganze Paarung stillsteht. */
+  function paarungenZeile(p) {
+    if (!p) return '';
+    var namen = Object.keys(p);
+    if (!namen.length) return '';
+    namen.sort(function (a, b) { return (p[b].live || 0) - (p[a].live || 0); });
+    var teile = namen.map(function (n) {
+      var x = p[n];
+      var beste = x.beste == null ? null : Number(x.beste);
+      return '<span class="chip' + (x.chancen > 0 ? ' gut' : '') + '">' + txt(n) +
+             ' &middot; ' + x.live +
+             (beste === null ? '' : ' &middot; beste ' + beste.toFixed(2) + ' %') + '</span>';
+    });
+    return '<div class="tafel-fuss">Laufende Paarungen (je genau zwei Bücher): ' +
+           teile.join(' ') + '</div>';
+  }
+
   function anbieterTafel(e) {
     var K = welt.KONFIG;
     var u = e.uebersicht;
@@ -441,39 +548,81 @@
     var kst = ka.stats || {};
     var zeilen = '';
 
-    /* Polymarket: liefert der Scanner ueberhaupt noch? Seine Frische IST die
-     * Frische von Polymarket, denn er holt es bei jedem Lauf neu. */
-    var pmAlt = Number(pm.alter_s);
-    zeilen += anbieterZeile('Polymarket',
-      isFinite(pmAlt) && pmAlt < K.laufMaxAlterS ? 'gruen' : 'rot',
-      dauer(pm.alter_s),
-      (pm.maerkte == null ? '?' : pm.maerkte) + ' Märkte im Fenster',
-      (f.betfair ? f.betfair.live : 0) + (f.kalshi ? f.kalshi.live : 0),
-      pm.dauer_ms == null ? '?' : (pm.dauer_ms / 1000).toFixed(1) + ' s je Lauf',
-      'öffentlich, kein Konto');
+    var sm = u.smarkets || {}, sst = sm.stats || {};
+    var live = function (b) { return f[b] ? f[b].live : 0; };
+    var verlauf = function (b) { return f[b] ? f[b].verlauf : 0; };
 
-    var kaAlt = Number(ka.alter_s);
-    zeilen += anbieterZeile('Kalshi',
-      isFinite(kaAlt) && kaAlt < K.kalshiMaxAlterS ? 'gruen' : 'rot',
-      dauer(ka.alter_s),
-      (kst.maerkte == null ? '?' : kst.maerkte) + ' Märkte aus ' +
-        (kst.serien_mit_inhalt == null ? '?' : kst.serien_mit_inhalt) + ' von ' +
-        (kst.serien_geprueft == null ? '?' : kst.serien_geprueft) + ' Serien',
-      f.kalshi ? f.kalshi.live : 0,
-      kst.dauer_ms == null ? '?' : Math.round(kst.dauer_ms / 1000) + ' s je Durchlauf',
-      'öffentlich, kein Konto');
+    /* Die Buecher werden nach UMFANG sortiert, das KLEINSTE zuerst.
+     *
+     * Das kleinste Buch ist die Engstelle: was dort nicht liegt, kann
+     * nirgends gepaart werden, denn eine Arbitrage braucht immer genau zwei
+     * Buecher. Die grossen stehen unten — sie bringen die Partien, die es
+     * sonst nirgends gibt, aber sie helfen nur, soweit ein zweites Buch
+     * mitzieht.
+     *
+     * Die Reihenfolge steht in KONFIG.buecher.umfang und ist gemessen, nicht
+     * geschaetzt. Sortiert wird trotzdem nach der LIVE gemeldeten Zahl, wo
+     * es eine gibt — die gemessene ist nur der Rueckfall. */
+    var reihen = [
+      { buch: 'kalshi', name: 'Kalshi',
+        zahl: kst.maerkte,
+        zustand: isFinite(Number(ka.alter_s)) && Number(ka.alter_s) < K.kalshiMaxAlterS ? 'gruen' : 'rot',
+        alter: dauer(ka.alter_s),
+        umfang: (kst.maerkte == null ? '?' : kst.maerkte) + ' Märkte aus ' +
+          (kst.serien_mit_inhalt == null ? '?' : kst.serien_mit_inhalt) + ' von ' +
+          (kst.serien_geprueft == null ? '?' : kst.serien_geprueft) + ' Serien',
+        funde: live('kalshi'),
+        tempo: kst.dauer_ms == null ? '?' : Math.round(kst.dauer_ms / 1000) + ' s je Durchlauf',
+        hinweis: 'öffentlich, kein Konto' },
 
-    var bfAlt = Number(bf.alter_s);
-    var bfZustand = !isFinite(bfAlt) ? 'rot' : (bfAlt < K.bridgeMaxAlterS ? 'gruen' : 'rot');
-    zeilen += anbieterZeile('Betfair über Bridge',
-      bfZustand,
-      dauer(bf.alter_s),
-      (bf.im_fenster == null ? '?' : bf.im_fenster) + ' im Fenster, ' +
-        (bf.hochgeladen == null ? '?' : bf.hochgeladen) + ' von ' +
-        (bf.katalog == null ? '?' : bf.katalog) + ' hochgeladen',
-      f.betfair ? f.betfair.live : 0,
-      'Build ' + (bf.build == null ? '?' : bf.build),
-      bfZustand === 'rot' ? 'Bridge steht — Heim-PC' : 'läuft auf dem Heim-PC');
+      { buch: 'polymarket', name: 'Polymarket',
+        zahl: pm.maerkte,
+        zustand: isFinite(Number(pm.alter_s)) && Number(pm.alter_s) < K.laufMaxAlterS ? 'gruen' : 'rot',
+        alter: dauer(pm.alter_s),
+        umfang: (pm.maerkte == null ? '?' : pm.maerkte) + ' Märkte im Fenster',
+        funde: live('polymarket'),
+        tempo: pm.dauer_ms == null ? '?' : (pm.dauer_ms / 1000).toFixed(1) + ' s je Lauf',
+        hinweis: 'öffentlich, kein Konto' },
+
+      { buch: 'smarkets', name: 'Smarkets',
+        zahl: sst.mit_quoten,
+        zustand: isFinite(Number(sm.alter_s)) && Number(sm.alter_s) < K.smarketsMaxAlterS ? 'gruen' : 'rot',
+        alter: dauer(sm.alter_s),
+        umfang: (sst.mit_quoten == null ? '?' : sst.mit_quoten) + ' Märkte mit Quoten aus ' +
+          (sst.spiele == null ? '?' : sst.spiele) + ' Spielen',
+        funde: live('smarkets'),
+        tempo: sst.dauer_ms == null ? '?' : Math.round(sst.dauer_ms / 1000) + ' s je Durchlauf',
+        hinweis: 'öffentlich, kein Konto, kein Heim-PC' },
+
+      { buch: 'betfair', name: 'Betfair über Bridge',
+        zahl: bf.im_fenster,
+        zustand: !isFinite(Number(bf.alter_s)) ? 'rot'
+                 : (Number(bf.alter_s) < K.bridgeMaxAlterS ? 'gruen' : 'rot'),
+        alter: dauer(bf.alter_s),
+        umfang: (bf.im_fenster == null ? '?' : bf.im_fenster) + ' im Fenster, ' +
+          (bf.hochgeladen == null ? '?' : bf.hochgeladen) + ' von ' +
+          (bf.katalog == null ? '?' : bf.katalog) + ' hochgeladen',
+        funde: live('betfair'),
+        tempo: 'Build ' + (bf.build == null ? '?' : bf.build),
+        hinweis: null }
+    ];
+
+    reihen.forEach(function (r) {
+      var k = (K.buecher || {})[r.buch] || {};
+      /* Gemeldete Zahl schlaegt gemessene, gemessene schlaegt gar nichts. */
+      r.groesse = isFinite(Number(r.zahl)) ? Number(r.zahl) : (k.umfang || 0);
+      if (r.buch === 'betfair' && r.hinweis === null) {
+        r.hinweis = r.zustand === 'rot' ? 'Bridge steht — Heim-PC' : 'läuft auf dem Heim-PC';
+      }
+    });
+    reihen.sort(function (a, b) { return a.groesse - b.groesse; });
+
+    reihen.forEach(function (r, i) {
+      zeilen += anbieterZeile(
+        (i === 0 ? '① ' : '') + r.name + ' · ' + r.groesse,
+        r.zustand, r.alter, r.umfang, r.funde, r.tempo,
+        (i === 0 ? '<b>kleinstes Buch — die Engstelle</b> · ' : '') + (r.hinweis || ''));
+    });
 
     /* Supabase selbst: die Antwortzeit dieser einen Abfrage ist das
      * ehrlichste Mass. Wenn sie kommt, ist die Verbindung da. */
@@ -482,7 +631,7 @@
       u.antwort_ms + ' ms',
       (u.takte || []).filter(function (t) { return t.aktiv; }).length + ' von ' +
         (u.takte || []).length + ' Takten aktiv',
-      (f.betfair ? f.betfair.verlauf : 0) + (f.kalshi ? f.kalshi.verlauf : 0),
+      verlauf('polymarket'),
       'Antwortzeit gerade eben',
       'verbunden');
 
@@ -495,6 +644,7 @@
         '<th>Funde live</th><th>Tempo</th><th></th></tr></thead>' +
         '<tbody>' + zeilen + '</tbody>' +
       '</table>' +
+      paarungenZeile(u.paarungen) +
       '<div class="tafel-fuss">' +
         'Nachtwache ' + (w.alles_gut ? 'meldet alles in Ordnung' : '<b class="rot">hat etwas beanstandet</b>') +
         ', zuletzt vor ' + dauer(w.alter_s) +
@@ -508,6 +658,7 @@
     var scannerLaeuft = s.lauf_alter_s !== null && s.lauf_alter_s < welt.KONFIG.laufMaxAlterS;
     var bridgeLaeuft = s.bf_alter_s !== null && s.bf_alter_s < welt.KONFIG.bridgeMaxAlterS;
     var kalshiLaeuft = s.kalshi_alter_s !== null && s.kalshi_alter_s < welt.KONFIG.kalshiMaxAlterS;
+    var smarketsLaeuft = s.smarkets_alter_s !== null && s.smarkets_alter_s < welt.KONFIG.smarketsMaxAlterS;
     return [
       { name: 'Chancen live', wert: s.chancen, farbe: s.chancen > 0 ? 'var(--gruen)' : 'var(--text-leise)' },
       { name: 'Knappe Paare', wert: s.knapp },
@@ -515,6 +666,8 @@
       { name: 'Scanner', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--gruen)' : 'var(--rot)' },
       { name: 'Kalshi · ohne Konto', wert: dauer(s.kalshi_alter_s),
         farbe: kalshiLaeuft ? 'var(--tuerkis)' : 'var(--rot)' },
+      { name: 'Smarkets · ohne Konto', wert: dauer(s.smarkets_alter_s),
+        farbe: smarketsLaeuft ? 'var(--gold)' : 'var(--rot)' },
       { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' },
       { name: 'Nachtwache', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
         farbe: (s.wache_gut === true && s.wache_alter_s !== null && s.wache_alter_s < 1800)

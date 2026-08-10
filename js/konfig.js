@@ -41,8 +41,43 @@
      * Serverseitig ebenso (orion_rauschen_loeschen(0.0), alle 5 Minuten). */
     verlaufMinRendite: 0,
 
+    /* Smarkets-Kommission: 2 % Standard-Tarif auf den Nettogewinn je Markt,
+     * gleiche Form wie bei Betfair. NICHT gemessen — es gibt kein Konto und
+     * die oeffentliche API gibt den Satz nicht heraus. Es bestehen daneben
+     * 1 % (Pro) und 3 % (Select); Select trifft genau die besonders
+     * profitablen Konten. Wer dorthin rutscht, traegt hier 0.03 ein, sonst
+     * rechnen sich duenne Funde still ins Plus. */
+    smarketsGebuehr: 0.02,
+
+    /* Die Buecher an EINER Stelle. Die Anbietertafel wird nach `umfang`
+     * sortiert, aufsteigend: das KLEINSTE Buch zuerst, denn es ist die
+     * Engstelle — was dort nicht liegt, kann nirgends gepaart werden. Die
+     * grossen stehen unten und bringen die Partien, die es sonst nirgends
+     * gibt.
+     *
+     * `umfang` ist der am 10.8.2026 gemessene Umfang im 72h-Fenster, nur
+     * fuer die Reihenfolge. Die angezeigten Zahlen kommen live aus den
+     * Schnappschuessen, nicht von hier.
+     *
+     * `art` entscheidet, wie die Zahl gelesen wird:
+     *   preis  Anteil zwischen 0 und 1   (Polymarket, Kalshi)
+     *   quote  Dezimalquote ueber 1      (Betfair, Smarkets) */
+    buecher: {
+      kalshi:     { name: 'Kalshi',     kurz: 'KA', chip: 'ka', art: 'preis',
+                    konto: 'kein Konto', umfang: 206 },
+      polymarket: { name: 'Polymarket', kurz: 'PM', chip: 'pm', art: 'preis',
+                    konto: 'kein Konto', umfang: 390 },
+      smarkets:   { name: 'Smarkets',   kurz: 'SM', chip: 'sm', art: 'quote',
+                    konto: 'kein Konto', umfang: 797 },
+      betfair:    { name: 'Betfair',    kurz: 'BF', chip: 'bf', art: 'quote',
+                    konto: 'Konto + Bridge', umfang: 1189, ueberBroker: true }
+    },
+
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,
+    /* Smarkets wird alle 5 Minuten eingesammelt, ein Durchlauf dauert 7 s.
+     * Alles unter 15 Minuten ist Normalbetrieb. */
+    smarketsMaxAlterS: 900,
     /* Kalshi wird alle 5 Minuten gesammelt, ein Durchlauf dauert 52 s.
      * Alles unter 10 Minuten ist also Normalbetrieb. */
     kalshiMaxAlterS: 600,

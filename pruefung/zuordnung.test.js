@@ -412,6 +412,113 @@ ok('Unentschieden bleibt auch vertauscht gleich', Z.gleicheSeite('unentschieden'
 ok('null wird abgewiesen',                 Z.gleicheSeite(null, 'a', false) === false);
 ok('beides null wird abgewiesen',          Z.gleicheSeite(null, null, false) === false);
 
+/* ---------- Smarkets: Marktart ----------
+ * Smarkets liefert die Struktur mit. Genau deshalb darf hier nichts
+ * geraten werden: was nicht ausdruecklich dasteht, ist null. */
+
+ok('WINNER_3_WAY ist ein Siegermarkt',
+   Z.smMarktArt({ name: 'WINNER_3_WAY' }).art === 'sieger');
+ok('Siegermarkt hat keine Linie',
+   Z.smMarktArt({ name: 'WINNER_3_WAY' }).linie === null);
+ok('OVER_UNDER wird als Ueber/Unter erkannt',
+   Z.smMarktArt({ name: 'OVER_UNDER', param: '2.5' }).art === 'ueber_unter');
+nah('Linie 2.5 kommt als Zahl an',
+   Z.smMarktArt({ name: 'OVER_UNDER', param: '2.5' }).linie, 2.5);
+nah('Linie 0.5 kommt als Zahl an',
+   Z.smMarktArt({ name: 'OVER_UNDER', param: '0.5' }).linie, 0.5);
+ok('OVER_UNDER ohne Linie wird abgewiesen',
+   Z.smMarktArt({ name: 'OVER_UNDER' }) === null);
+ok('OVER_UNDER mit Unsinn als Linie wird abgewiesen',
+   Z.smMarktArt({ name: 'OVER_UNDER', param: 'zwei' }) === null);
+ok('CORRECT_SCORE wird NICHT benutzt',
+   Z.smMarktArt({ name: 'CORRECT_SCORE' }) === null);
+ok('BTTS wird NICHT benutzt',
+   Z.smMarktArt({ name: 'BTTS' }) === null);
+ok('WINNER_AND_BTTS wird NICHT benutzt (zusammengesetzte Frage)',
+   Z.smMarktArt({ name: 'WINNER_AND_BTTS' }) === null);
+ok('null wird abgewiesen', Z.smMarktArt(null) === null);
+ok('Text statt Objekt wird abgewiesen', Z.smMarktArt('WINNER_3_WAY') === null);
+
+/* ---------- Smarkets: Ueber/Unter nur gleiche Linie gegen gleiche ---------- */
+
+var smOu = [{ linie: 0.5 }, { linie: 2.5 }, { linie: 2.5 }, { linie: 3.5 }];
+ok('Linie 2.5 findet beide 2.5-Maerkte', Z.smOuKandidaten(smOu, 2.5).length === 2);
+ok('Linie 0.5 findet genau einen',       Z.smOuKandidaten(smOu, 0.5).length === 1);
+ok('Linie 4.5 findet keinen',            Z.smOuKandidaten(smOu, 4.5).length === 0);
+ok('Linie null findet keinen',           Z.smOuKandidaten(smOu, null).length === 0);
+ok('2.5 zieht NICHT 3.5 an',             Z.smOuKandidaten(smOu, 2.5).every(function (m) { return m.linie === 2.5; }));
+
+/* ---------- Smarkets: Laeuferzuordnung ----------
+ * Die Vertraege sind echte Faelle aus der Messung vom 10.8.2026. */
+
+var vSieger = [
+  { n: 'Santa Clara',         typ: 'HOME' },
+  { n: 'Draw',                typ: 'DRAW' },
+  { n: 'Nacional da Madeira', typ: 'AWAY' }
+];
+var pSieger = ['cd santa clara', 'cd nacional'];
+
+/* Der Fall, an dem die strenge Namensregel scheitert: 0,33 statt 0,80. */
+ok('Name allein findet "CD Nacional" NICHT',
+   Z.laeuferZu('CD Nacional', vSieger, 0.8) === null);
+var l1 = Z.smLaeufer('sieger', 'CD Nacional', pSieger, vSieger, false, 0.8);
+ok('Struktur findet "CD Nacional" als AWAY',
+   l1 !== null && l1.laeufer.typ === 'AWAY', l1 && l1.laeufer.n);
+ok('und benennt den Weg als reine Struktur',
+   l1 !== null && l1.weg === 'struktur');
+var l2 = Z.smLaeufer('sieger', 'CD Santa Clara', pSieger, vSieger, false, 0.8);
+ok('Struktur findet "CD Santa Clara" als HOME',
+   l2 !== null && l2.laeufer.typ === 'HOME', l2 && l2.laeufer.n);
+ok('wo der Name mitzieht, heisst der Weg "beide"',
+   l2 !== null && l2.weg === 'beide', l2 && l2.weg);
+
+/* Gekreuzte Partie: Polymarket "Palermo vs Juventus", Smarkets "Juventus vs Palermo". */
+var vKreuz = [
+  { n: 'Juventus', typ: 'HOME' },
+  { n: 'Draw',     typ: 'DRAW' },
+  { n: 'Palermo',  typ: 'AWAY' }
+];
+var lK = Z.smLaeufer('sieger', 'Juventus Turin', ['palermo fc', 'juventus turin'], vKreuz, true, 0.8);
+ok('bei getauschter Partie wird die Seite gedreht',
+   lK !== null && lK.laeufer.typ === 'HOME', lK && lK.laeufer.n);
+var lK2 = Z.smLaeufer('sieger', 'Palermo FC', ['palermo fc', 'juventus turin'], vKreuz, true, 0.8);
+ok('und die andere Mannschaft landet auf AWAY',
+   lK2 !== null && lK2.laeufer.typ === 'AWAY', lK2 && lK2.laeufer.n);
+
+/* DAS VETO — die Regel muss ausgeloest werden, nicht umgangen.
+ * Konstruiert: die Struktur zeigt auf HOME, der Name eindeutig auf AWAY. */
+var vWider = [
+  { n: 'Bayern Muenchen', typ: 'HOME' },
+  { n: 'Draw',            typ: 'DRAW' },
+  { n: 'Borussia Dortmund', typ: 'AWAY' }
+];
+var lW = Z.smLaeufer('sieger', 'Borussia Dortmund', ['borussia dortmund', 'bayern muenchen'], vWider, false, 0.8);
+ok('WIDERSPRUCH Struktur gegen Name wird NICHT gepaart',
+   lW === null, lW && (lW.laeufer.n + ' ueber ' + lW.weg));
+
+/* Unentschieden und Ueber/Unter: strukturell eindeutig. */
+var lD = Z.smLaeufer('unentschieden', null, null, vSieger, false, 0.8);
+ok('Unentschieden findet den DRAW-Vertrag',
+   lD !== null && lD.laeufer.typ === 'DRAW');
+var vOu = [{ n: 'Under 2.5 goals', typ: 'UNDER' }, { n: 'Over 2.5 goals', typ: 'OVER' }];
+var lO = Z.smLaeufer('ueber_unter', null, null, vOu, false, 0.8);
+ok('Ueber/Unter nimmt IMMER den OVER-Vertrag als JA-Seite',
+   lO !== null && lO.laeufer.typ === 'OVER', lO && lO.laeufer.n);
+ok('fehlt der DRAW-Vertrag, gibt es kein Unentschieden',
+   Z.smLaeufer('unentschieden', null, null, vOu, false, 0.8) === null);
+
+/* Rueckweg auf streng, falls die Lockerung je zurueckgenommen wird. */
+ok('mit namePflicht wird "CD Nacional" wieder abgewiesen',
+   Z.smLaeufer('sieger', 'CD Nacional', pSieger, vSieger, false, 0.8, true) === null);
+ok('mit namePflicht bleibt "CD Santa Clara" erhalten',
+   Z.smLaeufer('sieger', 'CD Santa Clara', pSieger, vSieger, false, 0.8, true) !== null);
+
+/* Unbrauchbare Eingaben. */
+ok('leere Vertragsliste ergibt nichts', Z.smLaeufer('sieger', 'X', pSieger, [], false, 0.8) === null);
+ok('unbekannte Art ergibt nichts',      Z.smLaeufer('quatsch', 'X', pSieger, vSieger, false, 0.8) === null);
+ok('Mannschaft, die zu keiner Seite passt, ergibt nichts',
+   Z.smLaeufer('sieger', 'FC Erfunden', pSieger, vSieger, false, 0.8) === null);
+
 /* ---------- Ergebnis ---------- */
 
 console.log('\nZuordnung: ' + gut + ' von ' + (gut + schlecht) + ' Pruefungen bestanden');
