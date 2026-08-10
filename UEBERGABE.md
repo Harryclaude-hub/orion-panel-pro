@@ -210,10 +210,10 @@ statt 124 und merkt es nicht. Genau das ist beim ersten Anlauf passiert.
 ## 3. Wie es aufgebaut ist
 
 ```
-pg_cron ──┬─ orion-lauf      jede Minute     sucht und rechnet (~3 s)
+pg_cron ──┬─ orion-lauf      alle 15 Sek.    sucht und rechnet (3,8 s)
           ├─ pm-scan         jede Minute     (alt, läuft noch mit)
-          ├─ orion-kalshi    alle 5 Minuten  holt Kalshi (52 s je Durchlauf)
-          ├─ orion-smarkets  alle 5 Minuten  holt Smarkets (16 s je Durchlauf)
+          ├─ orion-kalshi    alle 2 Minuten  holt Kalshi (53 s je Durchlauf)
+          ├─ orion-smarkets  jede Minute     holt Smarkets (24 s je Durchlauf)
           ├─ orion-pruefer   alle 5 Minuten  Alter, Rechnung, Links
           ├─ orion-rauschen  alle 5 Minuten  löscht Minuszeilen im Verlauf
           └─ orion-wache     alle 10 Minuten prüft, ob das alles noch läuft
@@ -223,6 +223,35 @@ Website (alle 2 s)  →  liest orion_funde + orion_uebersicht, rechnet nichts
 KEIN Heim-PC mehr beteiligt. bf-bridge und bridge_odds bleiben unangetastet
 (Regel 6), werden aber nicht mehr gelesen: BETFAIR_AKTIV = false.
 ```
+
+### Tempo — und warum 2 Sekunden Unsinn wären
+
+Gemessen am 10.8.2026 abends:
+
+```
+orion-lauf (Scanner)    3,8 s im Schnitt, max 4,5 s
+Kalshi-Sammler         53   s je Durchlauf
+Smarkets-Sammler       24   s je Durchlauf  (vorher 51 s)
+```
+
+**Die Engstelle ist nicht der Scanner, sondern die Sammler.** Der Scanner
+liest Kalshi und Smarkets aus SCHNAPPSCHÜSSEN. Ihn alle 2 Sekunden laufen zu
+lassen hieße, denselben Schnappschuss 150-mal zu durchrechnen und jedes Mal
+dasselbe zu finden — Tempo, das keins ist.
+
+Der Smarkets-Sammler machte seine ~86 Abrufe **nacheinander**. Jetzt laufen
+sie in Bündeln zu 8 parallel: **51 s → 24 s**. Weiter zu treiben hieße,
+Smarkets zu hämmern; eine Sperre wäre schlimmer als der Zeitgewinn.
+
+Takte danach: Scanner **15 s** (pg_cron 1.6 kann Sekunden, aber nur 1–59),
+Smarkets **60 s**, Kalshi **2 min** — jeweils mit Abstand zur Laufzeit. Ein
+Takt kürzer als die Laufzeit ließe Durchläufe übereinander laufen.
+
+### Absage-Regel auf jeder Karte
+
+Unter der Gegenprobe steht jetzt der **dritte Fall**: weder noch. Je Buch,
+was es bei Absage tut, und ob das **belegt** ist oder nur **je Markt** steht.
+Quelle: `KONFIG.buecher[*].absage`, ausführlich auf `regelwerk.html`.
 
 ### Genutzte Fragen — neun, Stand 10.8.2026 abends
 

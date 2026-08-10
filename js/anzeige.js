@@ -321,6 +321,49 @@
       '</div>';
   }
 
+  /* ---------- Was passiert, wenn WEDER noch eintritt? ----------
+   *
+   * Spiel abgesagt, abgebrochen, Spieler tritt nicht an. Die Gegenprobe
+   * darueber zeigt nur die zwei SPIELausgaenge — aber es gibt einen dritten
+   * Fall, und der ist der gefaehrlichste, weil er in keiner Rendite steht.
+   *
+   * Gibt ein Buch den Einsatz zurueck und das andere wertet, ist aus der
+   * abgesicherten Wette eine offene geworden. Beispiel gerechnet auf
+   * regelwerk.html: Einsatz 100, zurueck 90.
+   *
+   * Deshalb steht auf JEDER Karte, was jedes der beiden Buecher tut — und
+   * ob das belegt ist oder nur im einzelnen Markt steht. */
+  function absageZeile(f) {
+    var b1 = buch1(f), b2 = buch2(f);
+    if (!b1.absage && !b2.absage) return '';
+
+    function eine(info) {
+      var sicher = info.absage_sicher === true;
+      return '<div class="gp-zeile">' +
+        '<span class="gp-fall"><b>' + txt(info.name) + '</b></span>' +
+        '<span class="gp-wer">' + txt(info.absage || 'unbekannt') + '</span>' +
+        '<span class="gp-zahl">' +
+          (sicher ? '<span class="chip gut">belegt</span>'
+                  : '<span class="chip acht">je Markt prüfen</span>') +
+        '</span></div>';
+    }
+
+    /* Ein Buch zahlt zurueck, das andere nicht: genau dann kippt die
+     * Absicherung. Das wird ausdruecklich gesagt, nicht nur angedeutet. */
+    var beideBelegt = b1.absage_sicher === true && b2.absage_sicher === true;
+    var warnung = beideBelegt ? '' :
+      '<div class="gp-fuss"><b>Vor dem Handeln beide Marktregeln lesen.</b> ' +
+      'Wenn eine Seite annulliert und die andere wertet, ist die Absicherung weg — ' +
+      'dann hängt das Ergebnis an einem Ereignis, das gar kein Spielausgang ist. ' +
+      '<a href="regelwerk.html" target="_blank" rel="noopener">Regelwerk der Bücher</a></div>';
+
+    return '<div class="gegenprobe absage">' +
+      '<div class="gp-fuss" style="margin:0 0 6px">Wenn <b>weder noch</b> eintritt ' +
+        '(Absage, Abbruch, Spieler tritt nicht an):</div>' +
+      eine(b1) + eine(b2) + warnung +
+    '</div>';
+  }
+
   /* Die Rendite in Worten. Eine Zahl mit Minus davor beantwortet die Frage
    * nicht, die man beim Hinsehen hat: lohnt sich das oder nicht. */
   function renditeText(f) {
@@ -478,6 +521,7 @@
         '</div>' +
         renditeText(f) +
         gegenprobe(f) +
+        absageZeile(f) +
         pruefzeile(f) +
         analyse(f, imVerlauf) +
         '<div class="unter leise">Bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' auf ' +

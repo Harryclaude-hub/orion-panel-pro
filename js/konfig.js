@@ -76,13 +76,29 @@
      * `art` entscheidet, wie die Zahl gelesen wird:
      *   preis  Anteil zwischen 0 und 1   (Polymarket, Kalshi)
      *   quote  Dezimalquote ueber 1      (Betfair, Smarkets) */
+    /* `absage` sagt, was passiert, wenn WEDER noch eintritt: Spiel abgesagt,
+     * abgebrochen, Spieler tritt nicht an. Das ist die gefaehrlichste Luecke
+     * einer Arbitrage und steht in keiner Rendite: gibt ein Buch das Geld
+     * zurueck und das andere wertet, ist aus der abgesicherten Wette eine
+     * offene geworden.
+     *
+     * `absage_sicher` trennt Beleg von Vermutung. Nur Smarkets hat eine
+     * zentrale, nachlesbare Regel; bei Polymarket und Kalshi steht sie JE
+     * MARKT und kann von Markt zu Markt verschieden sein.
+     * Belegt am 10.8.2026, Quellen auf regelwerk.html. */
     buecher: {
       kalshi:     { name: 'Kalshi',     kurz: 'KA', chip: 'ka', art: 'preis',
-                    konto: 'kein Konto', umfang: 206 },
+                    konto: 'kein Konto', umfang: 206,
+                    absage: 'oft KEINE Rückzahlung — wertet zum zuletzt gehandelten Preis',
+                    absage_sicher: false },
       polymarket: { name: 'Polymarket', kurz: 'PM', chip: 'pm', art: 'preis',
-                    konto: 'kein Konto', umfang: 390 },
+                    konto: 'kein Konto', umfang: 390,
+                    absage: 'Regel steht je Markt · 50/50 zahlt 0,50 je Anteil, NICHT den Einsatz',
+                    absage_sicher: false },
       smarkets:   { name: 'Smarkets',   kurz: 'SM', chip: 'sm', art: 'quote',
-                    konto: 'kein Konto', umfang: 797 },
+                    konto: 'kein Konto', umfang: 797,
+                    absage: 'annulliert, voller Einsatz zurück (36-Stunden-Regel)',
+                    absage_sicher: true },
       /* ABGESCHALTET am 10.8.2026, nicht geloescht.
        *
        * Betfair ist das einzige Buch, das einen laufenden Heim-PC braucht.
@@ -105,6 +121,8 @@
        * loest: dann reicht aktiv: true. */
       betfair:    { name: 'Betfair',    kurz: 'BF', chip: 'bf', art: 'quote',
                     konto: 'Konto + Bridge', umfang: 1189, ueberBroker: true,
+                    absage: 'eigenes Regelwerk, ungeprüft — Buch ist abgeschaltet',
+                    absage_sicher: false,
                     aktiv: false,
                     grund: 'aus Supabase gesperrt (403), Stream liefert keine Namen' }
     },

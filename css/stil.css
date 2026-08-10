@@ -363,3 +363,9 @@ h2 {
   background: var(--karte-2); border: 1px solid var(--rand);
   border-radius: var(--rund-chip); font-size: 15px; line-height: 1.55;
 }
+
+/* Der dritte Fall: weder noch. Optisch abgesetzt von der Gegenprobe der
+   zwei Spielausgaenge, weil er eine andere Art von Risiko ist. */
+.gegenprobe.absage { border-color: #5A4634; background: #322C24; }
+.gegenprobe.absage .gp-wer { color: var(--text); }
+.gegenprobe.absage a { color: var(--gold); }
