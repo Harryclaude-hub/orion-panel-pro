@@ -489,10 +489,14 @@
         : '<span class="chip acht" title="Satz ist der dokumentierte Standardtarif, nicht am Konto nachgemessen. Ein höherer Tarif macht dünne Funde zu Verlusten.">angenommen</span>';
     }
 
-    function eine(info, satz, betrag, echt, seiteText) {
-      var art = String(seiteText || '').toLowerCase() === 'lay' ? 'auf den Nettogewinn'
-              : info.art === 'quote' ? 'auf den Nettogewinn'
-              : 'je Anteil';
+    /* Die Bezugsgroesse gehoert dazu, sonst ist der Satz nicht lesbar:
+     * 2 % auf den Nettogewinn und 7 % je Kontrakt sind voellig verschiedene
+     * Dinge. Kalshi handelt KONTRAKTE, Polymarket ANTEILE — das ist keine
+     * Wortklauberei, es sind die Einheiten, in denen die Buecher rechnen. */
+    function eine(info, satz, betrag, echt, seiteText, form) {
+      var art = form === 'kontrakt' ? 'je Kontrakt'
+              : form === 'anteil'   ? 'je Anteil'
+              : 'auf den Nettogewinn';
       return '<div class="gp-zeile">' +
         '<span class="chip ' + txt(info.chip) + '">' + txt(info.name) + '</span> ' +
         '<b>' + (isFinite(satz) ? (satz * 100).toFixed(2) + ' %' : '?') + '</b> ' + art + ' &middot; ' +
@@ -538,8 +542,10 @@
     return '<div class="gegenprobe">' +
       '<div class="gp-fuss" style="margin:0 0 6px">Was die <b>Gebühren</b> kosten — ' +
         'jedes Buch nimmt anders, und der Satz steckt bereits in beiden Effektivquoten:</div>' +
-      eine(b1, s1, g1, f.pm_gebuehr_echt, f.pm_seite) +
-      eine(b2, s2, g2, f.bf_gebuehr_echt, f.bf_seite) +
+      eine(b1, s1, g1, f.pm_gebuehr_echt, f.pm_seite,
+           gebuehrForm(b1, f.buch_1 || 'polymarket', f.pm_seite)) +
+      eine(b2, s2, g2, f.bf_gebuehr_echt, f.bf_seite,
+           gebuehrForm(b2, f.buch || 'betfair', f.bf_seite)) +
       '<div class="gp-zeile"><b>Zusammen ' +
         (summe === null ? 'nicht ausrechenbar' : summe.toFixed(3) + ' bei 100 Einsatz') + '</b>' +
         (kostet === null ? '' : ' &middot; sie kosten <b>' + kostet.toFixed(2) +
