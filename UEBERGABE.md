@@ -1,5 +1,11 @@
 # Orion Panel Pro — Übergabe
 
+> **Diese Datei ist die Wahrheit über das Projekt. Halte sie aktuell.**
+> Nach jeder wesentlichen Änderung — neue Quelle, neue Regel, neuer Messwert,
+> erledigter Punkt aus Abschnitt 7 — wird sie im selben Commit nachgezogen.
+> Sie aktualisiert sich NICHT von selbst. Eine veraltete Übergabe ist
+> schlimmer als keine, weil man ihr glaubt.
+
 Stand: 10. August 2026, Nachmittag. Dieser Text reicht, um ohne Vorwissen
 weiterzuarbeiten. Alle Zahlen darin sind gemessen, nicht geschätzt.
 
