@@ -82,9 +82,14 @@
         /* Zusaetzliche Wache im Browser: zwischen zwei Aufraeumlaeufen kann
          * eine frisch beendete Minuszeile durchrutschen. Im Verlauf hat sie
          * nichts verloren. */
+        /* BEIDE Werte muessen im Plus sein. Der erste Anlauf filterte nur
+         * nach der besten je gesehenen Rendite — angezeigt wird aber die
+         * zuletzt gesehene. Eine Zeile mit beste +2,31 % und zuletzt -2,83 %
+         * ueberlebte damit und stand dann mit Minus da. */
         verlauf = verlauf.filter(function (f) {
-          var b = f.beste_rendite == null ? f.rendite : f.beste_rendite;
-          return Number(b) >= K.verlaufMinRendite;
+          var zuletzt = Number(f.rendite);
+          var beste = Number(f.beste_rendite == null ? f.rendite : f.beste_rendite);
+          return zuletzt >= K.verlaufMinRendite && beste >= K.verlaufMinRendite;
         });
 
         /* DREI Gruppen, nicht zwei. Ein Fund ueber der Schwelle, dessen Kurse
