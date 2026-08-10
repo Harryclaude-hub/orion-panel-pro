@@ -792,6 +792,24 @@ mitgemessen; ein Urteil braucht Tage, nicht Stunden.
 
 ---
 
+### Anzeigeregel: abgeschaltet heißt keine Aktualität
+
+Am 10.8.2026 abends fiel auf: Betfair zeigte **20 s Aktualität**, während
+Smarkets und Kalshi bei 2 min standen — obwohl Betfair abgeschaltet ist. Das
+sah nach einem Fehler aus, war aber keiner:
+
+* Die **Bridge auf dem Heim-PC läuft weiter** und schreibt in `bridge_odds`.
+  Der Scanner liest die Tabelle nicht (`BETFAIR_AKTIV = false`,
+  `bf_geladen: 0`), das Alter war also wahr und trotzdem bedeutungslos.
+* Kalshi und Smarkets bei 2 min sind **Normalbetrieb**: beide werden alle
+  5 Minuten gesammelt, das Alter läuft zwischen 0 und 300 s.
+
+Seitdem: bei `aktiv: false` steht in der Aktualität ein **—** und im Tempo
+„wird nicht gelesen". Läuft die Bridge trotzdem noch, sagt das der Hinweis
+samt Alter — dort gehört es hin, nicht in eine Spalte, die Frische verspricht.
+
+---
+
 ## 7b. SX Bet — der einzige offene Faden
 
 Von rund 50 gemessenen Wegen über vier Runden ist genau einer offen

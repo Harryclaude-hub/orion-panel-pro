@@ -600,6 +600,10 @@
         zahl: bf.im_fenster,
         zustand: !isFinite(Number(bf.alter_s)) ? 'rot'
                  : (Number(bf.alter_s) < K.bridgeMaxAlterS ? 'gruen' : 'rot'),
+        /* Rohwert getrennt aufheben: wenn das Buch abgeschaltet ist, wird
+         * `alter` geleert, aber der Hinweis will noch wissen, ob die Bridge
+         * ueberhaupt noch laeuft. */
+        rohAlter: bf.alter_s,
         alter: dauer(bf.alter_s),
         umfang: (bf.im_fenster == null ? '?' : bf.im_fenster) + ' im Fenster, ' +
           (bf.hochgeladen == null ? '?' : bf.hochgeladen) + ' von ' +
@@ -617,11 +621,28 @@
         r.hinweis = r.zustand === 'rot' ? 'Bridge steht — Heim-PC' : 'läuft auf dem Heim-PC';
       }
       /* ABGESCHALTET ist nicht KAPUTT. Ein rotes Licht wuerde behaupten,
-       * da sei etwas ausgefallen — dabei ist es eine Entscheidung. */
+       * da sei etwas ausgefallen — dabei ist es eine Entscheidung.
+       *
+       * Und die AKTUALITAET wird geleert. Sie war zwar wahr — die Bridge auf
+       * dem Heim-PC laedt weiter hoch, auch wenn der Scanner sie nicht mehr
+       * liest — aber eine frische Zahl neben "abgeschaltet" liest sich wie
+       * ein Widerspruch. Am 10.8.2026 genau so missverstanden: Betfair
+       * zeigte 20 s, waehrend Smarkets und Kalshi bei 2 min standen, und das
+       * sah nach einem Fehler aus. Es war keiner.
+       *
+       * Dass die Bridge noch laeuft, gehoert trotzdem gesagt — nur in den
+       * Hinweis, wo es hingehoert, statt in eine Spalte, die Frische
+       * verspricht. */
       if (k.aktiv === false) {
+        var laeuftNoch = isFinite(Number(r.rohAlter)) && Number(r.rohAlter) < K.bridgeMaxAlterS;
         r.zustand = 'aus';
         r.funde = 0;
-        r.hinweis = '<b>abgeschaltet</b> · ' + txt(k.grund || '');
+        r.alter = '—';
+        r.tempo = 'wird nicht gelesen';
+        r.hinweis = '<b>abgeschaltet</b> · ' + txt(k.grund || '') +
+          (laeuftNoch ? ' · <b>deine Bridge lädt noch hoch</b> (vor ' +
+                        dauer(r.rohAlter) + '), der Scanner ignoriert es — du kannst sie ausmachen'
+                      : '');
       }
     });
     reihen.sort(function (a, b) { return a.groesse - b.groesse; });
