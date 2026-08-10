@@ -43,6 +43,36 @@
      * aus der Chancen-Zaehlung. Verschweigen waere schlimmer als zeigen. */
     mindestEinsatz: 5,
 
+    /* Ab welchem GEWINN IN GELD eine Zeile als Chance gilt.
+     *
+     * Das ist die Schwelle, die am 10.8.2026 gefehlt hat. Vorher zaehlte
+     * allein die Rendite, und dann steht "+1,03 %" neben einer Zeile, die
+     * drei Cent bringt:
+     *
+     *     ka>sm  Anápolis FC     Rendite +1,03 %
+     *            handelbar: 2,94        Gewinn: 0,030
+     *
+     * Beides ist wahr. Nur ist das zweite die Zahl, die zaehlt. Eine
+     * Rendite ist ein Verhaeltnis; ausgezahlt wird ein Betrag.
+     *
+     * Zusammen mit `nurMitBekannterMenge` heisst das: eine Chance ist eine
+     * Zeile, bei der man WEISS, wie viel hineinpasst, UND bei der das genug
+     * ist. Alles andere wandert unter "Knappste Paare" und ist dort
+     * weiterhin sichtbar — es verschwindet nicht, es heisst nur nicht mehr
+     * Chance. */
+    mindestGewinn: 5,
+
+    /* Unbekannte Menge ist keine Chance.
+     *
+     * Bisher galt: "unbekannt ist nicht zu duenn" — richtig, denn es waere
+     * eine Unterstellung. Daraus wurde aber faelschlich "also ist es eine
+     * Chance". Beides ist falsch. Wer nicht weiss, wie viel hineinpasst,
+     * weiss nicht, ob er 3 Cent oder 300 Euro verdient. Das gehoert
+     * gezeigt, aber nicht unter "Chancen".
+     *
+     * Auf false setzen, wenn man solche Zeilen wieder mitzaehlen will. */
+    nurMitBekannterMenge: true,
+
     /* Ab hier abwaerts ist es Rauschen und wird gar nicht mehr gezeigt.
      * Ausdruecklicher Wunsch: nur Gruenes und knapp Danebengegangenes.
      * Gemessen am 10.8.2026: von 558 Verlaufszeilen lagen 438 unter -1 %,

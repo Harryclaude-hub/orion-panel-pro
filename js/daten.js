@@ -167,8 +167,36 @@
         live.forEach(function (f) { f.zu_duenn = zuDuenn(f); });
         verlauf.forEach(function (f) { f.zu_duenn = zuDuenn(f); });
 
+        /* Was tatsaechlich an Gewinn herauskaeme, in GELD — nicht in Prozent.
+         * null heisst "nicht bekannt", nicht "null Euro". */
+        function echterGewinn(f) {
+          var m = Number(f.max_einsatz);
+          if (f.max_einsatz === null || f.max_einsatz === undefined || !isFinite(m)) return null;
+          var r = Number(f.rendite);
+          if (!isFinite(r)) return null;
+          return m * r / 100;
+        }
+        live.forEach(function (f) { f.echter_gewinn = echterGewinn(f); });
+        verlauf.forEach(function (f) { f.echter_gewinn = echterGewinn(f); });
+
+        /* EINE CHANCE IST EINE ZEILE, DIE GELD BRINGT.
+         *
+         * Drei Bedingungen, alle drei noetig:
+         *   1. Rendite ueber der Schwelle       — das Verhaeltnis stimmt
+         *   2. Menge BEKANNT                    — wir wissen, was hineinpasst
+         *   3. Gewinn in Geld ueber der Schwelle — es lohnt sich wirklich
+         *
+         * Bedingung 2 und 3 sind am 10.8.2026 dazugekommen. Vorher reichte
+         * die Rendite, und dann hiess eine Zeile mit +1,03 % und drei Cent
+         * Gewinn genauso "Chance" wie eine mit 40 Euro. Nichts davon wird
+         * geloescht — was hier durchfaellt, steht unter "Knappste Paare"
+         * mit Begruendung. */
         var chancen = live.filter(function (f) {
-          return f.rendite >= K.mindestRendite && !f.veraltet && !f.zu_duenn;
+          if (f.veraltet || f.zu_duenn) return false;
+          if (f.rendite < K.mindestRendite) return false;
+          if (K.nurMitBekannterMenge && f.echter_gewinn === null) return false;
+          if (f.echter_gewinn !== null && f.echter_gewinn < K.mindestGewinn) return false;
+          return true;
         });
         var veraltetHoch = live.filter(function (f) { return f.rendite >= K.mindestRendite && f.veraltet; });
         /* Nur Gruenes und knapp Danebengegangenes. Alles unter der
@@ -178,7 +206,16 @@
           if (f.veraltet) return false;
           /* Zu duenne Zeilen mit guter Rendite gehoeren hierher, nicht in
            * die Chancen — und schon gar nicht ins Nichts. */
-          if (f.rendite >= K.mindestRendite) return f.zu_duenn;
+          /* Alles mit guter Rendite, das KEINE Chance geworden ist, faellt
+           * hierher: zu duenn, unbekannte Menge, oder Gewinn unter der
+           * Geldschwelle. Es darf auf keinen Fall verschwinden — ein Filter,
+           * der stillschweigend schluckt, ist eine Falle. */
+          if (f.rendite >= K.mindestRendite) {
+            if (f.zu_duenn) return true;
+            if (f.echter_gewinn === null) return true;
+            if (f.echter_gewinn < K.mindestGewinn) return true;
+            return false;
+          }
           return f.rendite >= K.rauschGrenze;
         });
         var rauschen = live.filter(function (f) { return f.rendite < K.rauschGrenze; }).length;

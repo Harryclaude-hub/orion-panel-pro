@@ -559,6 +559,24 @@
     return '<div class="analyse">' +
       '<span><b>' + Number(f.rendite).toFixed(2) + ' %</b> Rendite</span>' +
       menge(f) +
+      /* DIE ZAHL, DIE ZAEHLT. Eine Rendite ist ein Verhaeltnis, ausgezahlt
+       * wird ein Betrag. "+1,03 %" und "3 Cent" sind beide wahr — aber nur
+       * das zweite beantwortet die Frage, ob sich das lohnt. Deshalb steht
+       * es hier neben der Rendite und nicht irgendwo weiter unten. */
+      (f.echter_gewinn === null
+        ? '<span class="acht" title="Im Orderbuch steht keine Menge. Unbekannt heisst nicht unbegrenzt — es heisst, dass niemand weiss, ob hier 3 Cent oder 300 Euro zu holen sind.">Gewinn <b>unbekannt</b> — keine Menge im Buch</span>'
+        : '<span' + (f.echter_gewinn >= welt.KONFIG.mindestGewinn ? ' class="gut"' : ' class="acht"') +
+          '><b>' + (f.echter_gewinn >= 0 ? '+' : '') + Number(f.echter_gewinn).toFixed(2) +
+          '</b> tatsächlicher Gewinn' +
+          (f.echter_gewinn < welt.KONFIG.mindestGewinn
+            ? ' — unter ' + Number(welt.KONFIG.mindestGewinn).toFixed(2) + ', keine Chance'
+            : '') + '</span>') +
+      (f.max_einsatz === null || f.max_einsatz === undefined
+        ? '<span class="acht">Liquidität nicht messbar</span>'
+        : '<span>Liquidität: hier passen <b>' + Number(f.max_einsatz).toFixed(2) +
+          '</b> hinein' +
+          (Number(f.max_einsatz) < 100 ? ' — das ist die reale Tiefe des dünneren Buches, keine Skala' : '') +
+          '</span>') +
       pufferText(f) +
       '<span>' + (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' auf 100 Einsatz</span>' +
       '<span>beste bisher ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span>' +
@@ -593,7 +611,11 @@
   }
 
   function karte(f, imVerlauf) {
-    var chance = f.rendite >= welt.KONFIG.mindestRendite;
+    /* Eine Chance ist eine Zeile, die GELD bringt — nicht eine mit guter
+     * Prozentzahl. Dieselben drei Bedingungen wie in daten.js. */
+    var K0 = welt.KONFIG;
+    var chance = f.rendite >= K0.mindestRendite && !f.zu_duenn &&
+                 f.echter_gewinn !== null && f.echter_gewinn >= K0.mindestGewinn;
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
         '<div class="kopfzeile">' +
