@@ -402,6 +402,108 @@
       '</div>';
   }
 
+  /* ---------- Anbietertafel ----------
+   *
+   * Ganz oben, damit man auf einen Blick sieht: wer liefert, wie frisch,
+   * wie viel, wie schnell, und ob etwas getrennt ist.
+   *
+   * Ein Punkt ist gruen, gelb oder rot — und daneben steht IMMER die Zahl,
+   * auf der das Urteil beruht. Eine Ampel ohne Messwert ist eine Meinung.
+   */
+  function ampel(zustand) {
+    return '<span class="punkt ' + zustand + '"></span>';
+  }
+
+  function anbieterZeile(name, zustand, aktualitaet, umfang, funde, tempo, hinweis) {
+    return '<tr>' +
+      '<td class="an-name">' + ampel(zustand) + ' ' + txt(name) + '</td>' +
+      '<td class="an-zahl">' + aktualitaet + '</td>' +
+      '<td class="an-text">' + umfang + '</td>' +
+      '<td class="an-zahl">' + funde + '</td>' +
+      '<td class="an-text">' + tempo + '</td>' +
+      '<td class="an-hinweis">' + (hinweis || '') + '</td>' +
+      '</tr>';
+  }
+
+  function anbieterTafel(e) {
+    var K = welt.KONFIG;
+    var u = e.uebersicht;
+    if (!u) return '';
+
+    if (u.fehler) {
+      return '<div class="warnung"><b>Supabase nicht erreichbar.</b> ' + txt(u.fehler) +
+             ' &middot; Versuch dauerte ' + u.antwort_ms + ' ms. ' +
+             'Alle Zahlen auf dieser Seite sind damit alt.</div>';
+    }
+
+    var f = u.funde || {};
+    var pm = u.polymarket || {}, ka = u.kalshi || {}, bf = u.betfair || {};
+    var kst = ka.stats || {};
+    var zeilen = '';
+
+    /* Polymarket: liefert der Scanner ueberhaupt noch? Seine Frische IST die
+     * Frische von Polymarket, denn er holt es bei jedem Lauf neu. */
+    var pmAlt = Number(pm.alter_s);
+    zeilen += anbieterZeile('Polymarket',
+      isFinite(pmAlt) && pmAlt < K.laufMaxAlterS ? 'gruen' : 'rot',
+      dauer(pm.alter_s),
+      (pm.maerkte == null ? '?' : pm.maerkte) + ' Märkte im Fenster',
+      (f.betfair ? f.betfair.live : 0) + (f.kalshi ? f.kalshi.live : 0),
+      pm.dauer_ms == null ? '?' : (pm.dauer_ms / 1000).toFixed(1) + ' s je Lauf',
+      'öffentlich, kein Konto');
+
+    var kaAlt = Number(ka.alter_s);
+    zeilen += anbieterZeile('Kalshi',
+      isFinite(kaAlt) && kaAlt < K.kalshiMaxAlterS ? 'gruen' : 'rot',
+      dauer(ka.alter_s),
+      (kst.maerkte == null ? '?' : kst.maerkte) + ' Märkte aus ' +
+        (kst.serien_mit_inhalt == null ? '?' : kst.serien_mit_inhalt) + ' von ' +
+        (kst.serien_geprueft == null ? '?' : kst.serien_geprueft) + ' Serien',
+      f.kalshi ? f.kalshi.live : 0,
+      kst.dauer_ms == null ? '?' : Math.round(kst.dauer_ms / 1000) + ' s je Durchlauf',
+      'öffentlich, kein Konto');
+
+    var bfAlt = Number(bf.alter_s);
+    var bfZustand = !isFinite(bfAlt) ? 'rot' : (bfAlt < K.bridgeMaxAlterS ? 'gruen' : 'rot');
+    zeilen += anbieterZeile('Betfair über Bridge',
+      bfZustand,
+      dauer(bf.alter_s),
+      (bf.im_fenster == null ? '?' : bf.im_fenster) + ' im Fenster, ' +
+        (bf.hochgeladen == null ? '?' : bf.hochgeladen) + ' von ' +
+        (bf.katalog == null ? '?' : bf.katalog) + ' hochgeladen',
+      f.betfair ? f.betfair.live : 0,
+      'Build ' + (bf.build == null ? '?' : bf.build),
+      bfZustand === 'rot' ? 'Bridge steht — Heim-PC' : 'läuft auf dem Heim-PC');
+
+    /* Supabase selbst: die Antwortzeit dieser einen Abfrage ist das
+     * ehrlichste Mass. Wenn sie kommt, ist die Verbindung da. */
+    zeilen += anbieterZeile('Supabase',
+      u.antwort_ms < 1500 ? 'gruen' : 'gelb',
+      u.antwort_ms + ' ms',
+      (u.takte || []).filter(function (t) { return t.aktiv; }).length + ' von ' +
+        (u.takte || []).length + ' Takten aktiv',
+      (f.betfair ? f.betfair.verlauf : 0) + (f.kalshi ? f.kalshi.verlauf : 0),
+      'Antwortzeit gerade eben',
+      'verbunden');
+
+    var w = u.wache || {};
+    var takteAus = (u.takte || []).filter(function (t) { return !t.aktiv; });
+
+    return '<div class="tafel">' +
+      '<table>' +
+        '<thead><tr><th>Anbieter</th><th>Aktualität</th><th>Umfang</th>' +
+        '<th>Funde live</th><th>Tempo</th><th></th></tr></thead>' +
+        '<tbody>' + zeilen + '</tbody>' +
+      '</table>' +
+      '<div class="tafel-fuss">' +
+        'Nachtwache ' + (w.alles_gut ? 'meldet alles in Ordnung' : '<b class="rot">hat etwas beanstandet</b>') +
+        ', zuletzt vor ' + dauer(w.alter_s) +
+        (w.eingriff ? ' &middot; eingegriffen: ' + txt(w.eingriff) : '') +
+        (takteAus.length ? ' &middot; <b class="rot">' + takteAus.length + ' Takt(e) abgeschaltet</b>' : '') +
+      '</div>' +
+    '</div>';
+  }
+
   function kacheln(s) {
     var scannerLaeuft = s.lauf_alter_s !== null && s.lauf_alter_s < welt.KONFIG.laufMaxAlterS;
     var bridgeLaeuft = s.bf_alter_s !== null && s.bf_alter_s < welt.KONFIG.bridgeMaxAlterS;
@@ -471,6 +573,7 @@
     var K = welt.KONFIG;
     var s = e.statistik;
 
+    setzeWennAnders(document.getElementById('tafel'), anbieterTafel(e));
     setzeWennAnders(document.getElementById('kacheln'), kacheln(s));
 
     var warn = '';

@@ -241,3 +241,39 @@ h2 {
   margin-top: 8px; padding-top: 8px; border-top: 1px solid var(--rand);
   color: var(--text-leise); font-size: 13px; line-height: 1.5;
 }
+
+/* ---------- Anbietertafel ---------- */
+
+.tafel {
+  margin-bottom: 16px; padding: 4px 4px 0;
+  background: var(--karte); border: 1px solid var(--rand);
+  border-radius: var(--rund); overflow-x: auto;
+}
+.tafel table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.tafel th {
+  text-align: left; padding: 10px 12px; color: var(--text-leise);
+  font-weight: 600; font-size: 12px; text-transform: uppercase;
+  letter-spacing: .4px; white-space: nowrap;
+}
+.tafel td { padding: 10px 12px; border-top: 1px solid var(--rand); vertical-align: top; }
+.tafel .an-name { font-weight: 600; white-space: nowrap; }
+.tafel .an-zahl { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.tafel .an-text, .tafel .an-hinweis { color: var(--text-leise); }
+.tafel .an-hinweis { font-size: 13px; }
+.tafel-fuss {
+  padding: 10px 12px; border-top: 1px solid var(--rand);
+  color: var(--text-leise); font-size: 13px;
+}
+.tafel .rot, .tafel-fuss .rot { color: var(--rot); }
+
+.punkt {
+  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
+  vertical-align: middle; margin-right: 2px;
+}
+.punkt.gruen { background: var(--gruen); }
+.punkt.gelb  { background: var(--orange); }
+.punkt.rot   { background: var(--rot); }
+
+@media (max-width: 700px) {
+  .tafel table { min-width: 620px; }
+}

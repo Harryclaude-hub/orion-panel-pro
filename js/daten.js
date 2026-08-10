@@ -32,6 +32,28 @@
     return db('orion_funde?status=eq.vorbei&order=vorbei_seit.desc&limit=' + (grenze || 500));
   }
 
+  /* Die ganze Uebersicht in EINER Abfrage. Fuenf getrennte Abfragen koennten
+   * sich widersprechen: die Tafel sagt 61 Funde, die Liste zeigt 60, weil
+   * dazwischen ein Lauf durchging. Nebenbei ist die Antwortzeit dieser einen
+   * Abfrage das ehrlichste Mass fuer "ist Supabase erreichbar und wie schnell". */
+  function holeUebersicht() {
+    var t0 = Date.now();
+    return fetch(K.supabase + '/rest/v1/rpc/orion_uebersicht', {
+      method: 'POST',
+      headers: { apikey: K.key, authorization: 'Bearer ' + K.key,
+                 'content-type': 'application/json', accept: 'application/json' },
+      body: '{}'
+    }).then(function (r) {
+      if (!r.ok) throw new Error('Uebersicht HTTP ' + r.status);
+      return r.json();
+    }).then(function (u) {
+      u.antwort_ms = Date.now() - t0;
+      return u;
+    }).catch(function (e) {
+      return { fehler: e.message, antwort_ms: Date.now() - t0 };
+    });
+  }
+
   /* Was die Nachtwache zuletzt gesehen hat. */
   function holeWache() {
     return db('orion_wache?order=geprueft_am.desc&limit=1').then(function (z) { return z[0] || null; });
@@ -48,9 +70,10 @@
   }
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache()])
+    return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache(), holeUebersicht()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3], wache = teile[4];
+        var uebersicht = teile[5];
         var jetzt = Date.now();
 
         var kaAlterS = ka && ka.updated_at ? Math.round((jetzt - Date.parse(ka.updated_at)) / 1000) : null;
@@ -112,6 +135,7 @@
           knapp: knapp,
           verlauf: verlauf,
           lauf: lauf,
+          uebersicht: uebersicht,
           statistik: {
             chancen: chancen.length,
             veraltet_hoch: veraltetHoch.length,
