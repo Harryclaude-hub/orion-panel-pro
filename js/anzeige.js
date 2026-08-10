@@ -666,6 +666,7 @@
   function kacheln(s) {
     var scannerLaeuft = s.lauf_alter_s !== null && s.lauf_alter_s < welt.KONFIG.laufMaxAlterS;
     var bridgeLaeuft = s.bf_alter_s !== null && s.bf_alter_s < welt.KONFIG.bridgeMaxAlterS;
+    var betfairAn = (((welt.KONFIG.buecher || {}).betfair || {}).aktiv !== false);
     var kalshiLaeuft = s.kalshi_alter_s !== null && s.kalshi_alter_s < welt.KONFIG.kalshiMaxAlterS;
     var smarketsLaeuft = s.smarkets_alter_s !== null && s.smarkets_alter_s < welt.KONFIG.smarketsMaxAlterS;
     return [
@@ -677,7 +678,11 @@
         farbe: kalshiLaeuft ? 'var(--tuerkis)' : 'var(--rot)' },
       { name: 'Smarkets · ohne Konto', wert: dauer(s.smarkets_alter_s),
         farbe: smarketsLaeuft ? 'var(--gold)' : 'var(--rot)' },
-      { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' },
+      /* Betfair ist abgeschaltet: die Kachel zeigt das, statt ein Alter zu
+       * melden, das niemanden mehr interessiert. */
+      betfairAn
+        ? { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
+        : { name: 'Betfair', wert: 'aus', farbe: 'var(--text-leise)' },
       { name: 'Nachtwache', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
         farbe: (s.wache_gut === true && s.wache_alter_s !== null && s.wache_alter_s < 1800)
           ? 'var(--gruen)' : 'var(--rot)' }
@@ -749,15 +754,21 @@
     if (s.lauf_fehler) {
       warn += '<div class="warnung"><b>Letzter Lauf mit Fehler:</b> ' + txt(s.lauf_fehler) + '</div>';
     }
-    if (s.bf_alter_s === null || s.bf_alter_s > K.bridgeMaxAlterS) {
+    /* Ueber ein ABGESCHALTETES Buch wird nicht gewarnt. Eine Warnung, dass
+     * die Bridge steht, waere jetzt schlicht falsch: sie soll stehen. */
+    var bfAn = (((K.buecher || {}).betfair || {}).aktiv !== false);
+    if (bfAn && (s.bf_alter_s === null || s.bf_alter_s > K.bridgeMaxAlterS)) {
       warn += '<div class="warnung"><b>Betfair-Daten sind ' + dauer(s.bf_alter_s) + ' alt.</b> ' +
               'Die Bridge auf dem Heim-PC lädt normalerweise im Minutentakt hoch. ' +
-              'Betfair-Zeilen zählen deshalb gerade nicht als Chance. ' +
-              '<b>Die Kalshi-Seite läuft davon unabhängig weiter</b> — sie braucht weder Konto noch PC.</div>';
+              'Betfair-Zeilen zählen deshalb gerade nicht als Chance.</div>';
     }
     if (s.kalshi_alter_s === null || s.kalshi_alter_s > K.kalshiMaxAlterS) {
       warn += '<div class="warnung"><b>Kalshi-Daten sind ' + dauer(s.kalshi_alter_s) + ' alt.</b> ' +
               'Gesammelt wird alle 5 Minuten, ein Durchlauf dauert rund 52 Sekunden.</div>';
+    }
+    if (s.smarkets_alter_s === null || s.smarkets_alter_s > K.smarketsMaxAlterS) {
+      warn += '<div class="warnung"><b>Smarkets-Daten sind ' + dauer(s.smarkets_alter_s) + ' alt.</b> ' +
+              'Gesammelt wird alle 5 Minuten, ein Durchlauf dauert rund 17 Sekunden.</div>';
     }
     /* Die Nachtwache prueft die MASCHINE, nicht die Funde. Wenn sie selbst
      * stehenbleibt, merkt niemand mehr einen Stillstand — deshalb wird auch

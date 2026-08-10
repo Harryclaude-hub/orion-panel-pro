@@ -48,10 +48,16 @@
     <code>pg_cron</code> und legt jeden Fund in <code>orion_funde</code> ab, auch wenn
     kein Browser offen ist. Diese Seite liest nur ab, alle zwei Sekunden.
     Was nicht mehr gilt, wandert in den Verlauf statt zu verschwinden.
-    Betfair-Quoten kommen aus <code>bridge_odds</code> von der Bridge auf dem Heim-PC:
-    Betfair beantwortet Abfragen aus Rechenzentren mit 403.
-    Betfair-Kommission ist nicht bekannt und wird mit 7 % gerechnet, dem
-    ungünstigsten bekannten Satz.
+    Gesucht wird zwischen <b>drei Börsen</b> — Polymarket, Kalshi und Smarkets.
+    Alle drei sind ohne Konto, ohne Schlüssel und ohne eingeschalteten PC
+    direkt aus Supabase erreichbar. Eine Arbitrage besteht immer aus
+    <b>genau zwei</b> Büchern; gibt es zur selben Frage mehrere brauchbare
+    Paare, wird daraus je eine eigene Karte.
+    <b>Betfair ist seit dem 10.08.2026 abgeschaltet</b>: es antwortet aus
+    Rechenzentren mit 403, und der einzig offene Weg über den Kursstrom
+    liefert Preise ohne Mannschaftsnamen — damit ist keine Zuordnung möglich.
+    Smarkets-Kommission ist mit 2 % angesetzt, dem dokumentierten
+    Standardtarif; gemessen ist der Satz nicht.
   </p>
 
 </div>
