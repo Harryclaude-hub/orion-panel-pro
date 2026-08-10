@@ -553,12 +553,13 @@
     }
     setzeWennAnders(document.getElementById('knapp'), knappHtml);
 
-    var verlaufHtml = '<p class="leise">Was einmal galt und nicht mehr gilt. Ein Fund landet hier, ' +
-      'wenn er nicht mehr gefunden wird, wenn seine Partie vorbei ist, oder wenn er ' +
-      'eine Stunde lang nicht mehr bestätigt wurde. Mit Grund, erster Sichtung und ' +
-      'der besten je gesehenen Rendite.</p>';
+    var verlaufHtml = '<p class="leise"><b>Nur Funde, die im Plus waren.</b> Was nie eine Rendite über ' +
+      K.verlaufMinRendite.toFixed(0) + ' % erreicht hat, wird gelöscht statt aufbewahrt. ' +
+      'Ein Fund landet hier, wenn er nicht mehr gefunden wird, wenn seine Partie vorbei ist, ' +
+      'oder wenn er eine Stunde lang nicht mehr bestätigt wurde. Sortiert nach Beendigung, ' +
+      'mit der besten je gesehenen Rendite.</p>';
     if (!e.verlauf.length) {
-      verlaufHtml += '<p class="leise">Noch nichts beendet.</p>';
+      verlaufHtml += '<p class="leise">Noch nichts im Plus beendet.</p>';
     } else {
       verlaufHtml += e.verlauf.map(function (f) { return karte(f, true); }).join('');
     }

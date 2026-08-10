@@ -79,6 +79,14 @@
         live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); });
         verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); });
 
+        /* Zusaetzliche Wache im Browser: zwischen zwei Aufraeumlaeufen kann
+         * eine frisch beendete Minuszeile durchrutschen. Im Verlauf hat sie
+         * nichts verloren. */
+        verlauf = verlauf.filter(function (f) {
+          var b = f.beste_rendite == null ? f.rendite : f.beste_rendite;
+          return Number(b) >= K.verlaufMinRendite;
+        });
+
         /* DREI Gruppen, nicht zwei. Ein Fund ueber der Schwelle, dessen Kurse
          * veraltet sind, ist weder eine Chance noch ein knappes Paar — er ist
          * eine alte Zahl. Ihn unter "Knappste Paare" zu stecken war irrefuehrend:

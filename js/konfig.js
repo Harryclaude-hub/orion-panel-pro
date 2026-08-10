@@ -36,6 +36,11 @@
      * Der Verlauf wird serverseitig ebenso beschnitten (orion_rauschen_loeschen). */
     rauschGrenze: -1.0,
 
+    /* Der VERLAUF ist strenger als die Live-Ansicht: dort steht nur, was
+     * sich wirklich gelohnt haette. Was nie im Plus war, wird geloescht.
+     * Serverseitig ebenso (orion_rauschen_loeschen(0.0), alle 5 Minuten). */
+    verlaufMinRendite: 0,
+
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,
     /* Kalshi wird alle 5 Minuten gesammelt, ein Durchlauf dauert 52 s.
