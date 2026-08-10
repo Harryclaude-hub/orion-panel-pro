@@ -720,6 +720,95 @@ ok('bei getauschter Partie ohne Widerspruch wird gedreht',
 ok('Halbzeit-Sieger zieht keinen YES-Vertrag an',
    Z.smLaeufer('hz_sieger', 'Yes', ['a', 'b'], vBtts, false, 0.8) === null);
 
+/* ---------- Über/Unter in vier Ausfuehrungen ----------
+ * Am 10.8.2026 gemessen, was Polymarket im 72h-Fenster fuehrt:
+ *     "O/U 2.5"                      276   gesamtes Spiel
+ *     "1st Half O/U 0.5"             138   erste Halbzeit
+ *     "2nd Half O/U 0.5"             138   zweite Halbzeit
+ *     "Total Corners: O/U 7.5"       259   Ecken
+ *     "1st Half Total Corners: O/U"  111   ANDERE Frage, keine Regel
+ *     "FK Bodo/Glimt O/U 0.5"          9   Torkonto EINER Mannschaft
+ * Die Anker vorn und hinten sind der ganze Schutz. */
+
+function ouIst(teil, art, linie) {
+  var r = Z.ouArt(teil);
+  ok('"' + teil + '" ist ' + art + ' ' + linie,
+     r !== null && r.art === art && r.linie === linie, JSON.stringify(r));
+}
+ouIst('O/U 2.5', 'ueber_unter', 2.5);
+ouIst('O/U 0.5', 'ueber_unter', 0.5);
+ouIst('1st Half O/U 0.5', 'hz1_ueber_unter', 0.5);
+ouIst('1st Half O/U 2.5', 'hz1_ueber_unter', 2.5);
+ouIst('2nd Half O/U 1.5', 'hz2_ueber_unter', 1.5);
+ouIst('Total Corners: O/U 7.5', 'ecken_ueber_unter', 7.5);
+ouIst('Total Corners: O/U 12.5', 'ecken_ueber_unter', 12.5);
+
+/* Die Fallen. Jede MUSS abgewiesen werden. */
+ok('Ecken der ERSTEN HALBZEIT sind eine andere Frage',
+   Z.ouArt('1st Half Total Corners: O/U 3.5') === null,
+   JSON.stringify(Z.ouArt('1st Half Total Corners: O/U 3.5')));
+ok('Ecken der ZWEITEN HALBZEIT sind eine andere Frage',
+   Z.ouArt('2nd Half Total Corners: O/U 3.5') === null);
+ok('Torkonto EINER Mannschaft ist keine Spielsumme',
+   Z.ouArt('FK Bodø/Glimt O/U 0.5') === null,
+   JSON.stringify(Z.ouArt('FK Bodø/Glimt O/U 0.5')));
+ok('Zusatz hinten wird abgewiesen', Z.ouArt('O/U 2.5 Corners') === null);
+ok('BTTS ist kein Ueber/Unter',     Z.ouArt('Both Teams to Score') === null);
+ok('leerer Teilname ergibt nichts', Z.ouArt('') === null);
+ok('null ergibt nichts',            Z.ouArt(null) === null);
+
+/* marktArt muss dieselben Arten liefern. */
+ok('marktArt kennt die erste Halbzeit',
+   Z.marktArt('X vs Y: 1st Half O/U 0.5', '1st Half O/U 0.5') === 'hz1_ueber_unter');
+ok('marktArt kennt die zweite Halbzeit',
+   Z.marktArt('X vs Y: 2nd Half O/U 1.5', '2nd Half O/U 1.5') === 'hz2_ueber_unter');
+ok('marktArt kennt die Ecken',
+   Z.marktArt('X vs Y: O/U 7.5 Total Corners', 'Total Corners: O/U 7.5') === 'ecken_ueber_unter');
+ok('das gesamte Spiel bleibt ueber_unter',
+   Z.marktArt('X vs Y', 'O/U 2.5') === 'ueber_unter');
+
+/* Smarkets-Seite: exakt beim Typnamen genommen. */
+var smOuTyp = [
+  ['OVER_UNDER', 'ueber_unter'],
+  ['FIRST_HALF_OVER_UNDER', 'hz1_ueber_unter'],
+  ['SECOND_HALF_OVER_UNDER', 'hz2_ueber_unter'],
+  ['CORNERS_OVER_UNDER', 'ecken_ueber_unter']
+];
+smOuTyp.forEach(function (p) {
+  var r = Z.smMarktArt({ name: p[0], param: '2.5' });
+  ok('Smarkets ' + p[0] + ' ist ' + p[1], r !== null && r.art === p[1], JSON.stringify(r));
+  ok('und traegt die Linie 2.5', r !== null && r.linie === 2.5);
+});
+
+/* Die Smarkets-Fallen: Torkonto einer Mannschaft, Ecken einer Mannschaft,
+ * Handicap. Ein Praefix-Vergleich haette alle drei mitgenommen. */
+ok('SECOND_HALF_HOME_TEAM_OVER_UNDER wird abgewiesen',
+   Z.smMarktArt({ name: 'SECOND_HALF_HOME_TEAM_OVER_UNDER', param: '1.5' }) === null);
+ok('SECOND_HALF_AWAY_TEAM_OVER_UNDER wird abgewiesen',
+   Z.smMarktArt({ name: 'SECOND_HALF_AWAY_TEAM_OVER_UNDER', param: '1.5' }) === null);
+ok('AWAY_CORNERS_OVER_UNDER wird abgewiesen',
+   Z.smMarktArt({ name: 'AWAY_CORNERS_OVER_UNDER', param: '3.5' }) === null);
+ok('CORNERS_HANDICAP wird abgewiesen',
+   Z.smMarktArt({ name: 'CORNERS_HANDICAP', param: '-2.5' }) === null);
+ok('FIRST_HALF_ASIAN_HANDICAP wird abgewiesen',
+   Z.smMarktArt({ name: 'FIRST_HALF_ASIAN_HANDICAP', param: '-0.5' }) === null);
+ok('Ueber/Unter ohne Linie wird abgewiesen',
+   Z.smMarktArt({ name: 'CORNERS_OVER_UNDER' }) === null);
+
+/* Alle vier Arten nehmen den OVER-Vertrag. */
+var vOu4 = [{ n: 'Under 7.5 corners', typ: 'UNDER' }, { n: 'Over 7.5 corners', typ: 'OVER' }];
+['ueber_unter', 'hz1_ueber_unter', 'hz2_ueber_unter', 'ecken_ueber_unter'].forEach(function (a) {
+  var l = Z.smLaeufer(a, null, null, vOu4, false, 0.8);
+  ok(a + ' nimmt den OVER-Vertrag', l !== null && l.laeufer.typ === 'OVER', l && l.laeufer.n);
+});
+ok('ohne OVER-Vertrag gibt es kein Paar',
+   Z.smLaeufer('ecken_ueber_unter', null, null, [{ n: 'Under', typ: 'UNDER' }], false, 0.8) === null);
+
+/* Gleiche Linie gegen gleiche Linie bleibt Pflicht. */
+var smE = [{ linie: 7.5 }, { linie: 8.5 }, { linie: 7.5 }];
+ok('Linie 7.5 findet beide', Z.smOuKandidaten(smE, 7.5).length === 2);
+ok('Linie 9.5 findet keinen', Z.smOuKandidaten(smE, 9.5).length === 0);
+
 /* ---------- Ergebnis ---------- */
 
 console.log('\nZuordnung: ' + gut + ' von ' + (gut + schlecht) + ' Pruefungen bestanden');

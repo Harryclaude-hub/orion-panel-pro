@@ -224,13 +224,257 @@ KEIN Heim-PC mehr beteiligt. bf-bridge und bridge_odds bleiben unangetastet
 (Regel 6), werden aber nicht mehr gelesen: BETFAIR_AKTIV = false.
 ```
 
-### Genutzte Fragen
+### Genutzte Fragen — neun, Stand 10.8.2026 abends
 
-`sieger` · `unentschieden` · `ueber_unter` · `btts` · `hz_sieger` ·
-`hz_unentschieden` — Stand 10.8.2026 abends. Halbzeit unterscheidet sich
-von der zweiten Halbzeit **nur an der FRAGE** (`at halftime` gegen
-`second half`), nie am Teilnamen: gemessen 243 gegen 240 Märkte mit
-identischen Teilnamen.
+`sieger` · `unentschieden` · `hz_sieger` · `hz_unentschieden` · `btts` ·
+`ueber_unter` · `hz1_ueber_unter` · `hz2_ueber_unter` · `ecken_ueber_unter`
+
+**Zwei Trennungen, an denen alles hängt:**
+
+1. **Halbzeit gegen zweite Halbzeit** wird an der FRAGE unterschieden, nie am
+   Teilnamen — die sind identisch (243 gegen 240 Märkte). `at halftime`
+   gegen `second half`.
+2. **Über/Unter gibt es in vier Ausführungen**, und sie sind verschiedene
+   Fragen. Der Teilname braucht Anker vorn UND hinten:
+   ```
+   "O/U 2.5"                      276   gesamtes Spiel
+   "1st Half O/U 0.5"             138   erste Halbzeit
+   "2nd Half O/U 0.5"             138   zweite Halbzeit
+   "Total Corners: O/U 7.5"       259   Ecken
+   "1st Half Total Corners: O/U"  111   ANDERE Frage, keine Regel
+   "FK Bodø/Glimt O/U 0.5"          9   Torkonto EINER Mannschaft
+   ```
+   Ohne `^` ginge „1st Half Total Corners" als Ecken des ganzen Spiels durch,
+   ohne `# Orion Panel Pro — Übergabe
+
+> **Diese Datei ist die Wahrheit über das Projekt. Halte sie aktuell.**
+> Nach jeder wesentlichen Änderung — neue Quelle, neue Regel, neuer Messwert,
+> erledigter Punkt aus Abschnitt 7 — wird sie im selben Commit nachgezogen.
+> Sie aktualisiert sich NICHT von selbst. Eine veraltete Übergabe ist
+> schlimmer als keine, weil man ihr glaubt.
+
+Stand: 10. August 2026, Abend. Dieser Text reicht, um ohne Vorwissen
+weiterzuarbeiten. Alle Zahlen darin sind gemessen, nicht geschätzt.
+
+**Live:** https://saifokaram1-hub.github.io/orion-panel-pro/
+**Repo:** `saifokaram1-hub/orion-panel-pro` · lokal `C:\Users\Home\orion-panel-pro`
+**Supabase:** `noexklrgtqveiclijdwp` · Sperrwort der Website: `ARBRADAR2026`
+
+---
+
+## 1. Was das Programm ist
+
+Ein Surebet-Scanner zwischen **Börsen** (nie Buchmachern): er sucht Paare,
+bei denen zwei Bücher denselben Ausgang unterschiedlich bepreisen, sodass
+beide Seiten zusammen unter 100 % liegen.
+
+**Eine Arbitrage besteht immer aus GENAU ZWEI Büchern** — nicht einem, nicht
+dreien. Gibt es zur selben Frage mehrere brauchbare Buchpaare, wird daraus
+**je eine eigene Zeile**, denn jede hat eigene Links, eigene Einsätze und
+eine eigene Rendite.
+
+**Es läuft vollständig auf Supabase, rund um die Uhr.** Die Website rechnet
+nichts, sie liest nur ab. Kein Browser muss offen sein.
+
+---
+
+## 2. Die Bücher, gemessen
+
+**Grundsatz seit 10.8.2026: alles läuft auf Supabase, nichts auf einem
+Heim-PC.** Das Programm ist für mehrere Leute gedacht; ein Buch, das einen
+fremden eingeschalteten Rechner voraussetzt, ist damit unbrauchbar.
+Zweiter Grundsatz: **keine Konten, keine Schlüssel**, soweit irgend möglich.
+
+| Buch | Rolle | Konto nötig? | aus Supabase erreichbar? | Stand |
+|---|---|---|---|---|
+| **Kalshi** | Börse | nein | **ja** | läuft, ~220 Märkte |
+| **Polymarket** | Börse | nein | **ja** | läuft, ~480 Märkte im 72h-Fenster |
+| **Smarkets** | Börse | **nein** | **ja** | **läuft seit 10.8.**, ~820 Märkte aus 133 Spielen |
+| ~~Betfair~~ | Börse | ja | **nein, 403** | **ABGESCHALTET 10.8.** — siehe unten |
+| ~~Orbit / 96ex~~ | **Broker**, kein eigenes Buch | — | nein, 403 | mit Betfair entfallen |
+
+Damit braucht der Scanner **keinen einzigen Zugangsdatensatz**. Drei Börsen,
+sechs mögliche Paarungen, rund um die Uhr auf Supabase.
+
+Die Anbietertafel sortiert **nach Umfang, das kleinste Buch zuerst**. Das
+kleinste ist die Engstelle: was dort nicht liegt, kann nirgends gepaart
+werden, weil eine Arbitrage immer zwei Bücher braucht. Die großen stehen
+unten — sie bringen die Partien, die es sonst nirgends gibt.
+
+### Betfair: abgeschaltet, und warum das endgültig ist
+
+Betfair war das einzige Buch, das einen laufenden Heim-PC brauchte. Am
+10.8.2026 wurden **alle** verbliebenen Wege gemessen und erschöpft.
+
+**1. Die REST-API ist gesperrt.** 5 von 8 Wegen antworten mit 403 von
+Cloudflare, auch die öffentliche Startseite, **vor** jeder Anmeldung.
+Zugangsdaten ändern daran nichts.
+
+**2. Der letzte offene Weg — Zertifikat → Stream — ist eine Sackgasse.**
+Das ist keine Vermutung, sondern aus Betfairs eigenem Schema abgelesen
+(`ESASwaggerSchema.json`, 37 kB):
+
+```
+RunnerDefinition:  sortPriority, removalDate, id, hc, adjustmentFactor, bsp, status
+MarketDefinition:  eventId, eventTypeId, marketType, venue, marketBaseRate,
+                   openDate, marketTime, runners, status, ...
+```
+
+**Kein einziges Feld im gesamten Schema trägt einen Namen.** Der Stream
+liefert Preise zu `selectionId 47973`, ohne zu sagen, welche Mannschaft das
+ist. Namen gibt es ausschließlich über `listMarketCatalogue` — auf
+`api.betfair.com`, also 403.
+
+Ohne Namen keine Zuordnung. Die Regeln 3, 4 und 5 hängen sämtlich an Namen.
+Der Weg wäre also auch mit Konto, App-Key und Zertifikat wertlos gewesen.
+
+*(Bittere Ironie: `marketBaseRate` steht im Stream — genau der echte
+Kommissionssatz, den die Bridge nicht liefert. Nützt nur nichts, wenn man
+den Markt nicht benennen kann.)*
+
+**Der Code bleibt vollständig stehen.** Abgeschaltet wird an zwei Stellen:
+`BETFAIR_AKTIV = false` in `orion-lauf` und `aktiv: false` in
+`KONFIG.buecher.betfair`. Löst Betfair die Sperre je, reicht `true`.
+
+**Orbit entfällt mit.** Gemessen am 10.8.: **403 aus Supabase**, API *und*
+Website. Und selbst erreichbar liefert die Orbit-API **keine Quoten**, nur
+Struktur, Läufer und Kommission. Orbit war nie ein Buch, sondern eine
+Klick-Adresse für Betfair-Märkte — ohne Betfair gibt es nichts zu verlinken.
+
+Nachmessen: `curl -s https://noexklrgtqveiclijdwp.supabase.co/functions/v1/bf-erreichbar`
+
+### Betfair: die neun gemessenen Wege im Einzelnen
+
+```
+GEBLOCKT 403   api.betfair.com (json-rpc, rest, account)
+GEBLOCKT 403   api-au.betfair.com, api.betfair.es, historicdata, betfair.com
+GEBLOCKT 403   menu.json (öffentlich, ohne Anmeldung)
+ERREICHBAR     identitysso-cert.betfair.com/api/certlogin  → CERT_AUTH_REQUIRED
+ERREICHBAR     stream-api.betfair.com:443  → {"op":"connection","connectionId":...}
+```
+
+Die Sperre greift **vor** der Anmeldung. Zugangsdaten ändern daran nichts.
+
+Die beiden erreichbaren Türen führen ins Leere: Supabase akzeptiert zwar
+Client-Zertifikate (`createHttpClient` meldet „Unable to decode certificate",
+liest die Felder also), und der Stream antwortet auf eine Anmeldung mit
+`INVALID_APP_KEY` — er spricht mit uns. **Aber er nennt keine Namen**, siehe
+oben. Damit ist auch dieser Weg erledigt, nicht bloß ungeprüft.
+
+### Orbit war nie ein drittes Buch
+
+`orbitexch.com/customer/api/market/{id}` antwortet ohne Schlüssel mit JSON,
+enthält aber **keine Quoten** — nur Struktur, Läufer und `commission`.
+57 JavaScript-Dateien der Seite durchsucht: nur Konto-Endpunkte, kein
+öffentlicher Kursweg, kein WebSocket. Aus Supabase am 10.8. gemessen: **403**,
+API und Website.
+
+Orbit benutzte Betfairs Marktnummern unverändert — **eine zweite Tür zum
+selben Raum**, nicht ein eigener Raum. `96ex.com` ist tot (HTTP 000). Mit
+Betfair entfällt beides.
+
+### Smarkets — gemessen am 10.8.2026
+
+Echte Wettbörse, kein Buchmacher. Kein Konto, kein Heim-PC.
+
+```
+Spiele    200  314 ms   124 Fussballspiele im 72h-Fenster
+Maerkte   200  364 ms   8967 gesamt, 163 verschiedene Markttypen
+Quoten    200   42 ms   volle Tiefe
+Sammler aus Supabase: 133 Spiele, 823 Maerkte mit Quoten (111 Sieger,
+                      90 BTTS, 622 Ueber/Unter), 16 s
+```
+
+**Preiskodierung — dreifach belegt, nicht angenommen:**
+
+`Quote = 10000 / price`. Der Preis ist die implizite Wahrscheinlichkeit in
+Hundertstel-Prozent: 4032 → 40,32 % → Quote 2,48.
+
+1. **Quotenleiter.** Jeder gemessene Preis landet exakt auf der
+   Smarkets-Leiter (4167→2,40 · 2857→3,50 · 5618→1,78 · 4762→2,10 ·
+   3077→3,25). Kein Ausreißer.
+2. **Kehrwertsumme.** Back-Seite 101,03 %, Lay-Seite 98,72 % (Siegermarkt);
+   103,35 % / 97,62 % (Über/Unter). Genau die Richtung, die eine Börse haben
+   muss. Bei falscher Kodierung käme das nicht in die Nähe von 100 %.
+3. **Zweiter Endpunkt.** `last_executed_prices` meldet für Preis 2899 den
+   Wert `"28.99"`.
+
+`offers` = Back-Seite (dort wird gekauft), `bids` = Lay-Seite. Back lag bei
+jedem Läufer unter Lay — korrekte Spanne.
+
+**Die Menge ist die AUSZAHLUNG, nicht der Einsatz.** Offizielles SDK:
+`quantity = 400000 # 40.0000 GBP payout`, `price = 2500 # 25.00%`.
+Also `Einsatz = quantity * price / 10^8`. Wer das verwechselt, liegt bei
+Quote 5,0 um den **Faktor 5** daneben.
+
+**Zwei Fallen:** `quantity = 2147483646` (2³¹−2) ist eine Platzhaltermarke,
+keine Menge — sie steht nur an den Randpreisen 1 und 9999. Gültig ist nur
+die Leiter 1,01 bis 1000, also `price` zwischen 10 und 9901. Beides wird
+verworfen, sonst wird „unbekannt" zu „unbegrenzt".
+
+**Kommission: 2 % — dokumentiert, NICHT gemessen.** Standard-Tarif auf den
+Nettogewinn je Markt, gleiche Form wie bei Betfair, deshalb gelten `qeBack`
+und `qeLay` unverändert. Es gibt kein Konto und die öffentliche API gibt den
+Satz nicht heraus. Jeder Fund trägt `bf_gebuehr_echt = false`.
+**Achtung:** daneben bestehen 1 % (Pro) und **3 % (Select)** — Letzterer
+trifft genau die besonders profitablen Konten. Wer dorthin rutscht, muss
+`KONFIG.smarketsGebuehr` und `rechnung.ts` auf `0.03` setzen, sonst rechnen
+sich dünne Funde still ins Plus.
+
+**Der beste Kurs im Buch kann ein STAUBAUFTRAG sein.** Gemessen am 10.8. in
+einem BTTS-Markt:
+
+```
+YES offers:  price 5291, quantity 67        <- 0,0035 GBP
+             price 5405, quantity 3700277   <- der echte Kurs
+NO  offers:  price 4630, quantity 8279049
+```
+
+Der Auftrag über 67 zog die Kehrwertsumme auf **99,21 %** und hätte eine
+Arbitrage vorgetäuscht, die mit dem nächsten echten Kurs bei 100,35 % liegt —
+also keine ist. Deshalb `KONFIG.mindestEinsatz = 5`: Zeilen, in die weniger
+als 5 hineinpassen, zählen **nicht** als Chance, werden aber auch **nicht
+versteckt** — sie stehen unter „Knappste Paare" mit der Marke „zu dünn".
+Unbekannte Menge zählt NICHT als zu dünn; das wäre eine Unterstellung.
+
+Nebenbei gemessen: die Orderbücher der Verträge YES und NO sind **getrennt**,
+nicht zwei Ansichten desselben Buches (YES-Angebote 5291/5405 gegen
+10000−NO-Gebote 5536/5690).
+
+**Smarkets liefert die Struktur mit** — als einziges Buch:
+`market_type` = `WINNER_3_WAY` bzw. `OVER_UNDER` mit `param: "2.5"`,
+`contract_type` = `HOME`/`DRAW`/`AWAY`/`OVER`/`UNDER`. Bei Betfair muss die
+Linie aus `OVER_UNDER_25` geklaubt werden. Außerdem liefert Smarkets die
+**Anpfiffzeit** (`start_datetime`), die Betfair nicht mitschickt — sie wird
+im Schnappschuss als `st` mitgespeichert (Anzeige steht noch aus, Punkt 3).
+
+**Fallstrick bei der Paginierung:** `pagination.next_page` ist ein
+**Query-String**, kein Pfad. Wer ihn an den Host hängt, bekommt 50 Spiele
+statt 124 und merkt es nicht. Genau das ist beim ersten Anlauf passiert.
+
+---
+
+## 3. Wie es aufgebaut ist
+
+```
+pg_cron ──┬─ orion-lauf      jede Minute     sucht und rechnet (~3 s)
+          ├─ pm-scan         jede Minute     (alt, läuft noch mit)
+          ├─ orion-kalshi    alle 5 Minuten  holt Kalshi (52 s je Durchlauf)
+          ├─ orion-smarkets  alle 5 Minuten  holt Smarkets (16 s je Durchlauf)
+          ├─ orion-pruefer   alle 5 Minuten  Alter, Rechnung, Links
+          ├─ orion-rauschen  alle 5 Minuten  löscht Minuszeilen im Verlauf
+          └─ orion-wache     alle 10 Minuten prüft, ob das alles noch läuft
+
+Website (alle 2 s)  →  liest orion_funde + orion_uebersicht, rechnet nichts
+
+KEIN Heim-PC mehr beteiligt. bf-bridge und bridge_odds bleiben unangetastet
+(Regel 6), werden aber nicht mehr gelesen: BETFAIR_AKTIV = false.
+```
+
+ das Torkonto einer Mannschaft als Spielsumme.
+   Auf der Smarkets-Seite dasselbe: EXAKT beim Typnamen, nie als Präfix —
+   `SECOND_HALF_HOME_TEAM_OVER_UNDER`, `AWAY_CORNERS_OVER_UNDER` und
+   `CORNERS_HANDICAP` sind andere Fragen.
 
 ### Zwei Durchgänge (Umbau vom 10.8.2026, abends)
 
@@ -292,7 +536,7 @@ einstellungen.html    Weg B (Zertifikat + Secrets) und Weg A (Bridge)
 logik.html            erklärt die Suche, als Textdatei herunterladbar
 js/konfig.js          alle Schwellen + die Bücher an EINER Stelle
 js/rechnung.js        Quoten, Gebühren, Aufteilung   171 Prüfungen
-js/zuordnung.js       Marktpaarung                   236 Prüfungen
+js/zuordnung.js       Marktpaarung                   275 Prüfungen
 js/daten.js           liest ab, filtert, richtet Broker-Links
 js/anzeige.js         Tafel, Karten, Gegenprobe, Puffer
 js/sperre.js          Sperrbildschirm, Overlay wird ENTFERNT + Wache
@@ -361,10 +605,10 @@ Funktionen: `orion_uebersicht()`, `orion_bf_maerkte()`,
 
 ```
 node pruefung/rechnung.test.js     171 Prüfungen
-node pruefung/zuordnung.test.js    236 Prüfungen
+node pruefung/zuordnung.test.js    275 Prüfungen
 node bridge/pruefung.js            158 Prüfungen
                                    ───
-                                   565 Prüfungen
+                                   604 Prüfungen
 ```
 
 Jede Schutzregel hat einen Test, der sie **auslöst**, nicht nur einen, der

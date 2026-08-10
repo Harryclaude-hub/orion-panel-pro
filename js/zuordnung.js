@@ -201,7 +201,8 @@
      * "CF America O/U 1.5" ist das Torkonto EINER Mannschaft und damit
      * eine andere Frage als Betfairs OVER_UNDER_15, das fuer das Spiel gilt.
      * Deshalb muss der Teilname GENAU "O/U x.x" sein, ohne Vorsatz. */
-    if (ouLinie(teil) !== null) return 'ueber_unter';
+    var ou = ouArt(teil);
+    if (ou) return ou.art;
     /* Beide Mannschaften treffen. Der Teilname muss GENAU passen.
      * Gemessen am 10.8.2026 stehen im selben Ereignis, mit demselben Titel:
      *     "Both Teams to Score"                  44   <- das Endergebnis
@@ -235,6 +236,41 @@
   }
 
   /* "OVER_UNDER_25" -> 2.5 */
+  /* Ueber/Unter gibt es in vier Ausfuehrungen, und sie sind VERSCHIEDENE
+   * Fragen. Der Teilname muss deshalb GENAU passen, mit Anker vorn und
+   * hinten. Am 10.8.2026 gemessen, was Polymarket im 72h-Fenster fuehrt:
+   *
+   *     "O/U 2.5"                        276  gesamtes Spiel   -> genutzt
+   *     "1st Half O/U 0.5"               138  erste Halbzeit   -> NEU
+   *     "2nd Half O/U 0.5"               138  zweite Halbzeit  -> NEU
+   *     "Total Corners: O/U 7.5"         259  Ecken            -> NEU
+   *     "1st Half Total Corners: O/U"    111  Ecken 1. Halbzeit -> keine Regel
+   *     "2nd Half Total Corners: O/U"    111  Ecken 2. Halbzeit -> keine Regel
+   *     "FK Bodo/Glimt O/U 0.5"            9  Torkonto EINER Mannschaft
+   *
+   * Die Anker sind der ganze Schutz: ohne "^" wuerde "1st Half Total
+   * Corners: O/U 3.5" als Ecken-Markt des GANZEN Spiels durchgehen, und
+   * ohne "$" wuerde das Torkonto einer Mannschaft als Spielsumme gelten.
+   * Beides waere ein Bruch von Regel 1 mit einer Rendite, die echt aussieht. */
+  var OU_MUSTER = [
+    { art: 'ueber_unter',       muster: /^O\/U\s*(\d+(?:\.\d+)?)$/i },
+    { art: 'hz1_ueber_unter',   muster: /^1st Half O\/U\s*(\d+(?:\.\d+)?)$/i },
+    { art: 'hz2_ueber_unter',   muster: /^2nd Half O\/U\s*(\d+(?:\.\d+)?)$/i },
+    { art: 'ecken_ueber_unter', muster: /^Total Corners:\s*O\/U\s*(\d+(?:\.\d+)?)$/i }
+  ];
+
+  function ouArt(teil) {
+    var s = String(teil == null ? '' : teil).trim();
+    for (var i = 0; i < OU_MUSTER.length; i++) {
+      var m = s.match(OU_MUSTER[i].muster);
+      if (m) {
+        var l = parseFloat(m[1]);
+        if (isFinite(l)) return { art: OU_MUSTER[i].art, linie: l };
+      }
+    }
+    return null;
+  }
+
   function bfOuLinie(mt) {
     var m = String(mt == null ? '' : mt).match(/^OVER_UNDER_(\d)(\d)$/);
     return m ? parseFloat(m[1] + '.' + m[2]) : null;
@@ -299,10 +335,21 @@
     if (marktTyp.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
     if (marktTyp.name === 'BTTS') return { art: 'btts', linie: null };
     if (marktTyp.name === 'HALF_TIME_WINNER_3_WAY') return { art: 'halbzeit', linie: null };
-    if (marktTyp.name === 'OVER_UNDER') {
+    /* Vier Ueber/Unter-Typen, exakt beim Namen genommen. Smarkets fuehrt
+     * daneben SECOND_HALF_HOME_TEAM_OVER_UNDER und
+     * SECOND_HALF_AWAY_TEAM_OVER_UNDER — das ist das Torkonto EINER
+     * Mannschaft und damit eine andere Frage. Ein Praefix-Vergleich haette
+     * sie mitgenommen. */
+    var OU_TYP = {
+      OVER_UNDER: 'ueber_unter',
+      FIRST_HALF_OVER_UNDER: 'hz1_ueber_unter',
+      SECOND_HALF_OVER_UNDER: 'hz2_ueber_unter',
+      CORNERS_OVER_UNDER: 'ecken_ueber_unter'
+    };
+    if (Object.prototype.hasOwnProperty.call(OU_TYP, marktTyp.name)) {
       var l = parseFloat(marktTyp.param);
       if (!isFinite(l)) return null;
-      return { art: 'ueber_unter', linie: l };
+      return { art: OU_TYP[marktTyp.name], linie: l };
     }
     /* Alles andere hat noch keine Zuordnungsregel. 163 Markttypen bietet
      * Smarkets an; wer hier raet, baut Fehlpaarungen. */
@@ -352,7 +399,11 @@
       var d = nachTyp('DRAW');
       return d ? { score: 1, laeufer: d, weg: 'struktur' } : null;
     }
-    if (art === 'ueber_unter') {
+    /* Jede Ueber/Unter-Frage hat dieselbe Form: OVER ist die JA-Seite,
+     * UNDER ergibt sich als Gegenseite. Gilt fuer Spiel, Halbzeiten und
+     * Ecken gleichermassen. */
+    if (art === 'ueber_unter' || art === 'hz1_ueber_unter' ||
+        art === 'hz2_ueber_unter' || art === 'ecken_ueber_unter') {
       var o = nachTyp('OVER');
       return o ? { score: 1, laeufer: o, weg: 'struktur' } : null;
     }
@@ -558,6 +609,7 @@
     namensgleichheit: namensgleichheit,
     marktArt: marktArt,
     ouLinie: ouLinie,
+    ouArt: ouArt,
     bfOuLinie: bfOuLinie,
     ouKandidaten: ouKandidaten,
     ouLaeufer: ouLaeufer,
