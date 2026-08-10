@@ -598,3 +598,45 @@ h2 {
   .s-schirm { width: 150px; height: 150px; flex-basis: 150px; }
   .s-tafel { width: 100%; }
 }
+
+/* ==========================================================================
+   KARTENRAHMEN — wo eine Wette anfaengt und wo sie aufhoert
+   Auf Wunsch am 11.8.2026: bei mehreren Karten untereinander war nicht
+   erkennbar, welche Angabe noch zu welcher Wette gehoert. Wer sich da
+   verliest, klickt auf den Link der falschen Wette - und das ist bei einem
+   Programm, mit dem spaeter Geld eingesetzt werden soll, kein Schoenheits-
+   fehler. Deshalb ein KRAEFTIGER Rahmen, kein zarter.
+   ========================================================================== */
+.karte, .fund {
+  border: 2px solid rgba(212,175,55,.55) !important;
+  border-radius: 14px;
+  padding: 18px 20px;
+  margin: 22px 0;
+  background: linear-gradient(180deg, rgba(212,175,55,.05) 0%, transparent 90px), rgba(255,255,255,.015);
+  box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 6px 22px rgba(0,0,0,.30);
+  position: relative;
+}
+/* Goldene Kappe oben: der eindeutige Anfang einer Wette. */
+.karte::before, .fund::before {
+  content: ""; position: absolute; left: -2px; right: -2px; top: -2px; height: 4px;
+  background: linear-gradient(90deg, #d4af37, #f7e07a 45%, #d4af37);
+  border-radius: 14px 14px 0 0;
+}
+/* Abschluss unten, damit auch das ENDE sichtbar ist. */
+.karte::after, .fund::after {
+  content: ""; position: absolute; left: 16px; right: 16px; bottom: -2px; height: 2px;
+  background: rgba(212,175,55,.30); border-radius: 2px;
+}
+.karte:hover, .fund:hover { border-color: rgba(212,175,55,.85) !important; }
+
+/* Eine Karte, die tatsaechlich Geld bringt, bekommt einen gruenen Rahmen -
+   Gold heisst "eine Wette", Gruen heisst "eine, die sich lohnt". */
+#chancen .karte, #chancen .fund {
+  border-color: rgba(0,196,140,.65) !important;
+}
+#chancen .karte::before, #chancen .fund::before {
+  background: linear-gradient(90deg, #00c48c, #7dffd0 45%, #00c48c);
+}
+
+/* Die Links deutlich als Links kennzeichnen, damit man sie nicht sucht. */
+.karte a[href^="http"], .fund a[href^="http"] { text-decoration: underline; text-underline-offset: 3px; }
