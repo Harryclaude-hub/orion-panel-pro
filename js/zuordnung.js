@@ -38,7 +38,23 @@
      * Messung zeigt richtige Paare bei 0,50 ("Independiente Medellin" gegen
      * "Ind. Medellin"), die dabei mit verloren gegangen waeren. */
     ec: 1, cr: 1, ca: 1, ad: 1, sd: 1, mh: 1, cs: 1, ks: 1,
-    nk: 1, hk: 1, bk: 1, if: 1, ec1: 0
+    nk: 1, hk: 1, bk: 1, if: 1,
+
+    /* Sportbegriffe. Am 10.8.2026 gemessen: von den vorgeschlagenen Woertern
+     * kommen in 800 Namensfeldern nur "goals" und "over" ueberhaupt vor, und
+     * zwar in Betfairs Over/Under-Laeufernamen.
+     *
+     * Sie zu filtern schliesst trotzdem eine echte Luecke, naemlich im
+     * RUECKFALLWEG von partieVon: wenn `ev` einmal fehlt, wird `k` zerlegt,
+     * und das lautet bei Over/Under "Under 3.5 Goals vs Over 3.5 Goals".
+     * Ohne diese Stoppwoerter waeren das die Namen "under" und "over" — und
+     * die passen dann auf JEDEN anderen Over/Under-Markt mit Score 1,00.
+     * Mit ihnen bleibt eine leere Wortliste, und leer wird abgewiesen.
+     *
+     * ouLaeufer ist davon NICHT betroffen: die Funktion prueft den Laeufer
+     * mit einem Ausdruck auf dem normalisierten Namen, nicht ueber woerter(). */
+    goals: 1, goal: 1, points: 1, point: 1, runs: 1, sets: 1, set: 1,
+    games: 1, innings: 1, corners: 1, total: 1, over: 1, under: 1
   };
 
   function norm(s) {

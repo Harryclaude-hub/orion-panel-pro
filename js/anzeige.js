@@ -540,10 +540,12 @@
 
     var knappHtml = '';
     if (e.knapp.length) {
-      knappHtml = '<p class="leise">Richtig zugeordnet und nachgerechnet, aber unter ' +
+      knappHtml = '<p class="leise">Knapp daneben: richtig zugeordnet, nachgerechnet, aber unter ' +
         K.mindestRendite.toFixed(2) + ' % Rendite. Die Kehrwertsumme sagt alles: ' +
         '<b>unter 1</b> heißt Gewinn unabhängig vom Ausgang, <b>über 1</b> heißt Verlust. ' +
-        'Alle ' + e.knapp.length + ', beste zuerst.</p>' +
+        'Alle ' + e.knapp.length + ', beste zuerst. Alles unter ' + K.rauschGrenze.toFixed(1) +
+        ' % wird nicht mehr gezeigt und auch nicht mehr aufbewahrt' +
+        (s.rauschen ? ' — gerade ' + s.rauschen + ' Zeilen' : '') + '.</p>' +
         e.knapp.map(function (f) { return karte(f, false); }).join('');
     } else {
       knappHtml = '<p class="leise">Keine Paare. Entweder liegen gerade keine gemeinsamen ' +

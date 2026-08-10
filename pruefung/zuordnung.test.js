@@ -328,6 +328,44 @@ var zvezdaBf = [{
 ok('Crvena Zvezda trotz "FK" und "MH" gefunden',
    Z.besterTreffer('fk crvena zvezda', "mh hapoel be'er sheva", zvezdaBf, 0.5) !== null);
 
+/* ---------- Sportbegriffe und der Rueckfallweg ----------
+ *
+ * Am 10.8.2026 gemessen: von den Sportbegriffen kommen in 800 Namensfeldern
+ * nur "goals" und "over" vor, beide in Betfairs Over/Under-Laeufernamen.
+ * Gefaehrlich wird das erst im Rueckfallweg von partieVon. */
+
+ok('"goals" zaehlt nicht als Namensbeleg', Z.woerter('Over 3.5 Goals').indexOf('goals') === -1,
+   JSON.stringify(Z.woerter('Over 3.5 Goals')));
+ok('"over" zaehlt nicht als Namensbeleg',  Z.woerter('Over 3.5 Goals').indexOf('over') === -1);
+ok('"under" zaehlt nicht als Namensbeleg', Z.woerter('Under 3.5 Goals').indexOf('under') === -1);
+ok('Over/Under-Laeufername ergibt gar keinen Namensbeleg mehr',
+   Z.woerter('Under 3.5 Goals').length === 0, JSON.stringify(Z.woerter('Under 3.5 Goals')));
+
+/* Der eigentliche Zweck: zwei VERSCHIEDENE Partien duerfen sich nicht ueber
+ * ihre Over/Under-Laeufernamen finden, wenn ev einmal fehlt. */
+var ouOhneEv = [{
+  k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: '', mt: 'OVER_UNDER_35',
+  r: [{ n: 'Under 3.5 Goals', b: 1.6, l: 1.7 }, { n: 'Over 3.5 Goals', b: 2.4, l: 2.5 }]
+}];
+ok('fremde Partie trifft NICHT ueber die Over/Under-Laeufer',
+   Z.besterTreffer('under 3.5 goals', 'over 3.5 goals', ouOhneEv, 0.5) === null);
+
+/* Und der normale Weg muss weiter funktionieren. */
+var ouMitEv = [{
+  k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: 'St Gallen v Luzern', mt: 'OVER_UNDER_35',
+  r: [{ n: 'Under 3.5 Goals', b: 1.6, l: 1.7 }, { n: 'Over 3.5 Goals', b: 2.4, l: 2.5 }]
+}];
+ok('mit ev wird die Partie weiterhin gefunden',
+   Z.besterTreffer('st gallen', 'luzern', ouMitEv, 0.5) !== null);
+
+/* ouLaeufer arbeitet auf dem normalisierten Namen, nicht ueber woerter().
+ * Die neuen Stoppwoerter duerfen es deshalb NICHT kaputtmachen. */
+var ol2 = Z.ouLaeufer(ouMitEv[0].r);
+ok('Over-Laeufer wird trotz Stoppwoertern gefunden', ol2 !== null && ol2.laeufer.n === 'Over 3.5 Goals',
+   ol2 ? ol2.laeufer.n : 'null');
+ok('drawLaeufer funktioniert weiterhin',
+   Z.drawLaeufer([{ n: 'The Draw', b: 3.3 }]) !== null);
+
 /* ---------- Kalshi ----------
  *
  * Alle Titel unten sind echte Kalshi-Titel vom 9.8.2026. */

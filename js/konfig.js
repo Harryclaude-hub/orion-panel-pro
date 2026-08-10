@@ -26,8 +26,15 @@
     schwelle: 0.5,
     laeuferSchwelle: 0.8,
 
-    /* Ab welcher Rendite ein Fund als Chance gilt. 0,05 % ist Rauschen. */
+    /* Ab welcher Rendite ein Fund als Chance gilt. */
     mindestRendite: 0.5,
+
+    /* Ab hier abwaerts ist es Rauschen und wird gar nicht mehr gezeigt.
+     * Ausdruecklicher Wunsch: nur Gruenes und knapp Danebengegangenes.
+     * Gemessen am 10.8.2026: von 558 Verlaufszeilen lagen 438 unter -1 %,
+     * 78 dazwischen. Die 78 bleiben, sie zeigen dass gesucht wird.
+     * Der Verlauf wird serverseitig ebenso beschnitten (orion_rauschen_loeschen). */
+    rauschGrenze: -1.0,
 
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,

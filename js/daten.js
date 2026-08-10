@@ -85,7 +85,13 @@
          * dort stand dann +16 % zwischen lauter Minuswerten, ohne Erklaerung. */
         var chancen = live.filter(function (f) { return f.rendite >= K.mindestRendite && !f.veraltet; });
         var veraltetHoch = live.filter(function (f) { return f.rendite >= K.mindestRendite && f.veraltet; });
-        var knapp = live.filter(function (f) { return f.rendite < K.mindestRendite; });
+        /* Nur Gruenes und knapp Danebengegangenes. Alles unter der
+         * Rauschgrenze wird nicht gezeigt — es sagt nichts, ausser dass zwei
+         * Buecher eben verschieden stehen. */
+        var knapp = live.filter(function (f) {
+          return f.rendite < K.mindestRendite && f.rendite >= K.rauschGrenze;
+        });
+        var rauschen = live.filter(function (f) { return f.rendite < K.rauschGrenze; }).length;
 
         return {
           chancen: chancen,
@@ -97,6 +103,7 @@
             chancen: chancen.length,
             veraltet_hoch: veraltetHoch.length,
             knapp: knapp.length,
+            rauschen: rauschen,
             live_gesamt: live.length,
             verlauf: verlauf.length,
             kalshi_alter_s: kaAlterS,
