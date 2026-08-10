@@ -480,3 +480,121 @@ h2 {
 @media (max-width: 640px) {
   .puls { flex-direction: column; align-items: flex-start; gap: 16px; }
 }
+
+/* ==========================================================================
+   DAS SONAR — Militaerstil, aber NUR hier
+   Ersetzt die Ring-Optik. Das gruene Phosphor-Thema ist bewusst auf .puls
+   begrenzt: der Rest der Seite behaelt sein Aussehen, damit Zahlen lesbar
+   bleiben. Alles animierte laeuft ueber transform/opacity, also auf der
+   Grafikkarte - kein Zeichenloop, kein Canvas, kein Ruckeln.
+   ========================================================================== */
+:root { --sonar: #35ff9e; --sonar-tief: #041a10; --sonar-linie: rgba(53,255,158,.20); }
+
+.puls {
+  display: flex; align-items: center; gap: 26px;
+  margin: 18px 0 22px; padding: 18px 22px;
+  border: 1px solid rgba(53,255,158,.22); border-radius: 14px;
+  background:
+    radial-gradient(90% 120% at 15% 0%, rgba(53,255,158,.08), transparent 60%),
+    linear-gradient(180deg, #05130d 0%, #030b07 100%);
+  font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
+  color: var(--sonar); position: relative; overflow: hidden;
+}
+/* Feine Abtastzeilen wie auf einem Roehrenschirm. */
+.puls::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: repeating-linear-gradient(180deg, rgba(0,0,0,.22) 0 1px, transparent 1px 3px);
+  opacity: .5;
+}
+
+.s-schirm {
+  position: relative; width: 190px; height: 190px; flex: 0 0 190px;
+  border-radius: 50%; overflow: hidden;
+  background: radial-gradient(circle at 50% 50%, #07271a 0%, var(--sonar-tief) 70%, #020806 100%);
+  box-shadow: inset 0 0 40px rgba(53,255,158,.16), 0 0 22px rgba(53,255,158,.10);
+  border: 1px solid rgba(53,255,158,.35);
+}
+.s-ringe i {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
+  border: 1px solid var(--sonar-linie); border-radius: 50%;
+}
+.s-ringe i:nth-child(1) { width: 33%; height: 33%; }
+.s-ringe i:nth-child(2) { width: 63%; height: 63%; }
+.s-ringe i:nth-child(3) { width: 92%; height: 92%; }
+.s-kreuz::before, .s-kreuz::after {
+  content: ""; position: absolute; background: var(--sonar-linie);
+}
+.s-kreuz::before { left: 0; right: 0; top: 50%; height: 1px; }
+.s-kreuz::after  { top: 0; bottom: 0; left: 50%; width: 1px; }
+
+/* Der Sweep. Dreht sich NUR, wenn der Scanner laeuft. */
+.s-sweep {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(53,255,158,.42) 0deg, rgba(53,255,158,.14) 22deg,
+    rgba(53,255,158,0) 65deg, rgba(53,255,158,0) 360deg);
+  opacity: 0;
+}
+.puls.s-an .s-sweep { opacity: 1; animation: s-dreh 3.2s linear infinite; }
+.puls.s-tot .s-sweep {
+  opacity: .5; animation: none;
+  background: conic-gradient(from 0deg, rgba(239,68,68,.35) 0deg, rgba(239,68,68,0) 70deg, transparent 360deg);
+}
+@keyframes s-dreh { to { transform: rotate(360deg); } }
+
+/* Kontakte. Jedes Buch sitzt auf einem festen Platz. */
+.s-blip { position: absolute; transform: translate(-50%,-50%); opacity: .25; transition: opacity .4s; }
+.s-kern { display: block; width: 9px; height: 9px; border-radius: 50%; background: currentColor;
+          box-shadow: 0 0 10px currentColor; }
+.s-echo { position: absolute; left: 50%; top: 50%; width: 9px; height: 9px; margin: -4.5px 0 0 -4.5px;
+          border-radius: 50%; border: 1px solid currentColor; opacity: 0; }
+.s-kuerzel { position: absolute; left: 13px; top: -5px; font-size: 9px; letter-spacing: .08em;
+             opacity: .85; white-space: nowrap; }
+.s-blip.pm { color: var(--pm); } .s-blip.ka { color: var(--ka); }
+.s-blip.sm { color: var(--sm); } .s-blip.bf { color: var(--bf); }
+.s-blip.s-frisch { opacity: 1; }
+.puls.s-an .s-blip.s-frisch .s-echo { animation: s-echo 3.2s ease-out infinite; }
+.s-blip.s-still { opacity: .4; }
+.s-blip.s-aus { opacity: .12; filter: grayscale(1); }
+.s-blip.s-aus .s-echo { animation: none !important; }
+@keyframes s-echo {
+  0%   { transform: scale(1);   opacity: .9; }
+  70%  { transform: scale(4.5); opacity: 0; }
+  100% { transform: scale(4.5); opacity: 0; }
+}
+
+/* KONTAKT — Aufschlag, wenn ein neuer Lauf einlaeuft. */
+.s-kontakt { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
+.s-kontakt.s-treffer { animation: s-treffer 900ms ease-out 1; }
+@keyframes s-treffer {
+  0%   { box-shadow: inset 0 0 0 0 rgba(53,255,158,.55); }
+  100% { box-shadow: inset 0 0 60px 8px rgba(53,255,158,0); }
+}
+
+/* Tafel rechts */
+.s-tafel { flex: 1; min-width: 0; position: relative; z-index: 1; }
+.s-titel { display: flex; align-items: center; gap: 9px; letter-spacing: .16em; font-size: 13px; }
+.s-led { width: 9px; height: 9px; border-radius: 50%; background: #6b7280; flex: 0 0 9px; }
+.s-led.s-gruen { background: var(--sonar); box-shadow: 0 0 12px var(--sonar); animation: s-blink 1.8s ease-in-out infinite; }
+.s-led.s-rot   { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+.s-led.s-grau  { background: #6b7280; }
+@keyframes s-blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
+
+.s-gross { margin: 10px 0 8px; display: flex; align-items: baseline; gap: 9px; }
+.s-gross span { font-size: 34px; font-weight: 700; line-height: 1; letter-spacing: -.5px; }
+.s-gross small { font-size: 11px; opacity: .6; letter-spacing: .1em; }
+.s-werte { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; letter-spacing: .1em; opacity: .8; }
+.s-werte b { font-weight: 700; }
+.s-log { margin-top: 10px; font-size: 11px; line-height: 1.65; opacity: .75; min-height: 1.65em; }
+.s-logzeile.s-treffer-log { color: #eaffe9; text-shadow: 0 0 8px rgba(53,255,158,.6); }
+.s-logzeile.s-grau { opacity: .5; }
+
+@media (prefers-reduced-motion: reduce) {
+  .s-sweep, .s-echo, .s-led, .s-kontakt { animation: none !important; }
+  .puls.s-an .s-sweep { opacity: .35; }
+}
+@media (max-width: 640px) {
+  .puls { flex-direction: column; align-items: center; }
+  .s-schirm { width: 150px; height: 150px; flex-basis: 150px; }
+  .s-tafel { width: 100%; }
+}
