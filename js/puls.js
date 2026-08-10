@@ -124,11 +124,20 @@
 
     /* Je Buch aufblitzen lassen, wenn seine Kurse frisch sind. Das ist der
      * eigentliche Nutzen: man sieht, WER liefert, ohne zu lesen. */
+    /* orion_uebersicht() liefert das Alter je Buch bereits fertig in
+     * Sekunden: uebersicht.<buch>.alter_s. Nicht aus einem Zeitstempel
+     * ableiten — der Server hat die Zahl schon, und zwar gegen SEINE Uhr.
+     * Die des Browsers kann daneben liegen. */
+    function buchAlter(id) {
+      var b = u[id];
+      if (!b || typeof b.alter_s !== 'number' || !isFinite(b.alter_s)) return null;
+      return b.alter_s;
+    }
     var alter = {
-      polymarket: sAlter,
-      kalshi: alterS(u.kalshi_zeit),
-      smarkets: alterS(u.smarkets_zeit),
-      betfair: alterS(u.bridge_zeit)
+      polymarket: buchAlter('polymarket') !== null ? buchAlter('polymarket') : sAlter,
+      kalshi: buchAlter('kalshi'),
+      smarkets: buchAlter('smarkets'),
+      betfair: buchAlter('betfair')
     };
     var grenze = { polymarket: FRISCH_S, kalshi: K.kalshiMaxAlterS || 600,
                    smarkets: K.smarketsMaxAlterS || 900, betfair: K.bridgeMaxAlterS || 300 };
