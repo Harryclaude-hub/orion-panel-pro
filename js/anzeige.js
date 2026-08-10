@@ -493,15 +493,30 @@
      * 2 % auf den Nettogewinn und 7 % je Kontrakt sind voellig verschiedene
      * Dinge. Kalshi handelt KONTRAKTE, Polymarket ANTEILE — das ist keine
      * Wortklauberei, es sind die Einheiten, in denen die Buecher rechnen. */
-    function eine(info, satz, betrag, echt, seiteText, form) {
+    function eine(info, satz, betrag, echt, seiteText, form, einsatz) {
       var art = form === 'kontrakt' ? 'je Kontrakt'
               : form === 'anteil'   ? 'je Anteil'
               : 'auf den Nettogewinn';
+
+      /* WAS MAN TATSAECHLICH ZAHLT, in Prozent VOM EINSATZ.
+       *
+       * Der nackte Satz ist irrefuehrend: Kalshis "7 %" und Polymarkets
+       * "5 %" stecken in VERSCHIEDENEN Formeln und sind nicht vergleichbar.
+       * Gemessen an einer echten Zeile (Goias EC, 10.8.2026):
+       *     Polymarket  Satz 5 %  bei Preis 0,16  ->  5,00 % vom Einsatz
+       *     Kalshi      Satz 7 %  bei Preis 0,84  ->  1,12 % vom Einsatz
+       * Die 7 % kosten also weniger als ein Viertel der 5 %. Deshalb steht
+       * der effektive Satz vorn und der nackte dahinter. */
+      var eff = (betrag !== null && isFinite(einsatz) && einsatz > 0)
+        ? (betrag / einsatz * 100) : null;
       return '<div class="gp-zeile">' +
         '<span class="chip ' + txt(info.chip) + '">' + txt(info.name) + '</span> ' +
-        '<b>' + (isFinite(satz) ? (satz * 100).toFixed(2) + ' %' : '?') + '</b> ' + art + ' &middot; ' +
-        '<b>' + (betrag === null ? 'nicht ausrechenbar' : betrag.toFixed(3)) + '</b> ' +
-        (betrag === null ? '' : 'bei 100 Einsatz') + ' ' + herkunft(echt) +
+        '<b>' + (eff === null ? '?' : eff.toFixed(2) + ' %') + '</b> vom Einsatz' +
+        ' &middot; <b>' + (betrag === null ? 'nicht ausrechenbar' : betrag.toFixed(3)) + '</b>' +
+        (betrag === null ? '' : ' von ' + Number(einsatz).toFixed(2)) +
+        ' <span class="leise" title="Der nackte Satz aus dem Tarif. Er steckt in einer Formel und ist zwischen Büchern NICHT vergleichbar — deshalb steht vorne, was tatsächlich anfällt.">(Tarif ' +
+        (isFinite(satz) ? (satz * 100).toFixed(2) + ' %' : '?') + ' ' + art + ')</span> ' +
+        herkunft(echt) +
       '</div>';
     }
 
@@ -543,9 +558,9 @@
       '<div class="gp-fuss" style="margin:0 0 6px">Was die <b>Gebühren</b> kosten — ' +
         'jedes Buch nimmt anders, und der Satz steckt bereits in beiden Effektivquoten:</div>' +
       eine(b1, s1, g1, f.pm_gebuehr_echt, f.pm_seite,
-           gebuehrForm(b1, f.buch_1 || 'polymarket', f.pm_seite)) +
+           gebuehrForm(b1, f.buch_1 || 'polymarket', f.pm_seite), Number(f.einsatz_1)) +
       eine(b2, s2, g2, f.bf_gebuehr_echt, f.bf_seite,
-           gebuehrForm(b2, f.buch || 'betfair', f.bf_seite)) +
+           gebuehrForm(b2, f.buch || 'betfair', f.bf_seite), Number(f.einsatz_2)) +
       '<div class="gp-zeile"><b>Zusammen ' +
         (summe === null ? 'nicht ausrechenbar' : summe.toFixed(3) + ' bei 100 Einsatz') + '</b>' +
         (kostet === null ? '' : ' &middot; sie kosten <b>' + kostet.toFixed(2) +

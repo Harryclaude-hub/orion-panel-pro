@@ -1,0 +1,184 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Was die Angaben bedeuten — Orion Panel Pro</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="css/stil.css?v=11">
+<style>
+  .g-wrap { max-width: 860px; margin: 0 auto; padding: 24px 18px 80px; }
+  .g-wrap h2 { margin: 34px 0 10px; font-size: 20px; }
+  .g-wrap h3 { margin: 22px 0 6px; font-size: 15px; }
+  .g-karte { border: 1px solid rgba(255,255,255,.12); border-radius: 12px;
+             padding: 16px 18px; margin: 12px 0; background: rgba(255,255,255,.02); }
+  .g-rechnung { font-family: ui-monospace, Consolas, monospace; font-size: 12.5px;
+                line-height: 1.75; background: rgba(0,0,0,.28); border-radius: 8px;
+                padding: 12px 14px; margin: 10px 0; overflow-x: auto; white-space: pre; }
+  .g-wrap table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 13.5px; }
+  .g-wrap th, .g-wrap td { text-align: left; padding: 7px 10px; border-bottom: 1px solid rgba(255,255,255,.08); vertical-align: top; }
+  .g-wrap th { opacity: .7; font-weight: 600; }
+  .g-merk { border-left: 3px solid var(--gut, #00c48c); padding-left: 12px; margin: 12px 0; }
+  .g-warn { border-left: 3px solid var(--acht, #ffb80c); padding-left: 12px; margin: 12px 0; }
+  .g-wrap code { background: rgba(0,0,0,.3); padding: 1px 5px; border-radius: 4px; font-size: 12.5px; }
+</style>
+</head>
+<body>
+
+<div class="huelle g-wrap">
+
+<header class="kopf">
+  <h1>Was die Angaben bedeuten</h1>
+  <span class="luecke"></span>
+  <a class="knopf" href="index.html">Zurück zum Panel</a>
+  <a class="knopf" href="logik.html">Wie gesucht wird</a>
+  <a class="knopf" href="regelwerk.html">Regelwerk</a>
+</header>
+
+<p class="leise">
+  Jede Zahl auf einer Karte, erklärt — mit der Formel dahinter und einer
+  echten, durchgerechneten Zeile. Alle Beispiele stammen aus gemessenen
+  Funden, nicht aus erfundenen Werten.
+</p>
+
+<h2>Die wichtigste Unterscheidung</h2>
+
+<div class="g-merk">
+  <p><b>Rendite ist ein Verhältnis. Gewinn ist ein Betrag.</b>
+  Beide können gleichzeitig wahr sein und trotzdem völlig verschiedene
+  Dinge sagen: <code>+1,03 %</code> klingt gut, sind aber drei Cent, wenn
+  auf der Gegenseite nur 2,94 liegen. Deshalb steht auf jeder Karte
+  <b>beides</b> — und als Chance zählt nur, was auch als Betrag lohnt.</p>
+</div>
+
+<h2>Die Angaben auf jeder Karte</h2>
+
+<table>
+<tr><th style="width:34%">Angabe</th><th>Was sie bedeutet</th></tr>
+
+<tr><td><b>Rendite</b></td>
+<td>Was am Ende übrig bleibt, in Prozent des eingesetzten Geldes —
+<b>nach allen Gebühren</b>. Steht dort +1,50 %, dann sind 100 Einsatz am
+Ende 101,50, egal wie das Spiel ausgeht. Die Gebühren sind da bereits
+abgezogen, sie kommen nicht noch einmal.</td></tr>
+
+<tr><td><b>Max. Einsatz</b></td>
+<td>Der größte Gesamtbetrag, den du auf <b>beide Seiten zusammen</b> setzen
+kannst, bevor eine Seite im Orderbuch leer ist. Steht dort 81, dann sind
+das 81 insgesamt — nicht 81 pro Buch. Begrenzt wird er immer von der
+<b>dünneren</b> der beiden Seiten. Steht dort nichts, ist die Menge
+<b>unbekannt</b>, nicht unbegrenzt.</td></tr>
+
+<tr><td><b>Tatsächlicher Gewinn</b></td>
+<td>Max. Einsatz × Rendite. Die Zahl, die am Ende auf dem Konto landet.
+Das ist die Zahl, die zählt.</td></tr>
+
+<tr><td><b>Effektivquote</b></td>
+<td>Was ein Einsatz nach Gebühr zurückzahlt. Aus 1 wird bei Quote 2,00 und
+2 % Kommission nicht 2,00, sondern 1,98. Beide Effektivquoten zusammen
+ergeben die Kehrwertsumme.</td></tr>
+
+<tr><td><b>Kehrwertsumme</b></td>
+<td>Was beide Seiten zusammen kosten, gemessen an dem, was sie zurückzahlen.
+<b>Unter 1,0000 ist eine Arbitrage</b>, darüber nicht. 0,9850 heißt: du
+zahlst 98,50 für 100 Rückzahlung.</td></tr>
+
+<tr><td><b>Zuordnung</b></td>
+<td>Wie sicher beide Bücher dieselbe Partie und denselben Ausgang meinen.
+1,00 ist voll gedeckt. Darunter wurde über Namensähnlichkeit gepaart.</td></tr>
+
+<tr><td><b>Puffer</b></td>
+<td>Wie weit sich der Kurs bewegen darf, bevor die Arbitrage kippt. Die
+Richtung ist je Buch verschieden: Anteilspreis darf steigen, Back-Quote
+muss fallen, Lay-Quote darf steigen.</td></tr>
+
+<tr><td><b>„zu dünn"</b></td>
+<td>Der beste Kurs im Buch trägt fast kein Volumen. Solche Zeilen zählen
+nicht als Chance, werden aber gezeigt — verschweigen wäre schlimmer.</td></tr>
+</table>
+
+<h2>Die Gebühren — warum 5 % weniger sein können als 7 %</h2>
+
+<div class="g-warn">
+  <p><b>Die Tarifsätze sind zwischen den Büchern NICHT vergleichbar.</b>
+  Sie stecken in verschiedenen Formeln. Deshalb steht auf der Karte vorne
+  der <b>effektive Satz vom Einsatz</b> — was du wirklich zahlst — und der
+  nackte Tarif nur in Klammern dahinter.</p>
+</div>
+
+<h3>Polymarket — Gebühr je Anteil</h3>
+<div class="g-karte">
+<div class="g-rechnung">Gebühr je Anteil = Tarif × min(Preis ; 1 − Preis)
+
+Echte Zeile:  Goiás EC vs. Londrina EC, JA zu 0,16, Einsatz 15,98
+  je Anteil   = 5 % × min(0,16 ; 0,84) = 0,008      (0,8 Cent)
+  Anteile     = 15,98 / 0,16           = 99,9
+  Gebühr      = 99,9 × 0,008           = 0,799
+  → 5,00 % vom Einsatz</div>
+<p class="leise">Die Gebühr ist bei einem Preis um 0,50 am höchsten — also
+genau bei ausgeglichenen Partien. Wer zum Briefkurs kauft, ist immer Taker
+und zahlt. Maker zahlen bei Polymarket nichts (<code>takerOnly</code>).</p>
+</div>
+
+<h3>Kalshi — Gebühr je Kontrakt</h3>
+<div class="g-karte">
+<div class="g-rechnung">Gebühr je Kontrakt = Tarif × Preis × (1 − Preis)
+
+Echte Zeile:  dieselbe Partie, NEIN zu 0,84, Einsatz 84,02
+  je Kontrakt = 7 % × 0,84 × 0,16 = 0,0094          (0,94 Cent)
+  Kontrakte   = 84,02 / 0,84      = 100,0
+  Gebühr      = 100,0 × 0,0094    = 0,941
+  → 1,12 % vom Einsatz</div>
+<p class="leise"><b>Der Vergleich:</b> Kalshis „7 %" kosten hier 1,12 %,
+Polymarkets „5 %" kosten 5,00 %. Der höhere Tarif ist der billigere —
+weil <code>p × (1−p)</code> an den Rändern viel kleiner wird als
+<code>min(p ; 1−p)</code>. Kalshi rundet je Order auf den nächsten Cent
+auf; das ist zu unseren Ungunsten und wird nicht weggerundet.</p>
+</div>
+
+<h3>Smarkets — Kommission auf den Nettogewinn</h3>
+<div class="g-karte">
+<div class="g-rechnung">Kommission = Tarif × Gewinn   (nur bei Gewinn, je Markt)
+
+Back, Quote 2,50, Einsatz 100
+  Bruttogewinn = 100 × (2,50 − 1) = 150
+  Kommission   = 2 % × 150        = 3,00
+  → 3,00 % vom Einsatz</div>
+<p class="leise">Auf Verluste fällt keine Kommission an. Der Satz von 2 %
+ist der dokumentierte Standardtarif und <b>nicht gemessen</b> — es gibt
+kein Konto, und die öffentliche API gibt ihn nicht heraus. Wer auf einen
+höheren Tarif rutscht, muss ihn in <code>js/konfig.js</code> eintragen,
+sonst rechnen sich dünne Funde still ins Plus.</p>
+</div>
+
+<h2>Gemessen oder angenommen</h2>
+<p>Hinter jedem Satz steht eine Marke. Sie ist kein Schmuck:</p>
+<table>
+<tr><td style="width:34%"><span class="chip gut">gemessen</span></td>
+<td>Der Satz kommt vom Buch selbst mit — bei Polymarket aus
+<code>feeSchedule</code>, an 929 Sportmärkten geprüft.</td></tr>
+<tr><td><span class="chip acht">angenommen</span></td>
+<td>Der Satz ist der dokumentierte Tarif, aber nicht am eigenen Konto
+nachgemessen. Ein höherer Tarif macht dünne Funde zu Verlusten.</td></tr>
+</table>
+
+<h2>Drei Zustände, nie zwei</h2>
+<div class="g-merk">
+<p>Überall im Panel gilt: richtig, falsch — <b>oder nicht prüfbar</b>.
+Eine fehlende Menge ist nicht null und nicht unbegrenzt, sie ist
+<b>unbekannt</b>. Eine Gebühr, die sich nicht ausrechnen lässt, wird nicht
+als 0 gezeigt. Ein Link, der nicht geprüft werden konnte, ist nicht
+kaputt. Wo „unbekannt" steht, steht es mit Absicht.</p>
+</div>
+
+<p class="leise" style="margin-top:30px">
+Alle Formeln stehen im Quelltext in <code>js/rechnung.js</code> und werden
+von <code>pruefung/rechnung.test.js</code> und
+<code>pruefung/spiegel.test.js</code> geprüft. Der Gebührenbetrag wird
+zusätzlich gegen die Differenz der Auszahlungen gegengerechnet — bei
+54 von 54 echten Zeilen ohne Abweichung.
+</p>
+
+</div>
+</body>
+</html>
