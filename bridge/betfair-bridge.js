@@ -1947,7 +1947,11 @@ if (!ALS_PROGRAMM) return;
   // Laeuft hier noch eine veraltete Fassung? Das gehoert an den Anfang, damit
   // niemand stundenlang mit alter Logik scannt, ohne es zu merken.
   try {
-    const r = await fetch('https://saifokaram1-hub.github.io/orion-panel/version.json?t=' + Date.now());
+    /* Das EIGENE Projekt fragen, nicht das alte. Bis Build 18 zeigte diese
+       Adresse auf orion-panel — dort steht bis heute Build 17, und deshalb
+       haette sich die Bridge selbst bei Build 19 fuer aktuell gehalten,
+       waehrend Orion Panel Pro laengst weiter ist. */
+    const r = await fetch('https://saifokaram1-hub.github.io/orion-panel-pro/version.json?t=' + Date.now());
     if (r.ok) {
       const v = await r.json();
       if (v && +v.bridgeBuild > BRIDGE_BUILD) {
