@@ -427,6 +427,8 @@
     anwenden: anwenden,
     aktiv: aktiv,
     artVon: artVon,
+    bereichVon: bereichVon,
+    BEREICHE: BEREICHE,
     start: start,
     zeichnen: zeichnen
   };
