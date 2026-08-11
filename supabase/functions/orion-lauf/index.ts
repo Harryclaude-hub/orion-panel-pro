@@ -323,17 +323,22 @@ Deno.serve(async (req) => {
       const seiten: Seite[] = [];
 
       const pmLink = `https://polymarket.com/event/${m.evSlug}/${m.mSlug}`;
-      const pmEcht = m.satz !== null && m.satz !== undefined;
-      const qeJa = R.qePm(ask[0], m.satz, m.expo);
-      const qeNein = R.qePm(ask[1], m.satz, m.expo);
+      /* Satz: was der Markt selbst meldet, sonst der belegte Satz der
+       * Marktart (Sport 5 %, Krypto 7 %, Politik/Technik 4 %). Bis zum
+       * 11.8. fiel ein Markt ohne feeSchedule auf 7 % zurueck — im Sport
+       * also 40 % zu hoch. Beides ist jetzt gemessen, nicht geraten. */
+      const pmSatz = (m.satz !== null && m.satz !== undefined) ? m.satz : R.pmSatzFuer(bereich);
+      const pmEcht = true;
+      const qeJa = R.qePm(ask[0], pmSatz);
+      const qeNein = R.qePm(ask[1], pmSatz);
       if (qeJa !== null) seiten.push({
         buch: 'polymarket', richtung: 'ja', qe: qeJa, geld: mengen[0] * ask[0], roh: ask[0],
-        gebuehr: R.gebuehrSicher(m.satz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
+        gebuehr: R.gebuehrSicher(pmSatz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
         name: bez, seite_text: istOu ? 'ÜBER' : 'JA', link: pmLink, partie: m.titel
       });
       if (qeNein !== null) seiten.push({
         buch: 'polymarket', richtung: 'nein', qe: qeNein, geld: mengen[1] * ask[1], roh: ask[1],
-        gebuehr: R.gebuehrSicher(m.satz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
+        gebuehr: R.gebuehrSicher(pmSatz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
         name: bez, seite_text: istOu ? 'UNTER' : 'NEIN', link: pmLink, partie: m.titel
       });
 
@@ -348,14 +353,23 @@ Deno.serve(async (req) => {
                      : m.art === 'ueber_unter'  ? Z.ouLaeufer(tr.bf.r)
                      : Z.laeuferZu(m.teil, tr.bf.r, LAEUFER_SCHWELLE);
           if (lauf) {
-            const satz = Z.bfSatzVon(tr.bf);
+            /* GESETZT WIRD BEI ORBIT, nicht bei Betfair: betfair.com ist aus
+             * Oesterreich gesperrt, brokerLink() schreibt jeden Link auf Orbit
+             * um. Also gilt Orbits Satz - pauschal 3 % auf den Nettogewinn je
+             * Markt, belegt aus deren Doku, keine Premium-Gebuehr, 0 % auf
+             * Verluste. Betfairs eigener marketBaseRate (bfEigen) gilt nur fuer
+             * ein direktes Betfair-Konto und wird nur mitgefuehrt. Bis zum 11.8.
+             * rechnete diese Seite mit 7 % Rueckfall, also mehr als dem
+             * Doppelten des echten Satzes. */
+            const bfEigen = Z.bfSatzVon(tr.bf);
+            const satz = R.ORBIT_SATZ;
             const link = brokerLink(tr.bf.link);
             const partie = tr.bf.ev || tr.bf.k;
             const qb = R.qeBack(lauf.laeufer.b, satz);
             const ql = R.qeLay(lauf.laeufer.l, satz);
             if (qb !== null) seiten.push({
               buch: 'betfair', richtung: 'ja', qe: qb, geld: zahlOderNull(lauf.laeufer.bs),
-              roh: lauf.laeufer.b, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: satz !== null,
+              roh: lauf.laeufer.b, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: true,
               gebuehr_form: 'back',
               name: lauf.laeufer.n, seite_text: 'Back', link, partie
             });
@@ -364,7 +378,7 @@ Deno.serve(async (req) => {
               seiten.push({
                 buch: 'betfair', richtung: 'nein', qe: ql,
                 geld: ls === null ? null : ls * (lauf.laeufer.l - 1),
-                roh: lauf.laeufer.l, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: satz !== null,
+                roh: lauf.laeufer.l, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: true,
                 gebuehr_form: 'lay',
                 name: lauf.laeufer.n, seite_text: 'Lay', link, partie
               });
@@ -431,19 +445,22 @@ Deno.serve(async (req) => {
 
             const k = e.k;
             const link = kalshiLink(k);
-            const qJa = R.qeKalshi(k.ja);
-            const qNein = R.qeKalshi(k.nein);
+            /* Serien-Multiplikator aus Kalshis Gebuehrenordnung (PDF vom
+             * 7.7.2026): neun Serien tragen 0 und sind GEBUEHRENFREI. */
+            const kSatz = R.kalshiSatzFuer(k.serie);
+            const qJa = R.qeKalshi(k.ja, kSatz);
+            const qNein = R.qeKalshi(k.nein, kSatz);
             const kMenge = zahlOderNull(k.jaMenge);
             if (qJa !== null) seiten.push({
               buch: 'kalshi', richtung: 'ja', qe: qJa,
               geld: kMenge === null ? null : kMenge * k.ja, roh: k.ja,
-              gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
+              gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
               name: k.jaName, seite_text: 'Ja', link, partie: k.titel
             });
             if (qNein !== null) seiten.push({
               buch: 'kalshi', richtung: 'nein', qe: qNein,
               geld: kMenge === null ? null : kMenge * k.nein, roh: k.nein,
-              gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
+              gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
               name: k.jaName, seite_text: 'Nein', link, partie: k.titel
             });
             break;
@@ -500,16 +517,17 @@ Deno.serve(async (req) => {
 
         const seiten: Seite[] = [];
         const kLink = kalshiLink(k);
-        const qJa = R.qeKalshi(k.ja), qNein = R.qeKalshi(k.nein);
+        const kSatz = R.kalshiSatzFuer(k.serie);
+        const qJa = R.qeKalshi(k.ja, kSatz), qNein = R.qeKalshi(k.nein, kSatz);
         const kMenge = zahlOderNull(k.jaMenge);
         if (qJa !== null) seiten.push({
           buch: 'kalshi', richtung: 'ja', qe: qJa, geld: kMenge === null ? null : kMenge * k.ja,
-          roh: k.ja, gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
+          roh: k.ja, gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
           name: k.jaName, seite_text: 'Ja', link: kLink, partie: k.titel
         });
         if (qNein !== null) seiten.push({
           buch: 'kalshi', richtung: 'nein', qe: qNein, geld: kMenge === null ? null : kMenge * k.nein,
-          roh: k.nein, gebuehr: R.KALSHI_SATZ, gebuehr_echt: false, gebuehr_form: 'kontrakt',
+          roh: k.nein, gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
           name: k.jaName, seite_text: 'Nein', link: kLink, partie: k.titel
         });
         const qb = R.qeBack(v.b, smM.sz), ql = R.qeLay(v.l, smM.sz);
@@ -592,7 +610,11 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: 'Partie vorbei' })
     });
 
-    const chancen = zeilen.filter(z => z.rendite >= 0.5).length;
+    /* Zaehlschwelle wie in der Anzeige und in orion_uebersicht: 3 %
+     * (Vorgabe 11.8. spaet abends). Stand hier bis dahin 0,5 %, waehrend
+     * die Website schon 3 % zeigte, haette das Protokoll andere Zahlen
+     * behauptet als die Seite. */
+    const chancen = zeilen.filter(z => z.rendite >= 3.0).length;
 
     await fetch(`${URL_SUPA}/rest/v1/orion_laeufe`, {
       method: 'POST', headers: { ...dbKopf(), prefer: 'return=minimal' },

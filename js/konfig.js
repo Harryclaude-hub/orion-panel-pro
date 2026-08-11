@@ -16,10 +16,17 @@
      * billig, waehrend ein voller Scan alle 2 Sekunden unmoeglich waere. */
     taktMs: 2000,
 
-    /* Betfair-Kommission: die Bridge schickt marketBaseRate derzeit nicht
-     * mit. Regel aus der Uebergabe: unbekannte Gebuehr NIEMALS als 0,
-     * Rueckfall auf den unguenstigsten bekannten Satz. */
-    bfGebuehrUnbekannt: 0.07,
+    /* BETFAIR-SEITE = ORBIT-SATZ, belegt am 11.8.2026 spät abends.
+     *
+     * betfair.com ist aus Österreich gesperrt; jeder Betfair-Link dieser
+     * Seite wird auf den Broker Orbit umgeschrieben, und DORT wird gesetzt.
+     * Orbit nimmt pauschal 3 % auf den Nettogewinn je Markt, keine
+     * Premium-Gebühr, 0 % auf Verluste. Also ist 3 % der Satz, der für uns
+     * gilt — nicht Betfairs eigener marketBaseRate (2 bis 7 %, gilt nur
+     * für ein direktes Betfair-Konto) und erst recht nicht der alte
+     * 7-%-Rückfall, der mehr als das Doppelte war. */
+    bfGebuehrUnbekannt: 0.03,
+    orbitGebuehr: 0.03,
 
     /* Zuordnungsschwellen. 0.5 fuer die Partie, 0.8 fuer den Laeufer.
      * Die 0.8 ist die Lehre aus den 663 Scheinchancen vom 9.8.2026. */
@@ -102,13 +109,22 @@
      * Serverseitig ebenso (orion_rauschen_loeschen(0.0), alle 5 Minuten). */
     verlaufMinRendite: 0,
 
-    /* Smarkets-Kommission: 2 % Standard-Tarif auf den Nettogewinn je Markt,
-     * gleiche Form wie bei Betfair. NICHT gemessen — es gibt kein Konto und
-     * die oeffentliche API gibt den Satz nicht heraus. Es bestehen daneben
-     * 1 % (Pro) und 3 % (Select); Select trifft genau die besonders
-     * profitablen Konten. Wer dorthin rutscht, traegt hier 0.03 ein, sonst
-     * rechnen sich duenne Funde still ins Plus. */
+    /* Smarkets-Kommission: 2 % Standard auf den NETTOGEWINN JE MARKT.
+     * BELEGT am 11.8.2026 spät abends aus der Commission FAQ des Anbieters
+     * (vorher stand hier "nicht gemessen"). Bei Verlust in einem Markt
+     * fällt keine Kommission an.
+     *
+     * Die beiden anderen Tarife stehen mit ihren SCHWELLEN da, damit man
+     * merkt, wann man hineinrutscht:
+     *   1 % Pro    — ab 1500 Wetten ODER 1 Mio £ Einsatz je Kalendermonat,
+     *                muss ausdrücklich gewählt werden
+     *   3 % Select — ab 25 000 £ Nettogewinn in den vorangegangenen
+     *                12 Kalendermonaten, trifft die profitabelsten Konten
+     * Wer dorthin rutscht, trägt hier 0.01 bzw. 0.03 ein — sonst rechnen
+     * sich dünne Funde still ins Plus. */
     smarketsGebuehr: 0.02,
+    smarketsPro: 0.01,
+    smarketsSelect: 0.03,
 
     /* Die Buecher an EINER Stelle. Die Anbietertafel wird nach `umfang`
      * sortiert, aufsteigend: das KLEINSTE Buch zuerst, denn es ist die

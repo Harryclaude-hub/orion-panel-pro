@@ -76,33 +76,70 @@ ok('Max-Haftung ohne Volumen abgewiesen', R.maxHaftung(0, 2) === null);
 
 /* ---------- Polymarket-Gebuehr ---------- */
 
-nah('PM-Gebuehr p=0.50, 5 %, exp 1 -> 0.025', R.gebuehrPm(0.50, 0.05, 1), 0.025);
-nah('PM-Gebuehr p=0.20, 5 %, exp 1 -> 0.010', R.gebuehrPm(0.20, 0.05, 1), 0.010);
-nah('PM-Gebuehr p=0.80 ist gleich wie p=0.20 (min(p,1-p))',
-    R.gebuehrPm(0.80, 0.05, 1), R.gebuehrPm(0.20, 0.05, 1));
-nah('PM-Gebuehr p=0.49, 4 % -> 0.0196', R.gebuehrPm(0.49, 0.04, 1), 0.0196);
-nah('PM-Gebuehr ohne Exponent nimmt 1',  R.gebuehrPm(0.30, 0.05, undefined), 0.015);
-nah('PM-Gebuehr unbekannter Satz rechnet mit 7 %', R.gebuehrPm(0.50, undefined, 1), 0.035);
+/* Die Formel ist seit dem 11.8.2026 spaet abends BELEGT (Anbieterdoku):
+ *     Gebuehr je Anteil = Satz * p * (1 - p)
+ * Diese Zeilen rechnen die Tabelle der Anbieterdoku nach, Spalte
+ * "Fee for 100 contracts". Sie loesen also die alte Fassung aus, statt sie
+ * zu umgehen: mit `Satz * min(p,1-p)` faellt jede einzelne durch. */
+nah('PM-Gebuehr p=0.50, 5 % -> 0.0125 (Doku: 1,25 je 100)', R.gebuehrPm(0.50, 0.05), 0.0125);
+nah('PM-Gebuehr p=0.20, 5 % -> 0.0080 (Doku: 0,80 je 100)', R.gebuehrPm(0.20, 0.05), 0.008);
+nah('PM-Gebuehr p=0.30, 5 % -> 0.0105 (Doku: 1,05 je 100)', R.gebuehrPm(0.30, 0.05), 0.0105);
+nah('PM-Gebuehr Krypto p=0.50, 7 % -> 0.0175 (Doku: 1,75 je 100)', R.gebuehrPm(0.50, 0.07), 0.0175);
+nah('PM-Gebuehr Politik p=0.50, 4 % -> 0.0100 (Doku: 1,00 je 100)', R.gebuehrPm(0.50, 0.04), 0.01);
+nah('PM-Gebuehr Rand p=0.99, 5 % -> 0.000495 (Doku: 0,05 je 100)', R.gebuehrPm(0.99, 0.05), 0.000495);
+nah('PM-Gebuehr p=0.80 ist gleich wie p=0.20 (symmetrisch um 0,50)',
+    R.gebuehrPm(0.80, 0.05), R.gebuehrPm(0.20, 0.05));
+nah('PM-Gebuehr dritter Parameter wird ignoriert (frueher Exponent)',
+    R.gebuehrPm(0.30, 0.05, 2), R.gebuehrPm(0.30, 0.05));
+nah('PM-Gebuehr unbekannter Satz rechnet mit 7 %', R.gebuehrPm(0.50, undefined), 0.0175);
 
 ok('PM-Gebuehr ist bei p=0.50 am hoechsten',
-   R.gebuehrPm(0.50, 0.05, 1) > R.gebuehrPm(0.35, 0.05, 1) &&
-   R.gebuehrPm(0.50, 0.05, 1) > R.gebuehrPm(0.65, 0.05, 1));
+   R.gebuehrPm(0.50, 0.05) > R.gebuehrPm(0.35, 0.05) &&
+   R.gebuehrPm(0.50, 0.05) > R.gebuehrPm(0.65, 0.05));
 
-ok('PM-Gebuehr p=0 abgewiesen',   R.gebuehrPm(0, 0.05, 1) === null);
-ok('PM-Gebuehr p=1 abgewiesen',   R.gebuehrPm(1, 0.05, 1) === null);
-ok('PM-Gebuehr p=1.5 abgewiesen', R.gebuehrPm(1.5, 0.05, 1) === null);
-ok('PM-Gebuehr p negativ abgewiesen', R.gebuehrPm(-0.2, 0.05, 1) === null);
+ok('PM-Gebuehr p=0 abgewiesen',   R.gebuehrPm(0, 0.05) === null);
+ok('PM-Gebuehr p=1 abgewiesen',   R.gebuehrPm(1, 0.05) === null);
+ok('PM-Gebuehr p=1.5 abgewiesen', R.gebuehrPm(1.5, 0.05) === null);
+ok('PM-Gebuehr p negativ abgewiesen', R.gebuehrPm(-0.2, 0.05) === null);
+
+/* Satz je Marktart, aus derselben Doku. Unbekannter Bereich bleibt teuer. */
+nah('PM-Satz Sport 5 %',        R.pmSatzFuer('fussball'), 0.05);
+nah('PM-Satz Krypto 7 %',       R.pmSatzFuer('krypto'), 0.07);
+nah('PM-Satz Politik 4 %',      R.pmSatzFuer('politik'), 0.04);
+nah('PM-Satz Technik 4 %',      R.pmSatzFuer('tech'), 0.04);
+nah('PM-Satz unbekannter Bereich faellt auf 7 % zurueck', R.pmSatzFuer('quatsch'), 0.07);
 
 /* ---------- Polymarket Effektivquote ---------- */
 
-nah('PM p=0.50 bei 5 % -> 1.95',   R.qePm(0.50, 0.05, 1), 1.95);
-nah('PM p=0.25 bei 5 % -> 3.95',   R.qePm(0.25, 0.05, 1), 3.95);
-nah('PM p=0.50 ohne Gebuehr -> 2', R.qePm(0.50, 0, 1), 2);
+nah('PM p=0.50 bei 5 % -> 1.975',  R.qePm(0.50, 0.05), 1.975);
+nah('PM p=0.25 bei 5 % -> 3.9625', R.qePm(0.25, 0.05), 3.9625);
+nah('PM p=0.50 ohne Gebuehr -> 2', R.qePm(0.50, 0), 2);
 
-ok('PM p=0 abgewiesen',    R.qePm(0, 0.05, 1) === null);
-ok('PM p=1 abgewiesen',    R.qePm(1, 0.05, 1) === null);
+ok('PM p=0 abgewiesen',    R.qePm(0, 0.05) === null);
+ok('PM p=1 abgewiesen',    R.qePm(1, 0.05) === null);
 ok('PM p=0.999 bei 7 % ergibt keine Quote ueber 1 und wird abgewiesen',
-   R.qePm(0.999, 0.07, 1) === null || R.qePm(0.999, 0.07, 1) > 1);
+   R.qePm(0.999, 0.07) === null || R.qePm(0.999, 0.07) > 1);
+
+/* ---------- Kalshi: Gebuehrenordnung vom 7.7.2026 ---------- */
+
+nah('Kalshi Taker p=0.50 -> 0.0175 (PDF: 1,75 je 100)', R.gebuehrKalshi(0.50), 0.0175);
+nah('Kalshi Taker p=0.20 -> 0.0112 (PDF: 1,12 je 100)', R.gebuehrKalshi(0.20), 0.0112);
+nah('Kalshi Taker p=0.65 -> 0.0159 (PDF: 1,60 je 100, ungerundet 1,5925)',
+    R.gebuehrKalshi(0.65), 0.015925);
+nah('Kalshi Maker-Satz steht bei 1,75 %', R.KALSHI_MAKER_SATZ, 0.0175);
+nah('Kalshi Regelsatz 7 % fuer unsere Sport-Serien', R.kalshiSatzFuer('KXCLUBFGAME'), 0.07);
+nah('Kalshi Regelsatz 7 % auch fuer LoL', R.kalshiSatzFuer('KXLOLGAME'), 0.07);
+nah('Kalshi GEBUEHRENFREI: BTC-Jahresspanne (Multiplikator 0)', R.kalshiSatzFuer('KXBTCY'), 0);
+nah('Kalshi GEBUEHRENFREI: ETH-Jahresspanne', R.kalshiSatzFuer('KXETHY-26DEC31'), 0);
+nah('Kalshi unbekannte Serie bleibt beim Regelsatz', R.kalshiSatzFuer(''), 0.07);
+
+/* ---------- Boersen-Kommission, belegt ---------- */
+
+nah('Smarkets Standard 2 %', R.SMARKETS_SATZ, 0.02);
+nah('Smarkets Pro 1 %',      R.SMARKETS_PRO, 0.01);
+nah('Smarkets Select 3 %',   R.SMARKETS_SELECT, 0.03);
+nah('Orbit pauschal 3 %',    R.ORBIT_SATZ, 0.03);
+ok('Orbit ist guenstiger als der alte 7-%-Rueckfall', R.ORBIT_SATZ < R.GEBUEHR_UNBEKANNT);
 
 /* ---------- Kernrechnung ---------- */
 
@@ -141,14 +178,22 @@ ok('qe null wird abgewiesen',                 R.pruefe(null, 2.5, 100) === null)
 /* ---------- Der teuer bezahlte Fall aus der Uebergabe ----------
  * "0,49 gegen Betfair 2,03 sieht ohne Gebuehr nach +0,46 % aus,
  *  mit 4 % sind es -0,52 %."
- * Das ist der Beweis, dass feePm = 0 reihenweise Scheinchancen erzeugt. */
+ * Das ist der Beweis, dass feePm = 0 reihenweise Scheinchancen erzeugt.
+ *
+ * NACHGEZOGEN am 11.8.2026 spaet: mit der BELEGTEN Formel (Satz*p*(1-p)
+ * statt Satz*min(p,1-p)) ist die Gebuehr rund halb so gross, aus -0,52 %
+ * werden -0,04 %. Die REGEL bleibt unveraendert gueltig — die Zeile kippt
+ * weiterhin von Plus auf Minus, nur knapper. Der alte Wert war nie falsch
+ * gemessen, er stand nur auf der falschen Formel. */
 
-var ohne = R.pmGegenBf({ pmPreis: 0.49, pmSatz: 0, pmExponent: 1, bfQuote: 2.03, bfGebuehr: 0.05 });
-var mit4 = R.pmGegenBf({ pmPreis: 0.49, pmSatz: 0.04, pmExponent: 1, bfQuote: 2.03, bfGebuehr: 0.05 });
+var ohne = R.pmGegenBf({ pmPreis: 0.49, pmSatz: 0, bfQuote: 2.03, bfGebuehr: 0.05 });
+var mit4 = R.pmGegenBf({ pmPreis: 0.49, pmSatz: 0.04, bfQuote: 2.03, bfGebuehr: 0.05 });
 
 nah('Scheinchance ohne PM-Gebuehr: +0.46 %', ohne.rendite, 0.46, 0.01);
 ok('... und wird faelschlich als Arbitrage gemeldet', ohne.istArbitrage === true);
-nah('Mit 4 % PM-Gebuehr: -0.52 %',           mit4.rendite, -0.52, 0.01);
+nah('Mit 4 % PM-Gebuehr: -0.04 %',           mit4.rendite, -0.038, 0.01);
+ok('... die Regel traegt weiter: aus Plus wird Minus',
+   ohne.rendite > 0 && mit4.rendite < 0);
 ok('... und ist korrekt KEINE Arbitrage',    mit4.istArbitrage === false);
 
 var unbekannt = R.pmGegenBf({ pmPreis: 0.49, pmExponent: 1, bfQuote: 2.03, bfGebuehr: 0.05 });
@@ -206,11 +251,19 @@ nah('Kalshi qE ohne Gebuehr p=0.50 -> 2', R.qeKalshi(0.50, 0), 2);
 ok('Kalshi qE p=0 abgewiesen', R.qeKalshi(0, 0.07) === null);
 ok('Kalshi qE p=1 abgewiesen', R.qeKalshi(1, 0.07) === null);
 
-/* Die Kalshi-Gebuehr ist bei Zweikaempfen kleiner als die von Polymarket,
- * weil p*(1-p) schneller faellt als min(p,1-p). Das gehoert gewusst. */
-ok('bei p=0.50 ist Kalshi guenstiger als Polymarket bei gleichem Satz',
-   R.gebuehrKalshi(0.50, 0.05) < R.gebuehrPm(0.50, 0.05, 1),
-   R.gebuehrKalshi(0.50, 0.05) + ' gegen ' + R.gebuehrPm(0.50, 0.05, 1));
+/* FRUEHER stand hier: "bei p=0,50 ist Kalshi guenstiger als Polymarket",
+ * weil p*(1-p) schneller faellt als min(p,1-p). Das galt nur, solange
+ * Polymarket falsch mit min(p,1-p) gerechnet wurde.
+ *
+ * Seit die Anbieterdoku vorliegt, ist es EINE Formel fuer beide Buecher:
+ * Gebuehr = Satz * p * (1-p). Bei gleichem Satz kostet Kalshi also
+ * GENAU DASSELBE wie Polymarket; unterschiedlich sind nur die Saetze
+ * (Kalshi 7 %, Polymarket 4 bis 7 % je Marktart). */
+nah('bei gleichem Satz kosten Kalshi und Polymarket exakt gleich viel',
+    R.gebuehrKalshi(0.50, 0.05), R.gebuehrPm(0.50, 0.05));
+ok('mit den ECHTEN Saetzen ist Polymarket im Sport guenstiger als Kalshi',
+   R.gebuehrPm(0.50, R.pmSatzFuer('fussball')) < R.gebuehrKalshi(0.50, R.kalshiSatzFuer('KXCLUBFGAME')),
+   R.gebuehrPm(0.50, 0.05) + ' gegen ' + R.gebuehrKalshi(0.50, 0.07));
 
 /* ---------- Polymarket gegen Kalshi ----------
  * Zwei binaere Maerkte auf GEGENSAETZLICHE Ausgaenge desselben Ereignisses. */

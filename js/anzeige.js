@@ -683,10 +683,17 @@
             : '') + '</span>') +
       (f.max_einsatz === null || f.max_einsatz === undefined
         ? '<span class="acht">Liquidität nicht messbar</span>'
-        : '<span>Liquidität: hier passen <b>' + geld(f.max_einsatz) +
-          '</b> hinein' +
-          (Number(f.max_einsatz) < 100 ? ' — das ist die reale Tiefe des dünneren Buches, keine Skala' : '') +
-          '</span>') +
+        : '<span title="Gezaehlt wird NUR das Geld auf der BESTEN Preisstufe beider Buecher. Dahinter liegt mehr, aber zu schlechteren Kursen - und mit jeder Stufe faellt die Rendite. Wer mehr setzt, setzt zu einem anderen Preis.">' +
+          'Liquidität: <b>' + geld(f.max_einsatz) + '</b> zur gezeigten Rendite' +
+          (f.engstelle
+            ? ' &middot; Engstelle: <b>' + txt(f.engstelle.name) + '</b> mit ' + geld(f.engstelle.geld) +
+              ' auf der besten Stufe'
+            : '') +
+          '</span>' +
+          /* Die Frage "warum nur ein paar hundert Euro?" beantwortet sich
+           * nicht aus der Zahl allein — sie braucht den Satz dazu. */
+          '<span class="acht" title="Beispiel: liegen auf der besten Stufe 200 EUR und eine Stufe tiefer 5000, kannst du die 5000 zwar setzen, aber nicht mehr zu dieser Rendite - die naechste Stufe ist teurer.">' +
+          'nur erste Preisstufe — dahinter mehr Geld, aber schlechtere Kurse</span>') +
       pufferText(f) +
       '<span>' + (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' auf 100 Einsatz</span>' +
       '<span>beste bisher ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span>' +

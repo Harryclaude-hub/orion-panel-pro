@@ -1037,6 +1037,120 @@ liegt jetzt fertig auf der Platte. **Starten muss ihn ein Mensch.**
 
 ---
 
+## 8f. Nachtrag 11. August, Nacht — DIE GEBÜHREN SIND BELEGT
+
+Der Auftraggeber hat die Gebührenordnungen aller vier Bücher beschafft.
+Damit ist der **größte offene Punkt des Projekts aufgelöst** — und er war
+ein Rechenfehler zu unseren Ungunsten.
+
+### Polymarket: wir haben die DOPPELTE Gebühr gerechnet
+
+Anbieterdoku (docs.polymarket.com/Fees), wörtlich:
+
+```
+fee = C × feeRate × p × (1 - p)
+```
+
+Das Programm rechnete `Satz × min(p, 1-p)`. Bei p = 0,50 also 0,025 je
+Anteil statt 0,0125. **Der monatelange Widerspruch („API sagt Exponent 1,
+Quellen sagen die Hälfte") ist entschieden: die Quellen hatten recht.** Der
+Exponent kommt in der Anbieterformel überhaupt nicht vor; unsere Funktion
+nimmt ihn nur noch entgegen und ignoriert ihn.
+
+Gegengerechnet an der Tabelle der Doku, jede Zeile ein eigener Test: Sport,
+100 Anteile zu 0,50 → 1,25 USD. Krypto → 1,75. Politik → 1,00. Rand 0,99 →
+0,05. Alles trifft.
+
+**Sätze je Marktart** (galt bisher pauschal 7 % als Rückfall):
+
+| Marktart | Satz | Bereiche bei uns |
+|---|---|---|
+| Krypto | 7 % | krypto |
+| Sport, Wirtschaft, Kultur, Wetter, sonstige | 5 % | alle Sportbereiche, welt |
+| Finanzen, Politik, Technik | 4 % | politik, tech |
+| **Geopolitik** | **0 %** | — noch kein Bereich |
+
+Nur **Taker** zahlen. Wer zum Briefkurs kauft, ist Taker — also wir.
+
+### Kalshi: unsere Rechnung war richtig, aber neun Serien sind gratis
+
+Gebührenordnung (PDF vom 7. Juli 2026), das PDF war nicht auslesbar und
+wurde über die eingebetteten Schriftschlüssel entziffert:
+
+```
+Taker: fees = round up(M × 0.07 × C × P × (1-P))
+Maker: fees = round up(M × 0.0175 × C × P × (1-P)),  M dort 0
+```
+
+M ist der Multiplikator der Serie; ohne Eintrag in der Sondertabelle gilt 1.
+**Unsere Sport-Serien stehen NICHT in der Tabelle** — 7 % bestätigt.
+Nachgerechnet an Kalshis eigener Tabelle: p = 0,50 → 1,75 je 100, p = 0,20
+→ 1,12. Trifft.
+
+**Neu und wertvoll: neun Serien tragen M = 0 und sind gebührenfrei** —
+`KXBTCY`, `KXETHY`, `KXCITRINI`, `KXDOED`, `KXELECTIRAN`,
+`KXGAMBLINGREPEAL`, `KXGREENLAND`, `KXLAYOFFSYINFO`, `KXPAHLAVIHEAD`. Ein
+Buch ohne Gebühr ist bei 1,3 % Abstand kein weiteres Buch, sondern ein
+anderer Rechenfall — dieselbe Logik wie bei SX Bet. Sie stehen namentlich
+im Code und werden mit 0 % gerechnet.
+
+Wir rechnen ungerundet weiter; Kalshi rundet je Order auf, der Fehler
+liegt unter einem Cent je Order.
+
+### Smarkets: 2 % bestätigt, Schwellen der anderen Tarife stehen jetzt da
+
+Aus der Commission FAQ: Standard **2 %** auf den Nettogewinn **je Markt**,
+bei Verlust in einem Markt fällt nichts an. Das war bisher als „nicht
+gemessen" gekennzeichnet — jetzt belegt. Dazu die Schwellen, damit man
+merkt, wann man hineinrutscht: **1 % Pro** ab 1500 Wetten oder 1 Mio £
+Einsatz je Monat (muss gewählt werden), **3 % Select** ab 25 000 £
+Nettogewinn in 12 Monaten.
+
+### Betfair-Seite = ORBIT, und Orbit nimmt 3 %
+
+Der wichtigste praktische Punkt. betfair.com ist aus Österreich gesperrt,
+**jeder Betfair-Link dieser Seite zeigt auf Orbit**, und dort wird gesetzt.
+Orbit nimmt laut eigener Doku **pauschal 3 %** auf den Nettogewinn je
+Markt, keine Premium-Gebühr, 0 % auf Verluste.
+
+Bis heute rechnete diese Seite mit dem 7-%-Rückfall — **mehr als das
+Doppelte**. Betfairs eigener `marketBaseRate` gilt nur für ein direktes
+Betfair-Konto und wird nur noch mitgeführt (`bfEigen`).
+
+### Was das zusammen ausmacht, gemessen
+
+Probelauf Fußball direkt nach dem Deploy, 39 Paare: die beste Zeile steht
+bei **+0,40 %** (`sm>ka`, Boca Juniors). Vor der Korrektur war die beste
+Zeile des gleichen Bereichs negativ. Der Abstand zwischen den Büchern hat
+sich nicht geändert — nur rechnen wir die Gebühr nicht mehr doppelt.
+
+**Das ändert den Befund über allem NICHT:** 1,3 % Abstand, und die
+Gebühren fressen den größten Teil. Aber die Zeilen stehen jetzt dort, wo
+sie hingehören, und die Schwelle von 3 % ist damit ehrlich messbar.
+
+### Warum „maximaler Einsatz" nur ein paar hundert Euro sagt
+
+Gefragt und beantwortet, weil die Zahl sonst falsch verstanden wird:
+`max_einsatz` ist **das Geld auf der BESTEN Preisstufe beider Bücher**,
+nicht die Tiefe des Marktes. Dahinter liegt fast immer mehr — aber zu
+schlechteren Kursen, und mit jeder Stufe fällt die Rendite; ein bis zwei
+Stufen tiefer ist die Arbitrage regelmäßig weg. Begrenzend ist immer die
+dünnere der beiden Seiten; die Karte nennt sie jetzt beim Namen
+(**Engstelle**, `daten.js` → `engstelleVon`).
+
+Dazu kommt: Kalshi, Smarkets und Betfair liefern über ihre Schnittstellen
+**nur diese eine Stufe**. Was darunter liegt, ist damit **nicht gemessen**
+— nicht null. Nur bei Polymarket hätten wir das ganze Orderbuch; eine
+Tiefen-Treppe („wie viel bei 2 %, wie viel bei 1 %") wäre dort baubar,
+bringt aber nichts, solange die Gegenseite nur eine Stufe zeigt.
+
+**Wer ein paar tausend Euro setzen will, braucht ein Buch mit echter
+Tiefe** — und das ist bislang genau eines: Betfair über Orbit, gemessen
+2213 € auf einer einzigen Stufe gegen 2,94 € bei Smarkets. Das ist der
+zweite Grund, warum Build 19 auf dem Laptop laufen muss.
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand

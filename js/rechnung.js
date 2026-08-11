@@ -66,36 +66,101 @@
     return laySize * (layQuote - 1);
   }
 
-  /* Polymarket.
-   * Gebuehr je Anteil, preisabhaengig:  Gebuehr = Satz * min(p, 1-p)^exponent
-   * danach:                             qE = (1 - Gebuehr) / p
-   * Wer zum Briefkurs kauft ist immer Taker und zahlt.
-   * Die Gebuehr ist bei p rund 0,50 am hoechsten, also genau bei Zweikaempfen. */
-  function gebuehrPm(preis, satz, exponent) {
+  /* ---------- Polymarket ----------
+   *
+   * BELEGT am 11.8.2026 spaet abends aus der Anbieterdoku (docs.polymarket.com
+   * /Fees), damit ist der monatelange Widerspruch AUFGELOEST:
+   *
+   *     Gebuehr = C * Satz * p * (1 - p)          je Anteil: Satz * p * (1-p)
+   *
+   * KEIN Exponent, und NICHT min(p, 1-p). Bis heute rechnete das Programm
+   * `Satz * min(p,1-p)` — bei p = 0,50 also 0,025 je Anteil statt der
+   * echten 0,0125. Das war rund die DOPPELTE Gebuehr; die Sekundaerquellen,
+   * die "die Haelfte" nannten, hatten recht. Gegenprobe an der Tabelle der
+   * Anbieterdoku: Sport, 100 Anteile zu 0,50 -> 1,25 USD. 0,05*0,5*0,5*100
+   * = 1,25. Stimmt. Auch die Randwerte stimmen (0,99 -> 0,05).
+   *
+   * Danach wie gehabt: qE = (1 - Gebuehr) / p
+   * Nur TAKER zahlen; wer zum Briefkurs kauft, IST Taker.
+   *
+   * Der dritte Parameter (frueher `exponent`) wird ABSICHTLICH ignoriert und
+   * nur noch angenommen, damit alte Aufrufe nicht still etwas anderes
+   * bedeuten. Die API meldet zwar weiterhin exponent: 1, in der Formel des
+   * Anbieters kommt er aber nicht vor. */
+  function gebuehrPm(preis, satz) {
     if (!istZahl(preis) || preis <= 0 || preis >= 1) return null;
     var s = gebuehrSicher(satz);
-    var e = istZahl(exponent) && exponent > 0 ? exponent : 1;
-    return s * Math.pow(Math.min(preis, 1 - preis), e);
+    return s * preis * (1 - preis);
   }
 
-  function qePm(preis, satz, exponent) {
+  function qePm(preis, satz) {
     if (!istZahl(preis) || preis <= 0 || preis >= 1) return null;
-    var g = gebuehrPm(preis, satz, exponent);
+    var g = gebuehrPm(preis, satz);
     if (g === null) return null;
     var qe = (1 - g) / preis;
     return qe > 1 ? qe : null;
   }
 
-  /* Kalshi.
-   * Gebuehr je Kontrakt, preisabhaengig, aber anders geformt als bei
-   * Polymarket:  Gebuehr = Satz * p * (1 - p)
-   * Kalshi rundet je Order auf den naechsten Cent AUF. Das ist zu unseren
-   * Ungunsten, also wird nicht abgerundet gerechnet.
-   * Veroeffentlichter Regelsatz: 7 %. Einzelne Serien liegen darunter,
-   * aber ein zu hoch angesetzter Satz erzeugt hoechstens eine verpasste
-   * Chance, ein zu niedriger eine erfundene.
-   * Die Gebuehr ist bei p = 0,50 am hoechsten, genau wie bei Polymarket. */
+  /* Die Taker-Saetze je Marktart, aus derselben Quelle. Sie gelten, wenn
+   * ein Markt keinen eigenen feeSchedule.rate mitliefert — vorher fiel ein
+   * solcher Markt auf 7 % zurueck, was fuer Sport um 40 % zu hoch war.
+   * Geopolitik ist ausdruecklich GEBUEHRENFREI. */
+  var PM_SATZ = {
+    krypto: 0.07,
+    sport: 0.05, wirtschaft: 0.05, kultur: 0.05, wetter: 0.05, sonst: 0.05,
+    finanz: 0.04, politik: 0.04, tech: 0.04,
+    geopolitik: 0
+  };
+
+  /* Bereich des Scanners -> Marktart bei Polymarket. */
+  var PM_ART_JE_BEREICH = {
+    fussball: 'sport', tennis: 'sport', basketball: 'sport', baseball: 'sport',
+    football: 'sport', eishockey: 'sport', golf: 'sport', cricket: 'sport',
+    mma: 'sport', motorsport: 'sport', spielerwetten: 'sport',
+    lol: 'sport', valorant: 'sport', esport: 'sport',
+    krypto: 'krypto', politik: 'politik', wirtschaft: 'wirtschaft',
+    tech: 'tech', kultur: 'kultur', wetter: 'wetter', welt: 'sonst'
+  };
+
+  function pmSatzFuer(bereich) {
+    var art = PM_ART_JE_BEREICH[String(bereich || '')];
+    if (!art) return GEBUEHR_UNBEKANNT;          // unbekannt bleibt teuer
+    return PM_SATZ[art];
+  }
+
+  /* ---------- Kalshi ----------
+   *
+   * BELEGT aus der Gebuehrenordnung (PDF, Stand 7. Juli 2026):
+   *
+   *     Taker: fees = round up(M * 0.07 * C * P * (1-P))
+   *     Maker: fees = round up(M * 0.0175 * C * P * (1-P)),  M dort 0
+   *
+   * M ist der Multiplikator der Serie; ohne Eintrag in der Sondertabelle
+   * gilt 1. Unsere Sport-Serien (KXCLUBFGAME, KXLOLGAME, KXMLBGAME, …)
+   * stehen NICHT in der Tabelle, also M = 1 und Satz 7 %. Das bestaetigt,
+   * womit hier bisher gerechnet wurde.
+   *
+   * NEU und wertvoll: NEUN Serien haben M = 0, sind also GEBUEHRENFREI.
+   * Ein Buch ohne Gebuehr ist bei 1,3 % Abstand kein weiteres Buch, sondern
+   * ein anderer Rechenfall — deshalb stehen sie hier namentlich.
+   *
+   * Kalshi rundet je Order AUF. Wir rechnen ungerundet weiter: das ist
+   * minimal zu guenstig, aber der Fehler liegt unter einem Cent je Order
+   * und waere bei einer Rundung je Anteil grob falsch. */
   var KALSHI_SATZ = 0.07;
+  var KALSHI_MAKER_SATZ = 0.0175;
+  var KALSHI_OHNE_GEBUEHR = [
+    'KXBTCY', 'KXETHY', 'KXCITRINI', 'KXDOED', 'KXELECTIRAN',
+    'KXGAMBLINGREPEAL', 'KXGREENLAND', 'KXLAYOFFSYINFO', 'KXPAHLAVIHEAD'
+  ];
+
+  function kalshiSatzFuer(serie) {
+    var s = String(serie || '').toUpperCase();
+    for (var i = 0; i < KALSHI_OHNE_GEBUEHR.length; i++) {
+      if (s.indexOf(KALSHI_OHNE_GEBUEHR[i]) === 0) return 0;
+    }
+    return KALSHI_SATZ;
+  }
 
   function gebuehrKalshi(preis, satz) {
     if (!istZahl(preis) || preis <= 0 || preis >= 1) return null;
@@ -110,6 +175,31 @@
     var qe = (1 - g) / preis;
     return qe > 1 ? qe : null;
   }
+
+  /* ---------- Boersen: Kommission auf den Nettogewinn ----------
+   *
+   * SMARKETS, belegt aus der Anbieterdoku (Commission FAQ):
+   *   Standard 2 % auf den Nettogewinn JE MARKT. Bei Verlust in einem Markt
+   *   faellt keine Kommission an.
+   *   1 % Pro-Tarif:    ab 1500 Wetten ODER 1 Mio GBP Einsatz je Monat
+   *                     (muss ausdruecklich gewaehlt werden)
+   *   3 % Select-Tarif: fuer sehr profitable Konten ab 25 000 GBP
+   *                     Nettogewinn in den vorangegangenen 12 Monaten
+   *   Wer in einen anderen Tarif rutscht, aendert KONFIG.smarketsGebuehr.
+   *
+   * ORBIT EXCHANGE, belegt: pauschal 3 % auf den Nettogewinn je Markt,
+   *   keine Premium-Gebuehr, 0 % auf verlorene Wetten.
+   *
+   *   Das ist der Satz, der fuer UNS gilt: betfair.com ist aus Oesterreich
+   *   gesperrt, alle Betfair-Links dieser Seite fuehren auf Orbit, und dort
+   *   wird gesetzt. Betfairs eigener marketBaseRate (2 bis 7 %) gilt nur
+   *   fuer ein direktes Betfair-Konto und ist deshalb nur noch Anzeige.
+   *   Bis heute rechnete das Programm die Betfair-Seite mit 7 % Rueckfall —
+   *   also mehr als das Doppelte des echten Satzes. */
+  var SMARKETS_SATZ = 0.02;
+  var SMARKETS_PRO = 0.01;
+  var SMARKETS_SELECT = 0.03;
+  var ORBIT_SATZ = 0.03;
 
   /* Zwei binaere Boersenmaerkte auf GEGENSAETZLICHE Ausgaenge desselben
    * Ereignisses. Polymarket "Gewinnt X?" JA gegen Kalshi "Gewinnt X?" NEIN.
@@ -380,7 +470,15 @@
     maxHaftung: maxHaftung,
     gebuehrPm: gebuehrPm,
     qePm: qePm,
+    PM_SATZ: PM_SATZ,
+    pmSatzFuer: pmSatzFuer,
     KALSHI_SATZ: KALSHI_SATZ,
+    KALSHI_MAKER_SATZ: KALSHI_MAKER_SATZ,
+    KALSHI_OHNE_GEBUEHR: KALSHI_OHNE_GEBUEHR,
+    kalshiSatzFuer: kalshiSatzFuer,
+    SMARKETS_PRO: SMARKETS_PRO,
+    SMARKETS_SELECT: SMARKETS_SELECT,
+    ORBIT_SATZ: ORBIT_SATZ,
     gebuehrKalshi: gebuehrKalshi,
     qeKalshi: qeKalshi,
     pruefe: pruefe,

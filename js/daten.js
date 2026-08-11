@@ -279,6 +279,34 @@
         live.forEach(function (f) { f.zu_duenn = zuDuenn(f); });
         verlauf.forEach(function (f) { f.zu_duenn = zuDuenn(f); });
 
+        /* WELCHE SEITE BEGRENZT? — die haeufigste Frage zum max. Einsatz.
+         *
+         * max_einsatz ist min(Geld1/Anteil1, Geld2/Anteil2). Genau eine der
+         * beiden Seiten erzwingt dieses Minimum, und das ist die Engstelle.
+         * Ohne sie steht dort nur "hier passen 94 Euro hinein" und niemand
+         * weiss, WO es klemmt und ob sich daran etwas aendern laesst.
+         *
+         * WICHTIG und der eigentliche Grund fuer kleine Betraege: gezaehlt
+         * wird nur das Geld auf der BESTEN Preisstufe. Dahinter liegt in
+         * der Regel mehr — aber zu schlechteren Kursen, und mit jeder
+         * Stufe faellt die Rendite. Bei Kalshi, Smarkets und Betfair
+         * liefert die Schnittstelle ohnehin nur diese eine Stufe; was
+         * darunter liegt, ist NICHT GEMESSEN, nicht null. */
+        function engstelleVon(f) {
+          var g1 = Number(f.pm_menge), g2 = Number(f.gegen_menge);
+          var s1 = Number(f.einsatz_1), s2 = Number(f.einsatz_2);
+          if (!isFinite(g1) || !isFinite(g2) || !(s1 > 0) || !(s2 > 0)) return null;
+          var moeglich1 = g1 / (s1 / 100);
+          var moeglich2 = g2 / (s2 / 100);
+          var erste = moeglich1 <= moeglich2;
+          var buch = erste ? (f.buch_1 || 'polymarket') : (f.buch || 'betfair');
+          var k = (K.buecher || {})[buch] || {};
+          return { buch: buch, name: k.name || buch, geld: erste ? g1 : g2,
+                   gesamt: erste ? moeglich1 : moeglich2 };
+        }
+        live.forEach(function (f) { f.engstelle = engstelleVon(f); });
+        verlauf.forEach(function (f) { f.engstelle = engstelleVon(f); });
+
         /* Was tatsaechlich an Gewinn herauskaeme, in GELD — nicht in Prozent.
          * null heisst "nicht bekannt", nicht "null Euro". */
         function echterGewinn(f) {

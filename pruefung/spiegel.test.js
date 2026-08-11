@@ -249,10 +249,19 @@ async function main() {
                      [null, NaN, 0, 9, 10, 4032, 5291, 9901, 9999]),
     qeBack: paareVon(ZAHLEN, SAETZE),
     qeLay: paareVon(ZAHLEN, SAETZE),
-    qePm: paareVon(ZAHLEN, SAETZE).map(([p, s]) => [p, s, 1])
+    /* Der dritte Parameter ist seit dem 11.8.2026 bedeutungslos (die
+     * Anbieterformel kennt keinen Exponenten). Er wird trotzdem
+     * mitgeschickt: beide Spiegel muessen ihn GLEICH ignorieren. */
+    qePm: paareVon(ZAHLEN, SAETZE)
+      .concat(paareVon(ZAHLEN, SAETZE).map(([p, s]) => [p, s, 1]))
       .concat(paareVon(ZAHLEN, SAETZE).map(([p, s]) => [p, s, 2]))
       .concat([[0.5, 0.02, null], [0.5, 0.02, 0], [0.5, 0.02, -1], [0.5, 0.02, NaN]]),
-    gebuehrPm: paareVon(ZAHLEN, SAETZE).map(([p, s]) => [p, s, 1]),
+    gebuehrPm: paareVon(ZAHLEN, SAETZE)
+      .concat(paareVon(ZAHLEN, SAETZE).map(([p, s]) => [p, s, 1])),
+    pmSatzFuer: ['fussball', 'krypto', 'politik', 'tech', 'welt', 'spielerwetten',
+                 'quatsch', '', null, undefined].map(x => [x]),
+    kalshiSatzFuer: ['KXCLUBFGAME', 'KXLOLGAME', 'KXBTCY', 'KXETHY-26DEC31',
+                     'kxbtcy', 'KXGREENLAND', 'XKXBTCY', '', null, undefined].map(x => [x]),
     qeKalshi: paareVon(ZAHLEN, SAETZE),
     gebuehrKalshi: paareVon(ZAHLEN, SAETZE),
     pruefe: paareVon([null, NaN, 1, 1.0001, 1.5, 2, 2.5, 100], [null, NaN, 1, 1.0001, 1.5, 2, 2.5, 100])

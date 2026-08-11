@@ -206,6 +206,37 @@ Rendite:                     (1/inv − 1) · 100 %</pre>
   <pre>Weg 1 (lay):   JA bei Polymarket kaufen   +   bei Betfair dagegenhalten
 Weg 2 (back):  NEIN bei Polymarket kaufen +   bei Betfair darauf setzen</pre>
 
+  <h3>Die Gebührensätze — seit 11.08.2026 alle vier belegt</h3>
+  <table>
+    <tr><th>Buch</th><th>Satz</th><th>Form</th><th>Quelle</th></tr>
+    <tr><td>Polymarket</td><td>5 % Sport · 7 % Krypto · 4 % Politik/Technik · 0 % Geopolitik</td>
+        <td><code>Satz × p × (1−p)</code> je Anteil, nur Taker</td><td>Anbieterdoku</td></tr>
+    <tr><td>Kalshi</td><td>7 % (neun Serien: 0 %)</td>
+        <td><code>M × 0,07 × p × (1−p)</code> je Kontrakt</td><td>Gebührenordnung 07.07.2026</td></tr>
+    <tr><td>Smarkets</td><td>2 % · Pro 1 % · Select 3 %</td>
+        <td>Kommission auf den Nettogewinn je Markt</td><td>Commission FAQ</td></tr>
+    <tr><td>Betfair <b>über Orbit</b></td><td>3 % pauschal</td>
+        <td>Kommission auf den Nettogewinn je Markt</td><td>Orbit-Doku</td></tr>
+  </table>
+  <p class="leise">
+    Zwei Korrekturen, beide zu unseren Gunsten: Polymarket wurde bis dahin mit
+    <code>Satz × min(p, 1−p)</code> gerechnet — das ist bei p = 0,50 die <b>doppelte</b>
+    Gebühr. Und die Betfair-Seite lief auf dem 7-%-Rückfall, obwohl gesetzt wird, wo der
+    Link hinführt: bei Orbit, für 3 %. Der Abstand zwischen den Büchern hat sich dadurch
+    nicht geändert, nur die Rechnung stimmt jetzt.
+  </p>
+
+  <h3>Warum „maximaler Einsatz" oft nur dreistellig ist</h3>
+  <p>
+    Die Zahl ist <b>das Geld auf der besten Preisstufe beider Bücher</b>, nicht die Tiefe
+    des Marktes. Dahinter liegt fast immer mehr — aber zu schlechteren Kursen, und mit
+    jeder Stufe fällt die Rendite; ein, zwei Stufen tiefer ist die Arbitrage weg.
+    Begrenzend ist immer die dünnere Seite; die Karte nennt sie als <b>Engstelle</b>.
+    Kalshi, Smarkets und Betfair liefern ohnehin nur diese eine Stufe — was darunter
+    liegt, ist <b>nicht gemessen</b>, nicht null. Wer Tausende setzen will, braucht ein
+    Buch mit echter Tiefe: gemessen sind das 2213 € bei Betfair gegen 2,94 € bei Smarkets.
+  </p>
+
   <h3>Gebühren, die Regel gegen Scheinchancen</h3>
   <table>
     <tr><th>Quelle</th><th>Satz</th></tr>
