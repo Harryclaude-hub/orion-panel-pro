@@ -1,0 +1,24 @@
+-- Waechter: verwaiste Zeilen und Verdachtsfaelle
+-- Angelegt am 11.8.2026. Laeuft als pg_cron-Job 'orion-waechter-takt',
+-- jede Minute, komplett in der Datenbank - kein Deploy, kein Heim-PC.
+--
+-- ANLASS: Am 11.8. standen 82 Zeilen auf 'live', der Scanner fand aber nur
+-- 40. Der Scanner setzt nicht mehr gefundene Zeilen ueber eine URL mit ALLEN
+-- Schluesseln auf 'vorbei'; die wird zu lang und schlaegt STILL fehl
+-- (beendet=0, keine Fehlermeldung). Die Leichen blieben stehen und sahen auf
+-- der Website aus wie aktuelle Funde. Ein Teil der vom Auftraggeber
+-- gemeldeten Fehlpaarungen waren genau solche Leichen.
+--
+-- orion_verwaiste_beenden() geht nach ZEIT statt nach Schluesselliste und
+-- kann deshalb nicht zu lang werden.
+--
+-- orion_verdacht() meldet fuenf Muster. Es sind VERDACHTE, keine Urteile:
+--   a) Zuordnung <= 0.55  - genau hier hing der 'Al'-Fall (0,50 bei
+--      Schwelle 0,50: ein einziges gemeinsames Wort genuegte)
+--   b) hohe Rendite ohne bekannte Menge
+--   c) Rendite >= 5 %     - war bisher IMMER ein Fehler, nie eine Chance
+--   d) Partie vorbei, Zeile noch live
+--   e) Chance ohne ausrechenbaren Gebuehrenbetrag
+--
+-- Ergebnis geht in orion_wache. Erster Lauf: 7 verwaiste beendet,
+-- 0 Verdachtsfaelle, live 82 -> 40.
