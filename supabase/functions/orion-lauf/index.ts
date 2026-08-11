@@ -487,13 +487,30 @@ Deno.serve(async () => {
       }
     }
 
-    const gesehen = zeilen.map(z => z.schluessel);
-    const filter = gesehen.length ? `&schluessel=not.in.(${gesehen.map(s => '"' + s + '"').join(',')})` : '';
-    const beendetAntwort = await fetch(`${URL_SUPA}/rest/v1/orion_funde?status=eq.live${filter}`, {
+    // WURZELFIX 11.8.2026: nicht mehr gefundene Zeilen ueber eine ZEITMARKE
+    // beenden, nicht ueber eine Liste ALLER Schluessel.
+    //
+    // Vorher stand hier ?schluessel=not.in.("a","b",...) mit jedem gefundenen
+    // Schluessel. Bei 40+ Zeilen wurde die URL zu lang und die Anfrage schlug
+    // STILL fehl: beendetAntwort.ok war false, beendet = 0, KEIN Fehler
+    // geworfen. Die nicht mehr gefundenen Zeilen blieben auf 'live' stehen und
+    // sahen auf der Website aus wie aktuelle Funde. Der Waechter raeumte sie
+    // nachtraeglich ab - jetzt entstehen sie gar nicht erst.
+    //
+    // Jede in DIESEM Lauf geschriebene Zeile traegt zuletzt_gesehen von NACH
+    // `jetzt` (in schreibe() mit new Date() gesetzt). Wird eine Zeile wieder
+    // gefunden, hebt merge-duplicates ihren Zeitstempel an. Nicht mehr
+    // gefundene Zeilen behalten ihren alten, aus einem frueheren Lauf, und der
+    // liegt vor `jetzt`. Also: alles vor der Laufmarke ist verwaist. Die URL
+    // ist jetzt fest und kurz und kann nicht mehr zu lang werden.
+    const laufMarke = new Date(jetzt).toISOString();
+    const beendetAntwort = await fetch(
+      `${URL_SUPA}/rest/v1/orion_funde?status=eq.live&zuletzt_gesehen=lt.${laufMarke}`, {
       method: 'PATCH', headers: { ...dbKopf(), prefer: 'return=representation' },
       body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: 'nicht mehr gefunden' })
     });
     const beendet = beendetAntwort.ok ? (await beendetAntwort.json()).length : 0;
+    if (!beendetAntwort.ok) throw new Error('Aufraeumen fehlgeschlagen ' + beendetAntwort.status);
 
     await fetch(`${URL_SUPA}/rest/v1/orion_funde?status=eq.live&endet_am=lt.${new Date().toISOString()}`, {
       method: 'PATCH', headers: { ...dbKopf(), prefer: 'return=minimal' },
