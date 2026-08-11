@@ -1151,6 +1151,102 @@ zweite Grund, warum Build 19 auf dem Laptop laufen muss.
 
 ---
 
+## 8g. Nachtrag 12. August, nachts — Release, Linkprüfung, Nachrechnung
+
+### Build 19 ist veröffentlicht
+
+Die exe liegt als Release **`bridge-v19`** in DIESEM Repo. Geprüft: der
+Direktlink antwortet mit HTTP 200 und 92 500 992 Bytes, exakt der gebauten
+Datei. `version.json` und beide Download-Knöpfe auf `bridge-setup.html`
+zeigen darauf; live bestätigt.
+
+**Dabei fiel eine stille Falle auf:** der Knopf zeigte auf ein Release des
+**Vorgänger-Projekts** (`orion-panel`, Tag `bridge-v1`) und lieferte eine
+exe vom 8. August. Wer sich von der Website die „neueste" Bridge holte,
+bekam also eine alte.
+
+### Welche Bridge läuft — und was das bedeutet
+
+Gemessen: es läuft **Build 18 (Fassung 3.7)** aus
+`C:\Users\Home\Downloads\betfair-bridge.exe`. Sie lädt frisch hoch (3608
+Märkte aus einem Katalog von 7361, Alter unter einer Minute), aber
+**0 Märkte tragen eine Sportart** → `orion_bf_maerkte(12,'fussball')`
+liefert **0** → **Betfair wird derzeit gelesen, aber nicht gepaart.**
+
+Das ist gewollt (unbekannter Bereich = nicht paaren) und kein Fehler, es
+heißt nur: solange 3.7 läuft, sind alle Zahlen im Panel **ohne Betfair**.
+Die Build-19-Datei liegt startbereit in `C:\Users\Home\orion-bridge\`,
+die Zugangsdatei daneben ist vollständig ausgefüllt.
+
+### „Ist die Arbitrage wirklich eine Arbitrage?" — vierter, unabhängiger Weg
+
+Alle Live-Zeilen wurden **komplett neu in SQL gerechnet**, aus den
+gespeicherten Rohwerten (Preis, Quote, Gebührensatz, Seite), ohne eine
+Zeile JS oder TS anzufassen:
+
+```
+29 Zeilen geprüft
+  Rendite stimmt          29/29     größte Abweichung 0.000000
+  Kehrwertsumme stimmt    29/29
+  Einsatzaufteilung = 100 29/29
+  Auszahlung = 100+Rendite 29/29
+  ECHTE Arbitrage (inv<1)  0/29
+```
+
+Die letzte Zeile ist die ehrliche: **die Rechnung stimmt exakt, aber gerade
+ist keine einzige Zeile eine echte Arbitrage.** Alle 29 liegen bei oder
+unter null (beste −0,15 %). Das Panel behauptet also nichts Falsches — es
+gibt schlicht nichts zu holen, solange Betfair fehlt.
+
+### Führen die Links wirklich hin? Nur einer der drei ist prüfbar
+
+37 verschiedene Links aus den Live-Zeilen über HTTP geprüft — **mit
+Kontrollproben aus erfundenen Adressen**, sonst wäre die Prüfung wertlos:
+
+| Buch | echte Links | Kontrolle (Unsinn-Adresse) | Aussage |
+|---|---|---|---|
+| Polymarket | 16/16 → HTTP 200, richtige Partie im Seitentitel | **404** | **belegt richtig** |
+| Kalshi | 9/9 → HTTP 429 | ebenfalls 429 | **nicht prüfbar** (Bot-Sperre „Vercel Security Checkpoint") |
+| Smarkets | 12/12 → HTTP 200 | **ebenfalls 200** | **Existenz nicht prüfbar** |
+
+Smarkets ist der interessante Fall: die erfundene Adresse
+`/quatsch-vs-unsinn/` liefert 200 **und baut den Unsinn sogar in den
+Seitentitel** („Quatsch Vs Unsinn | Smarkets Predictions"). Ein 200 von
+dort beweist also gar nichts — der in 8b/8c dokumentierte offene Punkt ist
+damit erneut und schärfer belegt.
+
+**Was daraus folgte, statt es auf sich beruhen zu lassen:** der Smarkets-Pfad
+trägt die Mannschaftsnamen im Klartext. Ob er auf die *richtige Partie*
+zeigt, ist deshalb ohne Netz prüfbar — gegen den Titel der Zeile, mit
+derselben unabhängigen SQL-Wortzerlegung wie beim Nachrechnen der
+Zuordnung. Neue Wächterregel in **`orion_verdacht_zusatz()`** (eigene
+Funktion, damit die 19 gewachsenen Muster unangetastet bleiben).
+Ausgelöst und gegengeprüft: richtiger Link geht durch, ein vertauschter
+wird gefangen, Akzente stören nicht. Gegen die echten Daten: 20 von 20
+Smarkets-Zeilen passen, 0 Verdacht.
+
+### Was morgen zu prüfen ist, in dieser Reihenfolge
+
+1. **Steht in der Anbietertafel „Build 19"?** Wenn nicht, lief die Nacht
+   ohne Betfair und alles Weitere ist ohne Aussagekraft.
+2. **Kommen Betfair-Zeilen mit echter Tiefe?** Das ist der eigentliche
+   Test: 2213 € auf einer Stufe gegen 2,94 € bei Smarkets.
+3. **Bleibt der Chancen-Reiter leer?** Bei 3 % Schwelle ist das der
+   Normalfall. Was dort auftaucht, erst gegenprüfen — jede Zeile ab 5 %
+   war bisher eine Fehlpaarung, der Wächter markiert sie weiterhin.
+4. **Wächter grün?** `select * from orion_wache order by geprueft_am desc
+   limit 1` — `alles_gut` muss true sein.
+
+### Geplant, noch nicht gebaut
+
+Der Auftraggeber will die Bridge künftig auf einem **eigenen Laptop rund um
+die Uhr** laufen lassen, nur dafür da. Dann fällt die Einschränkung „läuft
+nur, wenn ein Fenster offen ist" weg. Für den Betrieb heißt das: die
+Frischeschwelle `KONFIG.bridgeMaxAlterS` (300 s) bleibt der Wächter über
+diesen Rechner — steht die Bridge dort, sieht man es im Panel.
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand

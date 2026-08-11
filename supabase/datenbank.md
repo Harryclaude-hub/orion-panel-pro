@@ -60,6 +60,12 @@ nach `orion_wache`. Ruft:
   Link zeigt auf falsches Buch, Einsatz-/Auszahlungs-/Gewinn-Plausibilität,
   Bereichslauf steht (je aktivem Bereich), Betfair-Sportkarte widerspricht
   den Bridge-Namen.
+- `orion_verdacht_zusatz()` — Zusatzregeln in EIGENER Funktion, damit die 19
+  gewachsenen Muster oben unangetastet bleiben. Enthält seit 12.8.: **zeigt
+  der Smarkets-Link auf die richtige Partie?** Der Pfad trägt die
+  Mannschaftsnamen im Klartext, also gegen den Titel prüfbar — ohne Netz.
+  Nötig, weil smarkets.com auf JEDEN Pfad mit 200 antwortet und den Unsinn
+  sogar in den Seitentitel schreibt; ein HTTP-Test beweist dort nichts.
 - `orion_kernwoerter(t)` / `orion_stoppwort(w)` — Wortzerlegung in SQL,
   bewusst getrennt von der JS-Fassung. Zwei unabhängige Wege.
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
