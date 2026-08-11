@@ -244,11 +244,71 @@
          * Rendite ueber der Schwelle, Menge BEKANNT, Gewinn ueber
          * KONFIG.mindestGewinn. Wer alles sehen will, setzt mindestGewinn
          * auf 0 — dann ist der Verlauf wieder so vollstaendig wie vorher. */
+        /* FEHLPAARUNG, unabhaengig nachgerechnet — auch im VERLAUF.
+         *
+         * Anlass, gemessen am 12.8.2026 nachts: von 11 Verlaufszeilen ueber
+         * 3 % waren DREI bekannte Fehlpaarungen — beide "Al"-Faelle und der
+         * League-of-Legends-Fall. Mit der neuen 3-%-Schwelle standen genau
+         * die als "die besten Funde" oben im Verlauf. Der Waechter faengt
+         * sie live, aber er sieht nur status='live'; alte Zeilen bleiben
+         * stehen wie sie sind (Geschichte wird nicht umgeschrieben).
+         *
+         * Dieselbe Regel wie im Waechter: teilen die beiden Titel kein
+         * unterscheidendes Wort, meinen sie nicht dieselbe Partie. Gerechnet
+         * mit Zuordnung.woerter, also unabhaengig von dem, was der Scanner
+         * damals als zuordnung eingetragen hat — der stand bei allen dreien
+         * auf 1,00. */
+        function fehlpaarung(f) {
+          var Z = welt.Zuordnung;
+          if (!Z || !Z.woerter) return false;
+
+          /* Weg 1: kein gemeinsames unterscheidendes Wort. */
+          var a = Z.woerter(f.titel || ''), b = Z.woerter(f.bf_partie || '');
+          if (a.length && b.length) {
+            var gemeinsam = false;
+            for (var i = 0; i < a.length; i++) if (b.indexOf(a[i]) >= 0) { gemeinsam = true; break; }
+            if (!gemeinsam) return true;
+          }
+
+          /* Weg 2: der KALSHI-LINK verraet die Serie, und die Serie verraet
+           * den Bereich. Zeigt er in einen anderen Bereich als die Zeile,
+           * ist es eine Fehlpaarung — auch wenn die Namen gleich sind.
+           *
+           * GENAU DAFUER ist dieser zweite Weg da: der Fall vom 11.8. mit
+           * 5,34 % (FSV Frankfurt gegen ROSSMANN Centaurs) teilt das Wort
+           * "Frankfurt" und rutscht durch Weg 1 hindurch. Sein Link zeigt
+           * aber auf kxlolgame — League of Legends gegen Fussball. */
+          if (Z.bereichKalshi && welt.Filter && welt.Filter.bereichVon) {
+            var eigen = welt.Filter.bereichVon(f);
+            var links = [
+              (f.buch_1 || 'polymarket') === 'kalshi' ? f.pm_link : null,
+              (f.buch || 'betfair') === 'kalshi' ? f.bf_link : null
+            ];
+            for (var j = 0; j < links.length; j++) {
+              if (!links[j]) continue;
+              var m = String(links[j]).match(/kalshi\.com\/markets\/([^\/?#]+)/i);
+              if (!m) continue;
+              var ausLink = Z.bereichKalshi(m[1].toUpperCase());
+              if (eigen && ausLink && ausLink !== eigen) return true;
+            }
+          }
+          return false;
+        }
+        live.forEach(function (f) { f.fehlpaarung = fehlpaarung(f); });
+        verlauf.forEach(function (f) { f.fehlpaarung = fehlpaarung(f); });
+        var verlaufFehlpaarungen = verlauf.filter(function (f) {
+          return f.fehlpaarung && Number(f.rendite) >= K.mindestRendite;
+        }).length;
+
         verlauf = verlauf.filter(function (f) {
           var zuletzt = Number(f.rendite);
           var beste = Number(f.beste_rendite == null ? f.rendite : f.beste_rendite);
           if (!(zuletzt >= K.verlaufMinRendite && beste >= K.verlaufMinRendite)) return false;
           if (zuletzt < K.mindestRendite) return false;
+          /* Eine Fehlpaarung haette sich NIE gelohnt — sie gehoert nicht in
+           * die Liste "was moeglich gewesen waere". Sie verschwindet aber
+           * nicht still: die Zahl steht unter dem Reiter. */
+          if (f.fehlpaarung) return false;
           /* Der Gewinn wird aus der BESTEN je gesehenen Rendite gerechnet:
            * im Verlauf zaehlt, was moeglich GEWESEN waere, nicht was am
            * Ende uebrig blieb. */
@@ -378,6 +438,11 @@
             rauschen: rauschen,
             live_gesamt: live.length,
             verlauf: verlauf.length,
+            /* Wie viele Verlaufszeilen ueber der Schwelle als Fehlpaarung
+             * ausgeschieden sind. Nie stillschweigend — die Zahl steht
+             * unter dem Reiter, sonst waere der Filter eine Falle. */
+            verlauf_fehlpaarungen: verlaufFehlpaarungen,
+            live_fehlpaarungen: live.filter(function (f) { return f.fehlpaarung; }).length,
             kalshi_alter_s: kaAlterS,
             kalshi_maerkte: ka && ka.stats ? ka.stats.maerkte : null,
             smarkets_alter_s: smAlterS,

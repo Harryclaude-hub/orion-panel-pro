@@ -1247,6 +1247,83 @@ diesen Rechner — steht die Bridge dort, sieht man es im Panel.
 
 ---
 
+## 8h. Nachtrag 12. August, 00:30 — der Verlauf log, und warum
+
+Vor dem Nachtlauf wurden **alle** Zeilen samt Links durchgegangen. Drei
+Dinge kamen heraus, die vorher niemand gesehen hatte.
+
+### 1. Die drei Fehlpaarungen standen als „beste Funde" im Verlauf
+
+Von 52 Verlaufszeilen liegen **11 über 3 %**, sieben über 5 %, die höchste
+bei 24,52 %. Seit der neuen 3-%-Schwelle sind genau das die Zeilen, die der
+Verlauf-Reiter als das Beste zeigt, was das Programm je gefunden hat. Unter
+ihnen:
+
+```
+6,20 %  Al Diraiyah vs. Al Ahli      GEGEN  Al Jazira vs. Al-Ittihad   <- andere Partie
+5,06 %  Al Shabab vs. Al Qadisiyah   GEGEN  Al Jazira vs. Al-Ittihad   <- andere Partie
+4,23 %  FSV Frankfurt vs. Eintracht  GEGEN  ROSSMANN Centaurs (LoL)    <- anderer Sport
+```
+
+**Alle drei stehen mit `zuordnung = 1,00` in der Datenbank.** Wer der
+gespeicherten Zuordnung glaubt, sieht drei perfekte Treffer.
+
+Behoben, ohne Geschichte umzuschreiben: die Anzeige rechnet die Zuordnung
+jetzt **auch im Verlauf unabhängig nach** und nimmt solche Zeilen aus der
+Liste „was sich gelohnt hätte" heraus. Gelöscht wird nichts, und
+verschwiegen auch nicht — über dem Verlauf steht, wie viele Zeilen
+ausgeschieden sind und warum.
+
+**Zwei Wege, weil einer nicht reicht** (`daten.js` → `fehlpaarung`):
+
+1. *Kein gemeinsames unterscheidendes Wort.* Fängt beide „Al"-Fälle.
+2. *Der Kalshi-Link verrät die Serie, die Serie verrät den Bereich.* Zeigt
+   er in einen anderen Bereich als die Zeile, ist es eine Fehlpaarung.
+
+Weg 2 ist nicht Zierde: der League-of-Legends-Fall **rutscht durch Weg 1
+hindurch**, weil beide Titel wirklich das Wort „Frankfurt" enthalten. Erst
+sein Link (`kalshi.com/markets/kxlolgame/…`) verrät ihn. Gegengeprüft an
+allen sechs echten Fällen: 2 gefangen, 4 richtig durchgelassen, und eine
+korrekte Kalshi-Zeile (`kxleaguescupgame`) schlägt nicht fälschlich an.
+
+### 2. Build 19 lief, aber die Anmeldung schlug fehl
+
+Um 00:12:47 gestartet, um 00:19:01 meldete er sich zum ersten Mal — mit
+`bf_ok: false`, „Benutzername oder Passwort in der Zugangsdatei ist
+falsch", Katalog 0, 0 Märkte. Der Fehler-Upload hat dabei die 4038 Märkte
+von Build 18 durch eine leere Liste ersetzt.
+
+Ursache, durch Vergleich der Zugangsdateien gefunden (nur Prüfsummen, keine
+Werte gelesen): **es gibt drei verschiedene `bridge-config.json`**, und die
+neben Build 19 trug einen **anderen Betfair-Benutzernamen**. Passwort,
+App-Key und Bridge-Token waren identisch — nur der Benutzername wich ab.
+Die dritte Datei (Desktop) unterscheidet sich in allen vier Feldern.
+
+| Ort | Zustand |
+|---|---|
+| `Downloads\bridge-config.json` | **die funktionierende** (Build 18 lief damit) |
+| `orion-bridge\bridge-config.json` | anderer Benutzername → Anmeldung scheitert |
+| `Desktop\bridge-config.json` | durchweg andere Werte, Herkunft unklar |
+
+Behoben durch Zusammenlegen statt Bearbeiten: Build 19 liegt jetzt als
+`Downloads\betfair-bridge-build19.exe` **neben der funktionierenden
+Zugangsdatei**. Keine Datei wurde überschrieben, Build 18 bleibt daneben
+liegen. Zum Starten genügt ein Doppelklick darauf.
+
+> **Lehre, die bleibt:** die Bridge liest ihre Zugangsdatei aus dem Ordner
+> der exe. Wer die exe verschiebt, wechselt damit unbemerkt die Zugangsdaten.
+> Genau das ist hier passiert.
+
+### 3. Die Links, dritter Durchgang
+
+Alle 37 Links der Live-Zeilen erneut geprüft (`pruefung/linkpruefung.js`),
+Ergebnis unverändert: Polymarket 16/16 belegt richtig (Kontrolle 404),
+Kalshi nicht prüfbar (429, Bot-Sperre), Smarkets nicht prüfbar (200 auf
+jeden Pfad). Zeilenweise stimmen Titel und beide Links überein — geprüft an
+acht Paaren einzeln, `rsljua` ↔ real-salt-lake-vs-fc-juarez und so fort.
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand

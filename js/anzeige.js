@@ -767,6 +767,14 @@
           '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +
             (buch2(f).konto ? ' · ' + txt(buch2(f).konto) : '') + '</span> ' +
           (f.veraltet ? '<span class="chip rot">Kurse veraltet</span> ' : '') +
+          /* Unabhaengig nachgerechnet, nicht vom Scanner uebernommen: teilen
+           * die beiden Titel kein unterscheidendes Wort, meinen sie nicht
+           * dieselbe Partie. Alle drei bekannten Fehlpaarungen standen mit
+           * Zuordnung 1,00 in der Datenbank — die Marke ist deshalb ein
+           * ZWEITER Weg, kein Abschreiben. */
+          (f.fehlpaarung
+            ? '<span class="chip rot" title="Die Titel beider Seiten teilen kein einziges unterscheidendes Wort. Das ist die Fehlerklasse der Faelle vom 10. und 11.08. — dort stand die Zuordnung ebenfalls auf 1,00.">FEHLPAARUNG? kein gemeinsames Wort</span> '
+            : '') +
           (f.zu_duenn ? '<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
              (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span> ' : '') +
           '<span class="chip" title="Tag: ' + txt(f.sportart) + '">' + txt(bereichText(f)) + '</span> ' +
@@ -1202,7 +1210,20 @@
       K.verlaufMinRendite.toFixed(0) + ' % erreicht hat, wird gelöscht statt aufbewahrt. ' +
       'Ein Fund landet hier, wenn er nicht mehr gefunden wird, wenn seine Partie vorbei ist, ' +
       'oder wenn er eine Stunde lang nicht mehr bestätigt wurde. Sortiert nach Beendigung, ' +
-      'mit der besten je gesehenen Rendite.</p>' + versteckt(gVerlauf.weg);
+      'mit der besten je gesehenen Rendite.</p>' +
+      /* NIE stillschweigend: die aussortierten Fehlpaarungen werden gezaehlt
+       * und benannt. Gemessen am 12.8.2026 waren es drei von elf Zeilen ueber
+       * 3 % — die beiden "Al"-Faelle und der League-of-Legends-Fall, alle mit
+       * Zuordnung 1,00 gespeichert. Ohne diesen Hinweis stuenden genau sie
+       * als die besten Funde der Geschichte da. */
+      ((e.statistik && e.statistik.verlauf_fehlpaarungen)
+        ? '<div class="warnung"><b>' + e.statistik.verlauf_fehlpaarungen +
+          ' alte Zeile(n) über der Schwelle sind hier nicht aufgeführt:</b> ihre beiden ' +
+          'Titel teilen kein einziges unterscheidendes Wort, sie meinen also nicht dieselbe ' +
+          'Partie. Das sind Fehlpaarungen aus der Zeit vor der Bereichstrennung — sie hätten ' +
+          'sich nie gelohnt. Gelöscht wird nichts, sie stehen weiter in der Datenbank.</div>'
+        : '') +
+      versteckt(gVerlauf.weg);
     if (!zVerlauf.length) {
       verlaufHtml += '<p class="leise">Noch nichts im Plus beendet.</p>';
     } else {
