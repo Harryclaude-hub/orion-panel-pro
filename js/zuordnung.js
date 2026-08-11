@@ -37,6 +37,24 @@
      * Die Schwelle anzuheben waere der falsche Eingriff gewesen: dieselbe
      * Messung zeigt richtige Paare bei 0,50 ("Independiente Medellin" gegen
      * "Ind. Medellin"), die dabei mit verloren gegangen waeren. */
+    /* ARTIKEL UND NAMENSPARTIKEL. Gemessen am 11.8.2026, weil der
+     * Auftraggeber eine Fehlpaarung fand, die genau daran hing:
+     *
+     *   Polymarket:  Al Diraiyah Saudi Club vs Al Ahli
+     *   Kalshi:      Al Jazira vs Al-Ittihad          <- ANDERES Spiel,
+     *                                                    zwei Tage spaeter
+     *
+     * Verbunden hat die beiden allein das Wort "al" - arabisch schlicht der
+     * Artikel, der in halb Westasien vor jedem Vereinsnamen steht. Bei zwei
+     * Namen mit je zwei Woertern ergibt EIN gemeinsames Wort exakt 0,50,
+     * und die Schwelle ist 0,50. Ein einziger Treffer genuegte also.
+     * Gemessen: mit "al" als Stoppwort faellt der Wert von 0,50 auf 0,00.
+     *
+     * Dieselbe Fehlerklasse wie "ec" bei Cruzeiro/Flamengo am 9.8. - die
+     * Regel dagegen gab es, sie war nur auf europaeische Namen zugeschnitten.
+     * Deshalb hier auch die romanischen Partikel, die dasselbe tun. */
+    al: 1, el: 1, la: 1, le: 1, los: 1, las: 1,
+    de: 1, del: 1, di: 1, du: 1, do: 1, da: 1, dos: 1, das: 1,
     ec: 1, cr: 1, ca: 1, ad: 1, sd: 1, mh: 1, cs: 1, ks: 1,
     nk: 1, hk: 1, bk: 1, if: 1,
 

@@ -12,6 +12,8 @@ const STOPP: Record<string, number> = {
   vs: 1, v: 1, win: 1, wins: 1, match: 1, game: 1,
   fc: 1, cf: 1, sc: 1, ac: 1, afc: 1, ss: 1, as: 1, fk: 1, cd: 1, sk: 1,
   club: 1, city: 1, united: 1, town: 1, county: 1, athletic: 1, real: 1,
+  al: 1, el: 1, la: 1, le: 1, los: 1, las: 1,
+  de: 1, del: 1, di: 1, du: 1, do: 1, da: 1, dos: 1, das: 1,
   ec: 1, cr: 1, ca: 1, ad: 1, sd: 1, mh: 1, cs: 1, ks: 1,
   nk: 1, hk: 1, bk: 1, if: 1,
   goals: 1, goal: 1, points: 1, point: 1, runs: 1, sets: 1, set: 1,
