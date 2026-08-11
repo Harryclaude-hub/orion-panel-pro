@@ -30,6 +30,41 @@
       .replace(/"/g, '&quot;');
   }
 
+  /* ---------- GELD: nie eine Zahl ohne Einheit ----------
+   *
+   * Alle Betraege im System stehen in USD: Polymarket und Kalshi rechnen so,
+   * Smarkets wird an der Quelle von GBP nach USD umgerechnet. Angezeigt wurde
+   * bisher die nackte Zahl — "max. Einsatz 94" liess offen, ob das Euro,
+   * Dollar oder eine Skala ist. Genau danach wurde gefragt.
+   *
+   * Den Kurs holt die Datenbank selbst (pg_net im Waechter); der Browser darf
+   * es nicht, api.frankfurter.dev sendet keinen CORS-Header.
+   *
+   * DREI ZUSTAENDE, nie zwei:
+   *   Kurs bekannt      ->  "81,40 €"        umgerechnet
+   *   kein Kurs         ->  "94,00 $"        ehrlich in USD, mit Einheit
+   *   Betrag unbekannt  ->  "unbekannt"      nicht 0, nicht leer
+   *
+   * Ein erfundener Kurs waere schlimmer als eine fremde Waehrung: er sieht
+   * aus wie eine Zahl, auf die man sich verlassen kann. */
+  var fxKurs = null;          // { kurs, stand, quelle } oder null
+  function setzeKurs(k) { fxKurs = (k && isFinite(Number(k.kurs))) ? k : null; }
+
+  function geld(betragUsd, stellen) {
+    var n = Number(betragUsd);
+    if (betragUsd === null || betragUsd === undefined || !isFinite(n)) return 'unbekannt';
+    var s = (stellen === undefined) ? 2 : stellen;
+    if (fxKurs) return (n * Number(fxKurs.kurs)).toFixed(s) + ' €';
+    return n.toFixed(s) + ' $';
+  }
+  /* Nur die Einheit, fuer Zeilen die selbst rechnen. */
+  function einheit() { return fxKurs ? '€' : '$'; }
+  function inEur(betragUsd) {
+    var n = Number(betragUsd);
+    if (!isFinite(n)) return null;
+    return fxKurs ? n * Number(fxKurs.kurs) : n;
+  }
+
   function dauer(sekunden) {
     if (sekunden === null || sekunden === undefined) return '?';
     var s = Math.abs(sekunden);
@@ -145,10 +180,16 @@
     var g = f.max_gewinn === null || f.max_gewinn === undefined ? null : Number(f.max_gewinn);
     /* "-54,68 Gewinn" ist Unsinn. Bei Minus ist es ein Verlust, und genau so
      * muss es dastehen — sonst liest man ueber das Vorzeichen hinweg. */
-    return '<span><b>max. ' + (e >= 1000 ? Math.round(e).toLocaleString('de-AT') : e.toFixed(0)) +
-           '</b> Einsatz möglich' + (g === null ? '' :
-             ' &rarr; ' + (g >= 0 ? '+' + g.toFixed(2) + ' Gewinn'
-                                  : g.toFixed(2) + ' Verlust')) + '</span>';
+    /* MIT EINHEIT. Vorher stand hier "max. 94 Einsatz möglich" — die nackte
+     * Zahl liess offen, ob das Euro, Dollar oder eine Skala ist. Sie war
+     * ausserdem auf ganze Zahlen gerundet, was bei 2,94 zu "3" wurde und
+     * einen Betrag von drei Euro wie eine runde Groesse aussehen liess. */
+    var eA = inEur(e);
+    return '<span><b>max. ' +
+           (eA >= 1000 ? Math.round(eA).toLocaleString('de-AT') : eA.toFixed(2)) +
+           ' ' + einheit() + '</b> Einsatz möglich' + (g === null ? '' :
+             ' &rarr; ' + (g >= 0 ? '+' + geld(g) + ' Gewinn'
+                                  : geld(g) + ' Verlust')) + '</span>';
   }
 
   /* ---------- Effektivquoten ----------
@@ -540,9 +581,9 @@
        * Gebühr zweimal ab und hält gute Funde für schlechte. */
       var gewinnNach = Number(max) * r / 100;
       var gebuehrEcht = summe * faktor;
-      hoch = '<div class="gp-fuss">Auf den handelbaren Einsatz von ' + Number(max).toFixed(2) +
-             ' hochgerechnet: <b>' + gebuehrEcht.toFixed(3) + '</b> Gebühr &middot; ' +
-             '<b>' + (gewinnNach >= 0 ? '+' : '') + gewinnNach.toFixed(3) + '</b> Gewinn, ' +
+      hoch = '<div class="gp-fuss">Auf den handelbaren Einsatz von ' + geld(max) +
+             ' hochgerechnet: <b>' + geld(gebuehrEcht, 3) + '</b> Gebühr &middot; ' +
+             '<b>' + (gewinnNach >= 0 ? '+' : '') + geld(gewinnNach, 3) + '</b> Gewinn, ' +
              'der davon übrig bleibt' +
              (gewinnNach > 0 && gebuehrEcht > gewinnNach
                ? ' — die Gebühr ist damit <b>größer als der Gewinn</b>.'
@@ -635,14 +676,14 @@
       (f.echter_gewinn === null
         ? '<span class="acht" title="Im Orderbuch steht keine Menge. Unbekannt heisst nicht unbegrenzt — es heisst, dass niemand weiss, ob hier 3 Cent oder 300 Euro zu holen sind.">Gewinn <b>unbekannt</b> — keine Menge im Buch</span>'
         : '<span' + (f.echter_gewinn >= welt.KONFIG.mindestGewinn ? ' class="gut"' : ' class="acht"') +
-          '><b>' + (f.echter_gewinn >= 0 ? '+' : '') + Number(f.echter_gewinn).toFixed(2) +
+          '><b>' + (f.echter_gewinn >= 0 ? '+' : '') + geld(f.echter_gewinn) +
           '</b> tatsächlicher Gewinn' +
           (f.echter_gewinn < welt.KONFIG.mindestGewinn
-            ? ' — unter ' + Number(welt.KONFIG.mindestGewinn).toFixed(2) + ', keine Chance'
+            ? ' — unter ' + geld(welt.KONFIG.mindestGewinn) + ', keine Chance'
             : '') + '</span>') +
       (f.max_einsatz === null || f.max_einsatz === undefined
         ? '<span class="acht">Liquidität nicht messbar</span>'
-        : '<span>Liquidität: hier passen <b>' + Number(f.max_einsatz).toFixed(2) +
+        : '<span>Liquidität: hier passen <b>' + geld(f.max_einsatz) +
           '</b> hinein' +
           (Number(f.max_einsatz) < 100 ? ' — das ist die reale Tiefe des dünneren Buches, keine Skala' : '') +
           '</span>') +
@@ -736,8 +777,8 @@
         absageZeile(f) +
         pruefzeile(f) +
         analyse(f, imVerlauf) +
-        '<div class="unter leise">Bei 100 Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' auf ' +
-          txt(buch1(f).name) + ', ' + Number(f.einsatz_2).toFixed(2) + ' auf ' + txt(buch2(f).name) +
+        '<div class="unter leise">Bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' +
+          txt(buch1(f).name) + ', ' + geld(f.einsatz_2) + ' auf ' + txt(buch2(f).name) +
           ' &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
           ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
         aktionen(f) +
@@ -1016,6 +1057,9 @@
   function zeichne(e) {
     var K = welt.KONFIG;
     var s = e.statistik;
+
+    /* Kurs zuerst setzen: alles darunter rechnet damit. */
+    setzeKurs(e.kurs);
 
     setzeWennAnders(document.getElementById('tafel'), anbieterTafel(e));
     setzeWennAnders(document.getElementById('kacheln'), kacheln(s));

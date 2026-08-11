@@ -69,6 +69,25 @@
     return db('kalshi_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
   }
 
+  /* WECHSELKURS USD -> EUR.
+   *
+   * Alle Betraege im System stehen in USD: Polymarket und Kalshi rechnen so,
+   * Smarkets wird an der Quelle von GBP nach USD umgerechnet. Angezeigt wurde
+   * bisher eine nackte Zahl OHNE Einheit — "max. Einsatz 94" sagt nicht, ob
+   * das Euro, Dollar oder eine Skala ist.
+   *
+   * Den Kurs holt die DATENBANK selbst (pg_net, im Waechter). Der Browser
+   * kann es nicht: api.frankfurter.dev sendet keinen CORS-Header, gemessen.
+   *
+   * REGEL: ohne Kurs wird NICHT geraten. Dann bleibt alles in USD und die
+   * Anzeige sagt es dazu — dieselbe Regel wie beim Smarkets-Sammler, wo
+   * ohne Kurs gar nicht geschrieben wird. */
+  function kurs() {
+    return db('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle,geholt_am')
+      .then(function (z) { return z[0] || null; })
+      .catch(function () { return null; });
+  }
+
   /* Wie alt ist der Smarkets-Schnappschuss? */
   function holeSmarkets() {
     return db('smarkets_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
@@ -76,9 +95,10 @@
 
   function ladeAlles() {
     return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache(),
-                        holeUebersicht(), holeSmarkets()])
+                        holeUebersicht(), holeSmarkets(), kurs()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3], wache = teile[4];
+        var fx = teile[7];
         var uebersicht = teile[5], sm = teile[6];
         var jetzt = Date.now();
 
@@ -169,10 +189,29 @@
          * nach der besten je gesehenen Rendite — angezeigt wird aber die
          * zuletzt gesehene. Eine Zeile mit beste +2,31 % und zuletzt -2,83 %
          * ueberlebte damit und stand dann mit Minus da. */
+        /* DER VERLAUF ZEIGT NUR, WAS SICH GELOHNT HAETTE.
+         *
+         * Vorher reichte "Rendite ueber null" — damit standen dort Zeilen mit
+         * +0,04 % und drei Cent Gewinn neben echten Funden. Wer den Verlauf
+         * ansieht, will wissen: haette sich das gelohnt? Eine Zeile, die
+         * rechnerisch im Plus war und real drei Cent gebracht haette,
+         * beantwortet diese Frage mit Nein.
+         *
+         * Dieselben drei Bedingungen wie bei den Chancen (siehe konfig.js):
+         * Rendite ueber der Schwelle, Menge BEKANNT, Gewinn ueber
+         * KONFIG.mindestGewinn. Wer alles sehen will, setzt mindestGewinn
+         * auf 0 — dann ist der Verlauf wieder so vollstaendig wie vorher. */
         verlauf = verlauf.filter(function (f) {
           var zuletzt = Number(f.rendite);
           var beste = Number(f.beste_rendite == null ? f.rendite : f.beste_rendite);
-          return zuletzt >= K.verlaufMinRendite && beste >= K.verlaufMinRendite;
+          if (!(zuletzt >= K.verlaufMinRendite && beste >= K.verlaufMinRendite)) return false;
+          if (zuletzt < K.mindestRendite) return false;
+          /* Der Gewinn wird aus der BESTEN je gesehenen Rendite gerechnet:
+           * im Verlauf zaehlt, was moeglich GEWESEN waere, nicht was am
+           * Ende uebrig blieb. */
+          if (f.max_einsatz === null || f.max_einsatz === undefined) return !K.nurMitBekannterMenge;
+          var moeglich = Number(f.max_einsatz) * beste / 100;
+          return isFinite(moeglich) && moeglich >= K.mindestGewinn;
         });
 
         /* DREI Gruppen, nicht zwei. Ein Fund ueber der Schwelle, dessen Kurse
@@ -257,6 +296,9 @@
           verlauf: verlauf,
           lauf: lauf,
           uebersicht: uebersicht,
+          /* null heisst: kein Kurs bekannt. Dann zeigt die Anzeige USD und
+           * sagt es dazu, statt einen Kurs zu erfinden. */
+          kurs: fx,
           statistik: {
             chancen: chancen.length,
             veraltet_hoch: veraltetHoch.length,

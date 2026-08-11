@@ -60,6 +60,13 @@
      * ist. Alles andere wandert unter "Knappste Paare" und ist dort
      * weiterhin sichtbar — es verschwindet nicht, es heisst nur nicht mehr
      * Chance. */
+    /* EINHEIT: USD. Alle Betraege im System stehen in USD — Polymarket und
+     * Kalshi rechnen so, Smarkets wird an der Quelle von GBP nach USD
+     * umgerechnet. Die ANZEIGE rechnet auf Euro um (Kurs holt die Datenbank
+     * per pg_net); diese Schwelle bleibt bewusst in USD, damit sie sich
+     * nicht mit dem Tageskurs verschiebt. Bei 0,87 EUR/USD sind 5 USD rund
+     * 4,33 €. Wer in Euro denken will, traegt hier den Eurobetrag geteilt
+     * durch den Kurs ein. */
     mindestGewinn: 5,
 
     /* Unbekannte Menge ist keine Chance.
