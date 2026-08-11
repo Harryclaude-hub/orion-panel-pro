@@ -1324,6 +1324,44 @@ acht Paaren einzeln, `rsljua` ↔ real-salt-lake-vs-fc-juarez und so fort.
 
 ---
 
+## 8i. Betriebsstand 12. August, 01:35 — wo die Bridge wohnt
+
+**Die Bridge hat genau EIN Zuhause:**
+
+```
+C:\Users\Home\Desktop\Orion-Bridge-3.8\
+    orion-bridge-3.8.exe     Build 19 / Fassung 3.8
+    bridge-config.json       Name MUSS so bleiben
+```
+
+Alle anderen Kopien sind gelöscht — auch die des Vorgängerprojekts. Der
+Bridge-Token wurde am 12.8. **neu erzeugt**; der alte wird vom Endpunkt
+jetzt mit HTTP 401 abgewiesen (geprüft). Damit ist jede Streukopie wertlos,
+und die Bridge des alten Projekts kann nicht mehr hochladen.
+
+**Nur noch Pro-Takte aktiv:** 25 Stück — 20 Bereichs-Scanner plus Kalshi,
+Smarkets, Prüfer, Rauschen, Wächter. `pm-scan-takt` und `orion-wache-takt`
+sind entfernt (beide vorher nachgemessen: pm-scan schrieb nirgendwohin).
+Die zugehörigen Edge Functions liegen noch in Supabase, werden aber von
+niemandem mehr aufgerufen; löschen geht nur im Dashboard.
+
+### Zwei Fallen, die eine ganze Nacht gekostet haben
+
+**1. Die Zugangsdatei gehört zur exe, nicht zum Projekt.** Die Bridge liest
+`bridge-config.json` aus dem Ordner der exe. Wer die exe verschiebt,
+wechselt unbemerkt die Zugangsdaten. Genau so entstand die Lage, in der
+drei verschiedene Zugangsdateien mit drei verschiedenen Benutzernamen
+herumlagen.
+
+**2. Ein Buchstabe.** Die Anmeldung scheiterte zuletzt an
+`khalilalras**c**hed@gmail.com` statt `khalilalrashed@gmail.com`. Betfair
+meldet das als „Benutzername oder Passwort ist falsch" — dieselbe Meldung
+wie bei einem falschen Passwort, deshalb sucht man an der falschen Stelle.
+**Wenn die Anmeldung scheitert: zuerst den Benutzernamen Zeichen für
+Zeichen vergleichen, erst danach das Passwort verdächtigen.**
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand
