@@ -78,12 +78,15 @@
    * gekennzeichnet und nicht die Voreinstellung fuer die Arbeit an einem
    * Bereich. */
   var BEREICHE = [
-    /* KEIN "alle Bereiche" mehr. Ausdrueckliche Vorgabe vom 11.8.2026:
-     * man MUSS sich fuer einen Bereich entscheiden. Solange keiner gewaehlt
-     * ist, zeigt die Seite eine Auswahl statt einer Mischung — denn eine
-     * Sammelansicht ist genau die Lage, in der Fussball neben League of
-     * Legends steht und man sie verwechselt. */
-    { id: null,          name: '— bitte Bereich wählen —', gruppe: '' },
+    /* "Alle Bereiche" ist wieder erlaubt — Vorgabe vom 11.8.2026 spaet
+     * abends, und sie ist begruendet: die TRENNUNG passiert seither beim
+     * SCANNEN, nicht beim Anschauen. Jeder Bereich hat seinen eigenen
+     * Scanner (orion-lauf-<bereich>), der nur die Maerkte seines Themas
+     * kennt; Fussball kann gar nicht mehr gegen League of Legends gepaart
+     * werden, egal was die Anzeige mischt. Die Sammelansicht zeigt also
+     * nur noch Zeilen, die je fuer sich innerhalb EINES Bereichs
+     * entstanden sind. */
+    { id: null,          name: 'Alle Bereiche', gruppe: '' },
     { id: 'fussball',    name: 'Fußball',            gruppe: 'Sport' },
     { id: 'tennis',      name: 'Tennis',             gruppe: 'Sport' },
     { id: 'basketball',  name: 'Basketball',         gruppe: 'Sport' },
@@ -94,6 +97,13 @@
     { id: 'cricket',     name: 'Cricket',            gruppe: 'Sport' },
     { id: 'mma',         name: 'MMA und Boxen',      gruppe: 'Sport' },
     { id: 'motorsport',  name: 'Motorsport',         gruppe: 'Sport' },
+    /* 21. Bereich, Auftrag vom 11.8.2026: Spielerwetten (Wetten auf
+     * einzelne Spieler statt auf Mannschaften). Steht im Register und im
+     * Filter, der Scanner dazu ist aber AUS: Polymarket fuehrt keinen
+     * brauchbaren Tag dafuer (gemessen am 11.8.: player-props, props,
+     * goalscorer u.a. — alle 0 Events), und Kalshi/Smarkets-Quellen sind
+     * ungemessen. Erst Quelle messen, dann Trockenlauf, dann scannen. */
+    { id: 'spielerwetten', name: 'Spielerwetten',    gruppe: 'Sport' },
     { id: 'lol',         name: 'League of Legends',  gruppe: 'E-Sport' },
     { id: 'valorant',    name: 'Valorant',           gruppe: 'E-Sport' },
     { id: 'esport',      name: 'E-Sport übrige',     gruppe: 'E-Sport' },
@@ -275,9 +285,9 @@
                      (b.gruppe ? txt(b.gruppe) + ' · ' : '') + txt(b.name) + '</option>';
             }).join('') +
           '</select>' +
-          '<div class="f-hinweis">Es wird immer nur <b>ein</b> Bereich gezeigt. ' +
-          'Fußball und E-Sport nebeneinander führt zu Verwechslungen — genau daran ' +
-          'hing die Fehlpaarung vom 11.08.</div>' +
+          '<div class="f-hinweis">Seit dem 11.08. hat jeder Bereich seinen <b>eigenen ' +
+          'Scanner</b> — gepaart wird nur noch innerhalb eines Bereichs. ' +
+          '„Alle Bereiche" mischt deshalb nur die Anzeige, nie die Suche.</div>' +
         '</div>' +
 
         '<div class="f-gruppe"><div class="f-titel">Gefunden in den letzten</div>' +

@@ -26,8 +26,18 @@
     schwelle: 0.5,
     laeuferSchwelle: 0.8,
 
-    /* Ab welcher Rendite ein Fund als Chance gilt. */
-    mindestRendite: 0.5,
+    /* Ab welcher Rendite ein Fund als Chance gilt — und ab welcher er im
+     * VERLAUF bleibt. Auftrag vom 11.8.2026 abends: Live-Chancen und
+     * Verlauf erst ab 3 %; alles darunter steht unter "Knappste Paare"
+     * (sichtbar, gezaehlt, nur nicht mehr "Chance" genannt).
+     *
+     * EHRLICHER HINWEIS dazu, gemessen: die Buecher liegen im Schnitt
+     * 1,3 % auseinander, die groesste je nachweislich handelbare Rendite
+     * war +1,12 %, und JEDE Zeile ueber 5 % war bisher eine Fehlpaarung,
+     * nie eine Chance. Mit dieser Schwelle ist der Chancen-Reiter also
+     * meist leer, und was dort auftaucht, verdient doppelte Pruefung —
+     * der Waechter markiert ab 5 % weiterhin als unplausibel. */
+    mindestRendite: 3.0,
 
     /* Ab welchem handelbaren Betrag ein Fund ueberhaupt als Chance zaehlt.
      *

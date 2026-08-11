@@ -59,9 +59,22 @@
     return db('orion_wache?order=geprueft_am.desc&limit=1').then(function (z) { return z[0] || null; });
   }
 
-  /* Laeuft der Scanner ueberhaupt? */
+  /* Laeuft der Scanner ueberhaupt? (Juengster Lauf, egal welcher Bereich.) */
   function holeLauf() {
     return db('orion_laeufe?order=gelaufen_am.desc&limit=1').then(function (z) { return z[0] || null; });
+  }
+
+  /* SEIT DEM BEREICHS-SCANNER (11.8. abends) gibt es nicht mehr DEN letzten
+   * Lauf, sondern einen je Bereich: orion-lauf-fussball alle 20 s,
+   * orion-lauf-tennis jede Minute, und so weiter. Eine einzelne letzte
+   * Zeile zeigte dann mal 700 Maerkte (Fussball), mal 40 (Tennis) — die
+   * Tafel haette bei jedem Ablesen andere Zahlen behauptet.
+   *
+   * Deshalb: die juengste Zeile JE BEREICH holen und daraus aggregieren.
+   * 60 Zeilen reichen: der dichteste Takt ist 20 s, damit liegen selbst
+   * bei 20 Bereichen alle juengsten Laeufe in den letzten 60 Zeilen. */
+  function holeLaeufe() {
+    return db('orion_laeufe?select=bereich,gelaufen_am,pm_maerkte,bf_match_odds,paare,dauer_ms,fehler,bf_alter_s&order=gelaufen_am.desc&limit=60');
   }
 
   /* Wie alt sind die oeffentlichen Kalshi-Kurse? */
@@ -94,18 +107,45 @@
   }
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(500), holeLauf(), holeKalshi(), holeWache(),
+    return Promise.all([holeLive(), holeVerlauf(500), holeLaeufe(), holeKalshi(), holeWache(),
                         holeUebersicht(), holeSmarkets(), kurs()])
       .then(function (teile) {
-        var live = teile[0], verlauf = teile[1], lauf = teile[2], ka = teile[3], wache = teile[4];
+        var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
         var fx = teile[7];
         var uebersicht = teile[5], sm = teile[6];
         var jetzt = Date.now();
 
+        /* Juengster Lauf JE BEREICH (die Liste kommt absteigend sortiert,
+         * also gewinnt je Bereich die erste Zeile). Zeilen ohne Bereich
+         * stammen von vor der Umstellung und zaehlen nicht mehr mit. */
+        var lauf = laeufe[0] || null;                 // juengster Lauf ueberhaupt
+        var jeBereich = {};
+        var FRISCH_MS = 5 * 60000;                    // aeltere Bereichslaeufe zaehlen nicht
+        for (var li = 0; li < laeufe.length; li++) {
+          var L = laeufe[li];
+          if (!L.bereich) continue;
+          if (Object.prototype.hasOwnProperty.call(jeBereich, L.bereich)) continue;
+          if (jetzt - Date.parse(L.gelaufen_am) > FRISCH_MS) continue;
+          jeBereich[L.bereich] = L;
+        }
+
         var kaAlterS = ka && ka.updated_at ? Math.round((jetzt - Date.parse(ka.updated_at)) / 1000) : null;
         var smAlterS = sm && sm.updated_at ? Math.round((jetzt - Date.parse(sm.updated_at)) / 1000) : null;
-        var bfAlterS = lauf ? lauf.bf_alter_s : null;
+        /* Betfair-Frische aus dem juengsten Lauf, der Betfair ueberhaupt
+         * gelesen hat — nicht aus irgendeinem. */
+        var bfAlterS = null;
+        for (var bi = 0; bi < laeufe.length; bi++) {
+          if (laeufe[bi].bf_alter_s !== null && laeufe[bi].bf_alter_s !== undefined) { bfAlterS = laeufe[bi].bf_alter_s; break; }
+        }
         var laufAlterS = lauf ? Math.round((jetzt - Date.parse(lauf.gelaufen_am)) / 1000) : null;
+        /* Frische des Scanners JE BEREICH: eine Fussball-Zeile ist so
+         * frisch wie der letzte Fussball-Lauf, nicht wie der letzte
+         * Tennis-Lauf. Faellt fuer unbekannte Bereiche auf den juengsten
+         * Lauf insgesamt zurueck. */
+        function laufAlterVon(bereich) {
+          var L = bereich ? jeBereich[bereich] : null;
+          return L ? Math.round((jetzt - Date.parse(L.gelaufen_am)) / 1000) : laufAlterS;
+        }
 
         /* Frische JE BUCH. Ein einziger Schalter waere falsch: Kalshi kann
          * frisch sein, waehrend die Bridge steht. Wer beides zusammenwirft,
@@ -115,16 +155,19 @@
          * Buecher, die beide alt sein koennen — buch_1 ist nicht mehr immer
          * Polymarket. Veraltet ist eine Zeile, sobald EINE ihrer Seiten
          * veraltet ist. */
-        function buchVeraltet(name) {
+        function buchVeraltet(name, f) {
           if (name === 'kalshi')   return kaAlterS === null || kaAlterS > K.kalshiMaxAlterS;
           if (name === 'smarkets') return smAlterS === null || smAlterS > K.smarketsMaxAlterS;
           if (name === 'betfair')  return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
           /* Polymarket wird bei JEDEM Lauf frisch geholt. Seine Frische ist
-           * die Frische des Scanners. */
-          return laufAlterS === null || laufAlterS > K.laufMaxAlterS;
+           * die Frische des Scanners — und zwar des Scanners im BEREICH
+           * dieser Zeile: der Fussball-Takt (20 s) sagt nichts darueber,
+           * ob der Tennis-Lauf noch laeuft. */
+          var a = laufAlterVon(f && f.bereich);
+          return a === null || a > K.laufMaxAlterS;
         }
         function veraltet(f) {
-          return buchVeraltet(f.buch_1 || 'polymarket') || buchVeraltet(f.buch || 'betfair');
+          return buchVeraltet(f.buch_1 || 'polymarket', f) || buchVeraltet(f.buch || 'betfair', f);
         }
 
         /* Broker-Adresse an EINER Stelle festlegen, hier beim Anzeigen.
@@ -334,11 +377,61 @@
             })(),
             lauf_alter_s: laufAlterS,
             bf_alter_s: bfAlterS,
-            pm_maerkte: lauf ? lauf.pm_maerkte : null,
-            bf_match_odds: lauf ? lauf.bf_match_odds : null,
-            paare: lauf ? lauf.paare : null,
-            lauf_dauer_ms: lauf ? lauf.dauer_ms : null,
-            lauf_fehler: lauf ? lauf.fehler : null,
+            /* Summen ueber den juengsten Lauf JEDES Bereichs (nicht die
+             * letzte Zeile allein — die gehoert immer nur einem Bereich
+             * und liesse die Tafel bei jedem Ablesen andere Zahlen
+             * behaupten). null nur, wenn gar kein frischer Lauf da ist. */
+            pm_maerkte: (function () {
+              var s = null;
+              for (var b in jeBereich) if (Object.prototype.hasOwnProperty.call(jeBereich, b)) {
+                s = (s || 0) + (Number(jeBereich[b].pm_maerkte) || 0);
+              }
+              return s;
+            })(),
+            bf_match_odds: (function () {
+              var s = null;
+              for (var b in jeBereich) if (Object.prototype.hasOwnProperty.call(jeBereich, b)) {
+                s = (s || 0) + (Number(jeBereich[b].bf_match_odds) || 0);
+              }
+              return s;
+            })(),
+            paare: (function () {
+              var s = null;
+              for (var b in jeBereich) if (Object.prototype.hasOwnProperty.call(jeBereich, b)) {
+                s = (s || 0) + (Number(jeBereich[b].paare) || 0);
+              }
+              return s;
+            })(),
+            /* Der langsamste Bereich bestimmt die genannte Dauer. */
+            lauf_dauer_ms: (function () {
+              var m = null;
+              for (var b in jeBereich) if (Object.prototype.hasOwnProperty.call(jeBereich, b)) {
+                var d = Number(jeBereich[b].dauer_ms);
+                if (isFinite(d) && (m === null || d > m)) m = d;
+              }
+              return m;
+            })(),
+            /* Ein Fehler in IRGENDEINEM frischen Bereichslauf gehoert
+             * gemeldet — nicht nur einer in der zufaellig letzten Zeile. */
+            lauf_fehler: (function () {
+              for (var b in jeBereich) if (Object.prototype.hasOwnProperty.call(jeBereich, b)) {
+                if (jeBereich[b].fehler) return b + ': ' + jeBereich[b].fehler;
+              }
+              return lauf ? lauf.fehler : null;
+            })(),
+            /* Je Bereich: Alter und Paare des juengsten Laufs, fuer die
+             * Anzeige, welcher Scanner gerade was tut. */
+            je_bereich_lauf: (function () {
+              var z = {};
+              for (var b in jeBereich) if (Object.prototype.hasOwnProperty.call(jeBereich, b)) {
+                z[b] = {
+                  alter_s: Math.round((jetzt - Date.parse(jeBereich[b].gelaufen_am)) / 1000),
+                  paare: jeBereich[b].paare,
+                  pm_maerkte: jeBereich[b].pm_maerkte
+                };
+              }
+              return z;
+            })(),
             wache_alter_s: wache ? Math.round((jetzt - Date.parse(wache.geprueft_am)) / 1000) : null,
             wache_gut: wache ? wache.alles_gut : null,
             wache_eingriff: wache ? wache.eingegriffen : null

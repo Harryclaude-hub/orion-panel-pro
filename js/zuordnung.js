@@ -590,10 +590,19 @@
    * unbekannten Menge und beim Widerspruch zweier Wege. */
 
   /* Kalshi verraet den Bereich im Serien-Ticker. Gemessen an den Serien, die
-   * im Schnappschuss tatsaechlich vorkommen. */
+   * im Schnappschuss tatsaechlich vorkommen — nachgemessen am 11.8.2026
+   * abends: dazugekommen sind KXR6GAME (Rainbow Six), KXARGPREMDIVGAME und
+   * KXBRASILEIROBGAME (beides Fussball).
+   *
+   * SEIT DEM BEREICHS-SCANNER feiner: League of Legends und Valorant sind
+   * EIGENE Bereiche (wie im Register orion_bereiche), nicht mehr Teil des
+   * Sammelbereichs esport. Die spezifischen Muster stehen VOR dem
+   * Sammelmuster — die erste Uebereinstimmung gewinnt. */
   var KALSHI_BEREICH = [
-    { muster: /^KX(CS2|LOL|VALORANT|RL|DOTA|OW|COD)/i,        bereich: 'esport' },
-    { muster: /^KX(CLUBF|UCL|LEAGUESCUP|CONMEBOL|DIMAYOR|EPL|MLS|EFL|SERIEA|BUNDES|LALIGA|LIGUE)/i, bereich: 'fussball' },
+    { muster: /^KX(LOL)/i,                                    bereich: 'lol' },
+    { muster: /^KX(VALORANT)/i,                               bereich: 'valorant' },
+    { muster: /^KX(CS2|RL|DOTA|OW|COD|R6)/i,                  bereich: 'esport' },
+    { muster: /^KX(CLUBF|UCL|LEAGUESCUP|CONMEBOL|DIMAYOR|EPL|MLS|EFL|SERIEA|BUNDES|LALIGA|LIGUE|ARGPREMDIV|BRASILEIRO)/i, bereich: 'fussball' },
     { muster: /^KX(NPB|KBO|LMB|MLB)/i,                        bereich: 'baseball' },
     { muster: /^KX(WNBA|NBA)/i,                               bereich: 'basketball' },
     { muster: /^KX(NFL|CFB)/i,                                bereich: 'football' },
@@ -601,10 +610,22 @@
     { muster: /^KX(NHL|HOCKEY)/i,                             bereich: 'eishockey' }
   ];
 
-  /* Polymarket liefert den Bereich als Tag mit. */
+  /* Polymarket liefert den Bereich als Tag mit. QUELLE ist das Register
+   * orion_bereiche (Spalte pm_tags) — wer dort einen Tag aendert, zieht
+   * diese Karte in BEIDEN Spiegeln nach, sonst paart der betroffene
+   * Bereich bei Kalshi nicht mehr. */
   var PM_BEREICH = {
     soccer: 'fussball', ucl: 'fussball',
-    mlb: 'baseball', nfl: 'football', nba: 'basketball', tennis: 'tennis'
+    mlb: 'baseball', nfl: 'football', cfb: 'football', nba: 'basketball',
+    tennis: 'tennis', nhl: 'eishockey', golf: 'golf', cricket: 'cricket',
+    mma: 'mma', f1: 'motorsport',
+    lol: 'lol', valorant: 'valorant', esports: 'esport',
+    politics: 'politik', elections: 'politik', geopolitics: 'politik',
+    crypto: 'krypto', bitcoin: 'krypto', ethereum: 'krypto',
+    economics: 'wirtschaft', inflation: 'wirtschaft', fed: 'wirtschaft',
+    world: 'welt', weather: 'wetter',
+    tech: 'tech', ai: 'tech', science: 'tech',
+    'pop-culture': 'kultur'
   };
 
   function bereichKalshi(serie) {

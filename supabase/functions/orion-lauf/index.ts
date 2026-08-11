@@ -1,51 +1,49 @@
-// orion-lauf — der Scanner. pg_cron, alle 15 Sekunden, serverseitig.
+// orion-lauf — der Scanner. pg_cron, EIN AUFRUF JE BEREICH, serverseitig.
 //
-// ZWEI DURCHGAENGE:
+// SEIT DEM 11.8.2026 ABENDS GIBT ES KEIN "ALLE BEREICHE" MEHR.
+// Jeder Aufruf traegt einen Bereich ({"bereich":"fussball"}); gescannt,
+// gepaart und aufgeraeumt wird AUSSCHLIESSLICH innerhalb dieses Bereichs.
+// Der Takt je Bereich steht im Register orion_bereiche (takt_sek), die
+// pg_cron-Jobs heissen orion-lauf-<bereich>.
+//
+// WARUM: Eine Sammelsuche ist genau die Lage, in der Fussball neben League
+// of Legends steht und verwechselt wird — am 11.8. stand eine Fehlpaarung
+// mit 5,34 % live (FSV Frankfurt vs. Eintracht Frankfurt, Fussball, gegen
+// ROSSMANN Centaurs vs. Eintracht Frankfurt, LoL; die Namen sind wirklich
+// gleich, nur der Sport nicht). Nebenbei loest die Trennung den
+// HTTP-546-Speicherfehler (WORKER_RESOURCE_LIMIT): kein Lauf laedt mehr
+// alle Buecher aller Bereiche gleichzeitig.
+//
+// ZWEI DURCHGAENGE (nur innerhalb des Bereichs):
 //   1. ANKER POLYMARKET — fuer jeden Polymarket-Markt ein Gegenstueck bei
-//      Smarkets und Kalshi. Dort gibt es immer zwei Belege: Partie und Laeufer.
-//   2. OHNE ANKER — Smarkets direkt gegen Kalshi. Ersatz fuer den fehlenden
-//      zweiten Beleg ist die EINDEUTIGKEIT in Z.direktPaare.
+//      Smarkets, Kalshi und Betfair. Zwei Belege: Partie und Laeufer.
+//   2. OHNE ANKER — Smarkets direkt gegen Kalshi, NUR im Bereich fussball
+//      (Smarkets fuehrt ausschliesslich Fussball, gemessen: der Sammler
+//      holt type=football_match). Ersatz fuer den fehlenden zweiten Beleg
+//      ist die EINDEUTIGKEIT in Z.direktPaare.
 //
-// GENUTZTE FRAGEN (Regel 1: nur gleiche Frage gegen gleiche Frage):
-//   sieger · unentschieden · hz_sieger · hz_unentschieden · btts
-//   ueber_unter · hz1_ueber_unter · hz2_ueber_unter · ecken_ueber_unter
-//
-// DAS MODELL — eine SEITE statt eines Buchpaares:
-//     JA    Polymarket JA-Anteil · Kalshi Yes · Boerse BACK
-//     NEIN  Polymarket NEIN-Anteil · Kalshi No · Boerse LAY
-// Jede Seite traegt ihre Effektivquote NACH Gebuehr. Danach jede JA-Seite
-// gegen jede NEIN-Seite eines ANDEREN Buches (R.chance erzwingt: genau zwei
-// Buecher, immer JA gegen NEIN).
+// PROBELAUF: mit {"bereich":"golf","probe":true} rechnet der Lauf alles,
+// schreibt aber NICHTS und liefert jede Zuordnung einzeln zurueck — der
+// Trockenlauf gegen echte Daten, den jede Bereichs-Freischaltung braucht.
 
 import * as R from './rechnung.ts';
 import * as Z from './zuordnung.ts';
 
-const TAGS = ['soccer', 'mlb', 'nfl', 'nba', 'tennis', 'ucl'];
 const FENSTER_H = 72;
 const SCHWELLE = 0.5;
 const LAEUFER_SCHWELLE = 0.8;
 const BROKER = 'https://www.orbitexch.com/customer/sport/1/market/{id}';
 const RAUSCH_GRENZE = -1.0;
 
-// BETFAIR WIEDER AKTIV seit 11.8.2026 abends — ueber die Bridge auf einem
-// eigenen Laptop. Aus Supabase heraus bleibt Betfair gesperrt (403, rund 50
-// Wege gemessen); die Bridge umgeht das nicht, sie laeuft schlicht an einem
-// Privatanschluss und liest mit dem Konto des Auftraggebers.
+// BETFAIR AKTIV seit 11.8.2026 ueber die Bridge auf einem eigenen Laptop.
+// Einschraenkungen: App-Key DELAYED (Kurse ~1 min alt), Konto fuer
+// API-Wetten SUSPENDED (Lesen geht).
 //
-// Gemessen am 11.8. vor dem Scharfschalten: orion_bf_maerkte(72) liefert
-// 1240 Maerkte, davon rund 850 MATCH_ODDS und 1100 OVER_UNDER.
-//
-// DREI EINSCHRAENKUNGEN, die in jeder Betfair-Zeile stecken:
-//  1. App-Key ist DELAYED  - Kurse rund eine Minute alt. Bei laufenden
-//     Spielen ist die gesehene Quote meist schon weg.
-//  2. Konto ist fuer API-Wetten SUSPENDED. Lesen geht, automatisch setzen
-//     nicht - fuer einen Scanner, bei dem der Mensch klickt, kein Hindernis.
-//  3. Bridge Build 17 sendet den echten Kommissionssatz NICHT mit. Es wird
-//     mit 7 % gerechnet statt der echten 2 bis 5 %; an einem echten Markt
-//     nachgerechnet kostet das rund einen Prozentpunkt Rendite. Konservativ,
-//     also sicher - aber es kostet Chancen. Build 18 behebt es.
-//
-// Zum Abschalten: hier auf false und KONFIG.buecher.betfair.aktiv ebenso.
+// BEREICHSSPERRE AUCH HIER: orion_bf_maerkte(fenster_h, bereich_p) liefert
+// nur Maerkte, deren eventTypeId (Bridge-Feld et, ab Build 19) laut
+// orion_bf_sport zum Bereich gehoert. Eine Bridge VOR Build 19 schickt kein
+// et — dann kommt hier NICHTS an, und das ist Absicht: unbekannter Bereich
+// heisst nicht "passt schon". Dieselbe Regel wie bei Kalshi.
 const BETFAIR_AKTIV = true;
 
 const URL_SUPA = Deno.env.get('SUPABASE_URL')!;
@@ -101,18 +99,52 @@ interface Seite {
   buch: string; richtung: 'ja' | 'nein'; qe: number; geld: number | null; roh: number;
   gebuehr: number; gebuehr_echt: boolean; name: string; seite_text: string;
   link: string; partie: string;
-  // Wie die Gebuehr dieser Seite in Geld ausgerechnet wird (R.gebuehrBetrag).
   gebuehr_form: R.GebuehrForm;
 }
 
-Deno.serve(async () => {
+Deno.serve(async (req) => {
   const kopf = { 'content-type': 'application/json', 'access-control-allow-origin': '*' };
   const t0 = Date.now();
   const jetzt = Date.now();
   const grenze = jetzt + FENSTER_H * 3600000;
 
+  /* ---------- Welcher Bereich? Ohne Bereich laeuft hier nichts. ---------- */
+  const url = new URL(req.url);
+  let body: any = null;
+  try { body = await req.json(); } catch { /* leerer oder kein JSON-Koerper */ }
+  const bereich = String((body && body.bereich) || url.searchParams.get('bereich') || '').trim();
+  const probe = (body && body.probe === true) || url.searchParams.get('probe') === '1';
+
+  if (!/^[a-z0-9_-]+$/.test(bereich)) {
+    return new Response(JSON.stringify({
+      ok: false,
+      fehler: 'bereich fehlt oder ist ungueltig. Es gibt kein "alle Bereiche" — ' +
+              'jeder Aufruf gilt GENAU EINEM Bereich aus orion_bereiche, z.B. {"bereich":"fussball"}.'
+    }), { status: 400, headers: kopf });
+  }
+
   try {
-    // ---------- Polymarket ----------
+    const regR = await fetch(`${URL_SUPA}/rest/v1/orion_bereiche?bereich=eq.${bereich}&select=*`, { headers: dbKopf() });
+    const regZ = regR.ok ? await regR.json() : [];
+    const reg = regZ[0];
+    if (!reg) {
+      return new Response(JSON.stringify({ ok: false, fehler: `Bereich "${bereich}" steht nicht im Register orion_bereiche.` }),
+                          { status: 400, headers: kopf });
+    }
+    if (!reg.aktiv && !probe) {
+      /* Inaktiv heisst: bewusst noch nicht freigeschaltet (kein Trockenlauf
+       * bestanden). Kein Fehler — aber auch kein Lauf. Der Probelauf bleibt
+       * erlaubt, denn genau er ist der Weg zur Freischaltung. */
+      return new Response(JSON.stringify({ ok: true, bereich, uebersprungen: 'Bereich ist im Register inaktiv.' }), { headers: kopf });
+    }
+    const TAGS: string[] = Array.isArray(reg.pm_tags) ? reg.pm_tags : [];
+
+    /* Die Karte in zuordnung.ts muss zum Register passen. Widerspricht sie,
+     * wird bei Kalshi NICHT gepaart (Widerspruchsregel: zwei Wege, zwei
+     * Antworten -> gar nicht handeln), und der Lauf sagt es laut. */
+    const karteOk = TAGS.every(t => Z.bereichPm(t) === bereich);
+
+    // ---------- Polymarket: NUR die Tags dieses Bereichs ----------
     const nachId = new Map<string, any>();
     const jeArt: Record<string, number> = {};
     for (const tag of TAGS) {
@@ -171,14 +203,18 @@ Deno.serve(async () => {
       }
     }
 
-    // ---------- Betfair ----------
+    // ---------- Betfair: nur Maerkte DIESES Bereichs ----------
     let bfImFenster: Z.BfMarkt[] = [];
     let bfAlterS: number | null = null;
     if (BETFAIR_AKTIV) {
       const bfR = await fetch(`${URL_SUPA}/rest/v1/rpc/orion_bf_maerkte`, {
-        method: 'POST', headers: dbKopf(), body: JSON.stringify({ fenster_h: FENSTER_H })
+        method: 'POST', headers: dbKopf(), body: JSON.stringify({ fenster_h: 12, bereich_p: bereich })
       });
       bfImFenster = bfR.ok ? (await bfR.json() || []) : [];
+      /* Gurt UND Hosentraeger: die RPC filtert schon nach Bereich, hier
+       * wird es trotzdem nachgeprueft. Eine kuenftige Aenderung an der RPC
+       * darf nicht still Maerkte fremder Bereiche hereinlassen. */
+      bfImFenster = bfImFenster.filter(m => (m as any).bereich === bereich);
       const zeitR = await fetch(`${URL_SUPA}/rest/v1/bridge_odds?id=eq.1&select=updated_at`, { headers: dbKopf() });
       const zeitZ = zeitR.ok ? await zeitR.json() : [];
       bfAlterS = zeitZ[0]?.updated_at ? Math.round((jetzt - Date.parse(zeitZ[0].updated_at)) / 1000) : null;
@@ -186,23 +222,35 @@ Deno.serve(async () => {
     const bfSieger = bfImFenster.filter(m => m.mt === 'MATCH_ODDS');
     const bfOu = bfImFenster.filter(m => Z.bfOuLinie(m.mt) !== null);
 
-    // ---------- Kalshi ----------
+    // ---------- Kalshi: nur Serien DIESES Bereichs ----------
     const kaAntwort = await fetch(`${URL_SUPA}/rest/v1/kalshi_snapshot?id=eq.1&select=maerkte,updated_at`, { headers: dbKopf() });
     const kaZeilen = kaAntwort.ok ? await kaAntwort.json() : [];
     const kaZeile = kaZeilen[0] || { maerkte: [], updated_at: null };
     const kaAlterS = kaZeile.updated_at ? Math.round((jetzt - Date.parse(kaZeile.updated_at)) / 1000) : null;
+    let kaAnderesFach = 0;
     const kalshi = (kaZeile.maerkte || []).filter((k: any) => {
+      /* Der Bereich kommt aus dem Serien-Ticker. Was nicht zu DIESEM
+       * Bereich gehoert — oder gar keinem zuzuordnen ist — fliegt VOR der
+       * Paarung raus. Unbekannt heisst nicht "passt schon". */
+      if (Z.bereichKalshi(k.serie) !== bereich) { kaAnderesFach++; return false; }
       const t = Date.parse(k.schliesst || '');
       return !isNaN(t) && t > jetzt && t <= grenze;
     });
     const kIndex = Z.kalshiIndex(kalshi);
 
-    // ---------- Smarkets ----------
-    const smAntwort = await fetch(`${URL_SUPA}/rest/v1/smarkets_snapshot?id=eq.1&select=maerkte,updated_at`, { headers: dbKopf() });
-    const smZeilen = smAntwort.ok ? await smAntwort.json() : [];
-    const smZeile = smZeilen[0] || { maerkte: [], updated_at: null };
-    const smAlterS = smZeile.updated_at ? Math.round((jetzt - Date.parse(smZeile.updated_at)) / 1000) : null;
-    const smAlle = smZeile.maerkte || [];
+    // ---------- Smarkets: fuehrt AUSSCHLIESSLICH Fussball ----------
+    /* Gemessen: der Sammler holt type=football_match (896 Maerkte). In jedem
+     * anderen Bereich wird der Schnappschuss GAR NICHT ERST GELADEN — das
+     * spart Speicher (546!) und schliesst die Verwechslung strukturell aus. */
+    let smAlle: any[] = [];
+    let smAlterS: number | null = null;
+    if (bereich === 'fussball') {
+      const smAntwort = await fetch(`${URL_SUPA}/rest/v1/smarkets_snapshot?id=eq.1&select=maerkte,updated_at`, { headers: dbKopf() });
+      const smZeilen = smAntwort.ok ? await smAntwort.json() : [];
+      const smZeile = smZeilen[0] || { maerkte: [], updated_at: null };
+      smAlterS = smZeile.updated_at ? Math.round((jetzt - Date.parse(smZeile.updated_at)) / 1000) : null;
+      smAlle = smZeile.maerkte || [];
+    }
     const smNachArt: Record<string, any[]> = {};
     for (const m of smAlle) (smNachArt[m.art] = smNachArt[m.art] || []).push(m);
     const smSieger = smNachArt['sieger'] || [];
@@ -212,6 +260,7 @@ Deno.serve(async () => {
     const zeilen: any[] = [];
     const jePaarung: Record<string, number> = {};
     let mitMenge = 0;
+    let bereichVerworfen = 0;
     const smGesehen = new Set<string>();
 
     function schreibe(a: Seite, b: Seite, e: any, opt: {
@@ -222,13 +271,6 @@ Deno.serve(async () => {
       jePaarung[paarung] = (jePaarung[paarung] || 0) + 1;
       if (e.maxEinsatz !== null && e.maxEinsatz !== undefined) mitMenge++;
 
-      /* GEBUEHR IN GELD, je Seite und in Summe.
-       *
-       * Die Gebuehr steckte bisher nur in qe — sichtbar war der Satz, nie der
-       * Betrag. Wer 0,71 % Rendite sieht, soll auch sehen, dass davon vorher
-       * 2 % Kommission abgezogen wurden und wie viel das in Geld ist.
-       * Bezugsgroesse ist der Musterlauf ueber 100 (e.einsatz), damit die
-       * Zahlen zwischen Zeilen vergleichbar bleiben. */
       const gA = R.gebuehrBetrag(a.gebuehr_form, e.s1, a.roh, a.qe);
       const gB = R.gebuehrBetrag(b.gebuehr_form, e.s2, b.roh, b.qe);
       const gSumme = (gA === null || gB === null) ? null : gA + gB;
@@ -238,6 +280,9 @@ Deno.serve(async () => {
         buch_1: a.buch, buch: b.buch,
         markt_id: opt.marktId, titel: opt.titel, frage: opt.frage,
         mannschaft: opt.bez, art: opt.art, sportart: opt.sport, weg: paarung,
+        /* Der Bereich des Laufs. Jede Zeile gehoert GENAU EINEM Bereich —
+         * die Aufraeumung unten arbeitet nur innerhalb dieses Bereichs. */
+        bereich,
         pm_seite: a.seite_text, pm_preis: a.roh, pm_link: a.link,
         bf_name: b.name, bf_seite: b.seite_text, bf_quote: b.roh,
         bf_link: b.link, bf_partie: b.partie,
@@ -263,7 +308,7 @@ Deno.serve(async () => {
       const mengen = buch.map((x: any) => x.menge);
 
       const istHzSieger = m.art === 'hz_sieger' || m.art === 'hz_unentschieden';
-      const ou = Z.ouArt(m.teil);          // {art, linie} bei allen vier Ueber/Unter
+      const ou = Z.ouArt(m.teil);
       const istOu = ou !== null && ou.art === m.art;
 
       const bez = m.art === 'unentschieden'     ? 'Unentschieden'
@@ -292,9 +337,7 @@ Deno.serve(async () => {
         name: bez, seite_text: istOu ? 'UNTER' : 'NEIN', link: pmLink, partie: m.titel
       });
 
-      // ----- Betfair -----
-      // Nur die drei Fragen, fuer die es dort eine gepruefte Regel gibt.
-      // Halbzeit, BTTS, Halbzeit-Ueber/Unter und Ecken haben keine.
+      // ----- Betfair (kommt bereits bereichsgefiltert aus der RPC) -----
       const bfKand = m.art === 'ueber_unter' ? Z.ouKandidaten(bfOu, ou ? ou.linie : null)
                    : (m.art === 'sieger' || m.art === 'unentschieden') ? bfSieger
                    : [];
@@ -330,8 +373,7 @@ Deno.serve(async () => {
         }
       }
 
-      // ----- Smarkets -----
-      // Ueber/Unter: gleiche ART und gleiche LINIE gegen gleiche.
+      // ----- Smarkets (nur im Bereich fussball ueberhaupt geladen) -----
       const smKand = istHzSieger ? smHalbzeit
                    : m.art === 'btts' ? smBtts
                    : istOu ? Z.smOuKandidaten(smNachArt[m.art] || [], ou!.linie)
@@ -341,7 +383,6 @@ Deno.serve(async () => {
         if (tr) {
           const lauf = Z.smLaeufer(m.art, m.teil, p, (tr.bf as any).r, tr.getauscht, LAEUFER_SCHWELLE);
           if (lauf) {
-            // Nur SIEGERMAERKTE decken eine Partie fuer den zweiten Durchgang ab.
             if (m.art === 'sieger' || m.art === 'unentschieden') smGesehen.add(tr.bf.ev);
             const satz = (tr.bf as any).sz;
             const echt = (tr.bf as any).sz_echt === true;
@@ -372,16 +413,16 @@ Deno.serve(async () => {
       // ----- Kalshi: nur Sieger und Unentschieden -----
       if (m.art === 'sieger' || m.art === 'unentschieden') {
         const pmSeite: Z.Seite = m.art === 'unentschieden' ? 'unentschieden' : Z.seiteVon(m.teil, p);
-        const pmBereich = Z.bereichPm(m.tag);
-        if (pmSeite) {
+        if (pmSeite && karteOk) {
           const A = Z.woerter(p[0]), B = Z.woerter(p[1]);
           for (const e of Z.kalshiKandidaten(kIndex, A, B)) {
-            /* BEREICH gegen BEREICH. Am 11.8.2026 stand eine Fehlpaarung mit
-             * 5,34 % live: FSV Frankfurt gegen Eintracht Frankfurt (Fussball)
-             * wurde mit einem League-of-Legends-Match derselben Mannschaft
-             * gepaart. Die Namen sind wirklich gleich - nur der Sport nicht.
-             * Kein bekannter Bereich heisst: nicht paaren. */
-            if (!Z.gleicherBereich(pmBereich, Z.bereichKalshi(e.k.serie))) continue;
+            /* BEREICH gegen BEREICH, dreifach: die Kalshi-Liste ist oben
+             * schon auf diesen Bereich gefiltert, der PM-Markt kommt
+             * strukturell aus den Tags dieses Bereichs (und die Karte
+             * bestaetigt es — karteOk), und hier steht die Pruefung noch
+             * einmal ausdruecklich. Der Fall vom 11.8. (Fussball gegen LoL,
+             * 5,34 % live) darf keinen einzigen Weg zurueck haben. */
+            if (!Z.gleicherBereich(bereich, Z.bereichKalshi(e.k.serie))) { bereichVerworfen++; continue; }
             const gerade = Math.min(Z.aehnlichkeitW(A, e.kw0), Z.aehnlichkeitW(B, e.kw1));
             const kreuz  = Math.min(Z.aehnlichkeitW(A, e.kw1), Z.aehnlichkeitW(B, e.kw0));
             const score = Math.max(gerade, kreuz);
@@ -420,7 +461,7 @@ Deno.serve(async () => {
       }
     }
 
-    // ========= DURCHGANG 2: Smarkets gegen Kalshi, OHNE Polymarket =========
+    // ========= DURCHGANG 2: Smarkets gegen Kalshi, NUR fussball =========
     const smNachPartie = new Map<string, any>();
     for (const m of smSieger) if (!smNachPartie.has(m.ev)) smNachPartie.set(m.ev, m);
     const offen: any[] = [];
@@ -432,22 +473,18 @@ Deno.serve(async () => {
       offen.push({ id: ev, partie: pp, zeit: isFinite(t) ? t : null, markt: m });
     }
     const kaNachPartie = new Map<string, any>();
-    let kaAnderesFach = 0;
-    for (const k of kalshi) {
-      /* Smarkets fuehrt AUSSCHLIESSLICH Fussball (der Sammler holt
-       * type=football_match, 896 Maerkte gemessen). Alles andere bei Kalshi -
-       * und das waren am 11.8. 196 von 369 Maerkten E-Sport - hat hier nichts
-       * zu suchen. Ohne diese Sperre wird Counter-Strike gegen Fussball
-       * gehalten, und bei gleichnamigen Mannschaften entsteht eine Zeile,
-       * die perfekt aussieht. */
-      if (Z.bereichKalshi(k.serie) !== 'fussball') { kaAnderesFach++; continue; }
-      const pp = Z.kalshiPaar(k.titel);
-      if (!pp) continue;
-      const z = Z.kalshiZeit(k.ev);
-      if (!kaNachPartie.has(k.ev)) {
-        kaNachPartie.set(k.ev, { id: k.ev, partie: pp, zeit: z ? z.zeit : null, titel: k.titel, ausgaenge: [] });
+    if (bereich === 'fussball') {
+      /* Die Kalshi-Liste ist oben bereits auf fussball gefiltert — hier
+       * wird nur noch nach Partien gebuendelt. */
+      for (const k of kalshi) {
+        const pp = Z.kalshiPaar(k.titel);
+        if (!pp) continue;
+        const z = Z.kalshiZeit(k.ev);
+        if (!kaNachPartie.has(k.ev)) {
+          kaNachPartie.set(k.ev, { id: k.ev, partie: pp, zeit: z ? z.zeit : null, titel: k.titel, ausgaenge: [] });
+        }
+        kaNachPartie.get(k.ev).ausgaenge.push(k);
       }
-      kaNachPartie.get(k.ev).ausgaenge.push(k);
     }
     const direkt = Z.direktPaare(offen, [...kaNachPartie.values()], SCHWELLE);
 
@@ -507,6 +544,25 @@ Deno.serve(async () => {
       }
     }
 
+    /* ---------- PROBELAUF: rechnen ja, schreiben nein ----------
+     * Das ist der Trockenlauf gegen echte Daten, den jede Freischaltung
+     * eines Bereichs braucht: jede Zuordnung einzeln zum Nachsehen. */
+    if (probe) {
+      return new Response(JSON.stringify({
+        ok: true, probe: true, bereich, dauer_ms: Date.now() - t0,
+        pm_maerkte: maerkte.length, je_art: jeArt,
+        kalshi_maerkte: kalshi.length, kalshi_anderer_bereich: kaAnderesFach,
+        betfair_maerkte: bfImFenster.length, smarkets_maerkte: smAlle.length,
+        karte_ok: karteOk,
+        paare: zeilen.length,
+        zuordnungen: zeilen.slice(0, 200).map(z => ({
+          schluessel: z.schluessel, titel: z.titel, gegen: z.bf_partie,
+          frage: z.frage, art: z.art, zuordnung: z.zuordnung,
+          rendite: z.rendite, max_einsatz: z.max_einsatz
+        }))
+      }, null, 1), { headers: kopf });
+    }
+
     if (zeilen.length) {
       for (let i = 0; i < zeilen.length; i += 500) {
         const r = await fetch(`${URL_SUPA}/rest/v1/orion_funde?on_conflict=schluessel`, {
@@ -518,32 +574,20 @@ Deno.serve(async () => {
       }
     }
 
-    // WURZELFIX 11.8.2026: nicht mehr gefundene Zeilen ueber eine ZEITMARKE
-    // beenden, nicht ueber eine Liste ALLER Schluessel.
-    //
-    // Vorher stand hier ?schluessel=not.in.("a","b",...) mit jedem gefundenen
-    // Schluessel. Bei 40+ Zeilen wurde die URL zu lang und die Anfrage schlug
-    // STILL fehl: beendetAntwort.ok war false, beendet = 0, KEIN Fehler
-    // geworfen. Die nicht mehr gefundenen Zeilen blieben auf 'live' stehen und
-    // sahen auf der Website aus wie aktuelle Funde. Der Waechter raeumte sie
-    // nachtraeglich ab - jetzt entstehen sie gar nicht erst.
-    //
-    // Jede in DIESEM Lauf geschriebene Zeile traegt zuletzt_gesehen von NACH
-    // `jetzt` (in schreibe() mit new Date() gesetzt). Wird eine Zeile wieder
-    // gefunden, hebt merge-duplicates ihren Zeitstempel an. Nicht mehr
-    // gefundene Zeilen behalten ihren alten, aus einem frueheren Lauf, und der
-    // liegt vor `jetzt`. Also: alles vor der Laufmarke ist verwaist. Die URL
-    // ist jetzt fest und kurz und kann nicht mehr zu lang werden.
+    /* ---------- Aufraeumen: NUR im eigenen Bereich ----------
+     * Ueber die Zeitmarke (der Wurzelfix vom 11.8. bleibt), aber je Bereich:
+     * der Tennis-Lauf darf keine Fussball-Zeilen beenden, die er nie gesehen
+     * hat — sonst loeschen sich die Bereiche gegenseitig die Funde. */
     const laufMarke = new Date(jetzt).toISOString();
     const beendetAntwort = await fetch(
-      `${URL_SUPA}/rest/v1/orion_funde?status=eq.live&zuletzt_gesehen=lt.${laufMarke}`, {
+      `${URL_SUPA}/rest/v1/orion_funde?status=eq.live&bereich=eq.${bereich}&zuletzt_gesehen=lt.${laufMarke}`, {
       method: 'PATCH', headers: { ...dbKopf(), prefer: 'return=representation' },
       body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: 'nicht mehr gefunden' })
     });
     const beendet = beendetAntwort.ok ? (await beendetAntwort.json()).length : 0;
     if (!beendetAntwort.ok) throw new Error('Aufraeumen fehlgeschlagen ' + beendetAntwort.status);
 
-    await fetch(`${URL_SUPA}/rest/v1/orion_funde?status=eq.live&endet_am=lt.${new Date().toISOString()}`, {
+    await fetch(`${URL_SUPA}/rest/v1/orion_funde?status=eq.live&bereich=eq.${bereich}&endet_am=lt.${new Date().toISOString()}`, {
       method: 'PATCH', headers: { ...dbKopf(), prefer: 'return=minimal' },
       body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: 'Partie vorbei' })
     });
@@ -553,6 +597,7 @@ Deno.serve(async () => {
     await fetch(`${URL_SUPA}/rest/v1/orion_laeufe`, {
       method: 'POST', headers: { ...dbKopf(), prefer: 'return=minimal' },
       body: JSON.stringify({
+        bereich,
         dauer_ms: Date.now() - t0, pm_maerkte: maerkte.length,
         bf_match_odds: bfSieger.length + bfOu.length, bf_alter_s: bfAlterS,
         paare: zeilen.length, chancen_neu: chancen, chancen_live: chancen, beendet
@@ -563,17 +608,21 @@ Deno.serve(async () => {
     for (const k of Object.keys(smNachArt)) smJeArt[k] = smNachArt[k].length;
 
     return new Response(JSON.stringify({
-      ok: true, dauer_ms: Date.now() - t0,
+      ok: true, bereich, dauer_ms: Date.now() - t0,
       betfair_aktiv: BETFAIR_AKTIV,
+      betfair: { geladen: bfImFenster.length, sieger: bfSieger.length,
+                 ueber_unter: bfOu.length, alter_s: bfAlterS },
       pm_maerkte: maerkte.length, je_art: jeArt,
       kalshi_maerkte: kalshi.length, kalshi_alter_s: kaAlterS,
+      kalshi_anderer_bereich: kaAnderesFach,
       smarkets_maerkte: smAlle.length, smarkets_alter_s: smAlterS,
       smarkets_je_art: smJeArt,
+      bereich_verworfen: bereichVerworfen,
+      karte_ok: karteOk,
       anker_smarkets_partien: smGesehen.size,
       direkt: {
         offene_smarkets_partien: offen.length,
         kalshi_partien: kaNachPartie.size,
-        kalshi_anderer_bereich_verworfen: kaAnderesFach,
         paare: direkt.paare.length,
         mehrdeutig_verworfen: direkt.mehrdeutig,
         zeitlich_zu_weit: direkt.zuWeit
@@ -585,8 +634,8 @@ Deno.serve(async () => {
   } catch (e) {
     await fetch(`${URL_SUPA}/rest/v1/orion_laeufe`, {
       method: 'POST', headers: { ...dbKopf(), prefer: 'return=minimal' },
-      body: JSON.stringify({ dauer_ms: Date.now() - t0, fehler: String(e).slice(0, 500) })
+      body: JSON.stringify({ bereich: bereich || null, dauer_ms: Date.now() - t0, fehler: String(e).slice(0, 500) })
     }).catch(() => {});
-    return new Response(JSON.stringify({ ok: false, fehler: String(e) }), { status: 500, headers: kopf });
+    return new Response(JSON.stringify({ ok: false, bereich, fehler: String(e) }), { status: 500, headers: kopf });
   }
 });

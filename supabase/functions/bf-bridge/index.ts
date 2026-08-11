@@ -53,7 +53,20 @@ Deno.serve(async (req) => {
         .map((m:any)=>({
           k:s(m.k,200),
           r:m.r.slice(0,4).map((x:any)=>({n:s(x.n,80),b:f(x.b),bs:f(x.bs),l:f(x.l),ls:f(x.ls)})),
-          mt:s(m.mt,40), ev:s(m.ev,120), st:m.st||null, ip:m.ip?1:0, link:m.link||null
+          mt:s(m.mt,40), ev:s(m.ev,120), st:m.st||null, ip:m.ip?1:0, link:m.link||null,
+          // Additiv ab Bridge-Build 18: der ECHTE Kommissionssatz JE MARKT
+          // (Betfair marketBaseRate, 2 bis 7 %, nicht ueberall 5 %).
+          // Alte Bridges schicken das Feld nicht — dann bleibt es null, und
+          // der Scanner rechnet mit dem unguenstigsten bekannten Satz.
+          // NIEMALS als 0 durchgehen lassen: das erzeugt Scheinchancen.
+          sz:fn(m.sz),
+          // Additiv ab Bridge-Build 19: die SPORTART als Betfair eventTypeId.
+          // Ohne sie kann der Server Betfair keinem Bereich zuordnen und die
+          // Bereichssperre greift dort nicht (5,34-%-Fehlpaarung vom 11.8.).
+          // Alte Bridges schicken das Feld nicht — dann bleibt es null, und
+          // null heisst NICHT "passt schon", sondern "Bereich unbekannt,
+          // wird nicht gepaart". Dieselbe Regel wie bei Kalshi.
+          et:m.et!=null?s(m.et,20):null
         }));
     }
     if(body && Array.isArray(body.arbs)){

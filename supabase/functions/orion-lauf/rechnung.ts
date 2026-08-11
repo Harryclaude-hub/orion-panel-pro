@@ -1,9 +1,7 @@
-// Spiegel von js/rechnung.js. Geprueft: pruefung/rechnung.test.js, 171 Pruefungen.
-//
-// ACHTUNG: Diese Datei und js/rechnung.js muessen inhaltlich gleich bleiben.
-// Am 10.8.2026 waren sie es NICHT — maxEinsatz gab es nur hier. Beim naechsten
-// Auseinanderlaufen faellt es wieder niemandem auf, solange es keinen
-// Prüfstand gibt, der beide Fassungen gegeneinander haelt (offener Punkt 7).
+// Spiegel von js/rechnung.js. Geprueft: pruefung/rechnung.test.js UND
+// pruefung/spiegel.test.js — der Pruefstand haelt beide Fassungen
+// gegeneinander (gleiche Funktionen, gleiche Konstanten, gleiche Ergebnisse).
+// Anlass: am 10.8.2026 gab es maxEinsatz nur hier, und niemand merkte es.
 
 export const GEBUEHR_UNBEKANNT = 0.07;
 export const KALSHI_SATZ = 0.07;

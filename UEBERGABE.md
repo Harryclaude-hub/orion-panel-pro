@@ -6,14 +6,15 @@
 > Sie aktualisiert sich NICHT von selbst. Eine veraltete Übergabe ist
 > schlimmer als keine, weil man ihr glaubt.
 
-Stand: **11. August 2026, Abend**. Dieser Text reicht, um ohne Vorwissen
+Stand: **11. August 2026, spät abends**. Dieser Text reicht, um ohne Vorwissen
 weiterzuarbeiten. Alle Zahlen darin sind gemessen; was nicht gemessen ist,
 steht ausdrücklich als ungemessen da.
 
-> **Wer neu dazukommt, liest zuerst Abschnitt 8c und 8d.** Dort steht, was
-> am 11.8. dazukam (Betfair über eine Bridge, Bereichstrennung, Euro-Beträge,
-> der Wächter) und was der **ausdrückliche Auftrag** für den nächsten Schritt
-> ist: ein eigener Scanner je Bereich, kein „alle Bereiche".
+> **Wer neu dazukommt, liest zuerst Abschnitt 8e.** Der Auftrag aus 8d ist
+> **umgesetzt**: jeder Bereich hat seinen eigenen Scanner (20 pg_cron-Takte),
+> die Bridge liefert ab Build 19 die Sportart mit, die Anzeige zeigt ab 3 %
+> als Chance. Was noch am Auftraggeber hängt (Build 19 per Doppelklick
+> starten) und was danach nachzumessen ist, steht in 8e.
 >
 > **Nicht alles steht im Repo.** Ein Teil der Logik läuft als SQL-Funktion in
 > Supabase — Wächter, Wechselkurs, Betfair-Vorfilter. Was es gibt und wie man
@@ -835,7 +836,7 @@ Gegen den Verlauf gehalten findet er genau die zwei „Al"-Fehlpaarungen.
 
 ---
 
-## 8d. DER AUFTRAG für die nächste Sitzung
+## 8d. DER AUFTRAG für die nächste Sitzung — **UMGESETZT am 11.8. spät abends, siehe 8e**
 
 > **Jeder Bereich bekommt einen eigenen Scanner.**
 > Es gibt **kein „alle Bereiche"**. Man muss sich für einen entscheiden;
@@ -876,6 +877,163 @@ mit Index, `Filter.bereichVon`, Auswahlfeld mit 21 Einträgen.
 auseinander, die Gebühren fressen das auf. Betfair bringt erstmals echte
 Tiefe (2213 € statt 2,94 €) — mit Build 18 und dem echten Kommissionssatz
 könnten die −0,24 % ins Plus drehen. **Das ist der nächste Hebel.**
+
+---
+
+## 8e. Nachtrag 11. August 2026, spät abends — Scanner je Bereich LÄUFT
+
+Der Auftrag aus 8d ist umgesetzt, in der vorgegebenen Reihenfolge. Vor dem
+Deploy lief `node pruefung/spiegel.test.js` (13 995 grün, plus 275 + 171 +
+158 in den anderen Prüfständen).
+
+### 1. Bridge Build 19 — Betfair schickt die Sportart mit
+
+- `bridge/betfair-bridge.js`: jeder Markt trägt jetzt `et` (Betfair
+  eventTypeId, stand längst im Katalog), und `stats.et_namen` liefert
+  Betfairs **eigene** Namen je Id aus `listEventTypes` — damit ist die
+  Zuordnung nachprüfbar statt geglaubt. Build 19, Version 3.8.
+- `bf-bridge` v14 nimmt `et` additiv an (Regel 6 gewahrt: nur erweitert).
+  Dabei fiel Drift auf: das `sz`-Feld (Build 18) war NUR im Deployment,
+  nicht im Repo — jetzt synchron.
+- Neue Tabelle **`orion_bf_sport`** (et → bereich, mit `name_erwartet` und
+  `geprueft`). Herkunft: Betfairs dokumentierte Ids, **ungemessen bis
+  Build 19 läuft** — der Wächter vergleicht dann gegen `stats.et_namen`
+  und setzt `geprueft` erst bei Übereinstimmung.
+- `orion_bf_maerkte(fenster_h, bereich_p)` reicht `et`/`bereich` durch und
+  filtert je Bereich. **Die exe liegt fertig in `C:\Users\Home\orion-bridge\`
+  (Build 19, 92,5 MB) — der Auftraggeber muss sie auf dem Bridge-Laptop
+  starten (Doppelklick).** Die alte Quelldatei dort liegt als
+  `betfair-bridge-alt-build17.js` daneben; eine Build-18-exe lag dort
+  entgegen der Übergabe NICHT (vermutlich schon auf den Laptop kopiert).
+
+**WICHTIG, bewusst so entschieden:** Bis Build 19 auf dem Laptop läuft,
+paart **kein** Scanner mehr Betfair — die Bridge (Build 17) schickt kein
+`et`, und unbekannter Bereich heißt „wird nicht gepaart" (dieselbe Regel
+wie bei Kalshi; die alte Lage — Betfair ganz ohne Bereichssperre — war
+exakt die Fehlerklasse der 5,34-%-Fehlpaarung). Die bestehenden
+Betfair-Zeilen wurden dadurch als „nicht mehr gefunden" beendet. Sobald
+Build 19 läuft, kommen sie mit echtem Kommissionssatz UND Bereichssperre
+zurück.
+
+### 2. Scanner je Bereich (orion-lauf v19)
+
+- **Kein „alle Bereiche" mehr.** Jeder Aufruf verlangt `{"bereich":"…"}`;
+  ohne Bereich: HTTP 400. 20 pg_cron-Takte `orion-lauf-<bereich>` nach
+  `orion_bereiche.takt_sek` (fussball `20 seconds`, 6 × minütlich,
+  13 × `*/2`). Der alte Sammel-Takt `orion-lauf-takt` ist weg.
+- Je Lauf wird NUR geladen, was zum Bereich gehört: Polymarket über die
+  `pm_tags` des Registers, Kalshi vorgefiltert über den Serien-Ticker,
+  Betfair über `orion_bf_maerkte(12, bereich)`, Smarkets **nur** im
+  Bereich fussball (in allen anderen wird der Schnappschuss gar nicht
+  geladen — Speicher!). Durchgang 2 (sm↔ka direkt) nur im fussball-Lauf.
+- Jede Zeile trägt `bereich`; die **Aufräumung über die Zeitmarke läuft je
+  Bereich** (der Tennis-Lauf beendet keine Fußball-Zeilen). Altzeilen
+  wurden per Migration aus der Sportart nachgefüllt.
+- **Probelauf-Modus:** `{"bereich":"golf","probe":true}` rechnet alles,
+  schreibt NICHTS und liefert jede Zuordnung einzeln zurück — der
+  Trockenlauf, den jede Freischaltung braucht. Probe geht auch bei
+  inaktiven Bereichen; ein inaktiver Bereich läuft sonst nicht.
+- Das löst nebenbei den **546**: gemessen laufen alle Bereiche in
+  0,24–7 s (fussball 3,6 s), kein WORKER_RESOURCE_LIMIT. Die
+  Betfair-Begrenzung ist je Bereich auf **1000 Märkte / bis 72 h**
+  gelockert (bereichslose Alt-Aufrufe behalten 250/12 h); die echte Last
+  ist **erst messbar, wenn Build 19 et liefert** — dann nachmessen, bevor
+  das Scanner-Fenster (heute 12 h im Aufruf) steigt.
+- Feinere Kalshi-Bereiche, am Schnappschuss nachgemessen: `lol` und
+  `valorant` sind eigene Bereiche (nicht mehr Sammel-`esport`), neu
+  erkannt werden `KXR6GAME` (esport), `KXARGPREMDIVGAME` und
+  `KXBRASILEIROBGAME` (fussball). Beide Spiegel + Prüfstand angepasst.
+
+### 3. Bereiche zugeschaltet — mit ehrlichem Befund
+
+Alle 15 restlichen Bereiche liefen im Probelauf sauber durch (karte_ok
+überall) und sind zugeschaltet. **Stand heute liefern sie 0 Paare, und
+zwar strukturell:**
+
+```
+lol/valorant/esport   Kalshi hat Märkte (62/20/98), aber Polymarkets
+                      E-Sport-Fragen passen auf KEINE der neun Fragearten
+golf/cricket/mma/     0 verwertbare PM-Märkte im 72-h-Fenster (Golfs 2106
+motorsport/eishockey  Märkte sind Langzeit-Turnierfragen, nicht "win on
+                      DATE"); Betfair-Seite kommt erst mit Build 19
+politik…kultur        Polymarket ist dort das EINZIGE angebundene Buch —
+                      ohne zweites Buch kann nie ein Paar entstehen
+```
+
+Die Scanner sind billig (0,3 s je Lauf) und werden scharf, sobald eine
+der drei Lücken fällt (E-Sport-Frageart-Regeln, Build 19, weitere Bücher).
+
+**21. Bereich `spielerwetten`:** im Register und im Filter, `aktiv=false`.
+Gemessen am 11.8.: Polymarket führt KEINEN brauchbaren Tag (player-props,
+props, nba-props, mlb-props, player-specials, goalscorer,
+anytime-goalscorer — alle 0 Events); Kalshi/Smarkets ungemessen. Erst
+Quelle messen, dann Trockenlauf, dann Takt.
+
+### 4. Anzeige
+
+- **„Alle Bereiche" ist wieder erlaubt** (Vorgabe des Auftraggebers):
+  die Trennung passiert beim Scannen, nicht beim Anschauen. Der Filter
+  behält die Ein-Bereich-Auswahl, Standard ist die Sammelansicht; jede
+  Karte trägt jetzt einen **Bereichs-Chip** (roher Tag im Tooltip).
+- **Chance ab 3,00 %, Live und Verlauf** (`KONFIG.mindestRendite`).
+  Alles zwischen −1 % und 3 % steht unter „Knappste Paare". Serverseitig
+  zählt `orion_uebersicht` gleich. **Gemessener Vorbehalt, dem
+  Auftraggeber ausdrücklich hinzuweisen:** Bücher liegen im Schnitt 1,3 %
+  auseinander, größte je handelbare Rendite +1,12 %, alles ≥ 5 % war
+  bisher Fehlpaarung → der Chancen-Reiter wird meist leer sein, und was
+  auftaucht, verdient die Gegenprobe doppelt. Es wird NICHTS gelöscht —
+  nur anders einsortiert (orion_rauschen_loeschen blieb bei 0,0).
+- `orion_uebersicht.polymarket` und die Datenschicht aggregieren jetzt
+  über den **jüngsten Lauf je Bereich** (eine einzelne letzte Zeile
+  gehört immer nur einem Bereich und ließe die Tafel flackern). Neu:
+  `orion_uebersicht.laeufe` und `statistik.je_bereich_lauf` je Bereich.
+
+### 5. Wächter: „Ist die vorgeschlagene Wette wirklich wahr?"
+
+`orion_verdacht()` prüft jetzt **19 Muster** (vorher 12). Neu:
+
+| Prüfung | fängt |
+|---|---|
+| Bereich fehlt an der Zeile | Zeilen fremder/alter Schreiber |
+| Bereich ↔ Sportart widersprechen sich | Karten-/Registerdrift |
+| **Kalshi-Link zeigt in fremden Bereich** | die 5,34-%-Klasse am LINK (Serie aus dem Link, dritter unabhängiger Weg) |
+| Link zeigt auf falsches Buch (Host-Abgleich) | Klick landet beim falschen Anbieter |
+| Einsatzaufteilung ≠ 100 / Auszahlung ≠ 100+Rendite / max_gewinn ≠ max_einsatz·Rendite | mathematisch hübsche, aber unwahre Zeilen |
+| Bereichslauf steht (je aktivem Bereich, 3 Takte Toleranz) | ein einzelner stehender Scanner, dessen Zeilen frisch aussehen |
+| Betfair-Sportkarte ↔ `stats.et_namen` der Bridge | falsche et→Bereich-Zuordnung, sobald Build 19 läuft |
+
+Auslöse-Tests der neuen Helfer (orion_bereich_pm/-kalshi, orion_link_passt)
+gegen falsche UND richtige Eingaben: bestanden. Gegen die 29 Live-Zeilen:
+0 Fehlalarme. Der Wächter setzt außerdem `orion_bf_sport.geprueft`, sobald
+die Bridge-Namen die Karte bestätigen.
+
+### Nach dieser Sitzung offen
+
+1. **Build 19 starten** (Doppelklick auf `orion-bridge\betfair-bridge.exe`
+   auf dem Bridge-Laptop). Bis dahin: keine Betfair-Paarungen (bewusst).
+2. **Nach dem Start nachmessen:** greift die Bereichssperre (et_namen im
+   Wächter grün, `orion_bf_sport.geprueft` = true)? Bleibt der 546 bei
+   1000 Märkten je Bereich fern? Erst dann Scanner-Fenster über 12 h.
+3. **Aufruf-Bilanz ungemessen:** 20 Takte ergeben rechnerisch ~24 000
+   orion-lauf-Aufrufe/Tag (~720 000/Monat) plus Sammler. Ob das zum
+   Supabase-Tarif passt, ist NICHT geprüft — bei Bedarf Welt-Takte auf
+   */5 strecken, das kostet dort nichts (0 Paare, siehe oben).
+4. **E-Sport-Fragearten fehlen:** Kalshi hat lol/valorant/esport-Märkte,
+   Polymarket auch — aber `marktArt()` erkennt nur die neun
+   Team-Fragemuster. Eigene Regeln + Trockenlauf nötig, sonst bleiben
+   diese Bereiche leer.
+5. **Spielerwetten-Quellen messen** (siehe oben, Bereich steht bereit).
+6. Unverändert offen aus 8b/8c/8d: Smarkets-Marktlink (per HTTP nicht
+   verifizierbar), Polymarkets Gebührenwiderspruch (konservativ höhere
+   Variante), Smarkets Lay handelbar?, manuelles Wetten trotz SUSPENDED,
+   Altlast-Takte `pm-scan-takt` und `orion-wache-takt` ungemessen.
+7. **Angekündigt vom Auftraggeber:** Dateien zu Broker-Gebühren folgen;
+   danach Gebührenmodell je Buch erneut gegen die Unterlagen halten.
+
+**Der Befund über allem, unverändert:** die Bücher liegen im Schnitt 1,3 %
+auseinander, die Gebühren fressen das auf. Betfair bringt erstmals echte
+Tiefe — Build 19 (echter Kommissionssatz statt 7 %) ist der Hebel, und er
+liegt jetzt fertig auf der Platte. **Starten muss ihn ein Mensch.**
 
 ---
 

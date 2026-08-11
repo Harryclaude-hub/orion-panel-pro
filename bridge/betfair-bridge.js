@@ -202,8 +202,8 @@ const O = {
    erkennt, ob auf einem PC noch eine veraltete Bridge läuft, und den Nutzer
    auffordern kann, die neue Datei zu holen. BEI JEDER inhaltlichen Änderung
    an der Suchlogik hochzählen — sonst merkt niemand, dass er alt ist. */
-const BRIDGE_BUILD = 18;
-const BRIDGE_VERSION = "3.7";
+const BRIDGE_BUILD = 19;
+const BRIDGE_VERSION = "3.8";
 
 const BF_LOGIN = 'https://identitysso.betfair.com/api/login';
 const BF_KEEP  = 'https://identitysso.betfair.com/api/keepAlive';
@@ -607,11 +607,22 @@ async function katalogFenster(etId, vonMs, bisMs, tiefe, zweiterVersuch) {
   }
 }
 
+/* Sportart je eventTypeId, GEMESSEN an Betfairs eigener Antwort auf
+   listEventTypes — nicht aus einer Tabelle im Kopf. Wird mit den stats
+   hochgeladen, damit der Server seine et->Bereich-Zuordnung jederzeit
+   gegen Betfairs eigene Namen halten kann. */
+const ET_NAMEN = {};
+
 async function entdecken() {
   const t0 = Date.now();
   KATALOG.clear();
   KAT_VERLUST.length = 0;
   const typen = await rpc('listEventTypes', { filter: {} });
+  for (const t of typen) {
+    if (t && t.eventType && t.eventType.id != null) {
+      ET_NAMEN[String(t.eventType.id)] = String(t.eventType.name || '');
+    }
+  }
   const aus = new Set((O.excludeEventTypeIds || []).map(String));
   const liste = typen.filter(t => !aus.has(String(t.eventType.id)))
                      .sort((a, b) => b.marketCount - a.marketCount);
@@ -1601,6 +1612,12 @@ function hochladeMaerkte() {
       // nie mit hochgeladen. Ohne ihn rechnet der Server mit 7 % statt der
       // echten 2 bis 5 % und drueckt jede Rendite nach unten.
       sz: (typeof k.satz === 'number' && isFinite(k.satz)) ? k.satz : null,
+      // Build 19, additiv: die SPORTART als Betfair eventTypeId. Ohne sie
+      // kann der Server Betfair-Maerkte keinem Bereich zuordnen — und die
+      // Bereichssperre (Lehre aus der 5,34-%-Fehlpaarung Fussball gegen
+      // League of Legends am 11.8.2026) greift bei Betfair nicht. Steht
+      // laengst in k.etId, wurde nur nie mitgeschickt.
+      et: k.etId != null ? String(k.etId) : null,
       link: 'https://www.betfair.com/exchange/plus/market/' + mid
     });
   });
@@ -1828,6 +1845,10 @@ async function durchlauf() {
       // Wie viele Märkte gibt es auf BEIDEN Büchern, und wie viele davon
       // wurden direkt vor der Rechnung noch einmal frisch gelesen
       gemeinsam: gemeinsam.length, sync_gelesen: syncGelesen,
+      /* Build 19: Betfairs EIGENE Namen je eventTypeId (listEventTypes).
+         Damit laesst sich die et->Bereich-Zuordnung des Servers jederzeit
+         gegen die Quelle pruefen, statt sie zu glauben. */
+      et_namen: ET_NAMEN,
       zeit: new Date().toISOString()
     };
 

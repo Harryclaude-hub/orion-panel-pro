@@ -27,14 +27,15 @@ select jobid, jobname, schedule, active, command from cron.job order by jobname;
 
 | Tabelle | wofür |
 |---|---|
-| `orion_funde` | jeder Fund, live und Verlauf. Spalten `art` und `bereich` seit 11.8. |
-| `orion_laeufe` | Protokoll jedes Scans |
+| `orion_funde` | jeder Fund, live und Verlauf. Spalten `art` und `bereich` seit 11.8.; `bereich` wird vom Bereichs-Scanner IMMER geschrieben |
+| `orion_laeufe` | Protokoll jedes Scans, seit 11.8. spät mit Spalte `bereich` |
 | `orion_wache` | Selbstkontrolle, jede Minute eine Zeile |
-| `orion_bereiche` | **Register der 20 Bereiche** mit `pm_tags` und `takt_sek` |
+| `orion_bereiche` | **Register der 21 Bereiche** mit `pm_tags`, `takt_sek` und `aktiv` (= Freischaltung; `spielerwetten` steht aus, keine gemessene Quelle) |
+| `orion_bf_sport` | **Betfair eventTypeId → Bereich** mit `name_erwartet` und `geprueft`. Ungemessen, bis Bridge Build 19 `stats.et_namen` liefert — dann setzt der Wächter `geprueft` bei Übereinstimmung |
 | `orion_kurse` | Wechselkurs USD→EUR, von der Datenbank selbst geholt |
 | `orion_kurs_anfrage` | offene pg_net-Anfrage, damit nicht doppelt gefragt wird |
 | `kalshi_snapshot`, `smarkets_snapshot` | Kurse der Sammler |
-| `bridge_odds` | Betfair, von der Bridge. **Format fix, nie umbauen** (Regel 6) |
+| `bridge_odds` | Betfair, von der Bridge. **Format fix, nie umbauen** (Regel 6). Märkte tragen ab Build 18 `sz`, ab Build 19 `et` (beides additiv) |
 
 ## Funktionen
 
@@ -52,37 +53,53 @@ nach `orion_wache`. Ruft:
   `pg_net`. Asynchron: erst einsammeln, dann neu anfragen. Die Anfrage-ID
   wird gemerkt, weil in `net._http_response` auch die Antworten der
   Cron-Jobs stehen.
-- `orion_verdacht()` — **elf Prüfmuster**. Wichtigstes: die Zuordnung wird
-  über `orion_kernwoerter()` **unabhängig vom Scanner nachgerechnet**. Teilen
-  zwei Titel kein unterscheidendes Wort, ist die Paarung verdächtig — egal
-  was der Scanner als `zuordnung` eingetragen hat.
+- `orion_verdacht()` — **19 Prüfmuster** (seit 11.8. spät). Wichtigstes: die
+  Zuordnung wird über `orion_kernwoerter()` **unabhängig vom Scanner
+  nachgerechnet**. Neu dazugekommen: Bereich fehlt / widerspricht der
+  Sportart, Kalshi-Link zeigt in fremden Bereich (Serie aus dem Link),
+  Link zeigt auf falsches Buch, Einsatz-/Auszahlungs-/Gewinn-Plausibilität,
+  Bereichslauf steht (je aktivem Bereich), Betfair-Sportkarte widerspricht
+  den Bridge-Namen.
 - `orion_kernwoerter(t)` / `orion_stoppwort(w)` — Wortzerlegung in SQL,
   bewusst getrennt von der JS-Fassung. Zwei unabhängige Wege.
+- `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
+  `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
+  den Wächter (neben JS- und TS-Spiegel).
 
-**Betfair-Vorfilter** — `orion_bf_maerkte(fenster_h)`. Liefert MATCH_ODDS und
-OVER_UNDER aus `bridge_odds`, **begrenzt auf 12 Stunden und 250 Märkte**.
+**Betfair-Vorfilter** — `orion_bf_maerkte(fenster_h, bereich_p)`. Liefert
+MATCH_ODDS und OVER_UNDER aus `bridge_odds`, seit 11.8. spät mit `et` und
+`bereich` (über `orion_bf_sport`). **Mit gesetztem `bereich_p`: bis 72 h und
+1000 Märkte, und nur Märkte mit passendem, bekanntem Bereich** (kein et →
+nichts; alte Bridge vor Build 19 liefert also 0). Ohne `bereich_p` bleibt
+der alte Notbehelf 12 h / 250 für bereichslose Aufrufe.
 
-> Diese Begrenzung ist ein **Notbehelf**, keine Lösung. Ohne sie bricht
-> `orion-lauf` mit HTTP 546 (`WORKER_RESOURCE_LIMIT`) ab. Von rund 1060
-> Märkten sehen wir 250. Sie gehört aufgehoben, sobald der Scanner je
-> Bereich läuft — siehe UEBERGABE.md 8d, Punkt 2.
+> Die echte Last je Bereich ist erst messbar, wenn Build 19 läuft und et
+> mitkommt — dann den 546 nachmessen, bevor das Scanner-Fenster steigt.
 
 ## Takte
 
-Abgefragt am 11.8.2026, alle `active`:
+Stand 11.8.2026 spät abends. Der Sammel-Takt `orion-lauf-takt` ist WEG;
+stattdessen **ein Takt je Bereich** (Body `{"bereich":"…"}`), Takt aus
+`orion_bereiche.takt_sek`:
 
 ```
-orion-lauf-takt       15 seconds     Scanner
-orion-smarkets-takt   * * * * *      Smarkets-Sammler
-orion-waechter-takt   * * * * *      Wächter (siehe oben)
-pm-scan-takt          * * * * *      alt, läuft noch mit
-orion-kalshi-takt     */2 * * * *    Kalshi-Sammler
-orion-pruefer-takt    */5 * * * *    dritte, unabhängige Rechnung
-orion-rauschen-takt   */5 * * * *    löscht Minuszeilen im Verlauf
-orion-wache-takt      */10 * * * *   ältere Selbstkontrolle
+orion-lauf-fussball     20 seconds   Scanner NUR fussball
+orion-lauf-tennis       * * * * *    ebenso je Bereich:
+orion-lauf-basketball   * * * * *    baseball, football, lol,
+orion-lauf-…            …            valorant, krypto minütlich;
+orion-lauf-<bereich>    */2 * * * *  die übrigen 13 alle 2 Minuten
+orion-smarkets-takt     * * * * *    Smarkets-Sammler
+orion-waechter-takt     * * * * *    Wächter (siehe oben)
+pm-scan-takt            * * * * *    alt, läuft noch mit
+orion-kalshi-takt       */2 * * * *  Kalshi-Sammler
+orion-pruefer-takt      */5 * * * *  dritte, unabhängige Rechnung
+orion-rauschen-takt     */5 * * * *  löscht Minuszeilen im Verlauf
+orion-wache-takt        */10 * * * * ältere Selbstkontrolle
 ```
 
 Zwei Altlasten, beide harmlos, aber jemand sollte sie prüfen:
 `pm-scan-takt` ruft den alten Scanner `pm-scan` auf, und `orion-wache-takt`
 läuft neben dem neuen `orion-waechter-takt`. Ob sie noch etwas beitragen,
-ist **ungemessen**.
+ist **ungemessen**. Neu dazu: die Aufruf-Bilanz der 20 Bereichs-Takte
+(~24 000 Läufe/Tag) gegen den Supabase-Tarif ist **ungemessen** — bei
+Bedarf die Welt-Takte auf `*/5` strecken, dort entstehen ohnehin 0 Paare.

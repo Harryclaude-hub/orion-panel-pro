@@ -395,7 +395,10 @@ async function main() {
    *   Kalshi      ROSSMANN Centaurs vs. Eintracht Frankfurt     LEAGUE OF LEGENDS
    * Die Namenspruefung kann das nicht fangen — die Namen SIND gleich.
    * Dieser Test loest die Regel aus, er umgeht sie nicht. */
-  pruefe('Bereich: LoL-Serie ist esport', bZ.bereichKalshi('KXLOLGAME') === 'esport');
+  /* Seit dem Bereichs-Scanner (11.8. abends) sind LoL und Valorant EIGENE
+   * Bereiche — dieselbe Koernung wie das Register orion_bereiche. Der Fall
+   * vom 11.8. bleibt gefangen: lol ist erst recht nicht fussball. */
+  pruefe('Bereich: LoL-Serie ist der eigene Bereich lol', bZ.bereichKalshi('KXLOLGAME') === 'lol');
   pruefe('Bereich: Club-Fussball ist fussball', bZ.bereichKalshi('KXCLUBFGAME') === 'fussball');
   pruefe('Bereich: Polymarket soccer ist fussball', bZ.bereichPm('soccer') === 'fussball');
   pruefe('DER FALL vom 11.8.: fussball gegen esport wird ABGELEHNT',
@@ -406,8 +409,18 @@ async function main() {
          bZ.gleicherBereich('fussball', null) === false &&
          bZ.gleicherBereich(null, 'fussball') === false &&
          bZ.gleicherBereich(null, null) === false);
-  pruefe('Bereich: CS2 und Valorant sind esport',
-         bZ.bereichKalshi('KXCS2GAME') === 'esport' && bZ.bereichKalshi('KXVALORANTGAME') === 'esport');
+  pruefe('Bereich: CS2 bleibt Sammelbereich esport, Valorant ist eigenstaendig',
+         bZ.bereichKalshi('KXCS2GAME') === 'esport' && bZ.bereichKalshi('KXVALORANTGAME') === 'valorant');
+  /* Am 11.8. abends im Schnappschuss NEU gemessen: Rainbow Six sowie zwei
+   * Fussball-Serien (argentinische Primera, brasilianische Serie B). Ohne
+   * Zuordnung waeren sie "unbekannt" und wuerden nie gepaart — ehrlich,
+   * aber unnoetig blind. */
+  pruefe('Bereich: R6 ist esport, ARGPREMDIV und BRASILEIROB sind fussball',
+         bZ.bereichKalshi('KXR6GAME') === 'esport' &&
+         bZ.bereichKalshi('KXARGPREMDIVGAME') === 'fussball' &&
+         bZ.bereichKalshi('KXBRASILEIROBGAME') === 'fussball');
+  pruefe('Bereich: lol gegen valorant wird ABGELEHNT — auch E-Sport ist nicht ein Topf',
+         bZ.gleicherBereich(bZ.bereichKalshi('KXLOLGAME'), bZ.bereichKalshi('KXVALORANTGAME')) === false);
   pruefe('Bereich: Baseball und Basketball werden getrennt',
          bZ.bereichKalshi('KXNPBGAME') === 'baseball' &&
          bZ.bereichKalshi('KXWNBAGAME') === 'basketball' &&

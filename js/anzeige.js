@@ -720,6 +720,21 @@
       '</div>';
   }
 
+  /* Der BEREICH einer Zeile, als deutscher Name aus dem Filter-Register.
+   * Seit dem Bereichs-Scanner stammt jede Zeile aus GENAU EINEM Bereich —
+   * in der Sammelansicht "Alle Bereiche" ist das die erste Frage an eine
+   * Karte. Faellt fuer Altzeilen auf die Sportart-Ableitung zurueck. */
+  function bereichText(f) {
+    var F = welt.Filter;
+    if (!F || !F.bereichVon) return String(f.sportart || '?');
+    var b = F.bereichVon(f);
+    if (!b) return String(f.sportart || '?');
+    for (var i = 0; i < (F.BEREICHE || []).length; i++) {
+      if (F.BEREICHE[i].id === b) return F.BEREICHE[i].name;
+    }
+    return b;
+  }
+
   function karte(f, imVerlauf) {
     /* Eine Chance ist eine Zeile, die GELD bringt — nicht eine mit guter
      * Prozentzahl. Dieselben drei Bedingungen wie in daten.js. */
@@ -747,7 +762,7 @@
           (f.veraltet ? '<span class="chip rot">Kurse veraltet</span> ' : '') +
           (f.zu_duenn ? '<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
              (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span> ' : '') +
-          '<span class="chip">' + txt(f.sportart) + '</span> ' +
+          '<span class="chip" title="Tag: ' + txt(f.sportart) + '">' + txt(bereichText(f)) + '</span> ' +
           '<span class="chip">' + (imVerlauf ? 'beendet vor ' + seit(f.vorbei_seit) : 'endet in ' + bis(f.endet_am)) + '</span> ' +
           '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span> ' +
           '<span class="chip' + (chance ? ' gut' : '') + '">Rendite ' + Number(f.rendite).toFixed(2) + ' %</span> ' +
