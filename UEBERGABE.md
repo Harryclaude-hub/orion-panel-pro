@@ -649,24 +649,60 @@ Zuordnung **unabhängig vom Scanner nach**:
 gehalten findet er genau die zwei Fehlpaarungen — mit 5,06 % und 6,20 %
 Rendite, also genau die Zeilen, die als beste Chancen dastanden.
 
-### Offen (Stand 11.8. mittags)
+### Offen (Stand 11.8. nachmittags)
 
-1. **Smarkets-Marktlinks.** Gemessen: alle 16 Märkte einer Partie tragen
-   **denselben** Link, er zeigt aufs Spiel statt auf den Markt. Bei allem
-   außer Sieger landet man falsch. Jeder Markt hat einen eigenen `slug`
-   (`winner`, `over-under-0.5`) — aber `/over-under-0.5` antwortet als URL
-   **404**. Die API-Slugs sind nicht eins zu eins die Website-Pfade.
-   **Erst messen, dann bauen** — sonst werden die Links schlechter.
-2. **Smarkets Lay handelbar?** Die API liefert `bids`, die Kehrwertsummen
+1. ~~**Scanner-Bug an der Wurzel.**~~ **ERLEDIGT, v16.** Die verwaisten
+   Zeilen wurden über `?schluessel=not.in.(alle Schlüssel)` beendet — eine
+   URL, die bei 40+ Zeilen zu lang wurde und STILL fehlschlug. Jetzt über
+   eine **Zeitmarke**: gefundene Zeilen werden zuerst hochgestempelt, dann
+   beendet die Aufräumung alles vor der Laufmarke. Feste kurze URL, und sie
+   wirft jetzt einen Fehler statt zu schweigen. Verifiziert: `live` == `paare`,
+   null Leichen. Der Wächter bleibt als zweite Sicherung.
+
+2. ~~**Renderlast.**~~ **GEMESSEN und entschärft.** Ein volles Neuzeichnen
+   kostet ~24 ms bei 85 Zeilen, alle 2 s — mit Betfair und schwachem Gerät
+   das gemeldete Ruckeln. `content-visibility: auto` auf den Karten (die
+   `anzeige.js` im Kopf selbst als fehlend nannte) lässt den Browser Layout
+   und Paint für Karten außerhalb des Bildes überspringen. Reines CSS, kein
+   Logikeingriff. Ein größerer Umbau (nur geänderte Karten neu zeichnen) ist
+   möglich, war aber bei diesem Messwert nicht nötig.
+
+3. ~~**Correct Score, Double Chance, Draw No Bet.**~~ **GEMESSEN, nicht
+   gebaut — und zwar mit Grund.** Von 13 581 Polymarket-Fußballmärkten:
+
+   ```
+   Double Chance:  0      Polymarket führt sie GAR NICHT
+   Draw No Bet:    0      Polymarket führt sie GAR NICHT
+   Correct Score:  952    aber je Ergebnis ein eigener Markt, Tiefe ~1
+   ```
+
+   Smarkets hat alle drei. Aber DC und DNB haben bei Polymarket **kein
+   Gegenstück** — nichts zu paaren. Correct Score ist in Hunderte
+   Einzelergebnisse zersplittert mit minimaler Tiefe; bei der Gebührenlage
+   wäre das Deckung ohne Ertrag, mit echtem Fehlpaarungsrisiko beim
+   Ergebnis-Abgleich. **Das Messen hat das Bauen erspart.**
+
+4. **Smarkets-Marktlinks.** Gemessen: alle Märkte einer Partie tragen
+   **denselben** Link, er zeigt aufs Spiel. Jeder Markt hat einen eigenen
+   `slug` (`winner`, `over-under-0.5`), und die URL-Form ist „Punkt wird
+   Bindestrich, Schrägstrich am Ende" (`over-under-0-5/`). NICHT belegt ist,
+   ob die Seite dann den richtigen Markt zeigt — smarkets.com antwortet auf
+   jeden Pfad mit 200 und rendert erst im Browser; der ist hier gesperrt.
+   **Bis zur Messung** nennt die Karte den zu wählenden Markt im Klartext.
+
+5. **Smarkets Lay handelbar?** Die API liefert `bids`, die Kehrwertsummen
    verhalten sich wie bei einer Börse. Ob man als Nutzer dort tatsächlich
    dagegenhalten kann, ist **ungemessen** (kein Konto). Ein großer Teil der
    Funde ist `Smarkets Lay` — diese Auskunft entscheidet über deren Wert.
-3. **Scanner-Bug an der Wurzel** (siehe oben, Wächter fängt es ab).
-4. **Renderlast** — beim ersten Bridge-Betrieb ruckelte die Seite. Verdacht:
-   alle 2 s werden bis zu 1500 Zeilen komplett neu gezeichnet. Ungemessen.
-5. **Correct Score, Double Chance, Draw No Bet** — nie angefasst.
+
 6. **Polymarkets Gebührenwiderspruch** — API sagt Exponent 1, Quellen sagen
-   die Hälfte. Wir rechnen die höhere Variante (Regel 2).
+   die Hälfte. Wir rechnen die höhere Variante (Regel 2: lieber eine
+   verpasste Chance als eine erfundene). Bleibt bewusst konservativ offen.
+
+**Der Befund über allem:** die Bücher liegen im Schnitt 1,3 % auseinander,
+die Gebühren fressen das auf. Größter je gemessener handelbarer Gewinn: 2,93.
+Kein offener Punkt oben ändert das. Ein Buch OHNE Kommission schon — SX Bet
+nimmt 0 % auf Einzelwetten. Das ist der einzige Schritt mit Hebel.
 
 ---
 

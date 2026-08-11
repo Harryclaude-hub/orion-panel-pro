@@ -640,3 +640,21 @@ h2 {
 
 /* Die Links deutlich als Links kennzeichnen, damit man sie nicht sucht. */
 .karte a[href^="http"], .fund a[href^="http"] { text-decoration: underline; text-underline-offset: 3px; }
+
+/* ==========================================================================
+   RENDERLAST — content-visibility fuer lange Kartenlisten
+   Gemessen am 11.8.2026: ein volles Neuzeichnen kostet ~24 ms bei 85 Zeilen,
+   alle 2 Sekunden. Mit Betfair (rund doppelt so viele Zeilen) und auf einem
+   schwachen Geraet ist das genau das Ruckeln, das beim ersten Bridge-Betrieb
+   auftrat. anzeige.js nennt die Ursache im Kopf selbst: Fehlerklasse 5,
+   kein content-visibility.
+
+   content-visibility:auto laesst den Browser Layout und Paint fuer Karten
+   UEBERSPRINGEN, die gerade nicht im Bild sind. Bei 40 Karten, von denen 3
+   sichtbar sind, faellt die Arbeit fuer 37 weg. contain-intrinsic-size gibt
+   eine Platzhalterhoehe, damit die Bildlaufleiste nicht springt. Reines CSS,
+   keine Aenderung an der Logik - das Risiko ist null. */
+.karte, .fund {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 420px;
+}
