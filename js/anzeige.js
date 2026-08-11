@@ -569,6 +569,49 @@
     '</div>';
   }
 
+  /* ---------- Smarkets: der Link zeigt auf die PARTIE, nicht auf den Markt
+   *
+   * Gemessen am 11.8.2026: alle 16 Maerkte einer Partie tragen bei Smarkets
+   * denselben Link. Er fuehrt auf die Spielseite, und die zeigt IHREN
+   * Standardmarkt - meist den Sieger. Bei Sieger-Wetten faellt das nicht
+   * auf, bei den anderen acht Fragearten landet man systematisch falsch.
+   *
+   * Der saubere Fix waere ein Link auf den Markt. Die Markt-Slugs liefert
+   * Smarkets (winner, over-under-0.5, both-teams-score), und die URL-Form
+   * scheint "Punkt wird zu Bindestrich, Schraegstrich am Ende" zu sein
+   * (over-under-0.5 -> /over-under-0-5/). NACHGEPRUEFT IST DAS NICHT:
+   * smarkets.com antwortet auf JEDEN Pfad mit 200 und rendert erst im
+   * Browser, und der Browser ist hier gesperrt. Ein falsch geratener Slug
+   * fuehrt auf eine leere Seite - schlechter als die Spielseite.
+   *
+   * Bis das gemessen ist, steht hier der ehrliche Hinweis: WELCHER Markt
+   * es ist. Das ist keine Vermutung, das steht in der Zeile. */
+  function smarketsHinweis(f) {
+    var b1 = f.buch_1 || 'polymarket', b2 = f.buch || 'betfair';
+    if (b1 !== 'smarkets' && b2 !== 'smarkets') return '';
+    var art = welt.Filter && welt.Filter.artVon ? welt.Filter.artVon(f) : 'sieger';
+    if (art === 'sieger') return '';        // dort stimmt der Standardmarkt
+
+    var name = { unentschieden: 'Full-time result (Unentschieden)',
+                 hz_sieger: 'Half-time result',
+                 hz_unentschieden: 'Half-time result (Unentschieden)',
+                 btts: 'Both teams to score',
+                 ueber_unter: 'Over/under',
+                 hz1_ueber_unter: 'First half over/under',
+                 hz2_ueber_unter: 'Second half over/under',
+                 ecken_ueber_unter: 'Corners over/under' }[art] || art;
+    var linie = String(f.mannschaft || '').match(/(\d+(?:\.\d+)?)\s*$/);
+
+    return '<div class="gegenprobe absage">' +
+      '<div class="gp-fuss" style="margin:0">' +
+        '<b>Achtung beim Smarkets-Link:</b> er führt auf die <b>Partie</b>, ' +
+        'nicht auf diesen Markt — Smarkets zeigt dort seinen Standardmarkt. ' +
+        'Du musst dort selbst wechseln auf: <b>' + txt(name) +
+        (linie ? ' ' + txt(linie[1]) : '') + '</b>.' +
+      '</div>' +
+    '</div>';
+  }
+
   function analyse(f, imVerlauf) {
     var gewinn = Number(f.auszahlung) - 100;
     return '<div class="analyse">' +
@@ -676,6 +719,7 @@
           '</div>' +
         '</div>' +
         renditeText(f) +
+        smarketsHinweis(f) +
         gebuehrZeile(f) +
         gegenprobe(f) +
         absageZeile(f) +
