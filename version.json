@@ -3,7 +3,7 @@
   "bridgeBuild": 19,
   "bridgeVersion": "3.8",
   "exe": "https://github.com/saifokaram1-hub/orion-panel-pro/releases/download/bridge-v19/betfair-bridge.exe",
-  "_exe_warnung": "DIESE ADRESSE EXISTIERT NOCH NICHT. Die fertige Build-19-exe liegt lokal in C:\\Users\\Home\\orion-bridge\\betfair-bridge.exe (92,5 MB) und muss als Release-Anhang hochgeladen werden. Bis dahin liefert der Download-Knopf der Website die alte Datei vom 8.8.2026 (Build 17) — gemessen am 11.8.2026 per HTTP-Kopf.",
+  "_exe_geprueft": "Hochgeladen und geprueft am 11.8.2026 nachts: der Direktlink antwortet mit HTTP 200 und 92 500 992 Bytes, das ist genau die gebaute Build-19-Datei. Der alte Knopf zeigte auf ein Release des VORGAENGER-Repos (orion-panel, bridge-v1) und lieferte eine exe vom 8.8.2026.",
   "anleitung": "https://saifokaram1-hub.github.io/orion-panel-pro/bridge-setup.html",
   "aenderungen": [
     "Build 19: jeder hochgeladene Markt traegt seine SPORTART mit (et = Betfair eventTypeId). Ohne sie kann der Server Betfair keinem Bereich zuordnen — und die Bereichssperre greift dort nicht. Anlass ist die Fehlpaarung vom 11.8.2026, die mit 5,34 Prozent live stand: ein Fussballspiel gegen ein League-of-Legends-Match derselben Mannschaft. Die Namen waren wirklich gleich, nur der Sport nicht",
