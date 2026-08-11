@@ -22,3 +22,26 @@
 --
 -- Ergebnis geht in orion_wache. Erster Lauf: 7 verwaiste beendet,
 -- 0 Verdachtsfaelle, live 82 -> 40.
+-- ===== Nachtrag 11.8.2026 nachmittags =====
+--
+-- orion_links_richten()  - haengt den Schraegstrich an Smarkets-Links.
+--   Gemessen mit den ECHTEN gespeicherten Links:
+--       ohne Schraegstrich -> HTTP 308 Redirect
+--       mit  Schraegstrich -> HTTP 200, richtige Seite
+--   Der Auftraggeber landete "eine Millisekunde beim echten Markt, dann auf
+--   der Startseite" - das passt zum Redirect, bei dem die JavaScript-App neu
+--   startet. REPARIEREN statt melden, weil der Scanner sie weiterhin ohne
+--   schreibt: eine Dauerwarnung ueber 38 Zeilen liest nach drei Tagen
+--   niemand mehr, und dann geht die echte darin unter.
+--
+-- ZAEHLFEHLER, am selben Tag gefunden und behoben: die erste Fassung zaehlte
+-- nach dem zweiten UPDATE ALLE Links mit Schraegstrich statt nur der
+-- geaenderten und meldete 46-54 statt der wahren Zahl. Eine falsche Zahl im
+-- Protokoll ist schlimmer als keine - sie sieht aus wie ein Messwert.
+-- Jetzt get diagnostics fuer BEIDE Updates.
+--
+-- orion_verdacht() um drei Pruefungen erweitert:
+--   j) Smarkets-Link ohne Schraegstrich
+--   k) Link fehlt ganz  - eine Chance ohne Weg dorthin ist keine
+--   l) Scanner steht seit ueber 3 Minuten - dann sind die Funde nicht
+--      falsch, sondern ALT, und das ist gefaehrlicher, weil es frisch aussieht

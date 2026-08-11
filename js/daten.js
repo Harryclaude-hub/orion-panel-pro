@@ -129,8 +129,38 @@
           }
         }
 
-        live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); });
-        verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); });
+        /* SMARKETS-LINK: Schraegstrich am Ende. Gemessen am 11.8.2026 mit
+         * den ECHTEN gespeicherten Links aus der Datenbank:
+         *
+         *   ohne Schraegstrich (so wie gespeichert)  ->  HTTP 308 Redirect
+         *   mit Schraegstrich                        ->  HTTP 200, richtige Seite
+         *
+         * Alle drei geprueften Links antworteten mit 308. Der Auftraggeber
+         * berichtet, dass er "eine Millisekunde beim echten Markt" landet und
+         * dann auf der Startseite - das passt zu einem Redirect, bei dem die
+         * JavaScript-App neu startet und den Zustand verliert. Der Schraeg-
+         * strich vermeidet den Redirect ueberhaupt.
+         *
+         * Das ist BELEGT. Was NICHT belegt ist: ein Link auf den einzelnen
+         * MARKT (.../over-under-2-5/). Die Pfadform stimmt zwar, aber
+         * smarkets.com antwortet auf JEDEN Pfad mit 200 und rendert erst im
+         * Browser - sogar /quatsch-markt/ bekommt eine Seite mit Titel. Ohne
+         * pruefbaren Unterschied wird nicht geraten: ein falscher Marktpfad
+         * fuehrt ins Leere, der Spiel-Link wenigstens zur Partie. Bis dahin
+         * nennt die Karte den zu waehlenden Markt im Klartext. */
+        function smarketsLinkRichten(f) {
+          function schraeg(u) {
+            var s = String(u || '');
+            if (s.indexOf('smarkets.com') < 0) return u;
+            if (s.indexOf('?') >= 0 || s.indexOf('#') >= 0) return u;  // nichts anfassen
+            return s.charAt(s.length - 1) === '/' ? s : s + '/';
+          }
+          if ((f.buch_1 || 'polymarket') === 'smarkets') f.pm_link = schraeg(f.pm_link);
+          if ((f.buch || 'betfair') === 'smarkets')      f.bf_link = schraeg(f.bf_link);
+        }
+
+        live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); smarketsLinkRichten(f); });
+        verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); smarketsLinkRichten(f); });
 
         /* Zusaetzliche Wache im Browser: zwischen zwei Aufraeumlaeufen kann
          * eine frisch beendete Minuszeile durchrutschen. Im Verlauf hat sie

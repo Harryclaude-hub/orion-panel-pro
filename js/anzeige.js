@@ -602,12 +602,23 @@
                  ecken_ueber_unter: 'Corners over/under' }[art] || art;
     var linie = String(f.mannschaft || '').match(/(\d+(?:\.\d+)?)\s*$/);
 
+    /* Smarkets nennt Back/Lay NICHT so. Es ist ein Prediction Market und
+     * spricht von BUY und SELL. Gemessen am 11.8.2026: im Orderbuch eines
+     * Siegermarktes stehen auf BEIDEN Seiten echte Mengen (Kairat back 10,6
+     * Mio / lay 19,4 Mio Einheiten). Dagegenhalten geht dort also sehr wohl —
+     * es heisst nur anders. Wer nach "Lay" sucht, findet nichts und haelt
+     * den Markt faelschlich fuer einseitig. */
+    var seiteHier = (b1 === 'smarkets' ? f.pm_seite : f.bf_seite);
+    var buySell = String(seiteHier || '').toLowerCase() === 'lay'
+      ? ' Diese Seite ist ein <b>Lay</b> — bei Smarkets heißt das <b>SELL</b>, nicht "Lay".'
+      : ' Diese Seite ist ein <b>Back</b> — bei Smarkets heißt das <b>BUY</b>.';
+
     return '<div class="gegenprobe absage">' +
       '<div class="gp-fuss" style="margin:0">' +
         '<b>Achtung beim Smarkets-Link:</b> er führt auf die <b>Partie</b>, ' +
         'nicht auf diesen Markt — Smarkets zeigt dort seinen Standardmarkt. ' +
         'Du musst dort selbst wechseln auf: <b>' + txt(name) +
-        (linie ? ' ' + txt(linie[1]) : '') + '</b>.' +
+        (linie ? ' ' + txt(linie[1]) : '') + '</b>.' + buySell +
       '</div>' +
     '</div>';
   }
