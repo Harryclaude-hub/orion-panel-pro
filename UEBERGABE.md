@@ -588,6 +588,88 @@ Deckung kostet nichts und bleibt.
 
 ---
 
+## 8b. Nachtrag 11. August 2026 — was seit dem 10.8. dazukam
+
+**Die Gebühr steht jetzt in Geld auf jeder Karte.** Satz, Betrag, effektiver
+Prozentsatz vom Einsatz, gemessen/angenommen. Eine Formel für alle vier
+Gebührenarten (Abschnitt 2). Erklärt in `angaben.html`.
+
+**Eine Chance ist eine Zeile, die GELD bringt.** Drei Bedingungen statt
+einer: Rendite über der Schwelle, Menge **bekannt**, Gewinn über
+`KONFIG.mindestGewinn` (5). Vorher rutschten Zeilen mit unbekannter Menge
+durch — aus „unbekannt ist nicht zu dünn" (richtig) war „also ist es eine
+Chance" geworden (falsch). Gemessen: von 2 Chancen blieben 0, größter
+tatsächlicher Gewinn live 2,93.
+
+**Marktart als Spalte** (`orion_funde.art`) — der Filter kannte vier von
+neun Arten. **Sonar** im Kopfbereich, läuft nur bei laufendem Scanner.
+**Kräftiger Rahmen je Wette**, damit man nicht auf die falsche Karte klickt.
+
+### Die zwei Fehler vom 11.8. — beide vom Auftraggeber gefunden
+
+**1. Fehlpaarung durch „Al".** Gemessen:
+
+```
+Polymarket:  Al Diraiyah Saudi Club vs Al Ahli    13.8.
+Kalshi:      Al Jazira vs Al-Ittihad              11.8.   <- ANDERES Spiel
+aehnlichkeit("Al Ahli","Al Jazira") = 0,50   Schwelle = 0,50   -> PAART
+```
+
+„al" ist arabisch der Artikel. Bei zwei Namen mit je zwei Wörtern ergibt
+EIN gemeinsames Wort exakt 0,50. Behoben durch Stoppwörter (`al, el, la,
+le, los, las, de, del, di, du, do, da, dos, das`), deployt als v15.
+**Die Struktur besteht weiter** — mit einem anderen Wort kann es wieder
+passieren. Deshalb der Wächter unten.
+
+**2. Verwaiste Zeilen.** 82 Zeilen standen auf „live", der Scanner fand 40.
+Er setzt nicht mehr gefundene Zeilen über eine URL mit ALLEN Schlüsseln auf
+„vorbei" — die wird zu lang und schlägt **still** fehl (`beendet=0`, keine
+Meldung). Ein Teil der gemeldeten Fehlpaarungen waren solche Leichen.
+**Ursache im Scanner steht noch**, der Wächter räumt sie ab.
+
+### Der Wächter (`orion_waechter_lauf`, pg_cron, jede Minute)
+
+Läuft **komplett in der Datenbank**: kein Deploy, kein Heim-PC, keine
+laufenden Kosten. Räumt auf und prüft neun Muster — und rechnet die
+Zuordnung **unabhängig vom Scanner nach**:
+
+| Prüfung | warum |
+|---|---|
+| kein gemeinsames Wort in den Titeln | **fängt den „Al"-Fall**, unabhängig gerechnet |
+| nur ein gemeinsames Wort bei kurzen Namen | derselbe Mechanismus, schwächer |
+| Zuordnung ≤ 0,55 | die Schwelle selbst |
+| Rendite ≥ 5 % | war bisher **immer** ein Fehler, nie eine Chance |
+| hohe Rendite ohne Menge | die Drei-Cent-Zeilen |
+| Partie vorbei, Zeile live | Leichen |
+| Chance ohne Gebührenbetrag | Rechnung unvollständig |
+| beide Seiten dasselbe Buch | Bruch von Regel 7 |
+| Marktart fehlt | Scanner unvollständig |
+
+**Gegen den echten Fehler geprüft**, nicht nur gedacht: gegen den Verlauf
+gehalten findet er genau die zwei Fehlpaarungen — mit 5,06 % und 6,20 %
+Rendite, also genau die Zeilen, die als beste Chancen dastanden.
+
+### Offen (Stand 11.8. mittags)
+
+1. **Smarkets-Marktlinks.** Gemessen: alle 16 Märkte einer Partie tragen
+   **denselben** Link, er zeigt aufs Spiel statt auf den Markt. Bei allem
+   außer Sieger landet man falsch. Jeder Markt hat einen eigenen `slug`
+   (`winner`, `over-under-0.5`) — aber `/over-under-0.5` antwortet als URL
+   **404**. Die API-Slugs sind nicht eins zu eins die Website-Pfade.
+   **Erst messen, dann bauen** — sonst werden die Links schlechter.
+2. **Smarkets Lay handelbar?** Die API liefert `bids`, die Kehrwertsummen
+   verhalten sich wie bei einer Börse. Ob man als Nutzer dort tatsächlich
+   dagegenhalten kann, ist **ungemessen** (kein Konto). Ein großer Teil der
+   Funde ist `Smarkets Lay` — diese Auskunft entscheidet über deren Wert.
+3. **Scanner-Bug an der Wurzel** (siehe oben, Wächter fängt es ab).
+4. **Renderlast** — beim ersten Bridge-Betrieb ruckelte die Seite. Verdacht:
+   alle 2 s werden bis zu 1500 Zeilen komplett neu gezeichnet. Ungemessen.
+5. **Correct Score, Double Chance, Draw No Bet** — nie angefasst.
+6. **Polymarkets Gebührenwiderspruch** — API sagt Exponent 1, Quellen sagen
+   die Hälfte. Wir rechnen die höhere Variante (Regel 2).
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand
