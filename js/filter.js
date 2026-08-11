@@ -78,7 +78,12 @@
    * gekennzeichnet und nicht die Voreinstellung fuer die Arbeit an einem
    * Bereich. */
   var BEREICHE = [
-    { id: null,          name: 'alle Bereiche', gruppe: '' },
+    /* KEIN "alle Bereiche" mehr. Ausdrueckliche Vorgabe vom 11.8.2026:
+     * man MUSS sich fuer einen Bereich entscheiden. Solange keiner gewaehlt
+     * ist, zeigt die Seite eine Auswahl statt einer Mischung — denn eine
+     * Sammelansicht ist genau die Lage, in der Fussball neben League of
+     * Legends steht und man sie verwechselt. */
+    { id: null,          name: '— bitte Bereich wählen —', gruppe: '' },
     { id: 'fussball',    name: 'Fußball',            gruppe: 'Sport' },
     { id: 'tennis',      name: 'Tennis',             gruppe: 'Sport' },
     { id: 'basketball',  name: 'Basketball',         gruppe: 'Sport' },

@@ -6,10 +6,18 @@
 > Sie aktualisiert sich NICHT von selbst. Eine veraltete Übergabe ist
 > schlimmer als keine, weil man ihr glaubt.
 
-Stand: **10. August 2026, spät abends**, Commit `d2fd551` + die Arbeit dieses
-Abends. Dieser Text reicht, um ohne Vorwissen weiterzuarbeiten. Alle Zahlen
-darin sind gemessen; was nicht gemessen ist, steht ausdrücklich als
-ungemessen da.
+Stand: **11. August 2026, Abend**. Dieser Text reicht, um ohne Vorwissen
+weiterzuarbeiten. Alle Zahlen darin sind gemessen; was nicht gemessen ist,
+steht ausdrücklich als ungemessen da.
+
+> **Wer neu dazukommt, liest zuerst Abschnitt 8c und 8d.** Dort steht, was
+> am 11.8. dazukam (Betfair über eine Bridge, Bereichstrennung, Euro-Beträge,
+> der Wächter) und was der **ausdrückliche Auftrag** für den nächsten Schritt
+> ist: ein eigener Scanner je Bereich, kein „alle Bereiche".
+
+**Vier Bücher aktiv:** Polymarket, Kalshi, Smarkets — und seit 11.8. wieder
+**Betfair** über eine Bridge auf einem eigenen Laptop (mit drei
+Einschränkungen, siehe 8c).
 
 **Live:** https://saifokaram1-hub.github.io/orion-panel-pro/
 **Repo:** `saifokaram1-hub/orion-panel-pro` · lokal `C:\Users\Home\orion-panel-pro`
@@ -703,6 +711,166 @@ Rendite, also genau die Zeilen, die als beste Chancen dastanden.
 die Gebühren fressen das auf. Größter je gemessener handelbarer Gewinn: 2,93.
 Kein offener Punkt oben ändert das. Ein Buch OHNE Kommission schon — SX Bet
 nimmt 0 % auf Einzelwetten. Das ist der einzige Schritt mit Hebel.
+
+---
+
+## 8c. Nachtrag 11. August 2026, Abend — Betfair, Bereiche, Währung
+
+### Betfair läuft wieder — über eine Bridge auf einem eigenen Laptop
+
+Aus Supabase bleibt Betfair gesperrt (403). Die Bridge **umgeht das nicht**:
+sie läuft an einem Privatanschluss, wo Betfair nicht sperrt, liest mit dem
+Konto des Auftraggebers und schiebt über `bf-bridge` nach Supabase.
+
+**Gemessen vor dem Scharfschalten:** `orion_bf_maerkte` liefert 1240 Märkte,
+davon ~850 MATCH_ODDS und ~1100 OVER_UNDER. Erste Funde mit **echter Tiefe**:
+
+```
+ka>bf   −0,24 %   max 2213 €      ← gegen 2,94 € bei Smarkets
+bf>pm   −0,28 %   max 2348 €
+```
+
+**Drei Einschränkungen, die in jeder Betfair-Zeile stecken:**
+
+1. **App-Key ist `DELAYED`** — Kurse rund eine Minute alt. Bei laufenden
+   Spielen ist die gesehene Quote meist schon weg.
+2. **Konto ist für API-Wetten `SUSPENDED`.** Lesen geht, automatisch setzen
+   nicht. Für einen Scanner, bei dem der Mensch klickt, kein Hindernis —
+   **ungeklärt ist**, ob manuelles Wetten im Browser geht.
+3. **Bridge Build 17 sendet den echten Kommissionssatz nicht mit.** Es wird
+   mit 7 % gerechnet statt der echten 2–5 %. An einem echten Markt
+   nachgerechnet kostet das **rund einen Prozentpunkt** Rendite:
+   ```
+   Betfair Back 1,64 gegen Kalshi Nein 0,40
+     7 % angenommen  →  −3,26 %
+     5 % echt        →  −2,79 %
+     2 % echt        →  −2,09 %
+   ```
+   **Build 18 behebt das** und liegt fertig gebaut in `C:\Users\Home\orion-bridge\`
+   als eigenständige `betfair-bridge.exe` (88 MB, Node eingebettet, Doppelklick).
+
+### HTTP 546 — der Speicherfehler ist zurück, und er ist strukturell
+
+Beim Zuschalten von Betfair brach der Scanner **sofort** mit
+`WORKER_RESOURCE_LIMIT` ab und stand rund vier Minuten. Betfairs 1218 Märkte
+(462 kB) kamen zu 1610 Polymarket-Märkten samt Orderbüchern, 949 Smarkets-
+und 198 Kalshi-Märkten.
+
+Notbehelf, beide in der Datenbank ohne Deploy: vergangene Spiele raus, nur
+die gelesenen Felder, **Fenster auf 12 h, Obergrenze 250 Märkte**. Das ist
+eine **Begrenzung, keine Lösung** — von 1060 Märkten sehen wir 250.
+
+### Bereichstrennung — der wichtigste Fund des Tages
+
+Vom Auftraggeber vorhergesagt, dann gemessen. Eine Fehlpaarung stand **live
+mit 5,34 %**:
+
+```
+Polymarket:  FSV Frankfurt 1899 vs. Eintracht Frankfurt    FUSSBALL
+Kalshi:      ROSSMANN Centaurs vs. Eintracht Frankfurt     LEAGUE OF LEGENDS
+```
+
+Verbunden allein dadurch, dass Eintracht Frankfurt auch eine E-Sport-Mannschaft
+hat. **Die Namensprüfung kann das nicht fangen — die Namen sind wirklich
+gleich.** Nur der Bereich ist ein anderer.
+
+Von 369 Kalshi-Märkten sind **196 E-Sport** (CS2 106, LoL 60, Valorant 16,
+Rocket League 14). Smarkets führt **ausschließlich Fußball**. Jede dieser
+Prüfungen war sinnlos und riskant zugleich.
+
+**Behoben:** `Z.bereichKalshi` liest den Bereich aus dem Serien-Ticker,
+`Z.bereichPm` aus dem Polymarket-Tag, `Z.gleicherBereich` verlangt, dass
+**beide bekannt und gleich** sind. Unbekannt heißt nicht „passt schon".
+
+Gemessen in **einem** Lauf nach dem Deploy:
+```
+Bereich verworfen, Durchgang 1:  153 Paarungsversuche
+Kalshi anderer Bereich, D2:      250 von 361 Märkten
+```
+
+### Wir scannen 6 von 29 Bereichen
+
+Gemessen, was Polymarket führt (aktive Märkte):
+```
+golf 2106 · mlb 1550 · tennis 1189 · soccer 1052 · ucl 971 · nfl 761
+lol 696 · weather 655 · ai 608 · cfb 604 · elections 544 · nba 526
+valorant 501 · crypto 401 · pop-culture 346 · politics 342 · tech 274
+world 267 · bitcoin 236 · geopolitics 219 · cricket 219 · mma 216
+esports 213 · ethereum 211 · inflation 206 · f1 187 · science 179
+fed 106 · nhl 94
+```
+Gescannt werden nur `soccer, ucl, mlb, nfl, nba, tennis`.
+
+### Weitere Änderungen dieses Abends
+
+**Beträge in Euro mit Einheit.** „max. Einsatz 94" ließ offen, ob Euro,
+Dollar oder Skala. Alles steht in USD; die Anzeige rechnet um. Der Kurs kommt
+aus der **Datenbank über pg_net** — `api.frankfurter.dev` sendet keinen
+CORS-Header, der Browser darf ihn nicht holen. Gemessen 1 USD = 0,86655 EUR.
+Ohne Kurs wird nicht geraten: dann steht `$` da.
+
+**Smarkets-Links** führten zur Startseite. Gemessen: ohne Schrägstrich am
+Ende → HTTP 308 Redirect, mit → 200. An der Quelle im Sammler behoben
+(949 von 949). Der Marktlink selbst (`/over-under-2-5/`) bleibt **offen** —
+smarkets.com antwortet auf jeden Pfad mit 200, sogar `/quatsch-markt/`.
+
+**Smarkets ist eine echte Börse.** Gemessen am Orderbuch eines Siegermarkts
+tragen beide Seiten Volumen (Kairat back 10,6 Mio / lay 19,4 Mio). Es heißt
+dort nur **BUY und SELL**, nicht Back/Lay.
+
+**Scanner-Wurzelfix:** verwaiste Zeilen werden über eine **Zeitmarke** beendet
+statt über eine URL mit allen Schlüsseln — die wurde bei 40+ Zeilen zu lang
+und schlug **still** fehl (82 live bei 40 gefundenen). Jetzt wirft sie einen
+Fehler statt zu schweigen.
+
+**Wächter** (`orion_waechter_lauf`, pg_cron, jede Minute): räumt verwaiste
+Zeilen ab, richtet Links, hält den Kurs frisch und prüft **elf Muster** —
+darunter die Zuordnung **unabhängig nachgerechnet** (`orion_kernwoerter`).
+Gegen den Verlauf gehalten findet er genau die zwei „Al"-Fehlpaarungen.
+
+---
+
+## 8d. DER AUFTRAG für die nächste Sitzung
+
+> **Jeder Bereich bekommt einen eigenen Scanner.**
+> Es gibt **kein „alle Bereiche"**. Man muss sich für einen entscheiden;
+> solange keiner gewählt ist, zeigt die Seite eine **Auswahl** statt einer
+> Mischung.
+
+Begründung des Auftraggebers, und sie ist gemessen richtig: eine
+Sammelansicht ist genau die Lage, in der Fußball neben League of Legends
+steht und verwechselt wird.
+
+**Was dafür fehlt, in dieser Reihenfolge:**
+
+1. **Betfair muss seine Sportart mitschicken.** Der Snapshot enthält sie
+   nicht — deshalb greift die Bereichssperre bei Betfair-Zeilen **noch
+   nicht**. Eine Zeile in der Bridge, braucht einen neuen Build.
+2. **Der Scanner braucht einen Bereichs-Parameter**, damit `pg_cron` ihn je
+   Bereich mit eigenem Takt aufruft (`orion_bereiche.takt_sek`). Das löst
+   nebenbei den 546er, an dem er heute zweimal scheiterte.
+3. **Erst dann** die 23 fehlenden Bereiche zuschalten. Vorher erzeugt jeder
+   neue Bereich neue Fehlpaarungen, weil Smarkets nur Fußball führt und
+   Betfair keine Sportart meldet.
+4. **Auswahlseite vor der Liste**, solange kein Bereich gewählt ist.
+
+**Grundlage steht bereits:** Tabelle `orion_bereiche` (20 Bereiche, drei
+Gruppen, je eigene `pm_tags` und `takt_sek`), Spalte `orion_funde.bereich`
+mit Index, `Filter.bereichVon`, Auswahlfeld mit 21 Einträgen.
+
+### Weiter offen
+
+- **Marktlink bei Smarkets** (siehe oben, nicht verifizierbar per HTTP)
+- **Betfair: manuelles Wetten trotz `SUSPENDED`?** — Auskunft des
+  Auftraggebers steht aus
+- **Polymarkets Gebührenwiderspruch** — API sagt Exponent 1, Quellen die
+  Hälfte; wir rechnen konservativ die höhere Variante
+- **Betfair-Begrenzung auf 250 Märkte** aufheben, sobald Punkt 2 steht
+
+**Der Befund über allem, unverändert:** die Bücher liegen im Schnitt 1,3 %
+auseinander, die Gebühren fressen das auf. Betfair bringt erstmals echte
+Tiefe (2213 € statt 2,94 €) — mit Build 18 und dem echten Kommissionssatz
+könnten die −0,24 % ins Plus drehen. **Das ist der nächste Hebel.**
 
 ---
 
