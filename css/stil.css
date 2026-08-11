@@ -658,3 +658,14 @@ h2 {
   content-visibility: auto;
   contain-intrinsic-size: auto 420px;
 }
+
+/* Bereichsauswahl im Filter — genau EINER, deshalb ein Auswahlfeld und
+   keine Kaestchen. Steht ganz oben, weil es die erste Entscheidung ist. */
+.f-bereich select {
+  width: 100%; padding: 9px 10px; margin-top: 4px;
+  background: rgba(0,0,0,.35); color: inherit;
+  border: 1px solid rgba(212,175,55,.45); border-radius: 8px;
+  font-size: 14px; font-weight: 600;
+}
+.f-bereich select:focus { outline: none; border-color: rgba(212,175,55,.9); }
+.f-bereich { border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 14px; }

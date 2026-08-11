@@ -27,10 +27,26 @@ const LAEUFER_SCHWELLE = 0.8;
 const BROKER = 'https://www.orbitexch.com/customer/sport/1/market/{id}';
 const RAUSCH_GRENZE = -1.0;
 
-// BETFAIR ABGESCHALTET am 10.8.2026. Code bleibt stehen.
-// Rund 50 Wege gemessen — alle 403 oder nicht erreichbar. Der Kursstrom
-// waere ohnehin wertlos: sein Schema traegt in KEINEM Feld einen Namen.
-const BETFAIR_AKTIV = false;
+// BETFAIR WIEDER AKTIV seit 11.8.2026 abends — ueber die Bridge auf einem
+// eigenen Laptop. Aus Supabase heraus bleibt Betfair gesperrt (403, rund 50
+// Wege gemessen); die Bridge umgeht das nicht, sie laeuft schlicht an einem
+// Privatanschluss und liest mit dem Konto des Auftraggebers.
+//
+// Gemessen am 11.8. vor dem Scharfschalten: orion_bf_maerkte(72) liefert
+// 1240 Maerkte, davon rund 850 MATCH_ODDS und 1100 OVER_UNDER.
+//
+// DREI EINSCHRAENKUNGEN, die in jeder Betfair-Zeile stecken:
+//  1. App-Key ist DELAYED  - Kurse rund eine Minute alt. Bei laufenden
+//     Spielen ist die gesehene Quote meist schon weg.
+//  2. Konto ist fuer API-Wetten SUSPENDED. Lesen geht, automatisch setzen
+//     nicht - fuer einen Scanner, bei dem der Mensch klickt, kein Hindernis.
+//  3. Bridge Build 17 sendet den echten Kommissionssatz NICHT mit. Es wird
+//     mit 7 % gerechnet statt der echten 2 bis 5 %; an einem echten Markt
+//     nachgerechnet kostet das rund einen Prozentpunkt Rendite. Konservativ,
+//     also sicher - aber es kostet Chancen. Build 18 behebt es.
+//
+// Zum Abschalten: hier auf false und KONFIG.buecher.betfair.aktiv ebenso.
+const BETFAIR_AKTIV = true;
 
 const URL_SUPA = Deno.env.get('SUPABASE_URL')!;
 const DIENST = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
@@ -356,9 +372,16 @@ Deno.serve(async () => {
       // ----- Kalshi: nur Sieger und Unentschieden -----
       if (m.art === 'sieger' || m.art === 'unentschieden') {
         const pmSeite: Z.Seite = m.art === 'unentschieden' ? 'unentschieden' : Z.seiteVon(m.teil, p);
+        const pmBereich = Z.bereichPm(m.tag);
         if (pmSeite) {
           const A = Z.woerter(p[0]), B = Z.woerter(p[1]);
           for (const e of Z.kalshiKandidaten(kIndex, A, B)) {
+            /* BEREICH gegen BEREICH. Am 11.8.2026 stand eine Fehlpaarung mit
+             * 5,34 % live: FSV Frankfurt gegen Eintracht Frankfurt (Fussball)
+             * wurde mit einem League-of-Legends-Match derselben Mannschaft
+             * gepaart. Die Namen sind wirklich gleich - nur der Sport nicht.
+             * Kein bekannter Bereich heisst: nicht paaren. */
+            if (!Z.gleicherBereich(pmBereich, Z.bereichKalshi(e.k.serie))) continue;
             const gerade = Math.min(Z.aehnlichkeitW(A, e.kw0), Z.aehnlichkeitW(B, e.kw1));
             const kreuz  = Math.min(Z.aehnlichkeitW(A, e.kw1), Z.aehnlichkeitW(B, e.kw0));
             const score = Math.max(gerade, kreuz);
@@ -409,7 +432,15 @@ Deno.serve(async () => {
       offen.push({ id: ev, partie: pp, zeit: isFinite(t) ? t : null, markt: m });
     }
     const kaNachPartie = new Map<string, any>();
+    let kaAnderesFach = 0;
     for (const k of kalshi) {
+      /* Smarkets fuehrt AUSSCHLIESSLICH Fussball (der Sammler holt
+       * type=football_match, 896 Maerkte gemessen). Alles andere bei Kalshi -
+       * und das waren am 11.8. 196 von 369 Maerkten E-Sport - hat hier nichts
+       * zu suchen. Ohne diese Sperre wird Counter-Strike gegen Fussball
+       * gehalten, und bei gleichnamigen Mannschaften entsteht eine Zeile,
+       * die perfekt aussieht. */
+      if (Z.bereichKalshi(k.serie) !== 'fussball') { kaAnderesFach++; continue; }
       const pp = Z.kalshiPaar(k.titel);
       if (!pp) continue;
       const z = Z.kalshiZeit(k.ev);
@@ -542,6 +573,7 @@ Deno.serve(async () => {
       direkt: {
         offene_smarkets_partien: offen.length,
         kalshi_partien: kaNachPartie.size,
+        kalshi_anderer_bereich_verworfen: kaAnderesFach,
         paare: direkt.paare.length,
         mehrdeutig_verworfen: direkt.mehrdeutig,
         zeitlich_zu_weit: direkt.zuWeit

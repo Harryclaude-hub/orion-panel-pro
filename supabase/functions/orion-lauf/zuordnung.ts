@@ -319,6 +319,54 @@ export function direktPaare(listeA: any[], listeB: any[], schwelle = 0.5, maxStu
   return aus;
 }
 
+/* ---------- BEREICHE: was NIE gegeneinander gepaart werden darf ----------
+ *
+ * Gemessen am 11.8.2026, eine live stehende Fehlpaarung mit 5,34 %:
+ *
+ *   Polymarket:  FSV Frankfurt 1899 vs. Eintracht Frankfurt      FUSSBALL
+ *   Kalshi:      ROSSMANN Centaurs vs. Eintracht Frankfurt       LEAGUE OF LEGENDS
+ *
+ * Verbunden allein dadurch, dass Eintracht Frankfurt auch eine E-Sport-
+ * Mannschaft hat. Die Namenspruefung kann das NICHT fangen - die Namen sind
+ * ja wirklich gleich. Nur der Bereich ist ein anderer.
+ *
+ * Von 369 Kalshi-Maerkten waren an dem Tag 196 E-Sport (CS2, LoL, Valorant,
+ * Rocket League). Sie alle wurden gegen Fussball geprueft.
+ *
+ * BEREICH gegen BEREICH. Wer keinen Bereich kennt, paart nicht - unbekannt
+ * heisst nicht "passt schon". Dieselbe Regel wie bei der unbekannten Menge. */
+const KALSHI_BEREICH: Array<{ muster: RegExp; bereich: string }> = [
+  { muster: /^KX(CS2|LOL|VALORANT|RL|DOTA|OW|COD)/i,        bereich: 'esport' },
+  { muster: /^KX(CLUBF|UCL|LEAGUESCUP|CONMEBOL|DIMAYOR|EPL|MLS|EFL|SERIEA|BUNDES|LALIGA|LIGUE)/i, bereich: 'fussball' },
+  { muster: /^KX(NPB|KBO|LMB|MLB)/i,                        bereich: 'baseball' },
+  { muster: /^KX(WNBA|NBA)/i,                               bereich: 'basketball' },
+  { muster: /^KX(NFL|CFB)/i,                                bereich: 'football' },
+  { muster: /^KX(ATP|WTA|TENNIS)/i,                         bereich: 'tennis' },
+  { muster: /^KX(NHL|HOCKEY)/i,                             bereich: 'eishockey' }
+];
+
+const PM_BEREICH: Record<string, string> = {
+  soccer: 'fussball', ucl: 'fussball',
+  mlb: 'baseball', nfl: 'football', nba: 'basketball', tennis: 'tennis'
+};
+
+export function bereichKalshi(serie: unknown): string | null {
+  const s = String(serie == null ? '' : serie);
+  if (!s) return null;
+  for (const b of KALSHI_BEREICH) if (b.muster.test(s)) return b.bereich;
+  return null;
+}
+
+export function bereichPm(tag: unknown): string | null {
+  const t = String(tag == null ? '' : tag).toLowerCase();
+  return Object.prototype.hasOwnProperty.call(PM_BEREICH, t) ? PM_BEREICH[t] : null;
+}
+
+export function gleicherBereich(a: string | null, b: string | null): boolean {
+  if (!a || !b) return false;
+  return a === b;
+}
+
 /* ---------- Kalshi ---------- */
 
 const KALSHI_ANHANG = /\s+(winner|women s|men s|to win|pro basketball|game)\b.*$/;

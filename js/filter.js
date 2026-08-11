@@ -62,6 +62,66 @@
     { id: 'nba', name: 'Basketball' }, { id: 'tennis', name: 'Tennis' }
   ];
 
+  /* ---------- BEREICH: genau EINER, nie zwei gleichzeitig ----------
+   *
+   * Anlass ist die Fehlpaarung vom 11.8.2026: ein Fussballspiel wurde gegen
+   * ein League-of-Legends-Match derselben Mannschaft gehalten, 5,34 % Rendite,
+   * live. Die Namen waren wirklich gleich — nur der Sport nicht.
+   *
+   * Der Scanner trennt inzwischen selbst (Z.gleicherBereich). Dieser Filter
+   * ist die zweite Haelfte: man sieht immer nur EINEN Bereich, nie eine
+   * Mischung. Das ist bewusst KEINE Mehrfachauswahl wie bei den anderen
+   * Filtern — wer Fussball und E-Sport gleichzeitig sieht, vergleicht
+   * irgendwann doch wieder Zeilen, die nichts miteinander zu tun haben.
+   *
+   * "alle" bleibt moeglich, ist aber ausdruecklich als Sammelansicht
+   * gekennzeichnet und nicht die Voreinstellung fuer die Arbeit an einem
+   * Bereich. */
+  var BEREICHE = [
+    { id: null,          name: 'alle Bereiche', gruppe: '' },
+    { id: 'fussball',    name: 'Fußball',            gruppe: 'Sport' },
+    { id: 'tennis',      name: 'Tennis',             gruppe: 'Sport' },
+    { id: 'basketball',  name: 'Basketball',         gruppe: 'Sport' },
+    { id: 'baseball',    name: 'Baseball',           gruppe: 'Sport' },
+    { id: 'football',    name: 'American Football',  gruppe: 'Sport' },
+    { id: 'eishockey',   name: 'Eishockey',          gruppe: 'Sport' },
+    { id: 'golf',        name: 'Golf',               gruppe: 'Sport' },
+    { id: 'cricket',     name: 'Cricket',            gruppe: 'Sport' },
+    { id: 'mma',         name: 'MMA und Boxen',      gruppe: 'Sport' },
+    { id: 'motorsport',  name: 'Motorsport',         gruppe: 'Sport' },
+    { id: 'lol',         name: 'League of Legends',  gruppe: 'E-Sport' },
+    { id: 'valorant',    name: 'Valorant',           gruppe: 'E-Sport' },
+    { id: 'esport',      name: 'E-Sport übrige',     gruppe: 'E-Sport' },
+    { id: 'politik',     name: 'Politik und Wahlen', gruppe: 'Welt' },
+    { id: 'krypto',      name: 'Krypto',             gruppe: 'Welt' },
+    { id: 'wirtschaft',  name: 'Wirtschaft',         gruppe: 'Welt' },
+    { id: 'welt',        name: 'Weltereignisse',     gruppe: 'Welt' },
+    { id: 'wetter',      name: 'Wetter',             gruppe: 'Welt' },
+    { id: 'tech',        name: 'Technik und KI',     gruppe: 'Welt' },
+    { id: 'kultur',      name: 'Popkultur',          gruppe: 'Welt' }
+  ];
+
+  /* Bereich eines Fundes. Vorrang hat die Spalte, die der Scanner schreibt.
+   * Fuer Zeilen von vor der Umstellung wird er aus der Sportart abgeleitet —
+   * das ist derselbe Ruecksfall wie bei der Marktart. */
+  var SPORT_BEREICH = {
+    soccer: 'fussball', ucl: 'fussball', tennis: 'tennis', nba: 'basketball',
+    mlb: 'baseball', nfl: 'football', cfb: 'football', nhl: 'eishockey',
+    golf: 'golf', cricket: 'cricket', mma: 'mma', f1: 'motorsport',
+    lol: 'lol', valorant: 'valorant', esports: 'esport',
+    politics: 'politik', elections: 'politik', geopolitics: 'politik',
+    crypto: 'krypto', bitcoin: 'krypto', ethereum: 'krypto',
+    economics: 'wirtschaft', inflation: 'wirtschaft', fed: 'wirtschaft',
+    world: 'welt', weather: 'wetter',
+    tech: 'tech', ai: 'tech', science: 'tech', 'pop-culture': 'kultur'
+  };
+
+  function bereichVon(f) {
+    if (f && f.bereich) return String(f.bereich);
+    var s = String(f && f.sportart || '').toLowerCase();
+    return Object.prototype.hasOwnProperty.call(SPORT_BEREICH, s) ? SPORT_BEREICH[s] : null;
+  }
+
   /* "alle" ist bewusst der Standard: ein Panel, das beim ersten Oeffnen
    * schon filtert, versteckt Funde, von denen man nichts weiss. */
   var STANDARD = {
@@ -73,7 +133,9 @@
     nurMitMenge: false,
     buecher: null,      // null = alle
     arten: null,
-    sportarten: null
+    sportarten: null,
+    /* GENAU EIN Bereich, nie mehrere. null = Sammelansicht ueber alle. */
+    bereich: null
   };
 
   var stand = laden();
@@ -133,6 +195,10 @@
     }
     if (!anListe(stand.arten, artVon(f))) return false;
     if (!anListe(stand.sportarten, f.sportart)) return false;
+    /* BEREICH: genau einer. Ist einer gewaehlt, faellt alles andere weg —
+     * auch Zeilen, deren Bereich unbekannt ist. Unbekannt heisst hier nicht
+     * "passt schon", sondern "gehoert nicht sicher hierher". */
+    if (stand.bereich !== null && bereichVon(f) !== stand.bereich) return false;
     return true;
   }
 
@@ -145,8 +211,17 @@
 
   function aktiv() {
     return stand.gefundenMin > 0 || stand.endetStd > 0 || stand.minRendite !== null ||
-           stand.minEinsatz > 0 || stand.nurMitMenge ||
+           stand.minEinsatz > 0 || stand.nurMitMenge || stand.bereich !== null ||
            stand.buecher !== null || stand.arten !== null || stand.sportarten !== null;
+  }
+
+  /* Name des gewaehlten Bereichs, fuer die Anzeige am Knopf. */
+  function bereichName() {
+    if (stand.bereich === null) return null;
+    for (var i = 0; i < BEREICHE.length; i++) {
+      if (BEREICHE[i].id === stand.bereich) return BEREICHE[i].name;
+    }
+    return stand.bereich;
   }
 
   /* ---------- Das Feld ---------- */
@@ -182,6 +257,23 @@
       '<div class="f-kopf"><b>Filter</b>' +
         '<button type="button" class="f-zu" id="f-zu" title="Zuklappen">&times;</button></div>' +
       '<div class="f-koerper">' +
+
+        /* GANZ OBEN, weil es die erste Entscheidung ist: welcher Bereich.
+         * Ein Auswahlfeld und keine Kaestchen — man kann genau einen waehlen,
+         * und das soll man auch sehen. */
+        '<div class="f-gruppe f-bereich"><div class="f-titel">Bereich — nur einer</div>' +
+          '<select id="f-bereich">' +
+            BEREICHE.map(function (b) {
+              var wert = b.id === null ? '' : b.id;
+              var an = (stand.bereich === b.id) ? ' selected' : '';
+              return '<option value="' + txt(wert) + '"' + an + '>' +
+                     (b.gruppe ? txt(b.gruppe) + ' · ' : '') + txt(b.name) + '</option>';
+            }).join('') +
+          '</select>' +
+          '<div class="f-hinweis">Es wird immer nur <b>ein</b> Bereich gezeigt. ' +
+          'Fußball und E-Sport nebeneinander führt zu Verwechslungen — genau daran ' +
+          'hing die Fehlpaarung vom 11.08.</div>' +
+        '</div>' +
 
         '<div class="f-gruppe"><div class="f-titel">Gefunden in den letzten</div>' +
           knoepfe('gefundenMin', [
@@ -267,7 +359,11 @@
     }
     panel.classList.toggle('offen', stand.offen);
     knopf.classList.toggle('an', aktiv());
-    knopf.textContent = aktiv() ? 'Filter aktiv' : 'Filter';
+    /* Der gewaehlte Bereich steht AM KNOPF. Wer nur "Filter aktiv" liest,
+     * weiss nicht, dass er gerade ausschliesslich Fussball sieht — und
+     * wundert sich, warum nichts kommt. */
+    var b = bereichName();
+    knopf.textContent = b ? ('Bereich: ' + b) : (aktiv() ? 'Filter aktiv' : 'Filter');
   }
 
   function binden(panel) {
@@ -296,6 +392,10 @@
 
     panel.addEventListener('change', function (ev) {
       var z = ev.target;
+      if (z.id === 'f-bereich') {
+        stand.bereich = z.value === '' ? null : z.value;
+        sichern(); zeichnen(); return neuZeichnenLassen();
+      }
       if (z.id === 'f-menge') { stand.nurMitMenge = z.checked; sichern(); zeichnen(); return neuZeichnenLassen(); }
       var g = z.getAttribute && z.getAttribute('data-gruppe');
       if (g) return gruppeUmschalten(g, z.getAttribute('data-wert'), z.checked);

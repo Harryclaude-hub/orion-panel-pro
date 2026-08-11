@@ -388,6 +388,31 @@ async function main() {
            gleich(sZ.namensgleichheitW(A, B), bZ.namensgleichheit(a, b)));
   }
 
+  /* ---------- BEREICHSREGEL: der Fall vom 11.8.2026 ----------
+   *
+   * Eine Fehlpaarung stand mit 5,34 % LIVE:
+   *   Polymarket  FSV Frankfurt 1899 vs. Eintracht Frankfurt    FUSSBALL
+   *   Kalshi      ROSSMANN Centaurs vs. Eintracht Frankfurt     LEAGUE OF LEGENDS
+   * Die Namenspruefung kann das nicht fangen — die Namen SIND gleich.
+   * Dieser Test loest die Regel aus, er umgeht sie nicht. */
+  pruefe('Bereich: LoL-Serie ist esport', bZ.bereichKalshi('KXLOLGAME') === 'esport');
+  pruefe('Bereich: Club-Fussball ist fussball', bZ.bereichKalshi('KXCLUBFGAME') === 'fussball');
+  pruefe('Bereich: Polymarket soccer ist fussball', bZ.bereichPm('soccer') === 'fussball');
+  pruefe('DER FALL vom 11.8.: fussball gegen esport wird ABGELEHNT',
+         bZ.gleicherBereich(bZ.bereichPm('soccer'), bZ.bereichKalshi('KXLOLGAME')) === false);
+  pruefe('richtige Paarung fussball gegen fussball bleibt erlaubt',
+         bZ.gleicherBereich(bZ.bereichPm('soccer'), bZ.bereichKalshi('KXCLUBFGAME')) === true);
+  pruefe('unbekannter Bereich wird NICHT gepaart',
+         bZ.gleicherBereich('fussball', null) === false &&
+         bZ.gleicherBereich(null, 'fussball') === false &&
+         bZ.gleicherBereich(null, null) === false);
+  pruefe('Bereich: CS2 und Valorant sind esport',
+         bZ.bereichKalshi('KXCS2GAME') === 'esport' && bZ.bereichKalshi('KXVALORANTGAME') === 'esport');
+  pruefe('Bereich: Baseball und Basketball werden getrennt',
+         bZ.bereichKalshi('KXNPBGAME') === 'baseball' &&
+         bZ.bereichKalshi('KXWNBAGAME') === 'basketball' &&
+         bZ.gleicherBereich('baseball', 'basketball') === false);
+
   /* ---------- Die Gebuehr in Geld, gegen die Auszahlung nachgerechnet ----------
    *
    * Kein Spiegelvergleich, sondern eine Rechenprobe: der Betrag MUSS die

@@ -158,10 +158,32 @@
        * loest: dann reicht aktiv: true. */
       betfair:    { name: 'Betfair',    kurz: 'BF', chip: 'bf', art: 'quote',
                     konto: 'Konto + Bridge', umfang: 1189, ueberBroker: true,
-                    absage: 'eigenes Regelwerk, ungeprüft — Buch ist abgeschaltet',
+                    absage: 'eigenes Regelwerk, ungeprüft — Vorsicht bei Absagen',
                     absage_sicher: false,
-                    aktiv: false,
-                    grund: 'aus Supabase gesperrt (403), Stream liefert keine Namen' }
+                    /* WIEDER AKTIV seit 11.8.2026 abends, über die Bridge auf
+                     * einem eigenen Laptop. Aus Supabase heraus bleibt Betfair
+                     * gesperrt (403) — die Bridge umgeht das nicht, sie läuft
+                     * schlicht an einem Privatanschluss, wo Betfair nicht
+                     * sperrt. Sie liest mit dem Konto des Auftraggebers und
+                     * schiebt über bf-bridge nach Supabase.
+                     *
+                     * DREI EINSCHRÄNKUNGEN, gemessen am 11.8.:
+                     *  1. Der App-Key ist DELAYED — Kurse rund eine Minute
+                     *     alt. Bei laufenden Spielen ist die gesehene Quote
+                     *     meist schon weg.
+                     *  2. Das Konto ist für API-Wetten SUSPENDED. Lesen geht,
+                     *     automatisch setzen nicht. Für einen Scanner, bei dem
+                     *     der Mensch klickt, ist das kein Hindernis.
+                     *  3. Build 17 sendet den echten Kommissionssatz NICHT
+                     *     mit; es wird mit 7 % gerechnet statt der echten
+                     *     2 bis 5 %. Das drückt jede Betfair-Rendite um rund
+                     *     einen Prozentpunkt nach unten — konservativ, also
+                     *     sicher, aber es kostet Chancen. Build 18 behebt das.
+                     *
+                     * Zum Abschalten: aktiv auf false und BETFAIR_AKTIV in
+                     * orion-lauf ebenso. */
+                    aktiv: true,
+                    grund: 'Bridge auf eigenem Laptop · Kurse verzögert (DELAYED)' }
     },
 
     /* Ab wann etwas als stehengeblieben gilt. */
