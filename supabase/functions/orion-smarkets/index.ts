@@ -98,7 +98,13 @@ Deno.serve(async () => {
     // Zuordnungsregel. Wer hier raet, baut Fehlpaarungen.
     // BTTS_AND_OVER und WINNER_AND_BTTS sehen aehnlich aus, sind aber
     // ZUSAMMENGESETZTE Fragen und deshalb ausdruecklich nicht dabei.
-    function art(m: any): { art: string; linie: number | null } | null {
+    function spielLink(fullSlug: unknown): string {
+  const s = String(fullSlug || '');
+  if (!s) return 'https://smarkets.com/';
+  return 'https://smarkets.com' + (s.endsWith('/') ? s : s + '/');
+}
+
+function art(m: any): { art: string; linie: number | null } | null {
       const t = m.market_type;
       if (!t || typeof t !== 'object') return null;
       if (t.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
@@ -162,7 +168,20 @@ Deno.serve(async () => {
         st: e.start_datetime || null,   // Anpfiff. Betfair liefert das nicht mit.
         art: a.art,
         linie: a.linie,
-        link: e.full_slug ? 'https://smarkets.com' + e.full_slug : 'https://smarkets.com',
+        /* SCHRAEGSTRICH am Ende. Gemessen am 11.8.2026 mit den echten
+         * gespeicherten Links: ohne ihn antwortet smarkets.com mit HTTP 308
+         * Redirect, mit ihm mit 200. Der Auftraggeber landete beim Klick
+         * "eine Millisekunde beim echten Markt, dann auf der Startseite" -
+         * das passt zum Redirect, bei dem die JavaScript-App neu startet und
+         * ihren Zustand verliert. `full_slug` kommt ohne Schraegstrich.
+         *
+         * NICHT angehaengt wird der MARKTPFAD (.../over-under-2-5/). Die
+         * Pfadform stimmt, aber smarkets.com antwortet auf JEDEN Pfad mit
+         * 200 und rendert erst im Browser - sogar /quatsch-markt/ bekommt
+         * eine Seite mit Titel. Ohne pruefbaren Unterschied wird nicht
+         * geraten: ein falscher Marktpfad fuehrt ins Leere, der Spiel-Link
+         * wenigstens zur Partie. */
+        link: spielLink(e.full_slug),
         sz: 0.02,                        // Standard-Tarif, NICHT gemessen
         sz_echt: false,
         r
