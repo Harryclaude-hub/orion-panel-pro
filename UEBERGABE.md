@@ -14,6 +14,11 @@ steht ausdrücklich als ungemessen da.
 > am 11.8. dazukam (Betfair über eine Bridge, Bereichstrennung, Euro-Beträge,
 > der Wächter) und was der **ausdrückliche Auftrag** für den nächsten Schritt
 > ist: ein eigener Scanner je Bereich, kein „alle Bereiche".
+>
+> **Nicht alles steht im Repo.** Ein Teil der Logik läuft als SQL-Funktion in
+> Supabase — Wächter, Wechselkurs, Betfair-Vorfilter. Was es gibt und wie man
+> den echten Stand abruft, steht in `supabase/datenbank.md`. Dort absichtlich
+> keine Kopien der Funktionen: das wäre wieder die Drift-Falle.
 
 **Vier Bücher aktiv:** Polymarket, Kalshi, Smarkets — und seit 11.8. wieder
 **Betfair** über eine Bridge auf einem eigenen Laptop (mit drei
