@@ -68,6 +68,24 @@ nach `orion_wache`. Ruft:
   sogar in den Seitentitel schreibt; ein HTTP-Test beweist dort nichts.
 - `orion_kernwoerter(t)` / `orion_stoppwort(w)` — Wortzerlegung in SQL,
   bewusst getrennt von der JS-Fassung. Zwei unabhängige Wege.
+
+  > **12.8.2026 repariert: Akzente.** `[^a-z0-9]+` machte aus jedem
+  > Sonderzeichen ein Leerzeichen — „león" zerfiel in „le" und „n", beide zu
+  > kurz, beide weg. Jeder Name mit Akzent war für SQL unsichtbar, im
+  > südamerikanischen Fußball die Mehrheit (50 von 177 Zeilen). Aufgefallen
+  > durch einen Fehlalarm: „Inter Miami CF vs. Club León FC" gegen „Miami vs
+  > Leon Winner?" galt als schwach belegt.
+  >
+  > Die Wege sollen sich **unabhängig kontrollieren, nicht systematisch
+  > widersprechen** — JS normalisierte längst richtig. Jetzt macht SQL
+  > dasselbe: `normalize(…, NFD)`, dann die Akzentzeichen streichen.
+  >
+  > **Offen und bewusst nicht angefasst:** Buchstaben mit Querstrich
+  > (`ø đ ł ß æ œ`) sind keine Akzente, NFD zerlegt sie nicht. JS behält
+  > `bodø`, SQL macht `bod`. Betrifft gemessen **eine** Zeile (Bodø/Glimt).
+  > Die Reparatur läge in der PAARUNGSLOGIK, nicht im Prüfweg — sie würde
+  > neue Paarungen erzeugen und gehört deshalb vor Karams Augen gemacht,
+  > mit Trockenlauf, in allen drei Fassungen (js, ts, sql).
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
   `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
   den Wächter (neben JS- und TS-Spiegel).
