@@ -75,8 +75,31 @@ function urteil(buch, e) {
   const schlecht = [];
   for (const [u, titel] of alle) {
     const b = buchVon(u);
-    const e = await pruefe(u);
-    const [wert, grund] = urteil(b, e);
+    let e = await pruefe(u);
+    let [wert, grund] = urteil(b, e);
+
+    /* EIN FALSCH WIRD NIE BEIM ERSTEN MAL GEGLAUBT.
+     *
+     * Am 12.8.2026 meldete dieser Prüfstand zwei Orbit-Links als tot. 25
+     * Minuten später waren dieselben Links einwandfrei. Ursache war der
+     * Prüfstand selbst: er holte 75 Adressen ohne Pause hintereinander,
+     * und Orbit lieferte bei zweien die generische Startseite statt der
+     * Marktseite. Ein Fehlalarm ist hier teurer als eine Sekunde Wartezeit
+     * — er schickt jemanden auf die Suche nach einem Fehler, den es nicht
+     * gibt. Deshalb: Pause, zweiter Versuch, und nur was BEIDE Male
+     * durchfällt, gilt als falsch. */
+    if (wert === 'FALSCH' || wert === 'FEHLER') {
+      await new Promise(s => setTimeout(s, 2500));
+      const e2 = await pruefe(u);
+      const [wert2, grund2] = urteil(b, e2);
+      if (wert2 !== 'FALSCH' && wert2 !== 'FEHLER') {
+        wert = wert2; grund = grund2 + ' (erster Versuch schlug fehl, zweiter nicht — Anbieter drosselt)';
+      } else {
+        grund = grund2 + ' (zweimal geprüft)';
+      }
+    }
+    /* Höflich bleiben, sonst erzeugt der Prüfstand die Fehler, die er misst. */
+    await new Promise(s => setTimeout(s, 250));
     (je[b] = je[b] || { richtig: 0, falsch: 0, unpruefbar: 0 });
     if (wert === 'richtig') je[b].richtig++;
     else if (wert === 'FALSCH' || wert === 'FEHLER') { je[b].falsch++; schlecht.push([b, titel, u, grund]); }
