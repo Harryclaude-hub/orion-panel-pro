@@ -53,9 +53,23 @@ function urteil(buch, e) {
     return e.status === 200 ? ['richtig', 'Status 200 (erfunden gaebe 404)']
                             : ['FALSCH', 'HTTP ' + e.status];
   }
+  /* ORBIT IST ASYMMETRISCH — das ist am 12.8.2026 gemessen worden.
+   *
+   * Ein Wettbewerbsname im Titel BEWEIST den Markt: den kann die Seite nicht
+   * erfinden. Der generische Titel beweist dagegen NICHTS, denn Orbit
+   * liefert ihn auch bei existierenden Maerkten. Belegt an einem einzigen
+   * Link, dreimal im Abstand von 3 Sekunden abgefragt:
+   *
+   *     1.258750596   leer / ok / leer
+   *
+   * Derselbe Markt, dieselbe Adresse, drei Antworten. Wer daraus "Link
+   * kaputt" liest, jagt Gespenster. Deshalb: ein leerer Titel heisst hier
+   * "nicht pruefbar", nie "falsch". Nur wer MEHRFACH hintereinander leer
+   * bleibt, wird als verdaechtig gemeldet — und auch dann als Verdacht,
+   * nicht als Befund. */
   if (buch === 'orbitexch.com') {
     const leer = e.titel.toLowerCase().startsWith(ORBIT_LEER);
-    return leer ? ['FALSCH', 'generischer Titel = Markt gibt es nicht']
+    return leer ? ['leer', 'generischer Titel — beweist nichts, Orbit antwortet unzuverlässig']
                 : ['richtig', 'Wettbewerb im Titel: ' + e.titel.slice(0, 40)];
   }
   if (buch === 'kalshi.com') return ['nicht pruefbar', 'Bot-Sperre (HTTP ' + e.status + ')'];
@@ -88,21 +102,41 @@ function urteil(buch, e) {
      * — er schickt jemanden auf die Suche nach einem Fehler, den es nicht
      * gibt. Deshalb: Pause, zweiter Versuch, und nur was BEIDE Male
      * durchfällt, gilt als falsch. */
-    if (wert === 'FALSCH' || wert === 'FEHLER') {
-      await new Promise(s => setTimeout(s, 2500));
-      const e2 = await pruefe(u);
-      const [wert2, grund2] = urteil(b, e2);
-      if (wert2 !== 'FALSCH' && wert2 !== 'FEHLER') {
-        wert = wert2; grund = grund2 + ' (erster Versuch schlug fehl, zweiter nicht — Anbieter drosselt)';
-      } else {
-        grund = grund2 + ' (zweimal geprüft)';
+    if (wert === 'FALSCH' || wert === 'FEHLER' || wert === 'leer') {
+      let versuche = 1, letzterGrund = grund;
+      const noetig = (wert === 'leer') ? 4 : 2;   // Orbit schwankt, dem glaubt man erst nach vier
+      let gerettet = false;
+      while (versuche < noetig) {
+        await new Promise(s => setTimeout(s, 3000));
+        const e2 = await pruefe(u);
+        const [w2, g2] = urteil(b, e2);
+        versuche++;
+        if (w2 !== 'FALSCH' && w2 !== 'FEHLER' && w2 !== 'leer') {
+          wert = w2;
+          grund = g2 + ' (Versuch ' + versuche + ' von ' + noetig + ' — vorher leer, Anbieter schwankt)';
+          gerettet = true;
+          break;
+        }
+        letzterGrund = g2;
+      }
+      if (!gerettet) {
+        if (wert === 'leer') {
+          /* Auch jetzt kein Befund, sondern ein Verdacht: bei einem Anbieter,
+           * der nachweislich schwankt, ist "viermal leer" ein Hinweis zum
+           * Nachsehen — kein Beweis, dass der Markt fehlt. */
+          wert = 'verdaechtig';
+          grund = versuche + '× hintereinander leer — von Hand nachsehen';
+        } else {
+          grund = letzterGrund + ' (' + versuche + '× geprüft)';
+        }
       }
     }
     /* Höflich bleiben, sonst erzeugt der Prüfstand die Fehler, die er misst. */
     await new Promise(s => setTimeout(s, 250));
     (je[b] = je[b] || { richtig: 0, falsch: 0, unpruefbar: 0 });
     if (wert === 'richtig') je[b].richtig++;
-    else if (wert === 'FALSCH' || wert === 'FEHLER') { je[b].falsch++; schlecht.push([b, titel, u, grund]); }
+    else if (wert === 'FALSCH' || wert === 'FEHLER') { je[b].falsch++; schlecht.push([b, titel, u, grund, 'FALSCH']); }
+    else if (wert === 'verdaechtig') { je[b].unpruefbar++; schlecht.push([b, titel, u, grund, 'VERDACHT']); }
     else je[b].unpruefbar++;
   }
 
@@ -115,10 +149,11 @@ function urteil(buch, e) {
   }
 
   if (schlecht.length) {
-    console.log('\nZEILEN MIT FALSCHEM LINK:');
-    for (const [b, t, u, g] of schlecht) console.log('  [' + b + '] ' + t + '\n      ' + g + '\n      ' + u);
+    console.log('\nZEILEN, DIE EINEN BLICK BRAUCHEN:');
+    for (const [b, t, u, g, art] of schlecht)
+      console.log('  ' + art + '  [' + b + '] ' + t + '\n      ' + g + '\n      ' + u);
   } else {
-    console.log('\nKein einziger Link zeigt nachweislich ins Leere.');
+    console.log('\nKein Link falsch, keiner verdächtig.');
   }
 
   console.log('\nKONTROLLE — erfundene Adressen, damit das Urteil etwas wert ist:');
@@ -131,7 +166,10 @@ function urteil(buch, e) {
   for (const [b, u] of kontrollen) {
     const e = await pruefe(u);
     const [wert, grund] = urteil(b, e);
-    const gut = (wert === 'FALSCH' || wert === 'nicht pruefbar');
+    /* Bestanden ist die Selbstkontrolle, solange eine ERFUNDENE Adresse
+     * nicht als "richtig" durchgeht. "leer" und "verdaechtig" sind dabei
+     * saubere Urteile — sie behaupten nichts, was sie nicht belegen können. */
+    const gut = (wert !== 'richtig');
     console.log('  ' + b.padEnd(18) + 'HTTP ' + e.status + ' -> Urteil "' + wert + '" ' +
                 (gut ? '(richtig erkannt)' : '<-- ACHTUNG: erfundene Adresse gilt als richtig!') +
                 ' · ' + grund);
