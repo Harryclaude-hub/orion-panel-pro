@@ -1,0 +1,74 @@
+Ich arbeite an "Orion Panel Pro". Du übernimmst eine laufende Arbeit von
+gestern – nicht ein neues Projekt. Bitte lies zuerst, dann rede mit mir.
+
+ZUERST LESEN, in dieser Reihenfolge:
+1. C:\Users\Home\orion-panel-pro\UEBERGABE.md — Abschnitt 8j ganz unten.
+   Das ist die Startseite. Dort steht der Betriebszustand, die offenen
+   Aufgaben nach Wichtigkeit und die fünf Fallen.
+2. C:\Users\Home\orion-panel-pro\supabase\datenbank.md — alles, was nur in
+   der Datenbank lebt und nicht im Repo steht (Funktionen, Trigger, crons).
+Diese beiden Dateien sind die Wahrheit. Das Repo allein ist es nicht.
+
+WAS DAS PROGRAMM IST
+Ein Surebet-Scanner zwischen vier BÖRSEN – Polymarket, Kalshi, Smarkets,
+Betfair. Nie Buchmacher. Live auf github.io/orion-panel-pro, lokal in
+C:\Users\Home\orion-panel-pro, Supabase-Projekt noexklrgtqveiclijdwp,
+Sperrwort der Website: ARBRADAR2026.
+Alles läuft serverseitig: pg_cron ruft Edge Functions, die schreiben nach
+orion_funde, die Website liest nur ab. Nur Betfair braucht meinen Rechner:
+die Bridge 3.8 in C:\Users\Home\Desktop\Orion-Bridge-3.8, gestartet über
+Bridge-dauerlauf.cmd. Die Zugangsdatei bridge-config.json gehört immer in
+denselben Ordner wie die exe.
+
+DAS SUPABASE-PROJEKT DARF NIEMALS PAUSIERT WERDEN.
+
+WIE ICH ARBEITE – bitte genauso weitermachen
+- Erst messen, dann bauen. Keine Vermutungen als Ergebnis verkaufen.
+- Was du nicht gemessen hast, sagst du ausdrücklich als ungemessen an.
+- Vor jedem Ausrollen ein Trockenlauf gegen echte Daten.
+- Vor jedem Deploy: node pruefung/spiegel.test.js
+- Kein Lovable. Selbst gecodet, alles über Supabase und GitHub Pages.
+- Klartext. Wenn etwas nicht funktioniert, sag es direkt, statt es schön zu
+  reden. Ich finde die Fehler sowieso.
+
+DER WICHTIGSTE MESSWERT VOM 13.08.2026
+Von 15 geprüften Verlaufszeilen waren 8 falsch. Alle richtigen Funde lagen
+zwischen 2,07 und 3,27 Prozent Rendite, alle falschen über 4,48 Prozent.
+Die Rechnung stimmte dabei immer (21 von 22 Zeilen auf 0,0000 genau) –
+falsch war stets, WELCHE zwei Kurse verglichen wurden.
+Die stärkste Prüfung dafür: verschwindet der Vorteil, wenn man ein Buch
+weglässt? Dann ist dieses Buch schuld, meist mit einem alten Kurs.
+Die Schwelle steht deshalb bei 2,0 Prozent. Zwei bis drei Prozent ist das
+realistische Ziel, nicht zehn.
+
+OFFENE AUFGABEN, in dieser Reihenfolge
+1. Kursalter-Sperre scharfschalten. Die Spalten pm_preis_seit und
+   bf_quote_seit sammeln seit gestern Abend Daten. Sobald ein paar
+   ungestörte Stunden drin sind: Trockenlauf, dann Regel "älterer Kurs
+   über 15 Minuten = keine Chance". Das erschlägt 7 von 8 Fehlerklassen.
+2. "Ein Buch gegen alle" als feste Wächter-Regel einbauen. Mache ich
+   derzeit von Hand.
+3. Zwei Spalten für die Kurse im Moment der besten Rendite, damit
+   Höchstwerte überhaupt nachrechenbar werden.
+4. KI-Tor (Claude API) hinter den festen Regeln. Nicht gebaut. Braucht
+   meinen API-Schlüssel als Supabase-Secret, kostet geschätzt 1 bis 5 Cent
+   am Tag.
+5. Vier zusätzliche Marktarten (Halbzeit, HZ1/HZ2 Über-Unter, Ecken). Der
+   erste Versuch hat den Scanner gesprengt – nächster Anlauf nur als
+   eigener Sammler mit eigenem cron.
+6. Spielerwetten als 21. Bereich: angelegt, aber abgeschaltet. Für
+   Polymarket ist keine Quelle gemessen (7 Tags probiert, alle 0 Events).
+
+DIE FALLEN, die mich schon Zeit gekostet haben
+- orion-smarkets IMMER mit verify_jwt: false ausrollen. Sonst bekommt jeder
+  pg_cron-Takt 401 und der Schnappschuss veraltet lautlos.
+- Smarkets drosselt gleichzeitige Abrufe. Sequenziell holen, nicht parallel.
+- Der Scanner sitzt dicht an der Speichergrenze: 2065 Märkte gehen, 2667
+  nicht mehr (HTTP 546). Vor jeder Vergrößerung nachmessen.
+- Die Supabase-Instanz ist klein. 20 gleichzeitige Bereichs-Takte haben den
+  Verbindungspool erschöpft, 45 Minuten Totalausfall.
+- Fast jeder Ausfall meldet sich NICHT. Immer eine Zahl messen, die den
+  Erfolg beweist – bei Sammlern mit_quoten, nicht dauer_ms.
+
+Sag mir kurz, was du im Abschnitt 8j gelesen hast und wie der Betrieb gerade
+aussieht, dann arbeiten wir weiter.
