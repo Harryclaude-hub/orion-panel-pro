@@ -190,3 +190,25 @@ Nachgemessen über 5 saubere Minuten:
 | `net.http_post` Schnitt | 531 ms | **21,3 ms** |
 | Anteil Gesamtzeit | 67 % | **6 %** |
 | Auslastung | Ausfall | rund 3 % |
+
+## Löschregel repariert (13.8.2026)
+
+`orion_rauschen_loeschen(grenze)` hatte ein **ODER, wo ein UND gehört**:
+
+```sql
+ALT:  delete where rendite < grenze OR beste_rendite < grenze
+NEU:  delete where beste_rendite < grenze
+```
+
+Eine Zeile, die einmal bei 2,5 % stand und am Ende auf −0,3 % fiel, wurde
+damit **komplett gelöscht**. Nachgewiesen: von 231 Verlaufszeilen hatte
+**keine einzige** eine negative Endrendite, die kleinste war exakt 0,00.
+Kein Zufall — das war die Löschregel.
+
+> Karam hat es bemerkt: „Ich hab eine Chance gesehen, die war kurz da, dann
+> war sie weg — aber nicht im Verlauf."
+
+Dazu gehört die Anzeige (`js/daten.js`): sie verlangte, dass **auch der
+zuletzt** gesehene Wert über der Schwelle liegt. Jetzt zählt der **beste**
+je gesehene Wert — der Verlauf beantwortet „hätte sich das gelohnt?", und
+darauf antwortet der Höchststand, nicht der Zufallswert beim Verschwinden.

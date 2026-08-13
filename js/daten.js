@@ -312,8 +312,29 @@
         verlauf = verlauf.filter(function (f) {
           var zuletzt = Number(f.rendite);
           var beste = Number(f.beste_rendite == null ? f.rendite : f.beste_rendite);
-          if (!(zuletzt >= K.verlaufMinRendite && beste >= K.verlaufMinRendite)) return false;
-          if (zuletzt < K.mindestRendite) return false;
+          /* ES ZAEHLT DER BESTE WERT, NICHT DER LETZTE.
+           *
+           * Der Verlauf beantwortet die Frage "haette sich das gelohnt?".
+           * Darauf antwortet der hoechste je gesehene Wert, nicht der, bei
+           * dem die Zeile zufaellig endete. Eine Chance, die bei 3 % stand
+           * und beim Verschwinden bei 0,5 % lag, IST passiert.
+           *
+           * Vorher stand hier eine Bedingung auf BEIDE Werte. Damit
+           * verschwand genau der Fall, den der Auftraggeber am 13.8. bemerkt
+           * hat: "Ich hab eine Chance gesehen, die war kurz da, dann war sie
+           * weg — aber nicht im Verlauf."
+           *
+           * Der Grund fuer die alte Bedingung war ein echtes Aergernis: die
+           * Karte zeigte den letzten Wert, und dann stand eine Zeile mit
+           * -2,83 % zwischen den Chancen. Das ist aber ein Anzeigeproblem,
+           * kein Grund, den Fund wegzuwerfen — die Karte nennt ohnehin beide
+           * Zahlen. Wegwerfen war die teurere Loesung.
+           *
+           * Dazu gehoert die Loeschregel in der Datenbank
+           * (orion_rauschen_loeschen), die aus demselben Grund geaendert
+           * wurde: sie loescht jetzt nur noch, was NIE etwas wert war. */
+          if (beste < K.verlaufMinRendite) return false;
+          if (beste < K.mindestRendite) return false;
           /* Eine Fehlpaarung haette sich NIE gelohnt — sie gehoert nicht in
            * die Liste "was moeglich gewesen waere". Sie verschwindet aber
            * nicht still: die Zahl steht unter dem Reiter. */
