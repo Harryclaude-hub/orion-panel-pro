@@ -159,3 +159,34 @@ Bewusst NICHT über einen neuen Takt gelöst, der alle Schnappschüsse
 durchgeht: genau solche Last hat am 13.8. die Datenbank für 45 Minuten
 lahmgelegt. Der Auslöser kostet einen Zahlenvergleich je geschriebener
 Zeile und läuft im bestehenden Schreibvorgang mit.
+
+## Takte gestreckt (13.8.2026) — und warum
+
+Gemessen über 24 Stunden:
+
+```
+fussball          200 625 Paare, 208 Funde,  3 825 Läufe
+19 andere               0 Paare,   0 Funde, ~17 000 Läufe
+```
+
+Und aus `pg_stat_statements`: **67 % der gesamten Datenbankzeit** ging für
+`net.http_post` drauf, 531 ms im Schnitt. Das ist die Last, die am 13.8.
+zum **45-Minuten-Ausfall** geführt hat (PGRST002, Verbindungspool
+erschöpft, erst ein Neustart durch den Betreiber half).
+
+> Sie kam aus einer Änderung vom 12.8.: aus einem Scanner wurden zwanzig.
+> Der Gedanke war richtig — die Bereichstrennung verhindert Fehlpaarungen —
+> aber der Takt für die leeren Bereiche war viel zu eng.
+
+Die 19 leeren Bereiche laufen jetzt **alle 10 Minuten** statt jede ein bis
+zwei; `fussball` bleibt bei 20 Sekunden. Sie liefern strukturell nichts
+(E-Sport-Fragearten fehlen bei Polymarket, Welt-Bereiche haben nur ein
+Buch), zehn Minuten genügen, um eine Änderung zu bemerken.
+
+Nachgemessen über 5 saubere Minuten:
+
+| | vorher | nachher |
+|---|---|---|
+| `net.http_post` Schnitt | 531 ms | **21,3 ms** |
+| Anteil Gesamtzeit | 67 % | **6 %** |
+| Auslastung | Ausfall | rund 3 % |
