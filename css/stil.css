@@ -1235,3 +1235,28 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
   border-color: var(--gruen);
   box-shadow: 0 0 8px color-mix(in srgb, var(--gruen) 35%, transparent);
 }
+
+/* ---------- Kopf-Knoepfe mit Unterzeile (13.8.2026, nachts) ---------- */
+.kopf-leiste button, .kopf-leiste .knopf {
+  flex-direction: column; align-items: flex-start; gap: 1px;
+  padding: 8px 16px; min-height: 52px;
+}
+.kopf-leiste b { font-size: 14px; font-weight: 600; }
+.kopf-leiste small {
+  font-size: 10.5px; color: var(--text-leise); letter-spacing: .2px;
+  font-weight: 400; white-space: nowrap;
+}
+#melder-knopf .melder-an { color: var(--gruen); }
+
+/* ---------- Paarungsmatrix: Tafel links, Erklaerung direkt daneben ---------- */
+.paarmatrix { display: flex; flex-wrap: wrap; gap: 6px 22px; align-items: flex-start; }
+.paarmatrix .pmx-kopf { flex: 1 1 100%; }
+.paarmatrix table { margin: 0; flex: 0 0 auto; }
+.paarmatrix .pmx-erklaer {
+  flex: 1 1 260px; max-width: 460px;
+  font-size: 12.5px; line-height: 1.55; color: var(--text-leise);
+  border-left: 2px solid var(--rand); padding-left: 14px;
+}
+.paarmatrix .pmx-erklaer b { color: var(--text); }
+.paarmatrix .pmx-l1 { color: var(--gold); }
+.paarmatrix .pmx-l2 { color: var(--gruen); }

@@ -339,12 +339,14 @@
            * die Liste "was moeglich gewesen waere". Sie verschwindet aber
            * nicht still: die Zahl steht unter dem Reiter. */
           if (f.fehlpaarung) return false;
-          /* Der Gewinn wird aus der BESTEN je gesehenen Rendite gerechnet:
-           * im Verlauf zaehlt, was moeglich GEWESEN waere, nicht was am
-           * Ende uebrig blieb. */
-          if (f.max_einsatz === null || f.max_einsatz === undefined) return !K.nurMitBekannterMenge;
-          var moeglich = Number(f.max_einsatz) * beste / 100;
-          return isFinite(moeglich) && moeglich >= K.mindestGewinn;
+          /* SONST NICHTS. Vorgabe 13.8. abends: "wenn es eine Chance war
+           * und sie ist abgelaufen, dann in den Verlauf." Hier standen noch
+           * zwei weitere Bedingungen (Menge bekannt, Gewinn ueber der
+           * Geldschwelle) — gemessen verschluckten sie 33 von 46 echten
+           * Verlaufs-Chancen, denn max_einsatz traegt nur den LETZTEN
+           * Stand, und beim Verschwinden ist das Buch oft schon leer.
+           * Die Karte sagt selbst ehrlich, wenn die Menge unbekannt war. */
+          return true;
         });
 
         /* DREI Gruppen, nicht zwei. Ein Fund ueber der Schwelle, dessen Kurse
@@ -438,6 +440,8 @@
         var chancen = live.filter(function (f) {
           if (f.veraltet || f.zu_duenn) return false;
           if (f.rendite < K.mindestRendite) return false;
+          /* Bedingung 6: unplausibel hoch ist KEINE Chance (siehe KONFIG). */
+          if (K.maxPlausibel && f.rendite > K.maxPlausibel) return false;
           if (K.nurMitBekannterMenge && f.echter_gewinn === null) return false;
           if (f.echter_gewinn !== null && f.echter_gewinn < K.mindestGewinn) return false;
           if (K.absageStreng && f.absage && f.absage.art === 'verlust') return false;
@@ -457,6 +461,7 @@
            * Geldschwelle. Es darf auf keinen Fall verschwinden — ein Filter,
            * der stillschweigend schluckt, ist eine Falle. */
           if (f.rendite >= K.mindestRendite) {
+            if (K.maxPlausibel && f.rendite > K.maxPlausibel) return true;
             if (f.zu_duenn) return true;
             if (f.echter_gewinn === null) return true;
             if (f.echter_gewinn < K.mindestGewinn) return true;

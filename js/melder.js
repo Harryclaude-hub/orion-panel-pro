@@ -20,7 +20,7 @@
 
   var SCHLUESSEL = 'orion-melder';
 
-  function knopf() { return document.getElementById('melder-knopf'); }
+  function knopf() { return (document.getElementById('melder-text') || document.getElementById('melder-knopf')); }
   function gewollt() { return localStorage.getItem(SCHLUESSEL) === 'an'; }
 
   function beschrifte() {
@@ -90,7 +90,7 @@
   }
 
   function start() {
-    var k = knopf();
+    var k = document.getElementById('melder-knopf') || knopf();
     if (k) k.addEventListener('click', umschalten);
     beschrifte();
     setInterval(pruefe, 2000);

@@ -263,6 +263,21 @@
      * lesen. Wer auch das sperren will, setzt hier 'hart' statt true. */
     absageStreng: true,
 
+    /* Obergrenze der Glaubwuerdigkeit (13.8.2026, sechste Chancen-Bedingung).
+     *
+     * Gemessen an 26 einzeln geprueften Zeilen: alle richtigen lagen
+     * zwischen 2,07 und 3,27 Prozent, alle falschen ueber 4,48 — und JEDE
+     * Zeile ueber 5 Prozent war bisher ein klebender Kurs oder eine
+     * Fehlpaarung, keine einzige eine Chance. Zwei Boersen mit echten
+     * Teilnehmern liegen nicht 20 Prozent auseinander; wenn doch, ist ein
+     * Buch alt (NFL-Vorsaison am 13.8.: Kalshi 60 % gegen Betfair 41 %
+     * fuer dieselbe Mannschaft, beide in sich stimmig — einer klebt).
+     *
+     * Solche Zeilen zaehlen NICHT als Chance und loesen weder Kino noch
+     * Meldung aus. Sie wandern zu den knappen Paaren mit Begruendung —
+     * verschwinden waere schlimmer, denn an ihnen sieht man die Kleber. */
+    maxPlausibel: 5.0,
+
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,
     /* Smarkets wird alle 5 Minuten eingesammelt, ein Durchlauf dauert 7 s.

@@ -1025,6 +1025,14 @@
       w.push('<span class="chip rot" title="Die Titel beider Seiten teilen kein einziges unterscheidendes Wort. Das ist die Fehlerklasse der Faelle vom 10. und 11.08. — dort stand die Zuordnung ebenfalls auf 1,00.">FEHLPAARUNG? kein gemeinsames Wort</span>');
     }
     if (f.veraltet) w.push('<span class="chip rot">Kurse veraltet</span>');
+    /* Bedingung 6: unplausibel hoch. Gemessen an 26 geprueften Zeilen —
+     * richtig 2,07 bis 3,27 Prozent, falsch ueber 4,48, JEDE Zeile ueber 5
+     * war ein Kleber oder eine Fehlpaarung. */
+    var K1 = welt.KONFIG || {};
+    if (K1.maxPlausibel && Number(f.rendite) > K1.maxPlausibel) {
+      w.push('<span class="chip rot" title="Zwei Boersen mit echten Teilnehmern liegen nicht so weit auseinander. Gemessen: jede Zeile ueber 5 Prozent war bisher ein stehengebliebener Kurs oder eine Fehlpaarung - hier widersprechen sich die Buecher, und eines von beiden ist alt. Keine Chance, nicht setzen.">' +
+        'UNPLAUSIBEL HOCH — Bücher widersprechen sich, eines klebt</span>');
+    }
     if (f.zu_duenn) {
       w.push('<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
         (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span>');
@@ -1074,6 +1082,7 @@
     var K0 = welt.KONFIG;
     if (f.absage === undefined) f.absage = absageBilanz(f);
     var chance = f.rendite >= K0.mindestRendite && !f.zu_duenn &&
+                 !(K0.maxPlausibel && f.rendite > K0.maxPlausibel) &&
                  f.echter_gewinn !== null && f.echter_gewinn >= K0.mindestGewinn &&
                  !(K0.absageStreng && f.absage && f.absage.art === 'verlust') &&
                  istGedeckt(f);
@@ -1256,7 +1265,19 @@
       });
       html += '</tr>';
     });
-    html += '</table></div>';
+    html += '</table>' +
+      /* Die Erklaerung DIREKT NEBEN der Tafel (Vorgabe 13.8.: keine
+       * Riesenluecke, und dazuschreiben, was man sieht). */
+      '<div class="pmx-erklaer">' +
+        '<b>Lesart:</b> Zeile = das Buch der FÜR-Seite, Spalte = das Buch der ' +
+        'GEGEN-Seite. Große Zahl = laufende Paare in diesem Feld, darunter die ' +
+        'beste Rendite. Die schraffierte Diagonale ist gesperrt — ein Buch gegen ' +
+        'sich selbst ist keine Arbitrage. ' +
+        '<span class="pmx-l1">Khaki-Rand</span> = aktivstes Feld, ' +
+        '<span class="pmx-l2">grüner Rand</span> = Feld mit Chance über 2 %. ' +
+        'Jedes Feld steht immer an derselben Stelle, auch mit Null — so sieht ' +
+        'man sofort, WO gerade etwas läuft und wo nicht.' +
+      '</div></div>';
     return html;
   }
 
