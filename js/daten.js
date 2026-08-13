@@ -294,8 +294,17 @@
           }
           return false;
         }
-        live.forEach(function (f) { f.fehlpaarung = fehlpaarung(f); });
-        verlauf.forEach(function (f) { f.fehlpaarung = fehlpaarung(f); });
+        /* GEPRUEFTES URTEIL schlaegt jede Rechnung.
+         *
+         * Seit 13.8.2026 traegt eine Zeile die Spalte `pruefung`. Steht dort
+         * 'falsch', ist sie einzeln nachgewiesen als Fehlpaarung — sie
+         * verschwindet aus Chancen UND Verlauf, egal wie gut ihre Zahlen
+         * aussehen. Der Grund steht in `pruefung_grund` und bleibt in der
+         * Datenbank stehen: an genau diesen Faellen wird jede neue Regel
+         * getestet, bevor sie scharf geschaltet wird. Geloescht wird nichts. */
+        function nachgewiesenFalsch(f) { return f.pruefung === 'falsch'; }
+        live.forEach(function (f) { f.fehlpaarung = fehlpaarung(f) || nachgewiesenFalsch(f); });
+        verlauf.forEach(function (f) { f.fehlpaarung = fehlpaarung(f) || nachgewiesenFalsch(f); });
         var verlaufFehlpaarungen = verlauf.filter(function (f) {
           return f.fehlpaarung && Number(f.rendite) >= K.mindestRendite;
         }).length;
