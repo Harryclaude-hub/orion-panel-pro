@@ -1362,6 +1362,92 @@ Zeichen vergleichen, erst danach das Passwort verdächtigen.**
 
 ---
 
+## 8j. STAND 13. August, abends — hier weiterlesen bei neuer Sitzung
+
+Dieser Abschnitt ist die Startseite für jede neue Sitzung. Er ersetzt kein
+Gespräch, aber er bringt jemanden in fünf Minuten auf den Stand.
+
+### Was das Programm ist
+
+Ein Surebet-Scanner zwischen **Börsen** (nie Buchmachern): Polymarket,
+Kalshi, Smarkets und Betfair. Er sucht Paare, bei denen zwei Bücher
+denselben Ausgang unterschiedlich bepreisen, sodass beide Seiten zusammen
+weniger als einen Euro für einen sicheren Euro kosten.
+
+Alles läuft **serverseitig auf Supabase** — pg_cron ruft Edge Functions,
+diese schreiben nach `orion_funde`, die Website liest nur ab. Nur Betfair
+braucht einen laufenden Rechner (Ländersperre), dafür die Bridge.
+
+### Der Betriebszustand, gemessen am 13.8. abends
+
+```
+25 Takte aktiv · 141 Live-Zeilen · 7 Chancen über 2 % · Wächter grün
+Fußball scannt jede Minute in ~3,9 s · alle anderen Bereiche alle 10 Minuten
+Bridge Build 19 (Fassung 3.8), bf_ok true
+Geprüfte Urteile: 15 falsch · 11 richtig · kein „fraglich" mehr
+```
+
+### Das Wichtigste, was heute gelernt wurde
+
+**Alle richtigen Funde lagen zwischen 2,07 und 3,27 %. Alle falschen über
+4,48 %.** Von 15 geprüften Verlaufszeilen waren 8 falsch. Die Rechnung war
+dabei nie das Problem — 21 von 22 Zeilen rechnen auf 0,0000 genau nach.
+Falsch war immer, **welche zwei Kurse** verglichen wurden.
+
+Zwei Ursachen, beide jetzt behoben oder messbar:
+
+1. **Ein alter Kurs.** Sieben Fehler kamen von einem Betfair-Kurs, der
+   stundenlang klebte. Beweis: neun Paarungen MIT Betfair lagen bei
+   3,8–14,8 %, die vier OHNE Betfair bei 0,01–1,31 %.
+2. **Halbzeit gegen ganzes Spiel.** Polymarkets „1st Half O/U 0.5" wurde
+   gegen Smarkets' Ganzspiel-Markt gepaart.
+
+### Zwei Prüfungen, die jederzeit laufen können
+
+```bash
+node pruefung/linkpruefung.js       # Links, mit Kontrollen auf Unsinn-Adressen
+node pruefung/spiegel.test.js       # vor JEDEM Deploy
+```
+
+Und die stärkste Probe, bisher von Hand: **verschwindet der Vorteil, wenn
+man ein Buch weglässt?** Liegen alle auffälligen Paarungen einer Partie an
+einem Buch und die ohne dieses Buch bei null, ist das Buch schuld, nicht
+die Partie. Diese Probe gehört als Regel in den Wächter — noch offen.
+
+### Offene Aufgaben, nach Wichtigkeit
+
+| | |
+|---|---|
+| **Kursalter-Sperre** | Die Spalten `pm_preis_seit`/`bf_quote_seit` laufen seit 13.8. Sobald ein paar ungestörte Stunden Daten da sind: Trockenlauf, dann Regel „ist der ältere Kurs über 15 Minuten alt, keine Chance". Behebt 7 der 8 Fehlerklassen. |
+| **Ein-Buch-gegen-alle als Regel** | Siehe oben. Fängt genau das, was das Kursalter nicht sieht. |
+| **Kurse zum Bestwert speichern** | Heute speichert eine Zeile nur die zuletzt gesehenen Kurse — der Höchstwert ist dadurch nachträglich von niemandem prüfbar. Zwei Spalten. |
+| **KI-Tor** | NICHT gebaut. Idee: nur die 5–20 Kandidaten am Tag, die über die Schwelle kommen, von einem Modell prüfen lassen — gefragt wird „finde einen Grund abzulehnen". Braucht einen API-Schlüssel als Supabase-Secret, den nur Karam einträgt. Geschätzt 1–5 Cent am Tag. Gehört HINTER die festen Regeln, nicht an deren Stelle. |
+| **Vier weitere Marktarten** | halbzeit, hz1/hz2_ueber_unter, ecken_ueber_unter. Der Scanner versteht sie längst, Polymarket liefert 1000 Märkte dafür, Smarkets führt die Gegenmärkte — aber der Sammler wirft sie weg. Erster Versuch am 13.8. brachte den Scanner zum Absturz. Nächster Anlauf: **eigener Sammler mit eigenem Takt**. |
+| **Spielerwetten** | 21. Bereich, steht im Register, ausgeschaltet. Sieben Polymarket-Kennungen geprüft, alle 0 Ereignisse. Erst Quelle finden, dann einschalten. |
+
+### Fallen, die heute Blut gekostet haben
+
+- **`verify_jwt` beim Deploy von Edge Functions MUSS aus bleiben.** pg_cron
+  schickt keinen Authorization-Kopf. Sonst: 401 bei jedem Takt, lautlos.
+- **Smarkets drosselt gleichzeitige Abrufe.** Sequenziell 2492 Kurse, vier
+  parallel nur 990 — ohne jede Fehlermeldung.
+- **Der Scanner sitzt dicht an der Speichergrenze.** 2065 Smarkets-Märkte
+  gehen, 2667 nicht (HTTP 546 `WORKER_RESOURCE_LIMIT`).
+- **Die Bridge liest ihre Zugangsdatei aus dem Ordner der exe.** Wer die exe
+  verschiebt, wechselt unbemerkt die Zugangsdaten.
+- **Der Rechner darf nicht schlafen**, sonst steht die Bridge. Deckel
+  zuklappen ist erlaubt.
+
+### Wie Karam arbeitet
+
+Erst messen, dann bauen. Nichts behaupten, was nicht gemessen ist;
+Ungemessenes ausdrücklich so kennzeichnen. Vor jedem Ausrollen ein
+Trockenlauf gegen echte Daten. Er findet Fehler zuverlässig selbst — die
+verschwundene Chance und die League-of-Legends-Fehlpaarung hat er beide
+bemerkt, bevor sie gemessen waren. Klartext ist ihm lieber als Beschönigung.
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand
