@@ -119,11 +119,12 @@ stattdessen **ein Takt je Bereich** (Body `{"bereich":"…"}`), Takt aus
 **Nachgemessen am 13.8.2026 abends, direkt aus `cron.job` — 26 aktive Takte:**
 
 ```
-orion-lauf-fussball     * * * * *    Scanner NUR fussball, jede Minute
-orion-lauf-<bereich>    */10 * * * * die übrigen 19 Bereiche, alle 10 Minuten
+orion-lauf-fussball     20 seconds   Scanner NUR fussball (gemessen 3,7-4 s je Lauf)
+orion-lauf-<bereich>    stuendlich versetzt: 17 leere Bereiche (Register takt_sek 3600!)
+orion-lauf-baseball     */10 * * * * baseball und football alle 10 Minuten
 orion-waechter-takt     * * * * *    Wächter (siehe oben)
 orion-zeiten-takt       * * * * *    NEU 13.8.: Anpfiff + Buchstimmigkeit
-orion-smarkets-takt     */10 * * * * Smarkets-Sammler (braucht ~145 s!)
+orion-smarkets-takt     */2 * * * *  Smarkets-Sammler (gemessen 26 s bei Fenster 30 h)
 orion-kalshi-takt       */2 * * * *  Kalshi-Sammler
 orion-pruefer-takt      */5 * * * *  dritte, unabhängige Rechnung
 orion-rauschen-takt     */5 * * * *  löscht Minuszeilen im Verlauf
@@ -337,3 +338,23 @@ Sorge, eine beliebige Linie zu treffen, ist damit gegenstandslos.
 Gemessen nach der Erweiterung: 85 von 94 Live-Zeilen messbar, 26 weitere
 unstimmige gesperrt. Jede Karte zeigt das Ergebnis jetzt in der Prüfzeile
 (stimmig / UNSTIMMIG / nicht messbar).
+
+## Chancen leben jetzt (13.8.2026, nachts)
+
+Eine Chance muss dauerhaft beobachtet werden und beim Verschwinden sofort
+in den Verlauf. Drei Schrauben, alle vorher gemessen:
+
+| Schraube | vorher | nachher | Beleg |
+|---|---|---|---|
+| Fußball-Scanner | jede Minute | **alle 20 s** | 3,7 s je Lauf, 0 Fehler in 60 Läufen; lief bis 12.8. so (3825 Läufe/Tag) |
+| Smarkets-Sammler | alle 10 min | **alle 2 min** | 26 s je Lauf bei Fenster 30 h — keine Überlappung möglich (die Drosselung am 13.8. kam von MINÜTLICHEM Aufruf bei 145 s Dauer) |
+| Register `takt_sek` | 600 bei den 17 leeren Bereichen | **3600** | der Wächter misst „Bereichslauf steht" an `takt_sek × 3` — Register und cron müssen übereinstimmen, sonst stündlicher Fehlalarm |
+
+Damit: eine verschwundene Fußball-Chance ist nach **spätestens 40 s** im
+Verlauf, eine Smarkets-Seite sitzt auf höchstens 2–3 min alten Kursen, die
+Website fragt ohnehin alle 2 s ab. Schneller geht serverseitig nicht ohne
+die bekannten Lastfallen (546, Verbindungspool).
+
+> Die Fehlalarm-Falle zum Mitschreiben: **wer einen cron-Takt ändert, muss
+> `orion_bereiche.takt_sek` mitändern.** Der Wächter liest das Register,
+> nicht die cron-Tabelle.

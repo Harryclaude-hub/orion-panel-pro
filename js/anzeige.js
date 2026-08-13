@@ -1072,6 +1072,12 @@
             (buch2(f).konto ? ' · ' + txt(buch2(f).konto) : '') + '</span> ' +
           '<span class="chip" title="Tag: ' + txt(f.sportart) + '">' + txt(bereichText(f)) + '</span> ' +
           '<span class="chip' + (chance ? ' gut' : '') + '">Rendite ' + Number(f.rendite).toFixed(2) + ' %</span> ' +
+          /* Das Geld gleich vorne, nicht erst in der Analyse: was zu diesen
+           * Kursen WIRKLICH herauszuholen ist (Menge im Buch x Rendite). */
+          (f.echter_gewinn === null || f.echter_gewinn === undefined ? '' :
+            '<span class="chip' + (chance ? ' gut' : '') +
+            '" title="Was zu diesen Kursen wirklich herauszuholen ist: handelbare Menge mal Rendite. Die Rechnung auf den Grundeinsatz steht unter So setzt du.">holbar ' +
+            (f.echter_gewinn >= 0 ? '+' : '') + geld(f.echter_gewinn) + '</span> ') +
           '<span class="chip">beste ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span> ' +
           '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span>' +
         '</div>' +
