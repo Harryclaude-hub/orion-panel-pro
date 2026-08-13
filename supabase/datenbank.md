@@ -61,8 +61,18 @@ nach `orion_wache`. Ruft:
   Bereichslauf steht (je aktivem Bereich), Betfair-Sportkarte widerspricht
   den Bridge-Namen.
 - `orion_verdacht_zusatz()` — Zusatzregeln in EIGENER Funktion, damit die 19
-  gewachsenen Muster oben unangetastet bleiben. Enthält seit 12.8.: **zeigt
-  der Smarkets-Link auf die richtige Partie?** Der Pfad trägt die
+  gewachsenen Muster oben unangetastet bleiben.
+
+  **Seit 13.8. Regel 2: der ZEITRAUM muss auf beiden Seiten gleich sein.**
+  Zwei Funde (11,48 % und 10,22 %) paarten Polymarkets „1st Half O/U 0.5"
+  gegen Smarkets’ „Over 0.5 goals" — der Scanner verglich die Zahl und nicht
+  den Zeitraum. An der Smarkets-Schnittstelle nachgemessen: sie führt beide
+  Märkte getrennt und benennt sie eindeutig („Over/under 0.5" gegen „First
+  half over/under 0.5" gegen „Second half over/under 0.5"), in 19 von 19
+  geprüften Spielen. Der richtige Gegenmarkt hätte also existiert.
+  Trockenlauf über 275 Zeilen: genau die 2 bekannten gefangen, 0 Fehlalarme.
+
+  Regel 1 seit 12.8.: **zeigt der Smarkets-Link auf die richtige Partie?** Der Pfad trägt die
   Mannschaftsnamen im Klartext, also gegen den Titel prüfbar — ohne Netz.
   Nötig, weil smarkets.com auf JEDEN Pfad mit 200 antwortet und den Unsinn
   sogar in den Seitentitel schreibt; ein HTTP-Test beweist dort nichts.
