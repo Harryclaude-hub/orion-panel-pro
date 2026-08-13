@@ -118,7 +118,13 @@
      * Gemessen am 10.8.2026: von 558 Verlaufszeilen lagen 438 unter -1 %,
      * 78 dazwischen. Die 78 bleiben, sie zeigen dass gesucht wird.
      * Der Verlauf wird serverseitig ebenso beschnitten (orion_rauschen_loeschen). */
-    rauschGrenze: -1.0,
+    /* 14.8. frueh angehoben von -1,0 auf 0,0: das Band zwischen -1 und 0
+     * war der Haupttreiber des Zahlen-Springens im Knapp-Reiter - Paare,
+     * die im 20-Sekunden-Takt auftauchen und verschwinden und nichts
+     * sagen, ausser dass zwei Buecher verschieden stehen. Unter null ist
+     * keine Beinahe-Chance. Geloescht wird nichts; die Zahl der
+     * ausgeblendeten Zeilen steht weiter im Reiter. */
+    rauschGrenze: 0.0,
 
     /* Der VERLAUF ist strenger als die Live-Ansicht: dort steht nur, was
      * sich wirklich gelohnt haette. Was nie im Plus war, wird geloescht.
@@ -277,6 +283,18 @@
      * Meldung aus. Sie wandern zu den knappen Paaren mit Begruendung —
      * verschwinden waere schlimmer, denn an ihnen sieht man die Kleber. */
     maxPlausibel: 5.0,
+
+    /* BEWAEHRUNGSZEIT (14.8. frueh, siebte Chancen-Bedingung).
+     *
+     * 'Wenn eine Chance kommt, soll sie nicht falsch sein.' Gemessen: die
+     * Kleber (stehengebliebene Kurse) sterben binnen ein, zwei Laeufen -
+     * echte Chancen standen 44 Minuten. Eine Zeile heisst deshalb erst
+     * dann Chance, wenn sie mindestens diese Zeitspanne ueberlebt hat
+     * (zuletzt_gesehen minus zuerst_gesehen), also von MEHREREN Laeufen
+     * bestaetigt wurde. Bis dahin steht sie im Knapp-Reiter mit der Marke
+     * IN PRUEFUNG. Kino, Meldung und Abzeichen feuern erst nach der
+     * Bewaehrung - genau dann, wenn es sich lohnt hinzusehen. */
+    bewaehrungS: 25,
 
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,

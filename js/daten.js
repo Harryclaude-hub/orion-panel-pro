@@ -489,6 +489,9 @@
           if (f.echter_gewinn !== null && f.echter_gewinn < K.mindestGewinn) return false;
           if (K.absageStreng && f.absage && f.absage.art === 'verlust') return false;
           if (G && !G(f)) return false;
+          /* Bedingung 7: Bewaehrung - erst von mehreren Laeufen bestaetigt. */
+          if (K.bewaehrungS &&
+              (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K.bewaehrungS * 1000) return false;
           return true;
         });
         function besteVon(f) { return Number(f.beste_rendite == null ? f.rendite : f.beste_rendite); }
@@ -516,6 +519,8 @@
             if (f.echter_gewinn < K.mindestGewinn) return true;
             if (K.absageStreng && f.absage && f.absage.art === 'verlust') return true;
             if (G && !G(f)) return true;
+            if (K.bewaehrungS &&
+                (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K.bewaehrungS * 1000) return true;
             return false;
           }
           /* WAR es je eine Chance (beste >= Schwelle), bleibt es sichtbar,

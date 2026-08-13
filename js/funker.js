@@ -75,6 +75,7 @@
     b(4, 'Absage kostet nichts', !f.absage ? null : (f.absage.art === 'sicher' ? true : f.absage.art === 'verlust' ? false : null));
     b(5, 'beide Ausgänge gedeckt', G ? G(f) : null);
     b(6, 'plausibel (bis ' + (K.maxPlausibel || 5) + ' %)', Number(f.rendite) <= (K.maxPlausibel || 5));
+    b(7, 'Bewährung (' + (K.bewaehrungS || 25) + ' s überlebt)', (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) >= (K.bewaehrungS || 25) * 1000);
     return z;
   }
 
@@ -100,7 +101,7 @@
     } else {
       z += '✓ Rendite, Kehrwertsumme, beide Einsätze und Auszahlung decken sich (Toleranz 0,005).\n';
     }
-    z += STRICH + '\nDie sechs Bedingungen:\n' + bedingungen(f).join('\n') + '\n';
+    z += STRICH + '\nDie sieben Bedingungen:\n' + bedingungen(f).join('\n') + '\n';
     if (f.buch_summe != null) {
       z += 'Buchprobe Gegenbuch: ' + Number(f.buch_summe).toFixed(4) +
            (Number(f.buch_summe) < 1 ? ' — UNSTIMMIG, ein Kurs klebt' : ' — stimmig') + '\n';
@@ -186,7 +187,7 @@
 
     /* Warum keine Chance? */
     if (/warum.*(keine|nicht).*chance|warum.*knapp/.test(q)) {
-      return 'Eine Zeile ist nur dann eine Chance, wenn ALLE sechs Bedingungen stimmen: ' +
+      return 'Eine Zeile ist nur dann eine Chance, wenn ALLE sieben Bedingungen stimmen: ' +
              '1) Rendite über 2 %, 2) Menge bekannt, 3) Gewinn in Geld über 5 USD, 4) Absage ' +
              'kostet nichts, 5) beide Ausgänge gedeckt, 6) höchstens ' +
              ((welt.KONFIG || {}).maxPlausibel || 5) + ' % (darüber war es bisher immer ein ' +

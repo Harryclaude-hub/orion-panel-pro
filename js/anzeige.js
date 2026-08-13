@@ -1060,6 +1060,12 @@
       w.push('<span class="chip acht" title="Eine Seite hat keine belegte Rueckzahlungsregel. Vor dem Setzen die Regel dieses Marktes lesen - Details im Abschnitt So setzt du.">' +
         'Absage-Regel je Markt prüfen</span>');
     }
+    if (K1.bewaehrungS && Number(f.rendite) >= K1.mindestRendite &&
+        (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K1.bewaehrungS * 1000 &&
+        f.status !== 'vorbei') {
+      w.push('<span class="chip acht" title="Frisch gefunden - die Zeile muss erst mehrere Scanner-Laeufe ueberleben, bevor sie Chance heisst. Kleber sterben binnen Sekunden; was die Bewaehrung uebersteht, ist belastbar.">IN PRÜFUNG — ' +
+        Math.max(0, Math.ceil((K1.bewaehrungS * 1000 - (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen))) / 1000)) + ' s Bewährung offen</span>');
+    }
     if (!w.length) return '';
     return '<div class="warnzeile">' + w.join(' ') + '</div>';
   }
@@ -1099,6 +1105,7 @@
                  !(K0.maxPlausibel && f.rendite > K0.maxPlausibel) &&
                  f.echter_gewinn !== null && f.echter_gewinn >= K0.mindestGewinn &&
                  !(K0.absageStreng && f.absage && f.absage.art === 'verlust') &&
+                 !(K0.bewaehrungS && (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K0.bewaehrungS * 1000) &&
                  istGedeckt(f);
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
