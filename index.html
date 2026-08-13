@@ -20,19 +20,27 @@
 
 <div class="huelle">
 
+  <!-- Kopf in ZWEI festen Zeilen: oben Titel und Live-Stand, darunter ALLE
+       Knöpfe in einer Reihe mit fester Reihenfolge. Nichts springt mehr,
+       wenn sich der Stand-Text ändert. -->
   <header class="kopf">
-    <h1>Orion Panel Pro</h1>
-    <span class="chip" id="stand">bereit</span>
-    <span class="luecke"></span>
-    <button id="neuladen" class="haupt">⟳ Jetzt ablesen</button>
-    <button id="filter-knopf" class="knopf">⛉ Filter</button>
-    <!-- Meldungen: Browser-Benachrichtigung, wenn eine neue Chance erfasst
-         wird. Der Knopf schaltet an/aus; die Beschriftung setzt js/melder.js. -->
-    <button id="melder-knopf" class="knopf" title="Benachrichtigung, sobald eine neue Chance erfasst wird — nur solange die Seite offen ist.">🔕 Meldungen</button>
-    <a class="knopf" href="angaben.html">Was die Angaben bedeuten</a>
-    <a class="knopf" href="logik.html">Wie gesucht wird</a>
-    <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall — je Buch verschieden">Regelwerk</a>
-    <a class="knopf" href="einstellungen.html">Einstellungen</a>
+    <div class="kopf-titel">
+      <h1>Orion Panel Pro</h1>
+      <span class="chip" id="stand">bereit</span>
+    </div>
+    <nav class="kopf-leiste">
+      <!-- "Sofort ablesen": die Seite liest OHNEHIN alle 2 Sekunden ab.
+           Dieser Knopf erzwingt nur einen Lesevorgang JETZT - kein Neustart,
+           kein F5. Er existiert für den Moment nach einem Netz-Aussetzer. -->
+      <button id="neuladen" class="haupt" title="Die Seite liest von selbst alle 2 Sekunden ab. Dieser Knopf erzwingt einen Lesevorgang sofort — kein Neustart.">⟳ Sofort ablesen</button>
+      <button id="filter-knopf" class="knopf">⛉ Filter</button>
+      <!-- Beschriftung setzt js/melder.js (AN / AUS / vom Browser gesperrt). -->
+      <button id="melder-knopf" class="knopf" title="Benachrichtigung, sobald eine neue Chance erfasst wird — nur solange die Seite offen ist.">🔕 Meldungen</button>
+      <a class="knopf" href="angaben.html">ℹ Angaben</a>
+      <a class="knopf" href="logik.html">⌕ Wie gesucht wird</a>
+      <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall — je Buch verschieden">⚖ Regelwerk</a>
+      <a class="knopf" href="einstellungen.html">⚙ Einstellungen</a>
+    </nav>
   </header>
 
   <!-- Das Filterfeld blendet NUR aus, es sucht nichts ab. Unter jedem
@@ -81,6 +89,7 @@
 <script src="js/filter.js?v=21"></script>
 <script src="js/puls.js?v=21"></script>
 <script src="js/melder.js?v=21"></script>
+<script src="js/buehne.js?v=21"></script>
 <script src="js/anzeige.js?v=21"></script>
 <script src="js/sperre.js?v=21"></script>
 <script src="js/app.js?v=21"></script>

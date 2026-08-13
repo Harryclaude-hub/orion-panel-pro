@@ -1019,3 +1019,143 @@ button.haupt {
   70%  { opacity: 1; }
   100% { opacity: 0; transform: translate(-50%, -50%) rotate(-6deg) scale(1); }
 }
+
+/* ---------- Kopf in zwei festen Zeilen (13.8.2026, spaet) ---------- */
+header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
+.kopf-titel { display: flex; align-items: center; gap: 12px; }
+.kopf-titel h1 { flex: 0 0 auto; }
+.kopf-leiste {
+  display: flex; gap: 8px; flex-wrap: wrap; align-items: stretch;
+  padding-top: 10px; border-top: 1px solid var(--rand);
+}
+.kopf-leiste button, .kopf-leiste .knopf {
+  display: inline-flex; align-items: center; white-space: nowrap;
+  text-decoration: none; font-size: 14px;
+}
+
+/* ---------- Die Flanken: Scan-Saeulen in den Seitenraendern ----------
+ *
+ * Nur auf breiten Bildschirmen (die Huelle ist 1180 px; darunter gibt es
+ * keine Raender, also auch keine Flanken). fixed, hinter allem, faengt
+ * keine Klicks. Zustand (ruhig/wachsam/alarm) kommt aus js/buehne.js.
+ */
+.flanke {
+  position: fixed; top: 0; bottom: 0; width: 120px; z-index: 0;
+  pointer-events: none; display: none; overflow: hidden;
+  --fl-farbe: var(--sonar-rgb);
+  --fl-tempo: 7s;
+}
+.flanke.links  { left: 0;  border-right: 1px solid rgba(var(--fl-farbe), .14); }
+.flanke.rechts { right: 0; border-left:  1px solid rgba(var(--fl-farbe), .14); }
+@media (min-width: 1440px) { .flanke { display: block; } }
+
+.flanke .fl-gitter {
+  position: absolute; inset: 0;
+  background:
+    repeating-linear-gradient(0deg,  rgba(var(--fl-farbe), .05) 0 1px, transparent 1px 28px),
+    repeating-linear-gradient(90deg, rgba(var(--fl-farbe), .04) 0 1px, transparent 1px 28px);
+}
+.flanke .fl-scan {
+  position: absolute; left: 0; right: 0; top: -12%; height: 12%;
+  background: linear-gradient(180deg, transparent, rgba(var(--fl-farbe), .18), transparent);
+  animation: fl-scan var(--fl-tempo) linear infinite;
+}
+@keyframes fl-scan { to { transform: translateY(950%); } }
+.flanke .fl-ticks {
+  position: absolute; top: 0; bottom: 0; width: 5px;
+  background: repeating-linear-gradient(0deg,
+    rgba(var(--fl-farbe), .5) 0 2px, transparent 2px 34px);
+  opacity: .5;
+}
+.flanke.links  .fl-ticks { right: 6px; }
+.flanke.rechts .fl-ticks { left: 6px; }
+.flanke .fl-wort {
+  position: absolute; top: 50%; left: 50%;
+  transform: translate(-50%, -50%);
+  writing-mode: vertical-rl; text-orientation: mixed;
+  font: 11px/1 ui-monospace, Consolas, monospace;
+  letter-spacing: 4px; color: rgba(var(--fl-farbe), .75);
+  white-space: nowrap;
+}
+.flanke.links .fl-wort { transform: translate(-50%, -50%) rotate(180deg); }
+
+/* Zustandsfarben und -tempi. Alarm flackert; Flackern ist hier ABSICHT,
+ * es soll den Blick holen — aber nur im Alarmfall. */
+.flanke.ruhig   { --fl-farbe: var(--sonar-rgb); --fl-tempo: 7s; }
+.flanke.wachsam { --fl-farbe: 201, 155, 98;     --fl-tempo: 3.5s; }
+.flanke.alarm   { --fl-farbe: 201, 138, 130;    --fl-tempo: 1.4s; }
+.flanke.alarm .fl-wort { animation: fl-flackern 1.1s steps(2, jump-none) infinite; }
+@keyframes fl-flackern { 50% { opacity: .35; } }
+
+/* ---------- Das Kino: Vollbild bei ZIEL ERFASST ----------
+ *
+ * Faengt keine Klicks (pointer-events: none), endet von selbst. Unter dem
+ * Sperrbildschirm (dessen z-index ist Maximum), ueber allem anderen.
+ */
+#kino {
+  position: fixed; inset: 0; z-index: 999990;
+  pointer-events: none; display: none;
+}
+#kino.an { display: block; }
+#kino .kino-schleier {
+  position: absolute; inset: 0; background: rgba(10, 14, 10, .55);
+  opacity: 0;
+}
+#kino.an .kino-schleier { animation: kino-schleier 3s ease-out forwards; }
+@keyframes kino-schleier { 0% {opacity:0} 12% {opacity:1} 75% {opacity:1} 100% {opacity:0} }
+
+#kino .kino-ring {
+  position: absolute; left: 50%; top: 50%; width: 420px; height: 420px;
+  margin: -210px 0 0 -210px; border-radius: 50%;
+  border: 2px solid rgba(var(--sonar-rgb), .55); opacity: 0;
+}
+#kino .kino-ring2 { inset: auto; width: 300px; height: 300px; margin: -150px 0 0 -150px;
+  border-style: dashed; }
+#kino.an .kino-ring  { animation: kino-ring 3s ease-out forwards; }
+#kino.an .kino-ring2 { animation: kino-ring2 3s ease-out forwards; }
+@keyframes kino-ring  { 0% {opacity:0; transform: scale(2.6)} 18% {opacity:1; transform: scale(1)}
+                        70% {opacity:1; transform: scale(1) rotate(14deg)} 100% {opacity:0} }
+@keyframes kino-ring2 { 0% {opacity:0; transform: scale(.2)} 18% {opacity:.9; transform: scale(1)}
+                        70% {opacity:.9; transform: scale(1) rotate(-18deg)} 100% {opacity:0} }
+
+#kino .kino-marke {
+  position: absolute; width: 34px; height: 34px; opacity: 0;
+  border: 3px solid var(--gruen);
+}
+#kino .m1 { left: calc(50% - 190px); top: calc(50% - 190px); border-right: 0; border-bottom: 0; }
+#kino .m2 { right: calc(50% - 190px); top: calc(50% - 190px); border-left: 0; border-bottom: 0; }
+#kino .m3 { left: calc(50% - 190px); bottom: calc(50% - 190px); border-right: 0; border-top: 0; }
+#kino .m4 { right: calc(50% - 190px); bottom: calc(50% - 190px); border-left: 0; border-top: 0; }
+#kino.an .kino-marke { animation: kino-marke 3s ease-out forwards; }
+#kino.an .m1 { --dx: -60px; --dy: -60px; }
+#kino.an .m2 { --dx: 60px;  --dy: -60px; }
+#kino.an .m3 { --dx: -60px; --dy: 60px; }
+#kino.an .m4 { --dx: 60px;  --dy: 60px; }
+@keyframes kino-marke {
+  0%   { opacity: 0; transform: translate(var(--dx), var(--dy)); }
+  16%  { opacity: 1; transform: translate(0, 0); }
+  72%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+
+#kino .kino-text {
+  position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%);
+  text-align: center; opacity: 0; max-width: min(80vw, 640px);
+}
+#kino.an .kino-text { animation: kino-text 3s ease-out forwards; }
+@keyframes kino-text {
+  0%   { opacity: 0; transform: translate(-50%, -50%) scale(1.8); }
+  14%  { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  74%  { opacity: 1; }
+  100% { opacity: 0; }
+}
+#kino .kino-text b {
+  display: block; font-size: 34px; letter-spacing: 10px; color: var(--gruen);
+  text-shadow: 0 0 18px rgba(var(--sonar-rgb), .5);
+  font-family: ui-monospace, Consolas, monospace;
+}
+#kino .kino-text span {
+  display: block; margin-top: 10px; font-size: 16px; color: var(--text);
+  background: rgba(14, 23, 16, .8); border: 1px solid rgba(var(--sonar-rgb), .35);
+  border-radius: 8px; padding: 8px 14px;
+}
