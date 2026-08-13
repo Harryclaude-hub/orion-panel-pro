@@ -358,3 +358,19 @@ die bekannten Lastfallen (546, Verbindungspool).
 > Die Fehlalarm-Falle zum Mitschreiben: **wer einen cron-Takt ändert, muss
 > `orion_bereiche.takt_sek` mitändern.** Der Wächter liest das Register,
 > nicht die cron-Tabelle.
+
+## Durchgang 3: Betfair direkt (13.8.2026, nachts — Scanner v21)
+
+Gemessen: alle 12 Paarungsrichtungen kamen in 24 h vor, aber Betfair nur
+über den Polymarkt-Anker. Führte Polymarket eine Partie nicht, wurde
+Betfair dort mit niemandem verglichen. Jetzt läuft ein dritter Durchgang:
+Betfair-Siegermärkte ohne Polymarkt-Anker direkt gegen Smarkets (Fußball)
+und Kalshi (jeder Bereich), über dieselbe `direktPaare`-Eindeutigkeitsregel
+wie Durchgang 2. Schlüsselform `bf>sm@<partie>#<seite>`.
+
+Trockenlauf vor dem Ausrollen (Node gegen die echten Schnappschüsse, mit
+den gespiegelten Bausteinen): 30 Paare, 0 mehrdeutig, jede Seite traf
+denselben Ausgang, Renditen −0,94 bis +1,78 %. Nach dem Ausrollen: Fußball
+3,9–4,1 s je Lauf (unverändert), Tennis 0,5 s, 0 Fehler, erste
+Direkt-Zeilen live (Hearts–Benfica, Fylkir–Afturelding, Santos–Macara —
+alles Partien, die Polymarket nicht führt).

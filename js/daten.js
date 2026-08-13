@@ -431,12 +431,17 @@
          * Absage-Verlust von 20 % zwanzig gewonnene Wetten. Nichts davon
          * wird geloescht — was hier durchfaellt, steht unter "Knappste
          * Paare" mit Begruendung. */
+        /* Deckung (5. Bedingung, 13.8.): beide Seiten muessen nachweislich
+         * GEGENSAETZLICHE Ausgaenge decken. Zwei Wetten auf denselben
+         * Ausgang sehen in der Rechnung gut aus und sind doppeltes Risiko. */
+        var G = welt.Anzeige && welt.Anzeige.istGedeckt;
         var chancen = live.filter(function (f) {
           if (f.veraltet || f.zu_duenn) return false;
           if (f.rendite < K.mindestRendite) return false;
           if (K.nurMitBekannterMenge && f.echter_gewinn === null) return false;
           if (f.echter_gewinn !== null && f.echter_gewinn < K.mindestGewinn) return false;
           if (K.absageStreng && f.absage && f.absage.art === 'verlust') return false;
+          if (G && !G(f)) return false;
           return true;
         });
         var veraltetHoch = live.filter(function (f) { return f.rendite >= K.mindestRendite && f.veraltet; });
@@ -456,6 +461,7 @@
             if (f.echter_gewinn === null) return true;
             if (f.echter_gewinn < K.mindestGewinn) return true;
             if (K.absageStreng && f.absage && f.absage.art === 'verlust') return true;
+            if (G && !G(f)) return true;
             return false;
           }
           return f.rendite >= K.rauschGrenze;

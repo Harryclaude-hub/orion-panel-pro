@@ -333,6 +333,14 @@
              gedeckt: einsZahltWenn !== null && zweiZahltWenn !== null && einsZahltWenn !== zweiZahltWenn };
   }
 
+  /* Nach aussen gereicht, denn seit dem 13.8. ist Deckung die FUENFTE
+   * Chancen-Bedingung (daten.js): eine Zeile, deren zwei Seiten nicht
+   * nachweislich GEGENSAETZLICHE Ausgaenge decken, zaehlt nicht — egal wie
+   * die Rendite aussieht. Zwei Wetten auf denselben Ausgang sind kein
+   * Schutz, sondern doppeltes Risiko, und eine Seite, die sich nicht
+   * einordnen laesst, ist "unbekannt" und faellt ebenso durch. */
+  function istGedeckt(f) { return ausgaenge(f).gedeckt; }
+
   function gegenprobe(f) {
     var a = ausgaenge(f);
     var aus = Number(f.auszahlung);
@@ -359,6 +367,18 @@
       '<div class="gp-fuss">Beide Ausgänge zahlen <b>denselben</b> Betrag — genau dafür ist die ' +
         'Aufteilung <b>' + (100 * e1 / gesamt).toFixed(1) + ' % ' + txt(buch1(f).name) + ' / ' +
         (100 * e2 / gesamt).toFixed(1) + ' % ' + txt(buch2(f).name) + '</b> und nicht 50/50.</div>' +
+      /* DIE UNENTSCHIEDEN-FRAGE, ausdruecklich (13.8.2026). Ein Fussballspiel
+       * hat drei Ergebnisse, aber DIESE Wette hat zwei Ausgaenge: gewettet
+       * wird nicht "A oder B", sondern "A gewinnt - ja oder nein". Ein
+       * Unentschieden IST der Fall "nein" und ist damit gedeckt, nicht
+       * offen. Gefaehrlich waere nur ein Paar A-gewinnt gegen B-gewinnt -
+       * und genau das faengt die Deckungspruefung oben ab. */
+      (welt.Filter && welt.Filter.artVon && /sieger/.test(String(welt.Filter.artVon(f)))
+        ? '<div class="gp-fuss">Und das Unentschieden? Das Spiel hat drei Ergebnisse, die <b>Wette</b> hat ' +
+          'zwei Ausgänge: „<b>' + txt(a.name) + '</b>" tritt ein oder nicht. Ein Unentschieden ist ' +
+          'der Fall „<b>tritt nicht ein</b>" — dann zahlt ' + txt(a.pm ? buch2(f).name : buch1(f).name) +
+          '. Es gibt keinen dritten Fall, in dem beide verlieren.</div>'
+        : '') +
       '</div>';
   }
 
@@ -1015,6 +1035,12 @@
       w.push('<span class="chip rot" title="Die Summe der Gegenwahrscheinlichkeiten aller Ausgaenge dieses Marktes liegt unter 1,00. Dann koennte man bei diesem einen Buch alle Ausgaenge gleichzeitig backen und sicher gewinnen - das gibt es nicht. Also ist der Schnappschuss dieses Marktes in sich unstimmig, meist weil ein Kurs stehengeblieben ist. Gemessen am 13.8.: solche Zeilen zeigen fuenfmal so oft ueber 2 Prozent wie stimmige.">' +
         'Gegenbuch unstimmig (' + Number(f.buch_summe).toFixed(4) + ')</span>');
     }
+    /* Deckung: die beiden Seiten muessen nachweislich GEGENSAETZLICHE
+     * Ausgaenge decken. Wenn nicht, ist es keine Absicherung — die rote
+     * Erklaerung dazu steht gross in der Gegenprobe weiter unten. */
+    if (!istGedeckt(f)) {
+      w.push('<span class="chip rot" title="Beide Seiten zahlen im selben Fall - oder eine Seite laesst sich nicht einordnen. Das ist keine Absicherung, sondern doppeltes Risiko. Details unter Beide Ausgaenge.">NICHT GEDECKT — keine Chance</span>');
+    }
     /* Der Absage-Ausgang als Warnung, wenn er Geld kostet oder offen ist.
      * Die Rechnung dazu steht ausfuehrlich in "So setzt du". */
     var ab = f.absage;
@@ -1049,7 +1075,8 @@
     if (f.absage === undefined) f.absage = absageBilanz(f);
     var chance = f.rendite >= K0.mindestRendite && !f.zu_duenn &&
                  f.echter_gewinn !== null && f.echter_gewinn >= K0.mindestGewinn &&
-                 !(K0.absageStreng && f.absage && f.absage.art === 'verlust');
+                 !(K0.absageStreng && f.absage && f.absage.art === 'verlust') &&
+                 istGedeckt(f);
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
         '<div class="kopfzeile">' +
@@ -1620,6 +1647,7 @@
    * fuer die Chancen-Zaehlung — zwei Fassungen derselben Formel waeren die
    * Drift-Falle, die dieses Projekt schon kennt. */
   welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt,
-                   setzeWennAnders: setzeWennAnders, karte: karte, absageBilanz: absageBilanz };
+                   setzeWennAnders: setzeWennAnders, karte: karte,
+                   absageBilanz: absageBilanz, istGedeckt: istGedeckt };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
