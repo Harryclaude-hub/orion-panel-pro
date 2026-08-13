@@ -1159,3 +1159,79 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
   background: rgba(14, 23, 16, .8); border: 1px solid rgba(var(--sonar-rgb), .35);
   border-radius: 8px; padding: 8px 14px;
 }
+
+/* ---------- Rendite neben dem Titel (13.8.2026, spaet) ---------- */
+.fund .titel-rendite {
+  font-size: 15px; font-weight: 600; color: var(--text-leise);
+  font-variant-numeric: tabular-nums; white-space: nowrap;
+}
+.fund .titel-rendite.gut { color: var(--gruen); }
+
+/* ---------- Die Reiter: Chancen / Knappste Paare / Verlauf ----------
+ * Militaerische Registerkarten: klare Kante, aktiver Reiter traegt den
+ * Akzent als Unterstrich und leuchtet leicht. */
+.reiter { padding: 0; background: transparent; border: 0; gap: 10px; }
+.reiter-knopf {
+  background: var(--karte); border: 1px solid var(--rand);
+  border-radius: var(--rund-chip);
+  text-transform: uppercase; letter-spacing: 1.2px; font-size: 13px;
+  position: relative; overflow: hidden;
+  transition: border-color .15s ease, background .15s ease;
+}
+.reiter-knopf::after {
+  content: ""; position: absolute; left: 12px; right: 12px; bottom: 0;
+  height: 2px; background: var(--gold);
+  transform: scaleX(0); transition: transform .18s ease;
+}
+.reiter-knopf:hover { border-color: color-mix(in srgb, var(--gold) 45%, transparent); }
+.reiter-knopf.offen {
+  background: color-mix(in srgb, var(--gold) 10%, var(--karte));
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  color: var(--text);
+}
+.reiter-knopf.offen::after { transform: scaleX(1); }
+.reiter-knopf[data-bereich="chancen"].offen {
+  background: color-mix(in srgb, var(--gruen) 12%, var(--karte));
+  border-color: color-mix(in srgb, var(--gruen) 55%, transparent);
+}
+.reiter-knopf[data-bereich="chancen"].offen::after { background: var(--gruen); }
+
+/* ---------- Die Paarungsmatrix: 4x4, sechzehn feste Felder ---------- */
+.paarmatrix { margin-top: 12px; }
+.paarmatrix .pmx-kopf {
+  font-size: 11px; letter-spacing: 2px; color: var(--text-leise);
+  margin-bottom: 6px; display: flex; gap: 12px; align-items: baseline;
+}
+.paarmatrix .pmx-kopf span { letter-spacing: .5px; opacity: .65; font-size: 11px; }
+.paarmatrix table { border-collapse: separate; border-spacing: 4px; }
+.paarmatrix th {
+  font-size: 11px; letter-spacing: 1px; padding: 2px 6px;
+  font-weight: 700; text-align: center;
+}
+.paarmatrix th.pm { color: var(--pm); }
+.paarmatrix th.ka { color: var(--ka); }
+.paarmatrix th.sm { color: var(--sm); }
+.paarmatrix th.bf { color: var(--bf); }
+.paarmatrix td {
+  width: 74px; padding: 5px 8px; text-align: center;
+  background: var(--karte-2); border: 1px solid var(--rand);
+  border-radius: 6px;
+}
+.paarmatrix td b { display: block; font-size: 16px; line-height: 1.1; }
+.paarmatrix td i {
+  display: block; font-style: normal; font-size: 10.5px;
+  color: var(--text-leise); font-variant-numeric: tabular-nums;
+}
+.paarmatrix td.pmx-leer { opacity: .38; }
+.paarmatrix td.pmx-sperr {
+  background: repeating-linear-gradient(45deg,
+    var(--karte-2) 0 5px, color-mix(in srgb, var(--rand) 55%, transparent) 5px 10px);
+  color: var(--text-leise); opacity: .5;
+}
+.paarmatrix td.pmx-chance { border-color: color-mix(in srgb, var(--gruen) 55%, transparent); }
+.paarmatrix td.pmx-chance b { color: var(--gruen); }
+.paarmatrix td.pmx-aktiv { border-color: color-mix(in srgb, var(--gold) 60%, transparent); }
+.paarmatrix td.pmx-beste {
+  border-color: var(--gruen);
+  box-shadow: 0 0 8px color-mix(in srgb, var(--gruen) 35%, transparent);
+}

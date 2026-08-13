@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orion Panel Pro — Suchlogik</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="css/stil.css?v=4">
+<link rel="stylesheet" href="css/stil.css?v=21">
 <style>
   .doku { max-width: 860px; }
   .doku h2 { margin-top: 34px; }
@@ -44,23 +44,25 @@
   <p class="leise">
     Diese Seite beschreibt, was das Programm tut, in derselben Reihenfolge, in der es
     das tut. Sie ist dafür da, dass du es nachprüfen und mir widersprechen kannst.
-    Jede Zahl darin ist gemessen, nicht geschätzt. Stand: 9. August 2026.
+    Jede Zahl darin ist gemessen, nicht geschätzt. Stand: 13. August 2026, spät.
   </p>
 
   <h2>1. Wo gesucht wird</h2>
 
   <p>Die Suche läuft <b>auf dem Server</b>, nicht in deinem Browser und nicht auf deinem PC.</p>
 
-  <pre>pg_cron  ──jede Minute──→  orion-lauf  ──→  Tabelle orion_funde
-                                ↑                      ↓
-                    Polymarket (öffentlich)      Website liest alle 2 s
-                                ↑
-                    bridge_odds  ←── Bridge auf dem Heim-PC ←── Betfair</pre>
+  <pre>pg_cron ──Fußball alle 20 s──→  orion-lauf  ──→  Tabelle orion_funde
+        (andere Bereiche laut Register)              ↓
+              ↑            ↑           ↑       Website liest alle 2 s
+     Polymarket    kalshi_snapshot  smarkets_snapshot
+    (öffentlich)     (alle 2 min)     (alle 2 min)
+              ↑
+  bridge_odds ←── Bridge auf dem Heim-PC ←── Betfair</pre>
 
   <p>
     Der Scanner läuft weiter, wenn kein Browser offen ist und wenn dein Laptop aus ist.
     Die Website rechnet nichts mehr, sie liest nur ab. Deshalb kostet ein Auffrischen
-    <b>rund 120 Millisekunden</b>, während ein voller Lauf 2,6 bis 6,0 Sekunden braucht.
+    <b>rund 120 Millisekunden</b>, während ein voller Fußball-Lauf 3,5 bis 4,5 Sekunden braucht (gemessen 13.8.).
   </p>
 
   <h3>Der eine Teil, der auf dem PC bleiben muss</h3>
@@ -80,7 +82,7 @@
 
   <h3>Polymarket</h3>
   <pre>https://gamma-api.polymarket.com/events?closed=false&active=true&limit=100&offset=N&tag_slug=THEMA
-Themen: soccer, mlb, nfl, nba, tennis, ucl</pre>
+Themen: die pm_tags der 21 Bereiche aus dem Register orion_bereiche</pre>
   <p>Eigenheiten, die eingebaut sind:</p>
   <ul class="leise">
     <li>Gamma deckelt <b>jede</b> Antwort bei 100 Einträgen, egal welches <code>limit</code>. Nur <code>offset</code>-Blättern liefert alles.</li>
@@ -148,6 +150,20 @@ Themen: soccer, mlb, nfl, nba, tennis, ucl</pre>
     („Alle Bereiche" im Filter): gemischt wird nur das Anschauen, nie die Suche.
   </p>
 
+  <h3>Drei Durchgänge je Lauf (seit 13.08.2026)</h3>
+  <table>
+    <tr><th>Durchgang</th><th>was er vergleicht</th></tr>
+    <tr><td><b>1 — Anker Polymarket</b></td><td>Für jeden Polymarket-Markt ein Gegenstück bei
+      Smarkets, Kalshi und Betfair. Zwei Belege: Partie und Läufer.</td></tr>
+    <tr><td><b>2 — Smarkets ↔ Kalshi direkt</b></td><td>Partien, die Polymarket nicht führt.
+      Ersatz für den fehlenden zweiten Beleg ist die <b>Eindeutigkeit</b>: passt eine Partie
+      auf mehrere Gegenkandidaten, wird gar nicht gepaart.</td></tr>
+    <tr><td><b>3 — Betfair direkt</b></td><td>Betfair-Siegermärkte ohne Polymarket-Anker,
+      gegen Smarkets (Fußball) und Kalshi (jeder Bereich), mit derselben Eindeutigkeitsregel.
+      Damit vergleicht sich <b>jedes Buch mit jedem</b>, wo beide dieselbe Partie führen —
+      vorher kam Betfair nur über den Anker ins Spiel.</td></tr>
+  </table>
+
   <h2>4. Wie zwei Märkte einander zugeordnet werden</h2>
 
   <h3>Die Partie</h3>
@@ -185,8 +201,8 @@ fc · cf · sc · ac · afc · ss · as · fk · cd · sk · club · city · uni
 
   <pre>Effektivquote nach Gebühr:   qE  = 1 + (q − 1) · (1 − Gebühr)
 Dagegenhalten (Lay):         qE  = 1 + (1 − Gebühr) / (L − 1)
-Polymarket:                  Gebühr = Satz · min(p, 1−p)^Exponent
-                             qE  = (1 − Gebühr) / p
+Polymarket:                  Gebühr = Satz · p · (1−p)   je Anteil, KEIN Exponent
+                             qE  = (1 − Gebühr) / p    (belegt 11.08., Anbieterdoku)
 
 Summe der Kehrwerte:         inv = 1/qE₁ + 1/qE₂
 Arbitrage, wenn              inv &lt; 1
@@ -201,10 +217,11 @@ Rendite:                     (1/inv − 1) · 100 %</pre>
 
   <h3>Zwei Wege je Paar</h3>
   <p>
-    Polymarket fragt binär. Deshalb werden beide Wege gerechnet und der bessere genommen:
+    Polymarket fragt binär. Deshalb werden beide Wege gerechnet — gegen JEDES Gegenbuch, nicht nur Betfair — und jede tragfähige Paarung wird eine eigene Karte:
   </p>
-  <pre>Weg 1 (lay):   JA bei Polymarket kaufen   +   bei Betfair dagegenhalten
-Weg 2 (back):  NEIN bei Polymarket kaufen +   bei Betfair darauf setzen</pre>
+  <pre>Weg 1:  FÜR beim einen Buch     +  GEGEN beim anderen (Lay/SELL oder NEIN)
+Weg 2:  GEGEN beim einen Buch   +  FÜR beim anderen
+Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
 
   <h3>Die Gebührensätze — seit 11.08.2026 alle vier belegt</h3>
   <table>
@@ -243,7 +260,7 @@ Weg 2 (back):  NEIN bei Polymarket kaufen +   bei Betfair darauf setzen</pre>
     <tr><td>Betfair, gemeldet</td><td>echter <code>marketBaseRate</code> je Markt, 2 bis 7 %</td></tr>
     <tr><td>Betfair, nicht gemeldet</td><td class="nein">Rückfall 7 %, niemals 0</td></tr>
     <tr><td>Polymarket, gemeldet</td><td><code>feeSchedule.rate</code>, meist 5 %, <code>takerOnly</code></td></tr>
-    <tr><td>Polymarket, nicht gemeldet</td><td class="nein">Rückfall 7 %, niemals 0</td></tr>
+    <tr><td>Polymarket, nicht gemeldet</td><td class="nein">belegter Satz der Marktart (Sport 5 %, Krypto 7 %, Politik/Technik 4 %); unbekannter Bereich 7 %, niemals 0</td></tr>
   </table>
   <p class="leise">
     Warum das entscheidend ist, an echten Zahlen: Polymarket 0,49 gegen Betfair 2,03
@@ -266,11 +283,28 @@ Weg 2 (back):  NEIN bei Polymarket kaufen +   bei Betfair darauf setzen</pre>
     ein solcher Vorsprung weg.
   </p>
   <p class="leise">
-    Die 3-%-Schwelle ist eine Vorgabe vom 11.8.2026. Ehrlich dazugesagt, weil gemessen:
-    die Bücher liegen im Schnitt 1,3 % auseinander, die größte je nachweislich handelbare
-    Rendite war +1,12 %, und jede Zeile über 5 % war bisher eine Fehlpaarung. Der
-    Chancen-Reiter ist mit dieser Schwelle also meist leer; was dort auftaucht, verdient
-    die Gegenprobe doppelt. Alles zwischen −1 % und 3 % steht unter „Knappste Paare".
+    Die Schwelle steht seit dem 12.8.2026 bei 2 %. Gemessen dazu (13.8.): alle als richtig geprüften Funde lagen zwischen 2,07 und 3,27 %, alle falschen über 4,48 % — jede Zeile über 5 % war bisher eine Fehlpaarung oder ein klebender Kurs, der Wächter markiert sie. Alles zwischen −1 % und 2 % steht unter „Knappste Paare".
+  </p>
+
+  <h3>Die fünf Bedingungen einer Chance (Stand 13.08.2026)</h3>
+  <table>
+    <tr><th>Bedingung</th><th>warum</th></tr>
+    <tr><td>1. Rendite ≥ 2 %</td><td>das Verhältnis stimmt</td></tr>
+    <tr><td>2. Menge bekannt</td><td>unbekannt heißt nicht unbegrenzt</td></tr>
+    <tr><td>3. Gewinn in Geld ≥ 5 USD</td><td>+1 % auf 3 € sind 3 Cent, keine Chance</td></tr>
+    <tr><td>4. Absage kostet nichts</td><td>der dritte Ausgang (Absage, Abbruch) wird mit den
+      echten Einsätzen ausgerechnet; kostet er Geld, fliegt die Zeile — ein Absage-Verlust
+      von 20 % frisst zwanzig gewonnene Wetten</td></tr>
+    <tr><td>5. Beide Ausgänge gedeckt</td><td>dieselbe Frage, einmal FÜR, einmal GEGEN —
+      nie zwei Wetten in dieselbe Richtung</td></tr>
+  </table>
+  <p class="leise">
+    Dazu laufen serverseitig jede Minute die Nachkontrollen: die <b>Buchprobe</b>
+    (Summe der Back-Gegenwahrscheinlichkeiten eines Marktes unter 1,00 = in sich
+    unstimmiges Buch → Zeile wird als nicht handelbar aussortiert), das
+    <b>Kursalter</b> je Seite (pm_preis_seit/bf_quote_seit), der <b>Anpfiff</b> aus dem
+    Gegenbuch samt Karteileichen-Regel (6 h nach Anpfiff → Verlauf) und der Prüfer,
+    der jede Rechnung unabhängig nachrechnet.
   </p>
 
   <h2>7. Verlauf</h2>
@@ -292,9 +326,11 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
   <h2>9. Was geprüft ist</h2>
   <table>
     <tr><th>Prüfstand</th><th>Umfang</th></tr>
-    <tr><td><code>pruefung/rechnung.test.js</code></td><td>94 Prüfungen</td></tr>
-    <tr><td><code>pruefung/zuordnung.test.js</code></td><td>107 Prüfungen</td></tr>
+    <tr><td><code>pruefung/rechnung.test.js</code></td><td>195 Prüfungen</td></tr>
+    <tr><td><code>pruefung/zuordnung.test.js</code></td><td>275 Prüfungen</td></tr>
+    <tr><td><code>pruefung/spiegel.test.js</code></td><td>15.133 Prüfungen — Browser- gegen Server-Fassung, vor jedem Deploy</td></tr>
     <tr><td><code>bridge/pruefung.js</code></td><td>158 Prüfungen</td></tr>
+    <tr><td><code>pruefung/bereiche.js</code> · <code>nachschlagen.js</code> · <code>linkpruefung.js</code></td><td>Messwerkzeuge gegen die echten Schnittstellen</td></tr>
   </table>
   <p>
     Jede Schutzregel hat einen Test, der sie <b>auslöst</b>, nicht nur einen, der sie
@@ -312,9 +348,10 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
   <h2>10. Was das Programm nicht sieht</h2>
   <table>
     <tr><th>Lücke</th><th>gemessen</th></tr>
-    <tr><td>Bridge lädt nicht alles hoch</td><td>3.919 von 7.942 Märkten, Build 17</td></tr>
-    <tr><td>Betfair-Markttypen ungenutzt</td><td>Both Teams To Score, Double Chance, Draw No Bet</td></tr>
-    <tr><td>Polymarket-Themen nicht abgefragt</td><td>Politik, Krypto, Wirtschaft, Golf, UFC</td></tr>
+    <tr><td>Bridge lädt nicht alles hoch</td><td>5.022 von 9.236 Märkten (Build 19)</td></tr>
+    <tr><td>Vier Marktarten ohne Smarkets-Gegenpart</td><td>Halbzeit, HZ1/HZ2 Über/Unter, Ecken — der Sammler wirft sie noch weg; nächster Anlauf als eigener Sammler</td></tr>
+    <tr><td>15 Bereiche ohne Polymarket-Einzelpartien</td><td>gemessen 13.8. (pruefung/bereiche.js): dort führt Polymarket nur Turniersieger oder Fragen ohne „A gegen B"</td></tr>
+    <tr><td>Spielerwetten</td><td>21. Bereich angelegt, abgeschaltet — keine gemessene Polymarket-Quelle (7 Kennungen, alle 0)</td></tr>
   </table>
 
   <p class="leise" style="margin-top:30px">
@@ -323,8 +360,8 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
 
 </div>
 
-<script src="js/konfig.js?v=4"></script>
-<script src="js/sperre.js?v=4"></script>
+<script src="js/konfig.js?v=21"></script>
+<script src="js/sperre.js?v=21"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   window.Sperre.start(function () {

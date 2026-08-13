@@ -1080,7 +1080,15 @@
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
         '<div class="kopfzeile">' +
-          '<div class="titel">' + txt(f.titel) + '</div>' +
+          /* Die Rendite DIREKT neben dem Titel (Vorgabe 13.8.): man soll die
+           * Zahl sehen, ohne die Zeile darunter lesen zu muessen. Im Verlauf
+           * steht die BESTE, denn dort ist das die Frage. */
+          '<div class="titel">' + txt(f.titel) +
+            ' <span class="titel-rendite' + (chance && !imVerlauf ? ' gut' : '') + '">(' +
+            (function () {
+              var r = imVerlauf && f.beste_rendite != null ? f.beste_rendite : f.rendite;
+              return (r >= 0 ? '+' : '') + Number(r).toFixed(2) + ' %';
+            })() + ')</span></div>' +
           /* Uhrzeit oben rechts: WANN dieser Eintrag entstanden ist.
            * Nicht die letzte Sichtung, sondern die erste — das ist die Frage
            * "seit wann gibt es das", nicht "wann habe ich zuletzt hingesehen". */
@@ -1189,20 +1197,67 @@
    * gerade nur Polymarket gegen Betfair laeuft oder auch Kalshi gegen
    * Smarkets. Ohne diese Zeile sieht man nur die Summe und merkt nicht,
    * wenn eine ganze Paarung stillsteht. */
+  /* ---------- Die Paarungsmatrix ----------
+   *
+   * Vorgabe 13.8.: "16 Kategorien, damit man den Kopf klarer hat." Vier
+   * Buecher mal vier Buecher sind sechzehn Felder: die Diagonale ist
+   * gesperrt (ein Buch gegen sich selbst ist keine Arbitrage, die Rechnung
+   * verweigert das ohnehin), die uebrigen zwoelf sind die gerichteten
+   * Paarungen. JEDES Feld steht IMMER an derselben Stelle, auch mit Null —
+   * eine Matrix, in der die Felder springen, ist keine Uebersicht.
+   *
+   * Zeile = das Buch der FUER-Seite, Spalte = das Buch der GEGEN-Seite.
+   * Hervorgehoben werden das aktivste Feld und das Feld mit der besten
+   * Rendite. Die Daten kommen unveraendert aus orion_uebersicht. */
+  var MATRIX_BUECHER = ['polymarket', 'kalshi', 'smarkets', 'betfair'];
+
   function paarungenZeile(p) {
-    if (!p) return '';
-    var namen = Object.keys(p);
-    if (!namen.length) return '';
-    namen.sort(function (a, b) { return (p[b].live || 0) - (p[a].live || 0); });
-    var teile = namen.map(function (n) {
-      var x = p[n];
-      var beste = x.beste == null ? null : Number(x.beste);
-      return '<span class="chip' + (x.chancen > 0 ? ' gut' : '') + '">' + txt(n) +
-             ' &middot; ' + x.live +
-             (beste === null ? '' : ' &middot; beste ' + beste.toFixed(2) + ' %') + '</span>';
+    p = p || {};
+    var K = welt.KONFIG.buecher || {};
+
+    var aktivstes = null, bestes = null;
+    MATRIX_BUECHER.forEach(function (a) {
+      MATRIX_BUECHER.forEach(function (b) {
+        if (a === b) return;
+        var x = p[a + ' -> ' + b];
+        if (!x) return;
+        if (!aktivstes || (x.live || 0) > (p[aktivstes] ? p[aktivstes].live : 0)) {
+          if ((x.live || 0) > 0) aktivstes = a + ' -> ' + b;
+        }
+        if (x.beste != null && (!bestes || Number(x.beste) > Number(p[bestes].beste))) {
+          bestes = a + ' -> ' + b;
+        }
+      });
     });
-    return '<div class="tafel-fuss">Laufende Paarungen (je genau zwei Bücher): ' +
-           teile.join(' ') + '</div>';
+
+    var html = '<div class="paarmatrix" title="Zeile: das Buch der FÜR-Seite. Spalte: das Buch der GEGEN-Seite. Zahl: laufende Paare, darunter die beste Rendite des Felds. Die Diagonale ist gesperrt — ein Buch gegen sich selbst ist keine Arbitrage.">' +
+      '<div class="pmx-kopf">PAARUNGSMATRIX <span>FÜR ↓ · GEGEN →</span></div>' +
+      '<table><tr><th></th>';
+    MATRIX_BUECHER.forEach(function (b) {
+      html += '<th class="' + txt((K[b] || {}).chip || '') + '">' + txt((K[b] || {}).kurz || b) + '</th>';
+    });
+    html += '</tr>';
+
+    MATRIX_BUECHER.forEach(function (a) {
+      html += '<tr><th class="' + txt((K[a] || {}).chip || '') + '">' + txt((K[a] || {}).kurz || a) + '</th>';
+      MATRIX_BUECHER.forEach(function (b) {
+        if (a === b) { html += '<td class="pmx-sperr">—</td>'; return; }
+        var s = a + ' -> ' + b;
+        var x = p[s];
+        var live = x ? (x.live || 0) : 0;
+        var beste = x && x.beste != null ? Number(x.beste) : null;
+        var kl = [];
+        if (!live) kl.push('pmx-leer');
+        if (x && x.chancen > 0) kl.push('pmx-chance');
+        if (s === aktivstes) kl.push('pmx-aktiv');
+        if (s === bestes && beste !== null && beste >= 2) kl.push('pmx-beste');
+        html += '<td class="' + kl.join(' ') + '"><b>' + live + '</b>' +
+                (beste === null ? '<i>&nbsp;</i>' : '<i>' + beste.toFixed(2) + ' %</i>') + '</td>';
+      });
+      html += '</tr>';
+    });
+    html += '</table></div>';
+    return html;
   }
 
   function anbieterTafel(e) {

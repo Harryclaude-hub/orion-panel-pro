@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion Panel Pro — Jeder Knopf erklärt</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="stylesheet" href="css/stil.css?v=21">
+<style>
+  .doku { max-width: 860px; }
+  .doku h2 { margin-top: 34px; }
+  .doku table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: 14px; }
+  .doku th, .doku td { text-align: left; padding: 8px 10px; border-bottom: 1px solid var(--rand); vertical-align: top; }
+  .doku th { color: var(--text-leise); font-weight: 600; }
+  .doku td:first-child { white-space: nowrap; font-weight: 600; }
+</style>
+</head>
+<body>
+
+<div id="sperre">
+  <div class="kasten">
+    <h2>Orion Panel Pro</h2>
+    <input id="sperrwort" type="password" placeholder="Wort" autocomplete="off">
+    <button id="entsperren">Öffnen</button>
+    <div class="fehler" id="sperrfehler"></div>
+  </div>
+</div>
+
+<div class="huelle doku">
+
+  <header class="kopf">
+    <h1>Jeder Knopf erklärt</h1>
+    <span class="luecke"></span>
+    <a class="knopf" href="index.html">Zurück zum Panel</a>
+  </header>
+
+  <p class="leise">
+    Jeder anklickbare Knopf der Website, mit dem, was er wirklich tut.
+    Kein Knopf tut etwas anderes, als hier steht — steht einer nicht hier,
+    ist das ein Fehler dieser Seite und gehört gemeldet.
+  </p>
+
+  <h2>Kopfzeile</h2>
+  <table>
+    <tr><th>Knopf</th><th>Was er tut</th></tr>
+    <tr><td>⟳ Sofort ablesen</td>
+    <td>Erzwingt einen Lesevorgang aus der Datenbank <b>jetzt</b>. Die Seite
+    liest ohnehin von selbst alle 2&nbsp;Sekunden — der Knopf ist also weder
+    ein Neustart noch ein F5, er spart nur das Warten auf den nächsten Takt.
+    Nützlich nach einem Netz-Aussetzer.</td></tr>
+    <tr><td>⛉ Filter</td>
+    <td>Klappt das Filterfeld auf und zu. Filter <b>verstecken nur die
+    Anzeige</b>, sie ändern nie die Suche — unter jedem Reiter steht, wie
+    viele Funde gerade versteckt sind. Die Einstellungen überleben das
+    Neuladen (localStorage).</td></tr>
+    <tr><td>🔔 Meldungen</td>
+    <td>Schaltet die Browser-Benachrichtigung bei jeder <b>neuen Chance</b>
+    an oder aus. Beim ersten Einschalten fragt der Browser um Erlaubnis und
+    schickt eine Probemeldung. Drei ehrliche Zustände: AN, AUS, „vom Browser
+    gesperrt" (dann über das Schloss in der Adressleiste freigeben).
+    Meldungen kommen nur, solange die Seite offen ist.</td></tr>
+    <tr><td>ℹ Angaben</td>
+    <td>Öffnet das Wörterbuch: was Rendite, Effektivquote, Back/Lay, JA/NEIN,
+    die Buchprobe und der Gefechtsstand bedeuten.</td></tr>
+    <tr><td>⌕ Wie gesucht wird</td>
+    <td>Öffnet die Suchlogik: was das Programm in welcher Reihenfolge tut,
+    mit jeder Schwelle und jeder Formel. Zum Nachprüfen und Widersprechen.</td></tr>
+    <tr><td>⚖ Regelwerk</td>
+    <td>Öffnet die Absage-Regeln der vier Bücher mit Quellen: wer zahlt
+    zurück, wer wertet — der Fall, der in keiner Rendite steht.</td></tr>
+    <tr><td>⚙ Einstellungen</td>
+    <td>Öffnet die Einstellungen (u.&nbsp;a. das Bridge-Zugangswort).</td></tr>
+  </table>
+
+  <h2>Reiter</h2>
+  <table>
+    <tr><th>Knopf</th><th>Was er tut</th></tr>
+    <tr><td>Chancen (n)</td>
+    <td>Zeigt nur Zeilen, die <b>alle fünf Bedingungen</b> erfüllen: Rendite
+    ≥&nbsp;2&nbsp;%, Menge bekannt, Gewinn in Geld, Absage kostet nichts,
+    beide Ausgänge gedeckt. Die Zahl in Klammern ist live.</td></tr>
+    <tr><td>Knappste Paare (n)</td>
+    <td>Alles mit guter Rechnung, dem aber <b>eine</b> Bedingung fehlt —
+    mit Begründung auf der Karte. Nichts verschwindet stillschweigend.
+    Hier gibt es absichtlich keine Animation und keine Meldung: die Zahl
+    zählt einfach mit.</td></tr>
+    <tr><td>Verlauf (n)</td>
+    <td>Beendete Funde mit Grund („nicht mehr gefunden", „Partie vorbei",
+    „Gegenbuch nicht handelbar") und der <b>besten</b> je gesehenen Rendite —
+    die Frage dort ist „hätte sich das gelohnt?".</td></tr>
+  </table>
+
+  <h2>Auf jeder Fundkarte</h2>
+  <table>
+    <tr><th>Knopf</th><th>Was er tut</th></tr>
+    <tr><td>&lt;Buch&gt; öffnen</td>
+    <td>Öffnet den Markt beim jeweiligen Buch in einem neuen Tab. Betfair
+    öffnet <b>über Orbit</b> (betfair.com ist aus Österreich gesperrt; die
+    Marktnummer bleibt dieselbe). Der Smarkets-Link führt auf die
+    <b>Partie</b> — welchen Markt du dort wählen musst, steht ausdrücklich
+    auf der Karte, weil Smarkets keine von außen ansteuerbaren
+    Markt-Adressen hat (gemessen: auch erfundene Adressen antworten 200).</td></tr>
+    <tr><td>Kopieren</td>
+    <td>Kopiert den Link in die Zwischenablage. Sagt „kopiert", „ging
+    nicht" oder „Fenster aktivieren" — das dritte, wenn der Browser der
+    Seite ohne Fokus keinen Zugriff auf die Zwischenablage gibt.</td></tr>
+    <tr><td>▸ Vor dem Handeln lesen</td>
+    <td>Klappt Gebühren, Absage-Regeln, den Smarkets-Marktwechsel, die
+    Nachkontrolle und die Einsatz-Aufteilung auf. Bleibt über das
+    2-Sekunden-Neuzeichnen hinweg offen, bis du es wieder schließt.</td></tr>
+  </table>
+
+  <h2>Sperrbildschirm</h2>
+  <table>
+    <tr><th>Knopf</th><th>Was er tut</th></tr>
+    <tr><td>Öffnen</td>
+    <td>Prüft das Sperrwort und zeigt die Seite. Das Wort hält Zufallsbesuch
+    fern, mehr nicht — die Daten selbst liest die Seite mit einem
+    öffentlichen Nur-Lese-Schlüssel.</td></tr>
+  </table>
+
+  <h2>Auf den Unterseiten</h2>
+  <table>
+    <tr><th>Knopf</th><th>Was er tut</th></tr>
+    <tr><td>Als Datei herunterladen</td>
+    <td>(Suchlogik) Speichert die Seite als Textdatei — erzeugt aus der
+    Seite selbst, damit Datei und Seite nie auseinanderlaufen.</td></tr>
+    <tr><td>Zurück zum Panel</td>
+    <td>Zurück zur Hauptseite.</td></tr>
+    <tr><td>? (am Gefechtsstand)</td>
+    <td>Öffnet die Angaben-Seite mit den Erklärungen der Gefechtsstand-Zellen.</td></tr>
+  </table>
+
+  <p class="leise" style="margin-top:30px">
+    Wenn ein Knopf etwas anderes tut, als hier steht: sagen. Dann ist
+    entweder der Knopf falsch oder diese Seite — beides wird repariert.
+  </p>
+
+</div>
+
+<script src="js/konfig.js?v=21"></script>
+<script src="js/sperre.js?v=21"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function () { window.Sperre.start(function () {}); });
+</script>
+</body>
+</html>
