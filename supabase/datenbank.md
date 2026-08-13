@@ -212,3 +212,31 @@ Dazu gehört die Anzeige (`js/daten.js`): sie verlangte, dass **auch der
 zuletzt** gesehene Wert über der Schwelle liegt. Jetzt zählt der **beste**
 je gesehene Wert — der Verlauf beantwortet „hätte sich das gelohnt?", und
 darauf antwortet der Höchststand, nicht der Zufallswert beim Verschwinden.
+
+## Der Nachmittag des 13.8.2026 — was ich kaputtgemacht und wieder repariert habe
+
+Zwei Ausfälle an einem Tag, beide von mir ausgelöst. Damit es niemand
+wiederholt:
+
+**Ausfall 1, 45 Minuten.** Zwanzig Bereichs-Scanner statt einem (Änderung vom
+12.8.) erzeugten 67 % der Datenbankzeit in `net.http_post`. Verbindungspool
+erschöpft, PGRST002, erst ein Neustart durch Karam half. Behoben: die 19
+leeren Bereiche von 1–2 auf 10 Minuten gestreckt — sie lieferten in 24
+Stunden **null** Paare bei ~17 000 Läufen.
+
+**Ausfall 2, rund 25 Minuten.** Beim Versuch, vier weitere Marktarten
+einzusammeln, wuchs die Smarkets-Aufnahme, und der Scanner fiel reihenweise
+mit HTTP 546 `WORKER_RESOURCE_LIMIT` aus. Behoben durch Zurücknehmen und ein
+kleineres Zeitfenster (72 h → 30 h).
+
+### Drei Messwerte, die man kennen muss, bevor man hier etwas ändert
+
+| | |
+|---|---|
+| Smarkets drosselt gleichzeitige Abrufe | sequenziell 2492 Kurse, 4 parallel nur **990** — unsichtbar, `hole()` gibt still auf |
+| Der Sammler brauchte immer ~145 s | wurde aber **jede Minute** gerufen, lief also dauerhaft zwei- bis dreifach parallel |
+| Der Scanner sitzt dicht an der Speichergrenze | 2065 Smarkets-Märkte gehen, 2667 nicht mehr |
+
+**Die Zahl, an der jede Änderung am Sammler zu messen ist, heißt
+`mit_quoten` — nicht `dauer_ms`.** Schneller und unvollständig ist schlechter
+als langsam und vollständig.

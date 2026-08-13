@@ -124,14 +124,48 @@ Deno.serve(async () => {
            : 'https://smarkets.com' + pfad;
 }
 
-function art(m: any): { art: string; linie: number | null } | null {
+/* Welche Marktarten wir einsammeln.
+     *
+     * MUSS mit smMarktArt() in orion-lauf/zuordnung.ts uebereinstimmen. Bis
+     * zum 13.8.2026 tat es das NICHT: der Scanner kannte laengst fuenf Arten,
+     * dieser Sammler nur drei — und warf den Rest weg, bevor der Scanner ihn
+     * je sah.
+     *
+     * GEMESSEN, was das kostete (ein Fussball-Lauf):
+     *   Polymarket liefert  hz_sieger 188 · hz_unentschieden 94
+     *                       hz1_ueber_unter 177 · hz2_ueber_unter 177
+     *                       ecken_ueber_unter 364        = 1000 Maerkte
+     *   Smarkets lieferte   davon NULL
+     *
+     * Tausend Polymarket-Maerkte ohne Gegenpart, obwohl Smarkets sie fuehrt:
+     * FIRST_HALF_OVER_UNDER 87, SECOND_HALF_OVER_UNDER 87, CORNERS_OVER_UNDER
+     * 71 je 30 Spiele, dazu HALF_TIME_WINNER_3_WAY einmal je Spiel.
+     *
+     * Und es war die Wurzel einer Fehlpaarung: Polymarkets "1st Half O/U 0.5"
+     * fand als einzigen Gegenpart den GANZSPIEL-Markt "Over 0.5 goals" und
+     * meldete 11,48 %. Der richtige Gegenmarkt existierte, wir sammelten ihn
+     * nur nicht ein.
+     *
+     * EXAKT beim Namen nehmen, nie per Praefix. Smarkets fuehrt daneben
+     * SECOND_HALF_HOME_TEAM_OVER_UNDER (Torkonto EINER Mannschaft),
+     * AWAY_CORNERS_OVER_UNDER (Ecken EINER Mannschaft) und CORNERS_HANDICAP —
+     * ein Praefix-Vergleich haette alle drei mitgenommen. */
+    const OU_TYP: Record<string, string> = {
+      OVER_UNDER: 'ueber_unter',
+      FIRST_HALF_OVER_UNDER: 'hz1_ueber_unter',
+      SECOND_HALF_OVER_UNDER: 'hz2_ueber_unter',
+      CORNERS_OVER_UNDER: 'ecken_ueber_unter'
+    };
+
+    function art(m: any): { art: string; linie: number | null } | null {
       const t = m.market_type;
       if (!t || typeof t !== 'object') return null;
       if (t.name === 'WINNER_3_WAY') return { art: 'sieger', linie: null };
+      if (t.name === 'HALF_TIME_WINNER_3_WAY') return { art: 'halbzeit', linie: null };
       if (t.name === 'BTTS') return { art: 'btts', linie: null };
-      if (t.name === 'OVER_UNDER') {
+      if (Object.prototype.hasOwnProperty.call(OU_TYP, t.name)) {
         const l = parseFloat(t.param);
-        return isFinite(l) ? { art: 'ueber_unter', linie: l } : null;
+        return isFinite(l) ? { art: OU_TYP[t.name], linie: l } : null;
       }
       return null;
     }
@@ -213,6 +247,11 @@ function art(m: any): { art: string; linie: number | null } | null {
       maerkte_gesamt: maerkte.length,
       maerkte_genutzt: genutzt.length,
       mit_quoten: aus.length,
+      /* Je Art zaehlen, nicht nur die drei alten. Ohne diese Zahlen war am
+       * 13.8. nicht zu sehen, dass der Sammler tausend Gegenmaerkte wegwarf. */
+      je_art: aus.reduce((z: Record<string, number>, x: any) => {
+        z[x.art] = (z[x.art] || 0) + 1; return z;
+      }, {}),
       sieger: aus.filter(x => x.art === 'sieger').length,
       btts: aus.filter(x => x.art === 'btts').length,
       ueber_unter: aus.filter(x => x.art === 'ueber_unter').length,
