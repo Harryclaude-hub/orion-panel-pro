@@ -1130,14 +1130,18 @@
           '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +
             (buch2(f).konto ? ' · ' + txt(buch2(f).konto) : '') + '</span> ' +
           '<span class="chip" title="Tag: ' + txt(f.sportart) + '">' + txt(bereichText(f)) + '</span> ' +
-          '<span class="chip' + (chance ? ' gut' : '') + '">Rendite ' + Number(f.rendite).toFixed(2) + ' %</span> ' +
+
           /* Das Geld gleich vorne, nicht erst in der Analyse: was zu diesen
            * Kursen WIRKLICH herauszuholen ist (Menge im Buch x Rendite). */
           (f.echter_gewinn === null || f.echter_gewinn === undefined ? '' :
             '<span class="chip' + (chance ? ' gut' : '') +
             '" title="Was zu diesen Kursen wirklich herauszuholen ist: handelbare Menge mal Rendite. Die Rechnung auf den Grundeinsatz steht unter So setzt du.">holbar ' +
             (f.echter_gewinn >= 0 ? '+' : '') + geld(f.echter_gewinn) + '</span> ') +
-          '<span class="chip">beste ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span> ' +
+          /* 'beste' nur, wenn sie etwas ANDERES sagt als die Rendite im
+           * Titel - dieselbe Zahl zweimal ist Laerm. */
+          (f.beste_rendite != null && Math.abs(Number(f.beste_rendite) - Number(f.rendite)) > 0.01
+            ? '<span class="chip" title="Die hoechste je gesehene Rendite dieser Zeile">beste ' + Number(f.beste_rendite).toFixed(2) + ' %</span> '
+            : '') +
           '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span>' +
         '</div>' +
         warnungen(f) +
@@ -1684,7 +1688,11 @@
     }
     setzeWennAnders(document.getElementById('knapp'), knappHtml);
 
-    var verlaufHtml = '<p class="leise"><b>Nur Funde, die im Plus waren.</b> Was nie eine Rendite über ' +
+    var verlaufHtml = (e.statistik && e.statistik.verlauf_nie
+        ? '<p class="leise">' + e.statistik.verlauf_nie + ' weitere beendete Zeilen lagen nie über der ' +
+          'Chancen-Schwelle und werden nicht geführt — damit die Rechnung aufgeht: Verlauf + Falsche Rechnungen + diese Zahl = alle Beendeten.</p>'
+        : '') +
+      '<p class="leise"><b>Nur Funde, die im Plus waren.</b> Was nie eine Rendite über ' +
       K.verlaufMinRendite.toFixed(0) + ' % erreicht hat, wird gelöscht statt aufbewahrt. ' +
       'Ein Fund landet hier, wenn er nicht mehr gefunden wird, wenn seine Partie vorbei ist, ' +
       'oder wenn er eine Stunde lang nicht mehr bestätigt wurde. Sortiert nach Beendigung, ' +

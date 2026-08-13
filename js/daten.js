@@ -470,6 +470,7 @@
          * Paare" mit Begruendung. */
         /* Jetzt erst trennen: falsche Rechnungen in den eigenen Reiter.
          * Die Gedeckt-Pruefung kommt hier dazu (G existiert erst jetzt). */
+        var G = welt.Anzeige && welt.Anzeige.istGedeckt;
         verlauf.forEach(function (f) {
           if (!f.rechnungFalsch && G && !G(f)) f.rechnungFalsch = true;
         });
@@ -479,7 +480,6 @@
         /* Deckung (5. Bedingung, 13.8.): beide Seiten muessen nachweislich
          * GEGENSAETZLICHE Ausgaenge decken. Zwei Wetten auf denselben
          * Ausgang sehen in der Rechnung gut aus und sind doppeltes Risiko. */
-        var G = welt.Anzeige && welt.Anzeige.istGedeckt;
         var chancen = live.filter(function (f) {
           if (f.veraltet || f.zu_duenn) return false;
           if (f.rendite < K.mindestRendite) return false;
@@ -491,7 +491,13 @@
           if (G && !G(f)) return false;
           return true;
         });
-        var veraltetHoch = live.filter(function (f) { return f.rendite >= K.mindestRendite && f.veraltet; });
+        function besteVon(f) { return Number(f.beste_rendite == null ? f.rendite : f.beste_rendite); }
+        /* Veraltet-Block im Chancen-Reiter: auch Ex-Chancen (beste >= 2),
+         * deren Rendite unter die Schwelle gerutscht ist, waehrend die
+         * Kurse alt wurden - vorher fielen die ins NICHTS. */
+        var veraltetHoch = live.filter(function (f) {
+          return f.veraltet && (f.rendite >= K.mindestRendite || besteVon(f) >= K.mindestRendite);
+        });
         /* Nur Gruenes und knapp Danebengegangenes. Alles unter der
          * Rauschgrenze wird nicht gezeigt — es sagt nichts, ausser dass zwei
          * Buecher eben verschieden stehen. */
@@ -512,9 +518,20 @@
             if (G && !G(f)) return true;
             return false;
           }
+          /* WAR es je eine Chance (beste >= Schwelle), bleibt es sichtbar,
+           * auch wenn die Rendite unter die Rauschgrenze gestuerzt ist -
+           * eine Ex-Chance darf nie im Nichts verschwinden. */
+          if (besteVon(f) >= K.mindestRendite) return true;
           return f.rendite >= K.rauschGrenze;
         });
-        var rauschen = live.filter(function (f) { return f.rendite < K.rauschGrenze; }).length;
+        /* Rauschen = der REST: alles Live, das in keiner der drei
+         * sichtbaren Gruppen steckt. Per Definition geht die Rechnung
+         * chancen + veraltet + knapp + rauschen = live IMMER auf. */
+        var rauschen = live.length - chancen.length - veraltetHoch.length - knapp.length;
+        /* Rauschen = was WIRKLICH unsichtbar bleibt: nie ueber der
+         * Schwelle UND unter der Rauschgrenze. Die Zahl steht im
+         * Knapp-Reiter - Mathematik: chancen + veraltet + knapp + rauschen
+         * = alle Live-Zeilen, ohne Rest. */
 
         return {
           chancen: chancen,
@@ -536,6 +553,9 @@
             live_gesamt: live.length,
             verlauf: verlauf.length,
             falsch: falsch.length,
+            /* beendete Zeilen, die nie ueber der Chancen-Schwelle lagen -
+             * sie werden nicht gefuehrt, aber gezaehlt (Mathematik!). */
+            verlauf_nie: Math.max(0, teile[1].length - verlauf.length - falsch.length),
             /* Wie viele Verlaufszeilen ueber der Schwelle als Fehlpaarung
              * ausgeschieden sind. Nie stillschweigend — die Zahl steht
              * unter dem Reiter, sonst waere der Filter eine Falle. */
