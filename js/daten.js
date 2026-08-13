@@ -309,6 +309,19 @@
           return f.fehlpaarung && Number(f.rendite) >= K.mindestRendite;
         }).length;
 
+        /* ---------- Verlauf in ZWEI Listen (Vorgabe 13.8., nachts) ----------
+         *
+         * "Verlauf sind vergangene Chancen" — also darf dort nur stehen,
+         * was nach heutigem Wissen WIRKLICH eine war. Alles, was als Chance
+         * angezeigt wurde und sich als falsch herausgestellt hat, bekommt
+         * einen EIGENEN Reiter "Falsche Rechnungen": zum Analysieren, mit
+         * dem erklaerten Ziel einer Woche, in der er leer bleibt.
+         *
+         * Falsch heisst: nachgewiesen (pruefung='falsch', Fehlpaarung,
+         * Buchprobe) ODER unplausibel hoch (ueber maxPlausibel — gemessen
+         * war jede solche Zeile ein Kleber) ODER vom Pruefer beanstandet
+         * ODER nicht gedeckt. Nichts davon verschwindet mehr still. */
+        var falsch = [];
         verlauf = verlauf.filter(function (f) {
           var zuletzt = Number(f.rendite);
           var beste = Number(f.beste_rendite == null ? f.rendite : f.beste_rendite);
@@ -334,18 +347,22 @@
            * (orion_rauschen_loeschen), die aus demselben Grund geaendert
            * wurde: sie loescht jetzt nur noch, was NIE etwas wert war. */
           if (beste < K.verlaufMinRendite) return false;
+          /* Unter der Chancen-Schwelle war es nie eine Chance — weder
+           * Verlauf noch falsche Rechnung, es faellt einfach weg. */
           if (beste < K.mindestRendite) return false;
-          /* Eine Fehlpaarung haette sich NIE gelohnt — sie gehoert nicht in
-           * die Liste "was moeglich gewesen waere". Sie verschwindet aber
-           * nicht still: die Zahl steht unter dem Reiter. */
-          if (f.fehlpaarung) return false;
-          /* SONST NICHTS. Vorgabe 13.8. abends: "wenn es eine Chance war
-           * und sie ist abgelaufen, dann in den Verlauf." Hier standen noch
-           * zwei weitere Bedingungen (Menge bekannt, Gewinn ueber der
-           * Geldschwelle) — gemessen verschluckten sie 33 von 46 echten
-           * Verlaufs-Chancen, denn max_einsatz traegt nur den LETZTEN
-           * Stand, und beim Verschwinden ist das Buch oft schon leer.
-           * Die Karte sagt selbst ehrlich, wenn die Menge unbekannt war. */
+
+          /* Nachgewiesen oder rechnerisch falsch -> nur MARKIEREN; getrennt
+           * wird erst nach den Schmuckschleifen unten, damit auch diese
+           * Karten alle Felder tragen (Gedeckt-Pruefung ebenfalls dort). */
+          if (f.fehlpaarung ||
+              (K.maxPlausibel && beste > K.maxPlausibel) ||
+              f.rechnung_ok === false) {
+            f.rechnungFalsch = true;
+          }
+          /* SONST NICHTS WEITER. Vorgabe 13.8. abends: "wenn es eine Chance
+           * war und sie ist abgelaufen, dann in den Verlauf." Menge- und
+           * Geldschwellen verschluckten hier vorher 33 von 46 echten
+           * Verlaufs-Chancen (max_einsatz traegt nur den LETZTEN Stand). */
           return true;
         });
 
@@ -433,6 +450,14 @@
          * Absage-Verlust von 20 % zwanzig gewonnene Wetten. Nichts davon
          * wird geloescht — was hier durchfaellt, steht unter "Knappste
          * Paare" mit Begruendung. */
+        /* Jetzt erst trennen: falsche Rechnungen in den eigenen Reiter.
+         * Die Gedeckt-Pruefung kommt hier dazu (G existiert erst jetzt). */
+        verlauf.forEach(function (f) {
+          if (!f.rechnungFalsch && G && !G(f)) f.rechnungFalsch = true;
+        });
+        falsch = verlauf.filter(function (f) { return f.rechnungFalsch; });
+        verlauf = verlauf.filter(function (f) { return !f.rechnungFalsch; });
+
         /* Deckung (5. Bedingung, 13.8.): beide Seiten muessen nachweislich
          * GEGENSAETZLICHE Ausgaenge decken. Zwei Wetten auf denselben
          * Ausgang sehen in der Rechnung gut aus und sind doppeltes Risiko. */
@@ -475,6 +500,7 @@
 
         return {
           chancen: chancen,
+          falsch: falsch,
           veraltetHoch: veraltetHoch,
           knapp: knapp,
           verlauf: verlauf,
@@ -491,6 +517,7 @@
             rauschen: rauschen,
             live_gesamt: live.length,
             verlauf: verlauf.length,
+            falsch: falsch.length,
             /* Wie viele Verlaufszeilen ueber der Schwelle als Fehlpaarung
              * ausgeschieden sind. Nie stillschweigend — die Zahl steht
              * unter dem Reiter, sonst waere der Filter eine Falle. */

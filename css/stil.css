@@ -1403,3 +1403,49 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
 }
 .paarmatrix td { width: 64px; }
 .paarmatrix .pmx-erklaer { flex: 1 1 240px; max-width: 430px; margin-top: 2px; }
+
+/* ---------- Der Funker (13.8.2026, nachts) ---------- */
+#funker-knopf {
+  position: fixed; right: 18px; bottom: 18px; z-index: 999980;
+  font-size: 13px; letter-spacing: 1.5px; font-weight: 700;
+  background: color-mix(in srgb, var(--sonar) 14%, var(--karte));
+  border: 1px solid color-mix(in srgb, var(--sonar) 45%, transparent);
+  color: var(--text); border-radius: 999px; padding: 0 18px; min-height: 46px;
+  cursor: pointer;
+}
+#funker-knopf:hover { border-color: var(--sonar); }
+#funker {
+  position: fixed; right: 18px; bottom: 74px; z-index: 999981;
+  width: min(400px, calc(100vw - 36px)); max-height: min(520px, 70vh);
+  display: none; flex-direction: column;
+  background: var(--karte); border: 1px solid color-mix(in srgb, var(--sonar) 40%, transparent);
+  border-radius: 14px; overflow: hidden;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, .5);
+}
+#funker.offen { display: flex; }
+#funker .fu-kopf {
+  display: flex; align-items: baseline; gap: 10px;
+  padding: 10px 14px; font-size: 12px; letter-spacing: 2px; font-weight: 700;
+  border-bottom: 1px solid var(--rand);
+  background: color-mix(in srgb, var(--sonar) 8%, transparent);
+}
+#funker .fu-kopf span { letter-spacing: .3px; font-weight: 400; color: var(--text-leise); flex: 1; font-size: 11px; }
+#funker .fu-zu { min-height: 0; padding: 0 8px; font-size: 16px; border: 0; background: transparent; color: var(--text-leise); }
+#funker .fu-log { flex: 1; overflow-y: auto; padding: 12px; display: flex; flex-direction: column; gap: 8px; min-height: 120px; }
+#funker .fu-zeile { max-width: 92%; padding: 8px 11px; border-radius: 10px; font-size: 13px; line-height: 1.5; white-space: pre-wrap; }
+#funker .fu-zeile.ich { align-self: flex-end; background: color-mix(in srgb, var(--gold) 16%, var(--karte-2)); }
+#funker .fu-zeile.funker { align-self: flex-start; background: var(--karte-2); border: 1px solid var(--rand); }
+#funker .fu-eingabe { display: flex; gap: 8px; padding: 10px; border-top: 1px solid var(--rand); }
+#funker .fu-eingabe input {
+  flex: 1; min-height: 40px; padding: 0 12px; font-size: 14px;
+  background: var(--karte-2); color: var(--text);
+  border: 1px solid var(--rand); border-radius: 10px;
+}
+#funker .fu-eingabe button { min-height: 40px; padding: 0 14px; font-size: 14px; }
+
+/* Der Falsch-Reiter traegt Rot, wenn er offen ist. */
+.reiter-knopf[data-bereich="falsch"].offen {
+  background: color-mix(in srgb, var(--rot) 12%, var(--karte));
+  border-color: color-mix(in srgb, var(--rot) 55%, transparent);
+}
+.reiter-knopf[data-bereich="falsch"].offen::after { background: var(--rot); }

@@ -1029,7 +1029,8 @@
      * richtig 2,07 bis 3,27 Prozent, falsch ueber 4,48, JEDE Zeile ueber 5
      * war ein Kleber oder eine Fehlpaarung. */
     var K1 = welt.KONFIG || {};
-    if (K1.maxPlausibel && Number(f.rendite) > K1.maxPlausibel) {
+    var rMax = Math.max(Number(f.rendite) || 0, Number(f.beste_rendite) || 0);
+    if (K1.maxPlausibel && rMax > K1.maxPlausibel) {
       w.push('<span class="chip rot" title="Zwei Boersen mit echten Teilnehmern liegen nicht so weit auseinander. Gemessen: jede Zeile ueber 5 Prozent war bisher ein stehengebliebener Kurs oder eine Fehlpaarung - hier widersprechen sich die Buecher, und eines von beiden ist alt. Keine Chance, nicht setzen.">' +
         'UNPLAUSIBEL HOCH — Bücher widersprechen sich, eines klebt</span>');
     }
@@ -1468,13 +1469,13 @@
   var offenerBereich = 'chancen';
   try {
     var gemerkt = localStorage.getItem('orion-bereich');
-    if (gemerkt === 'chancen' || gemerkt === 'knapp' || gemerkt === 'verlauf') offenerBereich = gemerkt;
+    if (gemerkt === 'chancen' || gemerkt === 'knapp' || gemerkt === 'verlauf' || gemerkt === 'falsch') offenerBereich = gemerkt;
   } catch (e) { /* Speicher gesperrt, dann eben der Standard */ }
 
   function bereichZeigen(name) {
     offenerBereich = name;
     try { localStorage.setItem('orion-bereich', name); } catch (e) {}
-    ['chancen', 'knapp', 'verlauf'].forEach(function (b) {
+    ['chancen', 'knapp', 'verlauf', 'falsch'].forEach(function (b) {
       var el = document.getElementById(b);
       if (el) el.style.display = (b === name) ? '' : 'none';
     });
@@ -1489,7 +1490,8 @@
       chancen: 'Chancen (' + e.chancen.length + ')' +
                (e.veraltetHoch && e.veraltetHoch.length ? ' + ' + e.veraltetHoch.length + ' veraltet' : ''),
       knapp: 'Knappste Paare (' + e.knapp.length + ')',
-      verlauf: 'Verlauf (' + e.verlauf.length + ')'
+      verlauf: 'Verlauf (' + e.verlauf.length + ')',
+      falsch: 'Falsche Rechnungen (' + (e.falsch ? e.falsch.length : 0) + ')'
     };
     var knoepfe = document.querySelectorAll('.reiter-knopf');
     for (var i = 0; i < knoepfe.length; i++) {
@@ -1582,6 +1584,7 @@
     var gChancen = gefiltert(e.chancen, false);
     var gKnapp   = gefiltert(e.knapp, false);
     var gVerlauf = gefiltert(e.verlauf, true);
+    var gFalsch  = gefiltert(e.falsch || [], true);
     var zChancen = gChancen.sichtbar, zKnapp = gKnapp.sichtbar, zVerlauf = gVerlauf.sichtbar;
 
     var chancenHtml = versteckt(gChancen.weg);
@@ -1654,7 +1657,27 @@
     }
     setzeWennAnders(document.getElementById('verlauf'), verlaufHtml);
 
+    /* ---------- Falsche Rechnungen (13.8., nachts) ----------
+     * Alles, was als Chance angezeigt wurde und sich als falsch
+     * herausgestellt hat — zum Analysieren, nicht zum Verstecken. Jede
+     * Karte traegt ihren Grund (Pruefurteil, Buchprobe, unplausibel hoch,
+     * Fehlpaarung). Ziel ist eine Woche, in der dieser Reiter leer bleibt. */
+    var falschHtml = versteckt(gFalsch.weg) +
+      '<p class="leise"><b>Zum Analysieren, nicht zum Handeln.</b> Diese Zeilen standen ' +
+      'als Chance auf der Seite und waren rechnerisch oder nachweislich falsch: ' +
+      'geprüftes Urteil, Buchprobe (Gegenbuch in sich unstimmig), unplausibel hohe ' +
+      'Rendite (über ' + Number(K.maxPlausibel || 5).toFixed(0) + ' % — bisher immer ein ' +
+      'klebender Kurs) oder Fehlpaarung. Jede Karte nennt ihren Grund. ' +
+      '<b>Das Ziel ist eine Woche, in der hier nichts steht.</b></p>';
+    if (gFalsch.sichtbar.length) {
+      falschHtml += gFalsch.sichtbar.map(function (f) { return karte(f, true); }).join('');
+    } else {
+      falschHtml += '<p class="leise">Nichts — genau so soll es aussehen.</p>';
+    }
+    setzeWennAnders(document.getElementById('falsch'), falschHtml);
+
     reiterZeichnen({ chancen: zChancen, knapp: zKnapp, verlauf: zVerlauf,
+                     falsch: gFalsch.sichtbar,
                      veraltetHoch: e.veraltetHoch || [] });
   }
 
