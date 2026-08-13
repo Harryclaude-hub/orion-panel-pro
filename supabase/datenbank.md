@@ -116,27 +116,28 @@ Stand 11.8.2026 spät abends. Der Sammel-Takt `orion-lauf-takt` ist WEG;
 stattdessen **ein Takt je Bereich** (Body `{"bereich":"…"}`), Takt aus
 `orion_bereiche.takt_sek`:
 
+**Nachgemessen am 13.8.2026 abends, direkt aus `cron.job` — 26 aktive Takte:**
+
 ```
-orion-lauf-fussball     20 seconds   Scanner NUR fussball
-orion-lauf-tennis       * * * * *    ebenso je Bereich:
-orion-lauf-basketball   * * * * *    baseball, football, lol,
-orion-lauf-…            …            valorant, krypto minütlich;
-orion-lauf-<bereich>    */2 * * * *  die übrigen 13 alle 2 Minuten
-orion-smarkets-takt     * * * * *    Smarkets-Sammler
+orion-lauf-fussball     * * * * *    Scanner NUR fussball, jede Minute
+orion-lauf-<bereich>    */10 * * * * die übrigen 19 Bereiche, alle 10 Minuten
 orion-waechter-takt     * * * * *    Wächter (siehe oben)
-pm-scan-takt            * * * * *    alt, läuft noch mit
+orion-zeiten-takt       * * * * *    NEU 13.8.: Anpfiff + Buchstimmigkeit
+orion-smarkets-takt     */10 * * * * Smarkets-Sammler (braucht ~145 s!)
 orion-kalshi-takt       */2 * * * *  Kalshi-Sammler
 orion-pruefer-takt      */5 * * * *  dritte, unabhängige Rechnung
 orion-rauschen-takt     */5 * * * *  löscht Minuszeilen im Verlauf
-orion-wache-takt        */10 * * * * ältere Selbstkontrolle
 ```
 
-Zwei Altlasten, beide harmlos, aber jemand sollte sie prüfen:
-`pm-scan-takt` ruft den alten Scanner `pm-scan` auf, und `orion-wache-takt`
-läuft neben dem neuen `orion-waechter-takt`. Ob sie noch etwas beitragen,
-ist **ungemessen**. Neu dazu: die Aufruf-Bilanz der 20 Bereichs-Takte
-(~24 000 Läufe/Tag) gegen den Supabase-Tarif ist **ungemessen** — bei
-Bedarf die Welt-Takte auf `*/5` strecken, dort entstehen ohnehin 0 Paare.
+> **Die alte Liste hier war falsch.** Sie führte `pm-scan-takt` und
+> `orion-wache-takt` als laufende Altlasten und Fußball mit 20 Sekunden.
+> Gemessen: **beide Altlasten existieren nicht mehr** (0 Treffer in
+> `cron.job`), passend dazu ist `pm_snapshot` seit dem 11.8. 23:18 nicht mehr
+> beschrieben worden. Fußball läuft `* * * * *`, Smarkets `*/10`.
+>
+> Das ist genau die Drift, vor der diese Datei oben warnt — deshalb steht
+> jetzt hier: **im Zweifel `select jobname, schedule from cron.job` fragen,
+> nicht diese Liste glauben.**
 
 ## Kursalter (seit 13.8.2026)
 
@@ -240,3 +241,85 @@ kleineres Zeitfenster (72 h → 30 h).
 **Die Zahl, an der jede Änderung am Sammler zu messen ist, heißt
 `mit_quoten` — nicht `dauer_ms`.** Schneller und unvollständig ist schlechter
 als langsam und vollständig.
+
+## Anpfiff und Buchstimmigkeit (13.8.2026 abends)
+
+Zwei neue Spalten in `orion_funde`, eine neue Funktion, ein neuer Takt.
+
+| Spalte | was drinsteht |
+|---|---|
+| `beginnt_am` | **Anpfiff des Ereignisses**, wie ihn das Gegenbuch nennt. NULL = kein Buch nennt ihn |
+| `beginnt_quelle` | welches Buch (`smarkets` oder `betfair`) |
+| `buch_summe` | **Stimmigkeitsprobe** des Gegenbuchs, nur bei Siegermärkten |
+
+Gepflegt von `orion_zeiten_stimmigkeit()`, Takt `orion-zeiten-takt`, jede
+Minute. Dazu `orion_karteileichen_beenden()` im selben Takt.
+
+**Warum in der Datenbank und nicht im Scanner.** Beides steht bereits in
+`smarkets_snapshot` und `bridge_odds`; die Fundzeile trägt mit `bf_partie`
+den exakten Ereignisnamen des Gegenbuchs, über den der Scanner gepaart hat.
+Der Weg über SQL braucht deshalb keinen zweiten Datenbestand, kein Ausrollen
+und erzeugt keine zweite Fassung, die auseinanderlaufen kann.
+
+### Warum Polymarket den Anpfiff NICHT liefert
+
+Gemessen gegen die echte Schnittstelle: `gameStartTime` steht bei **78 von
+594** Fußballmärkten, und wo er steht, widerspricht er teils dem `endDate`
+(ein Markt mit endDate 13.03. trug gameStartTime 08.05.). Als Quelle
+unbrauchbar. Betfair (`marketStartTime`) und Smarkets (`start_datetime`)
+nennen ihn verlässlich, Kalshi nur mit Uhrzeit im Ticker.
+
+Gemessen: **80 von 120** Live-Zeilen bekommen dadurch einen Anpfiff. Die
+übrigen paaren gegen Polymarket oder Kalshi — dort steht ehrlich
+„nicht angegeben".
+
+### Die Stimmigkeitsprobe
+
+Die Summe der Gegenwahrscheinlichkeiten aller Ausgänge **eines** Marktes auf
+der Back-Seite muss über 1,00 liegen — das Übergewicht, von dem eine Börse
+lebt. Liegt sie darunter, könnte man bei diesem einen Buch alle Ausgänge
+gleichzeitig backen und sicher gewinnen. Das gibt es nicht. Also ist nicht
+der Markt großzügig, sondern der Schnappschuss **in sich unstimmig**, meist
+weil ein Kurs stehengeblieben ist.
+
+Gemessen über 109 Smarkets-Siegermärkte: Median **1,0258**, 93 darüber,
+16 darunter (min 0,9573). Und über die Live-Zeilen:
+
+| Klasse | Zeilen | davon über 2 % | Anteil | mittlere Rendite |
+|---|---|---|---|---|
+| Buch stimmig | 50 | 2 | 4 % | **−0,43 %** |
+| Buch **unstimmig** | 21 | 4 | **19 %** | **+0,99 %** |
+| nicht messbar | 49 | 5 | 10 % | +0,12 % |
+
+**Eine Zeile auf einem unstimmigen Buch zeigt fünfmal so oft über 2 Prozent
+wie eine auf einem stimmigen** — und die mittlere Rendite springt um 1,4
+Punkte. Das ist derselbe Fehler wie am 13.8. vormittags („ein alter Kurs"),
+nur von innen sichtbar: ohne Vorgeschichte, ohne zweites Buch, sofort.
+
+> **Es wird nichts gesperrt.** Der Wert wird mitgeschrieben und auf der Karte
+> als Warnung gezeigt. Erst messen, dann sperren.
+
+Nur Siegermärkte: je Partie führt Smarkets mehrere Über/Unter-Linien unter
+demselben Ereignisnamen, ein Zugriff über (ev, art) träfe eine beliebige.
+Eine falsche Zahl wäre schlechter als keine, deshalb steht dort NULL.
+
+### Karteileichen
+
+`orion_karteileichen_beenden()` beendet Live-Zeilen, deren Anpfiff über
+**6 Stunden** zurückliegt. Der Scanner beendet über `endet_am`, und das liegt
+bei Polymarket gemessen bei **59 von 64** Zeilen innerhalb einer Stunde am
+Anpfiff — der Fall ist also meist abgedeckt. Nicht abgedeckt: eine Zeile,
+deren Gegenbuch einen späteren Termin nennt. Sechs Stunden statt vier, weil
+Cricket und Kampfabende länger laufen.
+
+## Betfair-Sportkarte: MMA war nie erreichbar (13.8.2026)
+
+`orion_bf_sport` trug für `mma` die eventTypeId **26420**. Die Bridge meldet
+in `stats.et_namen` aber **26420387** für „Mixed Martial Arts". Ein Zeichen
+zu wenig, und damit kam kein einziger Betfair-MMA-Markt je im Bereich an —
+lautlos, weil unbekannter Bereich planmäßig „nichts" bedeutet. Korrigiert;
+im Rohbestand liegen 13 solche Märkte.
+
+Das ist auch die Erklärung dafür, dass `geprueft` bei dieser Zeile als
+einziger auf `false` stand. **Die Spalte hat funktioniert — es hat nur
+niemand hingesehen.**

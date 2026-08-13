@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Prüfstand: wie sieht eine Fundkarte aus?</title>
+<link rel="stylesheet" href="../css/stil.css">
+<style>
+  body { padding: 20px; max-width: 900px; margin: 0 auto; }
+  .hinweis { border: 1px solid var(--rand); border-radius: 10px; padding: 12px 14px;
+             margin-bottom: 18px; font-size: 14px; color: var(--text-leise); }
+  .hinweis b { color: var(--text); }
+  .knoepfe { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .knoepfe button { padding: 6px 12px; border-radius: 8px; cursor: pointer;
+                    border: 1px solid var(--rand); background: var(--karte-2); color: var(--text); }
+</style>
+</head>
+<body>
+
+<h1>Prüfstand für die Fundkarte</h1>
+
+<div class="hinweis">
+  Zeichnet <b>echte Zeilen aus der Datenbank</b> mit derselben Funktion wie die
+  Website — ohne Sperre, ohne die übrige Seite. Wozu: eine Karte, die man nur im
+  laufenden Betrieb ansehen kann, sieht sich niemand an. Hier kann man die
+  Aufteilung ändern und sofort nachsehen, ob sie noch lesbar ist.
+  <br><br>
+  Geladen wird mit dem öffentlichen Leseschlüssel, genau wie die Seite selbst.
+  Geschrieben wird nichts.
+</div>
+
+<div class="knoepfe">
+  <button data-was="chancen">Beste Live-Zeilen</button>
+  <button data-was="warnung">Zeilen mit Warnung</button>
+  <button data-was="verlauf">Verlauf (beendet)</button>
+</div>
+
+<div id="stand" class="hinweis">wird geladen …</div>
+<div id="karten"></div>
+
+<script src="../js/konfig.js"></script>
+<script src="../js/rechnung.js"></script>
+<script src="../js/zuordnung.js"></script>
+<script src="../js/filter.js"></script>
+<script src="../js/anzeige.js"></script>
+<script>
+(function () {
+  var SUPA = 'https://noexklrgtqveiclijdwp.supabase.co';
+  var KEY  = 'sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M';
+
+  function hole(pfad) {
+    return fetch(SUPA + '/rest/v1/' + pfad, {
+      headers: { apikey: KEY, authorization: 'Bearer ' + KEY, accept: 'application/json' }
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+
+  /* Dieselben abgeleiteten Felder, die daten.js sonst anhaengt. Fehlen sie,
+   * zeigt die Karte "unbekannt" statt einer Zahl — und genau das soll der
+   * Pruefstand ja sichtbar machen, nicht verstecken. */
+  function ergaenze(f) {
+    var K = window.KONFIG || {};
+    if (f.echter_gewinn === undefined) {
+      f.echter_gewinn = (f.max_gewinn === null || f.max_gewinn === undefined)
+        ? null : Number(f.max_gewinn);
+    }
+    if (f.zu_duenn === undefined) {
+      f.zu_duenn = f.max_einsatz !== null && f.max_einsatz !== undefined &&
+                   Number(f.max_einsatz) < (K.mindestEinsatz || 0);
+    }
+    return f;
+  }
+
+  function zeichne(zeilen, imVerlauf) {
+    var ziel = document.getElementById('karten');
+    if (!zeilen.length) { ziel.innerHTML = '<div class="hinweis">Keine Zeile gefunden.</div>'; return; }
+    ziel.innerHTML = zeilen.map(function (f) {
+      return window.Anzeige.karte(ergaenze(f), imVerlauf);
+    }).join('');
+  }
+
+  function stand(text) { document.getElementById('stand').innerHTML = text; }
+
+  var abfragen = {
+    chancen: 'orion_funde?status=eq.live&order=rendite.desc&limit=4',
+    warnung: 'orion_funde?status=eq.live&buch_summe=lt.1&order=rendite.desc&limit=4',
+    verlauf: 'orion_funde?status=eq.vorbei&order=vorbei_seit.desc&limit=3'
+  };
+
+  function lade(was) {
+    stand('wird geladen …');
+    hole(abfragen[was]).then(function (z) {
+      stand('<b>' + z.length + ' Zeilen</b> geladen (' + was + '), gezeichnet mit der echten Kartenfunktion. ' +
+            'Mit Anpfiff: ' + z.filter(function (f) { return f.beginnt_am; }).length +
+            ' · Gegenbuch unstimmig: ' + z.filter(function (f) { return f.buch_summe !== null && f.buch_summe < 1; }).length);
+      zeichne(z, was === 'verlauf');
+    }).catch(function (e) {
+      stand('<b>Nicht geladen:</b> ' + e.message);
+    });
+  }
+
+  document.querySelectorAll('.knoepfe button').forEach(function (b) {
+    b.addEventListener('click', function () { lade(b.getAttribute('data-was')); });
+  });
+  lade('chancen');
+})();
+</script>
+</body>
+</html>

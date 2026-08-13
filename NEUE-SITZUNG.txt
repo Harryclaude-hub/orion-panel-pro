@@ -2,9 +2,10 @@ Ich arbeite an "Orion Panel Pro". Du übernimmst eine laufende Arbeit von
 gestern – nicht ein neues Projekt. Bitte lies zuerst, dann rede mit mir.
 
 ZUERST LESEN, in dieser Reihenfolge:
-1. C:\Users\Home\orion-panel-pro\UEBERGABE.md — Abschnitt 8j ganz unten.
-   Das ist die Startseite. Dort steht der Betriebszustand, die offenen
-   Aufgaben nach Wichtigkeit und die fünf Fallen.
+1. C:\Users\Home\orion-panel-pro\UEBERGABE.md — Abschnitt 8k, danach 8j.
+   8k ist die Startseite (Stand 13.8. spät abends): Buchstimmigkeit als
+   neue Fehlerprobe, die drei Zeiten auf der Karte, die Messung aller 21
+   Bereiche. 8j hat den Betriebszustand und die fünf Fallen.
 2. C:\Users\Home\orion-panel-pro\supabase\datenbank.md — alles, was nur in
    der Datenbank lebt und nicht im Repo steht (Funktionen, Trigger, crons).
 Diese beiden Dateien sind die Wahrheit. Das Repo allein ist es nicht.

@@ -742,6 +742,115 @@
     return b;
   }
 
+  /* ---------- ABSCHNITTE ----------
+   *
+   * Eine Karte trug bis zum 13.8.2026 alles in einer Reihe: Chips, Seiten,
+   * Rendite in Worten, Gebuehren, Gegenprobe, Absageregeln, Smarkets-Hinweis,
+   * Pruefzeile, Analyse, Fusszeile. Alles davon ist richtig und keines davon
+   * war wegzulassen — aber ohne Ueberschriften liest man es nicht, man
+   * ueberfliegt es. Deshalb jetzt benannte Abschnitte, und alles, was man
+   * NUR VOR DEM HANDELN braucht, hinter einem Aufklapper.
+   *
+   * Die Reihenfolge folgt der Frage, in der man hinsieht:
+   *   1. Um welche Partie geht es, wie viel bringt sie
+   *   2. WANN ist das (neu am 13.8.)
+   *   3. Welche zwei Kurse
+   *   4. Was heisst das in Geld
+   *   5. Feinheiten, zugeklappt
+   */
+  function abschnitt(name, inhalt, klasse) {
+    if (!inhalt) return '';
+    return '<div class="ab ' + (klasse || '') + '">' +
+             '<div class="ab-kopf">' + txt(name) + '</div>' + inhalt +
+           '</div>';
+  }
+
+  function zeitZeile(was, wann, dazu, quelle) {
+    return '<div class="zt">' +
+      '<span class="zt-was">' + txt(was) + '</span>' +
+      '<span class="zt-wann">' + txt(wann) + '</span>' +
+      '<span class="zt-dazu">' + txt(dazu) + '</span>' +
+      '<span class="zt-quelle">' + (quelle ? txt(quelle) : '') + '</span>' +
+    '</div>';
+  }
+
+  /* ---------- WANN ---------- (Wunsch vom 13.8.2026)
+   *
+   * Drei verschiedene Zeitpunkte, die bis dahin auf der Karte durcheinander
+   * gingen: wann WIR den Fund gesehen haben, wann das EREIGNIS anfaengt und
+   * wann die WETTE endet.
+   *
+   * Der Anpfiff kommt aus dem Gegenbuch (Betfair marketStartTime, Smarkets
+   * start_datetime) und wird in der Datenbank nachgetragen. Polymarkets
+   * gameStartTime ist dafuer gemessen unbrauchbar: nur 78 von 594
+   * Fussballmaerkten tragen ihn, und er widerspricht teils dem Wettende.
+   * Nennt ihn kein Buch, steht hier "nicht angegeben" — nicht geraten.
+   *
+   * GEMESSEN dazu: bei 59 von 64 Zeilen liegt das WETTENDE innerhalb einer
+   * Stunde am Anpfiff. Polymarket schliesst den Markt also zum Anpfiff, nicht
+   * zum Abpfiff. Wo das so ist, steht es ausdruecklich dabei — sonst liest
+   * man zwei Zeilen und haelt sie fuer zwei verschiedene Termine. */
+  function zeitenBlock(f, imVerlauf) {
+    var z = '';
+    z += zeitZeile('Gefunden', zeitpunkt(f.zuerst_gesehen), 'vor ' + seit(f.zuerst_gesehen), '');
+
+    var anpfiff = Date.parse(f.beginnt_am || '');
+    if (isFinite(anpfiff)) {
+      var laeuft = anpfiff <= Date.now();
+      z += zeitZeile('Anpfiff', zeitpunkt(f.beginnt_am),
+                     laeuft ? 'läuft seit ' + seit(f.beginnt_am) : 'in ' + bis(f.beginnt_am),
+                     f.beginnt_quelle ? 'laut ' + f.beginnt_quelle : '');
+    } else {
+      z += zeitZeile('Anpfiff', 'nicht angegeben', 'kein Buch nennt ihn', '');
+    }
+
+    var ende = Date.parse(f.endet_am || '');
+    var gleich = isFinite(anpfiff) && isFinite(ende) && Math.abs(ende - anpfiff) < 90 * 60000;
+    z += zeitZeile('Wette endet', zeitpunkt(f.endet_am),
+                   isFinite(ende) && ende < Date.now() ? 'vorbei' : 'in ' + bis(f.endet_am),
+                   gleich ? 'entspricht dem Anpfiff' : '');
+
+    if (imVerlauf && f.vorbei_seit) {
+      z += zeitZeile('Beendet', zeitpunkt(f.vorbei_seit), 'vor ' + seit(f.vorbei_seit),
+                     f.vorbei_grund ? String(f.vorbei_grund) : '');
+    }
+    return z;
+  }
+
+  /* ---------- WARNUNGEN ----------
+   * Alles, was gegen die Zeile spricht, an EINER Stelle statt verstreut
+   * zwischen den Chips. Ist nichts da, steht hier auch nichts. */
+  function warnungen(f) {
+    var w = [];
+    if (f.fehlpaarung) {
+      w.push('<span class="chip rot" title="Die Titel beider Seiten teilen kein einziges unterscheidendes Wort. Das ist die Fehlerklasse der Faelle vom 10. und 11.08. — dort stand die Zuordnung ebenfalls auf 1,00.">FEHLPAARUNG? kein gemeinsames Wort</span>');
+    }
+    if (f.veraltet) w.push('<span class="chip rot">Kurse veraltet</span>');
+    if (f.zu_duenn) {
+      w.push('<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
+        (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span>');
+    }
+    /* Stimmigkeitsprobe des Gegenbuchs, seit 13.8.2026. Siehe die Erklaerung
+     * an orion_zeiten_stimmigkeit() in der Datenbank. */
+    if (f.buch_summe !== null && f.buch_summe !== undefined && Number(f.buch_summe) < 1) {
+      w.push('<span class="chip rot" title="Die Summe der Gegenwahrscheinlichkeiten aller Ausgaenge dieses Marktes liegt unter 1,00. Dann koennte man bei diesem einen Buch alle Ausgaenge gleichzeitig backen und sicher gewinnen - das gibt es nicht. Also ist der Schnappschuss dieses Marktes in sich unstimmig, meist weil ein Kurs stehengeblieben ist. Gemessen am 13.8.: solche Zeilen zeigen fuenfmal so oft ueber 2 Prozent wie stimmige.">' +
+        'Gegenbuch unstimmig (' + Number(f.buch_summe).toFixed(4) + ')</span>');
+    }
+    if (!w.length) return '';
+    return '<div class="warnzeile">' + w.join(' ') + '</div>';
+  }
+
+  /* Welche Karten sind aufgeklappt? Muss ueber das Neuzeichnen hinweg
+   * erhalten bleiben — die Anzeige schreibt jede Sekunde neu, und ein
+   * Aufklapper, der dabei zufaellt, ist schlimmer als keiner. */
+  var aufgeklappt = {};
+  document.addEventListener('click', function (ev) {
+    var s = ev.target && ev.target.closest ? ev.target.closest('summary[data-schluessel]') : null;
+    if (!s) return;
+    var k = s.getAttribute('data-schluessel');
+    if (aufgeklappt[k]) delete aufgeklappt[k]; else aufgeklappt[k] = true;
+  });
+
   function karte(f, imVerlauf) {
     /* Eine Chance ist eine Zeile, die GELD bringt — nicht eine mit guter
      * Prozentzahl. Dieselben drei Bedingungen wie in daten.js. */
@@ -761,30 +870,21 @@
                        : '<span class="stempel-zwei">vor ' + seit(f.zuerst_gesehen) + '</span>') +
           '</div>' +
         '</div>' +
+        /* Kurzzeile: nur, was man zum EINORDNEN braucht. Alles Weitere hat
+         * jetzt einen eigenen Abschnitt. */
         '<div class="unter">' +
           '<span class="chip ' + txt(buch1(f).chip) + '">' + txt(buch1(f).name) + '</span> ' +
           '<span class="chip leise">gegen</span> ' +
           '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +
             (buch2(f).konto ? ' · ' + txt(buch2(f).konto) : '') + '</span> ' +
-          (f.veraltet ? '<span class="chip rot">Kurse veraltet</span> ' : '') +
-          /* Unabhaengig nachgerechnet, nicht vom Scanner uebernommen: teilen
-           * die beiden Titel kein unterscheidendes Wort, meinen sie nicht
-           * dieselbe Partie. Alle drei bekannten Fehlpaarungen standen mit
-           * Zuordnung 1,00 in der Datenbank — die Marke ist deshalb ein
-           * ZWEITER Weg, kein Abschreiben. */
-          (f.fehlpaarung
-            ? '<span class="chip rot" title="Die Titel beider Seiten teilen kein einziges unterscheidendes Wort. Das ist die Fehlerklasse der Faelle vom 10. und 11.08. — dort stand die Zuordnung ebenfalls auf 1,00.">FEHLPAARUNG? kein gemeinsames Wort</span> '
-            : '') +
-          (f.zu_duenn ? '<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
-             (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span> ' : '') +
           '<span class="chip" title="Tag: ' + txt(f.sportart) + '">' + txt(bereichText(f)) + '</span> ' +
-          '<span class="chip">' + (imVerlauf ? 'beendet vor ' + seit(f.vorbei_seit) : 'endet in ' + bis(f.endet_am)) + '</span> ' +
-          '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span> ' +
           '<span class="chip' + (chance ? ' gut' : '') + '">Rendite ' + Number(f.rendite).toFixed(2) + ' %</span> ' +
           '<span class="chip">beste ' + Number(f.beste_rendite == null ? f.rendite : f.beste_rendite).toFixed(2) + ' %</span> ' +
-          '<span class="chip">gesehen seit ' + seit(f.zuerst_gesehen) + '</span>' +
-          (imVerlauf && f.vorbei_grund ? ' <span class="chip rot">' + txt(f.vorbei_grund) + '</span>' : '') +
+          '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span>' +
         '</div>' +
+        warnungen(f) +
+        abschnitt('Wann', zeitenBlock(f, imVerlauf), 'ab-zeit') +
+        '<div class="ab"><div class="ab-kopf">Die zwei Seiten</div>' +
         '<div class="seiten">' +
           '<div class="seite ' + txt(buch1(f).chip) + '">' +
             '<div class="quelle">' + txt(buch1(f).name) + '</div>' +
@@ -799,18 +899,25 @@
             '<div class="leise">' + wertName(buch2(f)) +
               ' &middot; Effektivquote <b>' + qeZwei(f) + '</b></div>' +
           '</div>' +
-        '</div>' +
-        renditeText(f) +
-        smarketsHinweis(f) +
-        gebuehrZeile(f) +
-        gegenprobe(f) +
-        absageZeile(f) +
-        pruefzeile(f) +
-        analyse(f, imVerlauf) +
-        '<div class="unter leise">Bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' +
-          txt(buch1(f).name) + ', ' + geld(f.einsatz_2) + ' auf ' + txt(buch2(f).name) +
-          ' &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
-          ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
+        '</div></div>' +
+        abschnitt('Was dabei herauskommt', renditeText(f) + analyse(f, imVerlauf), 'ab-geld') +
+        abschnitt('Beide Ausgänge', gegenprobe(f), 'ab-probe') +
+        /* Alles, was man erst UNMITTELBAR VOR dem Handeln braucht: Gebuehren,
+         * Absageregeln, der Smarkets-Marktwechsel, die Nachkontrolle und die
+         * Aufteilung. Zugeklappt, aber vollstaendig — weggelassen wird
+         * nichts, es steht nur nicht mehr im Weg. */
+        '<details class="mehr"' + (aufgeklappt[f.schluessel] ? ' open' : '') + '>' +
+          '<summary data-schluessel="' + txt(f.schluessel) + '">Vor dem Handeln lesen ' +
+            '<span class="leise">(Gebühren, Absageregeln, Marktwechsel, Nachkontrolle)</span></summary>' +
+          smarketsHinweis(f) +
+          gebuehrZeile(f) +
+          absageZeile(f) +
+          pruefzeile(f) +
+          '<div class="unter leise">Bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' +
+            txt(buch1(f).name) + ', ' + geld(f.einsatz_2) + ' auf ' + txt(buch2(f).name) +
+            ' &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
+            ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
+        '</details>' +
         aktionen(f) +
       '</div>';
   }
@@ -1299,6 +1406,11 @@
     if (ueberFeld()) gemeldet('kopiert'); else fehlgeschlagen();
   });
 
-  welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt, setzeWennAnders: setzeWennAnders };
+  /* karte ist mit herausgereicht, damit der Prüfstand pruefung/karte-probe.html
+   * echte Zeilen aus der Datenbank zeichnen kann, ohne die ganze Seite und
+   * ohne die Sperre. Eine Karte, die man nur im laufenden Betrieb ansehen
+   * kann, wird nicht angesehen. */
+  welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt,
+                   setzeWennAnders: setzeWennAnders, karte: karte };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);

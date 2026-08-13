@@ -669,3 +669,56 @@ h2 {
 }
 .f-bereich select:focus { outline: none; border-color: rgba(212,175,55,.9); }
 .f-bereich { border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 14px; }
+
+/* ---------- Abschnitte auf der Fundkarte (13.8.2026) ----------
+ *
+ * Vorher stand alles einer Karte in einer Reihe: Chips, Seiten, Rendite in
+ * Worten, Gebuehren, Gegenprobe, Absageregeln, Pruefzeile, Analyse, Fusszeile.
+ * Jede Zeile fuer sich war richtig, zusammen war es eine Wand. Jetzt tragen
+ * die Bloecke Ueberschriften, und was man nur unmittelbar vor dem Handeln
+ * braucht, liegt hinter einem Aufklapper.
+ */
+.fund .ab { margin: 10px 0; }
+.fund .ab-kopf {
+  font-size: 11px; letter-spacing: .8px; text-transform: uppercase;
+  color: var(--text-leise); opacity: .75;
+  border-bottom: 1px solid var(--rand);
+  padding-bottom: 3px; margin-bottom: 7px;
+}
+
+/* Die Zeitentafel: vier Spalten, damit die Uhrzeiten untereinander stehen
+ * und man sie vergleichen kann, ohne zu suchen. */
+.fund .zt {
+  display: grid;
+  grid-template-columns: 96px 108px 1fr auto;
+  gap: 4px 10px; align-items: baseline;
+  font-size: 13px; padding: 2px 0;
+}
+.fund .zt-was   { color: var(--text-leise); }
+.fund .zt-wann  { font-weight: 600; font-variant-numeric: tabular-nums; }
+.fund .zt-dazu  { color: var(--text-leise); }
+.fund .zt-quelle{ color: var(--text-leise); opacity: .7; font-size: 12px; }
+@media (max-width: 560px) {
+  .fund .zt { grid-template-columns: 84px 1fr; }
+  .fund .zt-quelle { grid-column: 2; }
+}
+
+/* Warnungen an EINER Stelle statt verstreut zwischen den Chips. */
+.fund .warnzeile { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0; }
+
+/* Der Aufklapper. Zu ist der Normalfall; welche Karten offen sind, merkt
+ * sich die Anzeige ueber das Neuzeichnen hinweg. */
+.fund details.mehr { margin: 10px 0 12px; }
+.fund details.mehr > summary {
+  cursor: pointer; list-style: none;
+  font-size: 12px; letter-spacing: .5px; text-transform: uppercase;
+  color: var(--text-leise);
+  border: 1px solid var(--rand); border-radius: var(--rund-chip);
+  padding: 5px 10px; display: inline-block; user-select: none;
+}
+.fund details.mehr > summary::-webkit-details-marker { display: none; }
+.fund details.mehr > summary::before { content: '▸ '; }
+.fund details.mehr[open] > summary::before { content: '▾ '; }
+.fund details.mehr > summary:hover { border-color: rgba(212,175,55,.5); }
+.fund details.mehr > summary .leise { text-transform: none; letter-spacing: 0; opacity: .7; }
+.fund details.mehr > *:not(summary) { margin-top: 10px; }

@@ -1448,6 +1448,132 @@ bemerkt, bevor sie gemessen waren. Klartext ist ihm lieber als Beschönigung.
 
 ---
 
+## 8k. STAND 13. August, spät abends — HIER ANFANGEN
+
+Ersetzt 8j als Startseite. 8j bleibt gültig, was den Befund vom Vormittag
+angeht; hier steht, was am Abend dazukam.
+
+### Der wichtigste neue Messwert
+
+**Ein Buch, das sich selbst widerspricht, erzeugt Scheinchancen.**
+
+Die Summe der Gegenwahrscheinlichkeiten aller Ausgänge EINES Marktes auf der
+Back-Seite muss über 1,00 liegen. Liegt sie darunter, könnte man bei diesem
+einen Buch alle Ausgänge gleichzeitig backen und sicher gewinnen — das gibt
+es nicht. Dann ist der Schnappschuss in sich unstimmig, meist wegen eines
+stehengebliebenen Kurses.
+
+| Klasse | Zeilen | über 2 % | Anteil | mittlere Rendite |
+|---|---|---|---|---|
+| Buch stimmig | 50 | 2 | 4 % | **−0,43 %** |
+| Buch **unstimmig** | 21 | 4 | **19 %** | **+0,99 %** |
+| nicht messbar | 49 | 5 | 10 % | +0,12 % |
+
+Fünfmal so oft über 2 Prozent, und 1,4 Punkte mehr mittlere Rendite. Das ist
+derselbe Fehler wie am Vormittag („ein alter Kurs"), aber **von innen
+sichtbar: ohne Vorgeschichte, ohne zweites Buch, sofort.** Steht als
+`buch_summe` in jeder Zeile und als rote Marke auf der Karte. **Gesperrt wird
+noch nichts** — erst messen, dann sperren.
+
+### Was neu auf der Karte steht
+
+Drei Zeitpunkte, die vorher durcheinandergingen: **gefunden**, **Anpfiff**,
+**Wette endet**. Der Anpfiff kommt aus dem Gegenbuch; Polymarkets
+`gameStartTime` ist dafür gemessen unbrauchbar (78 von 594 Märkten, teils im
+Widerspruch zum Wettende). 80 von 120 Live-Zeilen bekommen einen, der Rest
+sagt ehrlich „nicht angegeben".
+
+Gemessen und wichtig: **`endet_am` ist NICHT das Spielende.** Bei 59 von 64
+Zeilen liegt es innerhalb einer Stunde am Anpfiff. Die alte Karte schrieb
+dafür „endet in 2,1 h" — das las sich wie das Spielende und war der Anpfiff.
+Steht jetzt ausdrücklich dabei.
+
+Die Karte hat außerdem Abschnitte statt einer Wand: *Wann · Die zwei Seiten ·
+Was dabei herauskommt · Beide Ausgänge*, und alles, was man erst unmittelbar
+vor dem Handeln braucht (Gebühren, Absageregeln, Smarkets-Marktwechsel,
+Nachkontrolle), liegt hinter einem Aufklapper. Ansehen ohne Sperre:
+`pruefung/karte-probe.html` zeichnet echte Zeilen mit derselben Funktion.
+
+### Die 21 Bereiche — jetzt gemessen statt vermutet
+
+`node pruefung/bereiche.js` fährt die Filterkette des Scanners gegen die
+echte Schnittstelle und sagt, an welchem Schritt die Märkte verloren gehen.
+Ergebnis vom 13.8.:
+
+```
+Bereich        Ereign Maerkte handelb mit Art Fenster  PAARUNG
+fussball         2174   29726   16390    4566    1564     1564  traegt
+football          549    5941    4382     220      48       48  traegt
+baseball          177    2913    1946      69      27       27  traegt
+tennis            137    2320    1758       0       0        0  leer
+esport            777   10560    5839       0       0        0  leer
+politik          3838   46732   20263       0       0        0  leer
+… 15 weitere ebenso
+```
+
+**3 von 21 Bereichen tragen einen Anker.** Die Trennung der Bereiche ist in
+Ordnung — was fehlt, fehlt an der Quelle, nicht an der Logik:
+
+- **tennis, basketball, eishockey, cricket, mma, motorsport, lol**: reichlich
+  Märkte, aber **null** im 72-Stunden-Fenster. Polymarket führt dort nur
+  Turniersieger, keine Einzelpartien. Kein Scannerfehler.
+- **golf, politik, krypto, wetter, tech, kultur, wirtschaft, welt**: Märkte
+  im Fenster, aber kein Titel der Form „A gegen B". Die ganze Paarungslogik
+  hängt an zwei Mannschaften. Für diese Bereiche wäre Kalshi der natürliche
+  Gegenpart — das ist **eine eigene Bauaufgabe**, kein Nachziehen.
+- **valorant und esport** haben 343 bzw. 807 Märkte im Fenster, alle mit
+  „A gegen B" im Titel — aber es sind Sondermärkte (Map-Rundenzahlen,
+  Handicaps, Baron/Drache). Betfair führt im selben Fenster **2** Märkte.
+  Auch mit passender Marktart entstünde dort nichts.
+
+### Betfair-MMA war nie erreichbar
+
+`orion_bf_sport` trug für `mma` die eventTypeId `26420`, die Bridge meldet
+`26420387`. Ein Zeichen zu wenig, und kein einziger Betfair-MMA-Markt kam je
+im Bereich an — lautlos. Korrigiert. Auffällig war es nur daran, dass
+`geprueft` bei dieser einen Zeile auf `false` stand.
+
+### Smarkets: der Marktlink geht nicht, der Markt existiert
+
+Karams Verdacht („bei Smarkets immer die falschen Links") ist zur Hälfte
+bestätigt, und die andere Hälfte ist wichtiger:
+
+- **Der Markt existiert.** Die Smarkets-Schnittstelle führt je Partie 103
+  Märkte mit eigenem Namen und eigenem Kürzel (`winner`, `over-under-2.5`,
+  `both-teams-score`). Der Gegenmarkt ist also echt, nicht erfunden.
+- **Ein Link direkt auf den Markt ist von außen nicht baubar.** Smarkets'
+  eigenes Kürzel trägt einen **Punkt** (`over-under-2.5`) — ein direkter
+  Aufruf damit antwortet **404**. Die Bindestrich-Form antwortet 200, aber
+  **die erfundene Kontrolladresse ebenso**, und beide Seiten sind
+  byteweise identisch (nur die Sentry-Kennung unterscheidet sich). Der
+  Server sagt also nichts darüber, welcher Markt geöffnet wird; die Auswahl
+  passiert erst im Browser.
+- Deshalb bleibt der Link auf der **Partie**, und die Karte nennt weiterhin
+  ausdrücklich den Markt, auf den dort zu wechseln ist.
+
+> **Offene Frage an Karam, ein Klick genügt:** öffnet
+> `…/ac-omonia-nicosia-vs-lincoln-red-imps-fc/over-under-2-5/` bei dir den
+> richtigen Markt oder den Standardmarkt? Wenn ja, kann der Sammler die
+> Marktadresse bauen. Von hier aus ist es nicht messbar, smarkets.com ist im
+> Browser dieser Sitzung gesperrt.
+
+### Was NICHT gemacht wurde und warum
+
+- **Die Kursalter-Sperre ist nicht scharf.** Grund: die Spalten wurden am
+  13.8. um 15:43 mit einem einzigen `update` vorbelegt — 204 Zeilen tragen
+  denselben Mikrosekundenstempel. Echte Beobachtung gibt es erst seit dann,
+  und die 26 geprüften Urteilszeilen sind ÄLTER als die Messung. Ein
+  Trockenlauf gegen die Urteile ist damit unmöglich. Gegen den Live-Bestand
+  hätte die Regel „älterer Kurs über 15 Minuten" **9 von 9** Kandidaten über
+  2 % gesperrt, auch die im Band 2,07–3,27, das du selbst als richtig
+  gemessen hast. Die Buchstimmigkeit trifft dieselbe Fehlerklasse, ohne
+  Vorgeschichte zu brauchen.
+- **Der Scanner wurde nicht angefasst.** Anpfiff und Stimmigkeit stehen
+  bereits in den Schnappschüssen; sie in SQL nachzutragen kostet kein
+  Ausrollen und erzeugt keine zweite Fassung, die auseinanderlaufen kann.
+
+---
+
 ## 9. Arbeitsweise, die sich bewährt hat
 
 **Erst messen, dann bauen.** Jeder ernste Fehler wurde gefunden, weil jemand
