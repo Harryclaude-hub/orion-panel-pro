@@ -718,10 +718,18 @@
     if (!f.geprueft_am) {
       return '<div class="unter"><span class="chip acht">noch nicht nachgeprueft</span></div>';
     }
+    /* Die Buchprobe gehoert MIT in diese Zeile: jede Wette traegt damit
+     * vier Pruefungen — Rechnung, beide Links, Buchstimmigkeit — jede mit
+     * drei Zustaenden. "Nicht messbar" heisst: keine Seite ist Smarkets
+     * oder Betfair mit auffindbarem Markt; bei Polymarket und Kalshi ist
+     * die Probe nicht definiert (je Frage ein eigenes Buch). */
+    var summe = (f.buch_summe === null || f.buch_summe === undefined) ? null : Number(f.buch_summe) >= 1;
+    var summeText = summe === null ? '' : ' (' + Number(f.buch_summe).toFixed(4) + ')';
     return '<div class="unter">' +
       marke(f.rechnung_ok, 'Rechnung nachgeprueft', 'Rechnung beanstandet', 'Rechnung offen') +
       marke(f.pm_link_ok, buch1(f).name + '-Link lebt', buch1(f).name + '-Link tot', buch1(f).name + '-Link nicht pruefbar') +
       marke(f.gegen_link_ok, 'Gegenlink lebt', 'Gegenlink tot', 'Gegenlink nicht pruefbar') +
+      marke(summe, 'Buch stimmig' + summeText, 'Buch UNSTIMMIG' + summeText, 'Buchprobe nicht messbar') +
       '<span class="chip">geprueft vor ' + seit(f.geprueft_am) + '</span>' +
       (f.rechnung_ok === false && f.rechnung_grund ? ' <span class="chip rot">' + txt(f.rechnung_grund) + '</span>' : '') +
       '</div>';

@@ -78,8 +78,37 @@
         '</div>' +
         '<div class="s-gross"><span id="s-zahl">—</span><small>Märkte im Sektor</small></div>' +
         '<div class="s-werte" id="s-werte"></div>' +
-        '<div class="s-bilanz" id="s-bilanz"></div>' +
         '<div class="s-log" id="s-log"></div>' +
+      '</div>' +
+
+      /* ---------- GEFECHTSSTAND (rechte Seite) ----------
+       *
+       * Ein festes Gerippe, einmal gebaut. auffrischen() setzt nur noch
+       * Zahlen und Balkenbreiten — wuerde die Tafel jede Sekunde neu
+       * geschrieben, staerben alle CSS-Uebergaenge und der Schirm flackerte.
+       *
+       * Gleiche Hoehe wie der Schirm (190 px), damit das ganze Sonar seine
+       * alte Hoehe behaelt. Jede Zahl traegt ihre Erklaerung als title;
+       * ausfuehrlich stehen die Begriffe auf angaben.html. */
+      '<div class="s-hud">' +
+        '<div class="s-hud-ring"></div>' +
+        '<div class="s-hud-scan"></div>' +
+        '<svg class="s-hud-jet" viewBox="0 0 64 20" aria-hidden="true">' +
+          '<path fill="currentColor" d="M2 10 L22 8 L30 2 L33 8 L52 9 L62 10 L52 11 L33 12 L30 18 L22 12 Z"/>' +
+        '</svg>' +
+        '<div class="s-hud-kopf"><span class="s-led s-gruen" id="s-hud-led"></span>GEFECHTSSTAND</div>' +
+        '<div class="s-hz" title="Alle Paare, die gerade beobachtet werden — Chancen, knappe und veraltete zusammen.">' +
+          '<span>IM VISIER</span><b id="s-hud-visier">—</b></div>' +
+        '<div class="s-hud-balken" title="Zusammensetzung: grün = erfasste Chancen, grau = knapp darunter, orange = Kurse veraltet.">' +
+          '<i id="s-hud-b1"></i><i id="s-hud-b2"></i><i id="s-hud-b3"></i></div>' +
+        '<div class="s-hz s-hz-gut" title="Über der Schwelle UND mit Geld dahinter — die Ziele, auf die man schießen kann.">' +
+          '<span>ERFASST</span><b class="s-ziel" id="s-hud-erfasst"><i></i><i></i><i></i><i></i>—</b></div>' +
+        '<div class="s-hz s-hz-rot" title="Von der Nachkontrolle als nicht handelbar aussortiert — meist ein Gegenbuch, dessen eigene Kurse zusammen unter 100 % ergeben.">' +
+          '<span>VERWORFEN</span><b id="s-hud-verworfen">—</b></div>' +
+        '<div class="s-hz" title="Waren über der Schwelle und sind wieder verschwunden, bevor jemand geschossen hat.">' +
+          '<span>DURCHGERUTSCHT</span><b id="s-hud-verpasst">—</b></div>' +
+        '<div class="s-hud-beute" title="Was die erfassten Ziele zusammen einbrächten, wenn man jedes bis zum Anschlag setzt. In Dollar; die Karte rechnet in Euro um.">' +
+          '<span>BEUTE</span><b id="s-hud-beute">—</b></div>' +
       '</div>';
   }
 
@@ -163,79 +192,65 @@
         '<span>KONTAKTE <b>' + (isFinite(paare) ? paare : '—') + '</b></span>';
     }
 
-    /* ---------- GEFECHTSBILANZ ----------
+    /* ---------- GEFECHTSSTAND ----------
      *
-     * Die rechte Hälfte der Tafel stand leer. Sie beantwortet jetzt die vier
-     * Fragen, die man an ein Sonar stellt: was ist im Visier, was davon ist
-     * scharf, was wurde aussortiert, und was ist durchgerutscht.
-     *
-     * JEDE ZAHL HAT EINEN SATZ DANEBEN. Eine Kennzahl ohne Erklärung ist
-     * Deko — und dieser Schirm ist ausdrücklich kein Zierrat.
-     */
-    var bilanz = document.getElementById('s-bilanz');
-    if (bilanz && e) {
+     * Nur Zahlen und Balkenbreiten setzen, NIE das Gerippe neu schreiben:
+     * innerHTML im Sekundentakt wuerde jede CSS-Animation neu starten und
+     * die Uebergaenge der Balken toeten. Dieselbe Regel wie in anzeige.js
+     * (Fehlerklasse 6). */
+    if (e) {
       var chancen = (e.chancen || []).length;
       var knapp = (e.knapp || []).length;
       var veraltet = (e.veraltetHoch || []).length;
       var verlauf = e.verlauf || [];
       var imVisier = chancen + knapp + veraltet;
 
-      /* Aussortiert: Zeilen, die eine Nachkontrolle als falsch markiert hat.
-       * Seit dem 13.8. ist das vor allem die Buchstimmigkeit — ein Gegenbuch,
-       * dessen eigene Kurse zusammen unter 100 % ergeben, ist nicht
-       * handelbar, und was darauf beruht, ist keine Chance. */
-      var verworfen = 0;
-      for (var v = 0; v < verlauf.length; v++) {
-        if (verlauf[v].pruefung === 'falsch') verworfen++;
-      }
-
-      /* Verpasst: war einmal über der Schwelle, ist jetzt weg. Genau die
-       * Frage "hätte sich das gelohnt?" — beantwortet vom HÖCHSTSTAND, nicht
-       * vom Zufallswert beim Verschwinden. */
+      /* Aussortiert: von der Nachkontrolle als falsch markiert — seit dem
+       * 13.8. vor allem die Buchstimmigkeit. Verpasst: der HOECHSTSTAND lag
+       * ueber der Schwelle, denn er beantwortet "haette sich das gelohnt?". */
       var schwelle = (K.mindestRendite || 2);
-      var verpasst = 0;
-      for (var p = 0; p < verlauf.length; p++) {
-        var best = verlauf[p].beste_rendite;
-        if (verlauf[p].pruefung === 'falsch') continue;
+      var verworfen = 0, verpasst = 0;
+      for (var v = 0; v < verlauf.length; v++) {
+        if (verlauf[v].pruefung === 'falsch') { verworfen++; continue; }
+        var best = verlauf[v].beste_rendite;
         if (best !== null && best !== undefined && Number(best) >= schwelle) verpasst++;
       }
 
-      /* Beute: was die erfassten Ziele zusammen einbrächten, wenn man ALLE
-       * bis zum Anschlag setzt. Nicht "Rendite" — Rendite ist ein
-       * Verhältnis, das hier ist Geld. */
+      /* Beute ist GELD, nicht Rendite: die Summe der erreichbaren Gewinne. */
       var beute = 0, beuteBekannt = true;
       for (var c = 0; c < (e.chancen || []).length; c++) {
         var g = e.chancen[c].max_gewinn;
         if (g === null || g === undefined || !isFinite(Number(g))) { beuteBekannt = false; continue; }
         beute += Number(g);
       }
-      var fx = (welt.Anzeige && welt.Anzeige.waehrung) || null;
 
-      function zeileB(name, wert, erklaerung, klasse) {
-        return '<div class="s-bz' + (klasse ? ' ' + klasse : '') + '">' +
-                 '<span class="s-bz-name">' + name + '</span>' +
-                 '<span class="s-bz-wert">' + wert + '</span>' +
-                 '<span class="s-bz-text">' + erklaerung + '</span>' +
-               '</div>';
+      function setz(id, text) {
+        var el = document.getElementById(id);
+        if (el && el.lastChild) {
+          /* Der Zahlknoten ist immer der LETZTE Textknoten — vor ihm koennen
+           * die Zielmarken-<i> stehen, die bleiben muessen. */
+          if (el.lastChild.nodeType === 3) { if (el.lastChild.nodeValue !== text) el.lastChild.nodeValue = text; }
+          else el.appendChild(document.createTextNode(text));
+        } else if (el) el.textContent = text;
       }
+      setz('s-hud-visier', String(imVisier));
+      setz('s-hud-erfasst', String(chancen));
+      setz('s-hud-verworfen', String(verworfen));
+      setz('s-hud-verpasst', String(verpasst));
+      setz('s-hud-beute', beute.toFixed(2) + ' $' + (beuteBekannt ? '' : ' +'));
 
-      bilanz.innerHTML =
-        '<div class="s-bz-kopf">GEFECHTSBILANZ</div>' +
-        zeileB('IM VISIER', imVisier,
-               'Paare, die gerade beobachtet werden') +
-        zeileB('ERFASST', chancen,
-               'davon über ' + schwelle.toFixed(1) + ' % <i>und</i> mit Geld dahinter',
-               chancen > 0 ? 's-bz-gut' : '') +
-        zeileB('VERWORFEN', verworfen,
-               'als nicht handelbar aussortiert',
-               verworfen > 0 ? 's-bz-rot' : '') +
-        zeileB('DURCHGERUTSCHT', verpasst,
-               'waren über der Schwelle, sind wieder weg') +
-        zeileB('BEUTE', (beute > 0 ? (beute).toFixed(2) : '0.00') + (beuteBekannt ? '' : '+'),
-               beuteBekannt
-                 ? 'was die erfassten Ziele zusammen brächten'
-                 : 'mindestens — bei einem Ziel ist die Menge unbekannt',
-               beute > 0 ? 's-bz-gut' : '');
+      /* Der Lagebalken: Anteile von IM VISIER. Breiten in Prozent, mit
+       * CSS-Uebergang — deshalb style.width statt neu bauen. */
+      function breite(id, anteil) {
+        var el = document.getElementById(id);
+        if (el) el.style.width = (imVisier > 0 ? (100 * anteil / imVisier) : 0).toFixed(1) + '%';
+      }
+      breite('s-hud-b1', chancen);
+      breite('s-hud-b2', knapp);
+      breite('s-hud-b3', veraltet);
+
+      var hudLed = document.getElementById('s-hud-led');
+      if (hudLed) hudLed.className = 's-led ' + (chancen > 0 ? 's-gruen' : (laeuft ? 's-grau' : 's-rot'));
     }
 
     /* Blips: leuchtet, wenn von diesem Buch frische Kurse kommen. */

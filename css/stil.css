@@ -768,33 +768,105 @@ h2 {
  * wirken, bekommen sie etwas Luft nach unten. */
 .fund .aktionen { margin: 10px 0 4px; }
 
-/* ---------- Gefechtsbilanz im Sonar (13.8.2026) ----------
- * Die rechte Hälfte der Sonartafel stand leer. Sie beantwortet jetzt die
- * vier Fragen, die man an ein Sonar stellt. Jede Zahl trägt ihren Satz.
+/* ---------- Gefechtsstand im Sonar (13.8.2026, zweite Fassung) ----------
+ *
+ * Rechte Spalte, GLEICHE HÖHE wie der Schirm (190 px) — das Sonar wächst
+ * nicht mehr in die Länge. Die Sätze zu jeder Zahl stecken im title und
+ * ausführlich auf angaben.html.
+ *
+ * Alles Bewegte läuft auf transform/opacity (Grafikkarte), wie beim Schirm:
+ * kein Canvas, kein Zeichenloop. Nur die Balkenbreiten ändern sich per
+ * style.width, einmal je Sekunde, mit CSS-Übergang.
  */
-.puls .s-bilanz {
-  margin-top: 12px; padding-top: 10px;
-  border-top: 1px solid rgba(120,200,160,.18);
+.puls .s-hud {
+  position: relative; flex: 0 0 236px; height: 190px;
+  padding: 10px 12px; overflow: hidden;
+  border: 1px solid rgba(53,255,158,.28); border-radius: 10px;
+  background:
+    linear-gradient(180deg, rgba(53,255,158,.07), transparent 40%),
+    radial-gradient(120% 90% at 85% 10%, rgba(53,255,158,.10), transparent 55%),
+    #04120b;
+  font-size: 11px;
 }
-.puls .s-bz-kopf {
-  font-size: 10px; letter-spacing: 2.4px; opacity: .55;
-  margin-bottom: 7px;
+/* Zielring: dreht langsam hinter den Zahlen, wie ein Periskop-Fadenkreuz. */
+.puls .s-hud-ring {
+  position: absolute; right: -34px; top: -34px; width: 120px; height: 120px;
+  border: 1px dashed rgba(53,255,158,.3); border-radius: 50%;
+  animation: s-hud-drehen 24s linear infinite; pointer-events: none;
 }
-.puls .s-bz {
-  display: grid; grid-template-columns: 108px 58px 1fr;
-  gap: 4px 8px; align-items: baseline;
-  padding: 3px 0; font-size: 11px;
+.puls .s-hud-ring::before {
+  content: ""; position: absolute; inset: 18px;
+  border: 1px solid rgba(53,255,158,.18); border-radius: 50%;
 }
-.puls .s-bz + .s-bz { border-top: 1px solid rgba(120,200,160,.07); }
-.puls .s-bz-name { letter-spacing: 1.4px; opacity: .7; }
-.puls .s-bz-wert {
-  font-size: 17px; font-weight: 700; text-align: right;
-  font-variant-numeric: tabular-nums;
+@keyframes s-hud-drehen { to { transform: rotate(360deg); } }
+/* Abtastbalken: eine Lichtzeile wandert von oben nach unten durch. */
+.puls .s-hud-scan {
+  position: absolute; left: 0; right: 0; top: -8px; height: 8px;
+  background: linear-gradient(180deg, transparent, rgba(53,255,158,.16), transparent);
+  animation: s-hud-abtasten 5s linear infinite; pointer-events: none;
 }
-.puls .s-bz-text { opacity: .5; font-size: 10.5px; line-height: 1.35; }
-.puls .s-bz-gut .s-bz-wert { color: var(--gruen); }
-.puls .s-bz-rot .s-bz-wert { color: var(--rot); }
-@media (max-width: 700px) {
-  .puls .s-bz { grid-template-columns: 96px 52px; }
-  .puls .s-bz-text { grid-column: 1 / -1; margin-bottom: 3px; }
+@keyframes s-hud-abtasten { to { transform: translateY(206px); } }
+/* Der Jäger: zieht alle 16 Sekunden leise durchs Bild. Zierrat, aber
+ * gewollter — und er kostet nur ein transform. */
+.puls .s-hud-jet {
+  position: absolute; left: -70px; top: 46px; width: 56px; height: 18px;
+  color: var(--sonar); opacity: 0; pointer-events: none;
+  animation: s-hud-flug 16s linear infinite;
+}
+@keyframes s-hud-flug {
+  0%   { transform: translateX(0);     opacity: 0; }
+  6%   { opacity: .22; }
+  50%  { transform: translateX(330px); opacity: .22; }
+  56%, 100% { transform: translateX(340px); opacity: 0; }
+}
+.puls .s-hud-kopf {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: 2.2px; opacity: .75; margin-bottom: 6px;
+}
+.puls .s-hz {
+  display: flex; justify-content: space-between; align-items: baseline;
+  padding: 2px 0; position: relative; z-index: 1;
+}
+.puls .s-hz span { letter-spacing: 1.3px; opacity: .65; font-size: 10px; }
+.puls .s-hz b {
+  font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
+  position: relative; padding: 0 6px;
+}
+.puls .s-hz-gut b { color: #8dffc4; text-shadow: 0 0 9px rgba(53,255,158,.55); }
+.puls .s-hz-rot b { color: #ff8d8d; text-shadow: 0 0 9px rgba(239,68,68,.45); }
+/* Zielmarken: vier pulsierende Eckwinkel um die erfassten Ziele. */
+.puls .s-ziel i {
+  position: absolute; width: 6px; height: 6px;
+  border: 1px solid rgba(53,255,158,.85);
+  animation: s-ziel-puls 1.6s ease-in-out infinite;
+}
+.puls .s-ziel i:nth-child(1) { left: -3px; top: -2px;    border-right: 0; border-bottom: 0; }
+.puls .s-ziel i:nth-child(2) { right: -3px; top: -2px;   border-left: 0;  border-bottom: 0; }
+.puls .s-ziel i:nth-child(3) { left: -3px; bottom: -2px; border-right: 0; border-top: 0; }
+.puls .s-ziel i:nth-child(4) { right: -3px; bottom: -2px; border-left: 0; border-top: 0; }
+@keyframes s-ziel-puls { 50% { transform: scale(1.35); opacity: .5; } }
+/* Lagebalken: Zusammensetzung von IM VISIER. Breiten kommen aus JS. */
+.puls .s-hud-balken {
+  display: flex; height: 5px; margin: 2px 0 5px;
+  background: rgba(53,255,158,.08); border-radius: 3px; overflow: hidden;
+}
+.puls .s-hud-balken i { display: block; height: 100%; width: 0; transition: width .9s ease; }
+.puls .s-hud-balken i:nth-child(1) { background: #35ff9e; box-shadow: 0 0 8px rgba(53,255,158,.8); }
+.puls .s-hud-balken i:nth-child(2) { background: rgba(160,200,180,.45); }
+.puls .s-hud-balken i:nth-child(3) { background: #ffb054; }
+.puls .s-hud-beute {
+  display: flex; justify-content: space-between; align-items: baseline;
+  margin-top: 5px; padding: 5px 8px; position: relative; z-index: 1;
+  border: 1px solid rgba(53,255,158,.3); border-radius: 7px;
+  background: rgba(53,255,158,.06);
+}
+.puls .s-hud-beute span { letter-spacing: 1.6px; font-size: 10px; opacity: .7; }
+.puls .s-hud-beute b {
+  font-size: 17px; color: #8dffc4;
+  text-shadow: 0 0 10px rgba(53,255,158,.6);
+  animation: s-beute-glimmen 2.6s ease-in-out infinite;
+}
+@keyframes s-beute-glimmen { 50% { opacity: .75; } }
+@media (max-width: 860px) {
+  .puls .s-hud { flex: 1 1 100%; height: auto; min-height: 170px; }
 }

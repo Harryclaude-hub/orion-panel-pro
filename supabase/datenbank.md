@@ -323,3 +323,17 @@ im Rohbestand liegen 13 solche Märkte.
 Das ist auch die Erklärung dafür, dass `geprueft` bei dieser Zeile als
 einziger auf `false` stand. **Die Spalte hat funktioniert — es hat nur
 niemand hingesehen.**
+
+## Buchprobe auf ALLE Wettarten erweitert (13.8.2026, spät)
+
+`orion_zeiten_stimmigkeit()` prüfte anfangs nur Siegermärkte — gemessen
+fehlte die Summe bei 30 von 30 Über/Unter- und 2 von 2 BTTS-Zeilen. Der
+Schlüssel zur Erweiterung ist die **Linie**: der Smarkets-Schnappschuss
+trägt sie als eigenes Feld (759 von 759 Ü/U-Märkten), die Betfair-Marktart
+enthält sie im Namen (`OVER_UNDER_35` → 3.5), die Fundzeile am Ende von
+`mannschaft`. Über (Ereignis, Art, Linie) ist der Markt eindeutig — die
+Sorge, eine beliebige Linie zu treffen, ist damit gegenstandslos.
+
+Gemessen nach der Erweiterung: 85 von 94 Live-Zeilen messbar, 26 weitere
+unstimmige gesperrt. Jede Karte zeigt das Ergebnis jetzt in der Prüfzeile
+(stimmig / UNSTIMMIG / nicht messbar).
