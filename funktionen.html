@@ -202,6 +202,7 @@
     <section id="zugang">
       <h3>Zugang</h3>
       <div class="fnlist">
+        <div class="fn e"><div class="stripe"></div><div class="was"><b>Die Nachtwache (der Wächter)</b><em>orion_waechter_lauf · jede Minute</em></div><div class="wie">Läuft rund um die Uhr auf dem Server und prüft die MASCHINE: Zuordnungen werden unabhängig nachgerechnet, Links geprüft und repariert, verwaiste Zeilen beendet, stehende Bereichsläufe gemeldet, unplausible Renditen markiert, Buchprobe und Anpfiff minütlich nachgetragen. Jede Minute eine Protokollzeile in orion_wache. &bdquo;Hat etwas beanstandet&ldquo; = in der letzten Minute stand mindestens ein Verdacht auf der Liste — meist normale Arbeit, die sie selbst erledigt. Ernst ist nur, wenn sie sich SELBST nicht mehr meldet (Warnung ab 30 min).</div><div class="pr"><span class="pruef auto">Automatisch</span></div></div>
         <div class="fn b"><div class="stripe"></div><div class="was"><b>Sperrbildschirm</b><em>arGate()</em></div><div class="wie">Vor allem anderen liegt ein gemeinsames Zugangswort. Es hält Suchmaschinen und Zufallsbesucher fern. Änderbar im Adminbereich. Die Seite trägt zusätzlich <code>noindex</code> und eine <code>robots.txt</code>.</div><div class="pr"><span class="pruef code">Code</span></div></div>
         <div class="fn b"><div class="stripe"></div><div class="was"><b>Anmelden und Registrieren</b><em>login.html</em></div><div class="wie">E-Mail und Passwort über Supabase. Ein Reiter schaltet zwischen Anmelden und Konto erstellen. Wer schon angemeldet ist, wird sofort zur App durchgereicht. Gesperrte Konten fliegen nach dem Anmelden wieder raus.</div><div class="pr"><span class="pruef code">Code</span></div></div>
         <div class="fn b"><div class="stripe"></div><div class="was"><b>Türsteher auf jeder Seite</b><em>arRequireAuth()</em></div><div class="wie">Jede Unterseite fragt beim Laden nach, ob eine gültige Anmeldung vorliegt, und schickt sonst zurück zum Anmelden. Der Adminbereich verlangt zusätzlich die Rolle <b>admin</b>.</div><div class="pr"><span class="pruef code">Code</span></div></div>
@@ -440,7 +441,7 @@
   </div>
 
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script src="config.js?v=22"></script>
+<script src="config.js?v=27"></script>
 <script>
 (async function(){
   var auth = await window.arRequireAuth();

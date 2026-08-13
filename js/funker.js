@@ -128,6 +128,7 @@
     absage: 'ABSAGE = der dritte Ausgang, der in keiner Rendite steht. Jede Karte rechnet ihn in Geld aus: Smarkets zahlt zurück (belegt), Polymarket löst oft 50/50 auf (hängt vom Kaufpreis ab!), Kalshi wertet zum letzten Kurs, Betfair unbelegt. Kostet die Absage rechnerisch Geld, zählt die Zeile nicht als Chance.',
     plausibel: 'PLAUSIBILITÄT = Bedingung 6: über ' + ((welt.KONFIG || {}).maxPlausibel || 5) + ' % Rendite ist keine Chance. Gemessen: richtig war 2,07 bis 3,27 %, falsch alles über 4,48 — über 5 % war es IMMER ein klebender Kurs oder eine Fehlpaarung.',
     gedeckt: 'GEDECKT = beide Seiten decken nachweislich GEGENSÄTZLICHE Ausgänge derselben Frage. Ein Unentschieden ist kein dritter Verlustfall: „X gewinnt nicht“ schließt es mit ein.',
+    nachtwache: 'NACHTWACHE = der Wächter (orion_waechter_lauf), läuft jede Minute rund um die Uhr. Prüft die MASCHINE: Zuordnungen unabhängig nachgerechnet, Links repariert, Verwaiste beendet, Unplausibles markiert, Buchprobe und Anpfiff nachgetragen. Beanstandet = in der letzten Minute stand ein Verdacht auf der Liste — meist Arbeit, die sie selbst erledigt. Ernst erst, wenn sie sich SELBST über 30 min nicht meldet.',
     nummer: 'RECHNUNGSNUMMER = die #Zahl vorn auf jeder Karte. Fest aus dem Schlüssel der Zeile abgeleitet — dieselbe Zeile trägt immer dieselbe Nummer. Sag „prüfe #48213“, und ich nehme genau diese Zeile auseinander.'
   };
 

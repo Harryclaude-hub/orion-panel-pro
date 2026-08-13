@@ -312,6 +312,41 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
     der jede Rechnung unabhängig nachrechnet.
   </p>
 
+  <h2>6b. Die Nachtwache — wer die Maschine bewacht</h2>
+
+  <p>
+    Die <b>Nachtwache</b> (in der Datenbank: der Wächter,
+    <code>orion_waechter_lauf</code>) läuft <b>jede Minute</b>, rund um die
+    Uhr — der Name kommt daher, dass sie auch wacht, wenn niemand hinschaut.
+    Sie prüft <b>die Maschine und die Plausibilität</b>, nicht die
+    Rendite-Rechnung (das macht der Prüfer alle 5 Minuten getrennt).
+  </p>
+
+  <table>
+    <tr><th>Was sie prüft (Auszug aus über 20 Mustern)</th><th>Was sie tut, wenn es zutrifft</th></tr>
+    <tr><td>Zuordnung stimmt nicht — die Kernwörter beider Titel werden
+      <b>unabhängig vom Scanner</b> nachgerechnet</td><td>meldet Verdacht</td></tr>
+    <tr><td>Rendite unplausibel hoch (ab 5&nbsp;%)</td><td>meldet Verdacht; die Minuten-Sperre sortiert aus</td></tr>
+    <tr><td>Partie vorbei, Zeile noch live</td><td>meldet; die Karteileichen-Regel beendet</td></tr>
+    <tr><td>Ein Bereichslauf steht (länger als 3&nbsp;×&nbsp;sein Takt)</td><td>meldet Verdacht</td></tr>
+    <tr><td>Zeile seit über 3 Minuten von keinem Lauf gesehen</td><td><b>greift ein:</b> beendet sie (&bdquo;verwaiste&ldquo;)</td></tr>
+    <tr><td>Smarkets-Link ohne Schrägstrich (HTTP-308-Falle)</td><td><b>greift ein:</b> repariert den Link</td></tr>
+    <tr><td>Wechselkurs USD&rarr;EUR wird alt</td><td><b>greift ein:</b> holt ihn neu</td></tr>
+    <tr><td>Buchprobe, Anpfiff, Kursalter</td><td>trägt die Werte minütlich nach; unstimmige Bücher werden gesperrt</td></tr>
+  </table>
+
+  <p>
+    Jede Minute schreibt sie eine Zeile ins Protokoll (<code>orion_wache</code>):
+    <code>alles_gut</code>, die Verdachtsliste, und ob sie eingegriffen hat.
+    <b>&bdquo;Die Nachtwache hat etwas beanstandet&ldquo;</b> heißt also: <b>in der
+    letzten Minute stand mindestens ein Verdacht auf der Liste</b> — meist
+    normale Arbeit (eine unplausible Zeile, die gleich gesperrt wird; eine
+    vorbeigegangene Partie, die gleich in den Verlauf wandert). Ernst wird es
+    erst, wenn die Nachtwache sich <b>selbst</b> nicht mehr meldet (Warnung ab
+    30 Minuten Stille) — denn wer bewacht sonst den Wächter? Genau deshalb
+    zeigt die Kachel oben ihr eigenes Alter.
+  </p>
+
   <h2>7. Verlauf</h2>
   <p>
     Ein Fund verschwindet nie einfach. Wird er in einem Lauf nicht mehr gefunden oder ist
