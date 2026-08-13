@@ -137,3 +137,25 @@ läuft neben dem neuen `orion-waechter-takt`. Ob sie noch etwas beitragen,
 ist **ungemessen**. Neu dazu: die Aufruf-Bilanz der 20 Bereichs-Takte
 (~24 000 Läufe/Tag) gegen den Supabase-Tarif ist **ungemessen** — bei
 Bedarf die Welt-Takte auf `*/5` strecken, dort entstehen ohnehin 0 Paare.
+
+## Kursalter (seit 13.8.2026)
+
+Zwei Spalten in `orion_funde`: **`pm_preis_seit`** und **`bf_quote_seit`** —
+seit wann steht dieser Kurs unverändert? Gepflegt vom Auslöser
+`orion_kursalter_mitfuehren()`, der beim Schreiben den neuen mit dem alten
+Wert vergleicht. Bewegt sich nichts, bleibt der Zeitpunkt stehen.
+
+> **Warum das gebraucht wird.** Sieben der acht Fehler vom 13.8. kamen von
+> EINEM stehengebliebenen Betfair-Kurs. Drei Bücher sagten Guadalajara
+> 59–61 %, Betfair sagte 47,6 % — bei in sich stimmigem eigenem Buch
+> (Summe 100,2 %). Kein kaputter Kurs, ein **alter**.
+>
+> Nachgemessen: **kein** Schnappschuss trägt einen Zeitstempel je Markt,
+> weder Kalshi noch Smarkets noch die Bridge. Niemand konnte sehen, dass
+> ein Kurs seit Stunden klebt — auch ein Sprachmodell nicht, die
+> Information existierte nicht.
+
+Bewusst NICHT über einen neuen Takt gelöst, der alle Schnappschüsse
+durchgeht: genau solche Last hat am 13.8. die Datenbank für 45 Minuten
+lahmgelegt. Der Auslöser kostet einen Zahlenvergleich je geschriebener
+Zeile und läuft im bestehenden Schreibvorgang mit.
