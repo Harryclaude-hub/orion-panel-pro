@@ -43,7 +43,19 @@
         '<div class="fl-gitter"></div>' +
         '<div class="fl-scan"></div>' +
         '<div class="fl-ticks"></div>' +
-        '<div class="fl-wort"><span></span></div>';
+        /* Mini-Radar oben: derselbe Sweep wie am grossen Schirm, nur klein. */
+        '<div class="fl-radar"><i></i></div>' +
+        '<div class="fl-wort"><span></span></div>' +
+        /* Ein Jaeger, der die Flanke entlang zieht. */
+        '<svg class="fl-jet" viewBox="0 0 72 24" aria-hidden="true">' +
+          '<path fill="currentColor" d="M12 10.6 L20 10 L24 4 L27 4 L25.5 9.6 L40 8.4 ' +
+            'L52 3 L55 3 L48 9 L60 9.4 L70 11.4 L72 12 L70 12.6 L60 14.6 L48 15 ' +
+            'L55 21 L52 21 L40 15.6 L25.5 14.4 L27 20 L24 20 L20 14 L12 13.4 Z"/>' +
+        '</svg>' +
+        /* Funkgeraet unten: die letzten drei Meldungen vom Gefecht. */
+        '<div class="fl-funk"></div>' +
+        /* Explosion bei Zielerfassung: Blitz + Druckwelle, per Klasse gezuendet. */
+        '<div class="fl-boom"><i class="fb-blitz"></i><i class="fb-welle"></i></div>';
       document.body.appendChild(f);
       return f;
     }
@@ -111,6 +123,45 @@
     });
   }
 
+  /* ---------- Das Funkgeraet ----------
+   *
+   * Alle paar Sekunden eine Meldung im Gefechtston, passend zur Lage.
+   * Ereignisse (Ziel erfasst) draengen sich sofort dazwischen. Nur die
+   * letzten drei Zeilen bleiben stehen — ein Funkgeraet, kein Protokoll. */
+  var FUNK = {
+    ruhig: ['SEKTOR WIRD ABGETASTET …', 'KEIN KONTAKT — WEITER SUCHEN',
+            'ALLE EINHEITEN AUF STATION', 'LAGE RUHIG — AUGEN OFFEN',
+            'VIER BÜCHER IM BLICK'],
+    wachsam: ['STÖRSIGNAL IM SEKTOR', 'VERBINDUNG WIRD SCHWÄCHER',
+              'EINHEIT MELDET SICH VERSPÄTET'],
+    alarm: ['NOTRUF ABGESETZT', 'EINHEIT ANTWORTET NICHT',
+            'SUCHE LÄUFT AUF RESTVERBINDUNG']
+  };
+
+  function funken(text) {
+    ['flanke-l', 'flanke-r'].forEach(function (id) {
+      var f = document.getElementById(id);
+      var funk = f && f.querySelector('.fl-funk');
+      if (!funk) return;
+      var z = document.createElement('div');
+      z.textContent = text;
+      funk.insertBefore(z, funk.firstChild);
+      while (funk.childNodes.length > 3) funk.removeChild(funk.lastChild);
+    });
+  }
+
+  function funkTakt() {
+    var pool = FUNK[letzteStufe || 'ruhig'] || FUNK.ruhig;
+    var e = welt.letztesErgebnis;
+    /* Ab und zu eine echte Zahl statt Prosa — das Funkgeraet soll berichten,
+     * nicht nur Stimmung machen. */
+    if (e && Array.isArray(e.chancen) && e.chancen.length && Math.random() < 0.4) {
+      funken(e.chancen.length + (e.chancen.length === 1 ? ' ZIEL' : ' ZIELE') + ' IM VISIER');
+      return;
+    }
+    funken(pool[Math.floor(Math.random() * pool.length)]);
+  }
+
   /* ---------- Das Kino ---------- */
   var bekannteChancen = null;
   var kinoWecker = null;
@@ -142,12 +193,31 @@
     kino.classList.add('an');
     if (kinoWecker) clearTimeout(kinoWecker);
     kinoWecker = setTimeout(function () { kino.classList.remove('an'); }, 3000);
+
+    /* Die Flanken feuern mit: Blitz und Druckwelle von beiden Seiten,
+     * dazu die Funkmeldung. */
+    funken('ZIEL ERFASST — FEUER FREI');
+    ['flanke-l', 'flanke-r'].forEach(function (id) {
+      var fl = document.getElementById(id);
+      if (!fl) return;
+      fl.classList.remove('boom');
+      void fl.offsetWidth;
+      fl.classList.add('boom');
+      setTimeout(function () { fl.classList.remove('boom'); }, 1600);
+    });
   }
 
+  var funkZaehler = 0;
   function start() {
     baue();
     flankenTakt();
-    setInterval(function () { flankenTakt(); kinoTakt(); }, 2000);
+    funken('FUNKGERÄT AUF EMPFANG');
+    setInterval(function () {
+      flankenTakt(); kinoTakt();
+      /* Funkspruch alle ~10 s (jeder fuenfte 2-s-Takt), nicht jede Sekunde —
+       * ein Funkgeraet, das dauerplappert, hoert niemand mehr. */
+      if (++funkZaehler % 5 === 0) funkTakt();
+    }, 2000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();

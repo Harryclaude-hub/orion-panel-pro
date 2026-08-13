@@ -1243,12 +1243,12 @@
       '<div class="pmx-kopf">PAARUNGSMATRIX <span>FÜR ↓ · GEGEN →</span></div>' +
       '<table><tr><th></th>';
     MATRIX_BUECHER.forEach(function (b) {
-      html += '<th class="' + txt((K[b] || {}).chip || '') + '">' + txt((K[b] || {}).kurz || b) + '</th>';
+      html += '<th class="' + txt((K[b] || {}).chip || '') + '" title="' + txt((K[b] || {}).name || b) + '"><i class="buchlogo"></i></th>';
     });
     html += '</tr>';
 
     MATRIX_BUECHER.forEach(function (a) {
-      html += '<tr><th class="' + txt((K[a] || {}).chip || '') + '">' + txt((K[a] || {}).kurz || a) + '</th>';
+      html += '<tr><th class="' + txt((K[a] || {}).chip || '') + '" title="' + txt((K[a] || {}).name || a) + '"><i class="buchlogo"></i></th>';
       MATRIX_BUECHER.forEach(function (b) {
         if (a === b) { html += '<td class="pmx-sperr">—</td>'; return; }
         var s = a + ' -> ' + b;

@@ -55,6 +55,17 @@
   --blau:     var(--bf);
   --tuerkis:  var(--ka);
 
+  /* MINI-LOGOS der Anbieter, selbst gezeichnet (keine fremden Markenbilder):
+   * Farbfeld + Kennbuchstabe. Als data-URI, weil CSS-Hintergruende keine
+   * var()-Farben in SVG mischen koennen — deshalb stehen die Farbwerte hier
+   * DOPPELT (einmal als Token oben, einmal im Bild). Wer eine Buchfarbe
+   * aendert, aendert BEIDE Stellen. */
+  --logo-pm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%236C93E8'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3EP%3C/text%3E%3C/svg%3E");
+  --logo-ka: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%233FB59A'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3EK%3C/text%3E%3C/svg%3E");
+  --logo-sm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%235BBE7C'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3ES%3C/text%3E%3C/svg%3E");
+  --logo-bf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%23E8C15A'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3EB%3C/text%3E%3C/svg%3E");
+  --logo-supabase: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%233ECF8E'/%3E%3Cpath d='M9 2 L4 9 H8 L7 14 L12 7 H8 Z' fill='%231D211B'/%3E%3C/svg%3E");
+
   --rund:     12px;
   --rund-chip: 8px;
 }
@@ -1260,3 +1271,106 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
 .paarmatrix .pmx-erklaer b { color: var(--text); }
 .paarmatrix .pmx-l1 { color: var(--gold); }
 .paarmatrix .pmx-l2 { color: var(--gruen); }
+
+/* ---------- Mini-Logos ueberall dort, wo ein Buch genannt wird ---------- */
+.chip.pm::before, .chip.ka::before, .chip.sm::before, .chip.bf::before,
+.an-buch.pm::before, .an-buch.ka::before, .an-buch.sm::before, .an-buch.bf::before,
+.an-buch.supabase::before {
+  content: ""; display: inline-block; width: 13px; height: 13px;
+  vertical-align: -2px; margin-right: 5px;
+  background-size: contain; background-repeat: no-repeat;
+}
+.chip.pm::before, .an-buch.pm::before { background-image: var(--logo-pm); }
+.chip.ka::before, .an-buch.ka::before { background-image: var(--logo-ka); }
+.chip.sm::before, .an-buch.sm::before { background-image: var(--logo-sm); }
+.chip.bf::before, .an-buch.bf::before { background-image: var(--logo-bf); }
+.an-buch.supabase::before { background-image: var(--logo-supabase); }
+
+/* In der Paarungsmatrix ersetzen die Logos die Kuerzel ganz. */
+.paarmatrix th i.buchlogo {
+  display: inline-block; width: 16px; height: 16px;
+  background-size: contain; background-repeat: no-repeat;
+}
+.paarmatrix th.pm i.buchlogo { background-image: var(--logo-pm); }
+.paarmatrix th.ka i.buchlogo { background-image: var(--logo-ka); }
+.paarmatrix th.sm i.buchlogo { background-image: var(--logo-sm); }
+.paarmatrix th.bf i.buchlogo { background-image: var(--logo-bf); }
+
+/* ---------- Flanken, Ausbaustufe Schlachtfeld (13.8.2026, nachts) ---------- */
+
+/* Mini-Radar oben in jeder Flanke: derselbe Sweep wie der grosse Schirm. */
+.flanke .fl-radar {
+  position: absolute; top: 18px; left: 50%; transform: translateX(-50%);
+  width: 76px; height: 76px; border-radius: 50%;
+  border: 1px solid rgba(var(--fl-farbe), .35);
+  background:
+    radial-gradient(circle, transparent 0 32%, rgba(var(--fl-farbe), .10) 33% 34%, transparent 35% 65%, rgba(var(--fl-farbe), .10) 66% 67%, transparent 68%),
+    radial-gradient(circle at 50% 50%, rgba(var(--fl-farbe), .08), transparent 70%);
+  overflow: hidden;
+}
+.flanke .fl-radar i {
+  position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg,
+    rgba(var(--fl-farbe), .45) 0deg, rgba(var(--fl-farbe), .12) 26deg, transparent 70deg);
+  animation: fl-radar-dreh calc(var(--fl-tempo) * .6) linear infinite;
+}
+@keyframes fl-radar-dreh { to { transform: rotate(360deg); } }
+
+/* Der Flanken-Jaeger: fliegt die Saeule senkrecht ab, alle 21 s. */
+.flanke .fl-jet {
+  position: absolute; left: 50%; top: -30px; width: 46px; height: 16px;
+  margin-left: -23px; color: rgb(var(--fl-farbe));
+  opacity: 0; pointer-events: none;
+  transform: rotate(90deg);
+  animation: fl-jet-flug 21s linear infinite;
+}
+.flanke.rechts .fl-jet { transform: rotate(-90deg); animation-name: fl-jet-flug-rauf; animation-delay: 9s; }
+@keyframes fl-jet-flug {
+  0%   { transform: rotate(90deg) translateX(0);      opacity: 0; }
+  4%   { opacity: .3; }
+  46%  { transform: rotate(90deg) translateX(100vh);  opacity: .3; }
+  50%, 100% { transform: rotate(90deg) translateX(105vh); opacity: 0; }
+}
+@keyframes fl-jet-flug-rauf {
+  0%   { transform: rotate(-90deg) translateX(0);      opacity: 0; }
+  4%   { opacity: .3; }
+  46%  { transform: rotate(-90deg) translateX(-100vh); opacity: .3; }
+  50%, 100% { transform: rotate(-90deg) translateX(-105vh); opacity: 0; }
+}
+
+/* Das Funkgeraet: die letzten drei Meldungen, unten in der Flanke. */
+.flanke .fl-funk {
+  position: absolute; left: 8px; right: 8px; bottom: 16px;
+  font: 9px/1.5 ui-monospace, Consolas, monospace;
+  letter-spacing: .5px; color: rgba(var(--fl-farbe), .8);
+}
+.flanke .fl-funk div { margin-top: 4px; word-wrap: break-word; }
+.flanke .fl-funk div::before { content: "» "; opacity: .6; }
+.flanke .fl-funk div:first-child { color: rgb(var(--fl-farbe)); }
+.flanke .fl-funk div:nth-child(2) { opacity: .65; }
+.flanke .fl-funk div:nth-child(3) { opacity: .4; }
+
+/* Die Explosion: Blitz + Druckwelle, gezuendet ueber .boom (js/buehne.js).
+ * Nur transform und opacity, endet von selbst. */
+.flanke .fl-boom { position: absolute; inset: 0; pointer-events: none; }
+.flanke .fl-boom i { position: absolute; opacity: 0; }
+.flanke .fb-blitz {
+  inset: 0;
+  background: radial-gradient(circle at 50% 45%,
+    rgba(255, 240, 200, .85), rgba(var(--fl-farbe), .45) 30%, transparent 65%);
+}
+.flanke.boom .fb-blitz { animation: fb-blitz 1.4s ease-out; }
+@keyframes fb-blitz {
+  0% { opacity: 0; } 8% { opacity: 1; } 30% { opacity: .5; }
+  45% { opacity: .8; } 100% { opacity: 0; }
+}
+.flanke .fb-welle {
+  left: 50%; top: 45%; width: 30px; height: 30px; margin: -15px;
+  border: 3px solid rgba(255, 235, 190, .9); border-radius: 50%;
+}
+.flanke.boom .fb-welle { animation: fb-welle 1.4s ease-out; }
+@keyframes fb-welle {
+  0%   { opacity: 1; transform: scale(.2); }
+  70%  { opacity: .5; transform: scale(5); }
+  100% { opacity: 0; transform: scale(6.5); }
+}
