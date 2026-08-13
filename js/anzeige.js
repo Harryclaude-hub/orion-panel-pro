@@ -1489,7 +1489,7 @@
       betfairAn
         ? { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
         : { name: 'Betfair', wert: 'aus', farbe: 'var(--text-leise)' },
-      { name: 'Nachtwache', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
+      { name: 'Wächter · läuft immer', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
         farbe: (s.wache_gut === true && s.wache_alter_s !== null && s.wache_alter_s < 1800)
           ? 'var(--gruen)' : 'var(--rot)' }
     ].map(function (k) {
