@@ -1111,6 +1111,7 @@
         /* Kurzzeile: nur, was man zum EINORDNEN braucht. Alles Weitere hat
          * jetzt einen eigenen Abschnitt. */
         '<div class="unter">' +
+          (f.nr ? '<span class="chip nr" title="Rechnungsnummer — sag dem Funker: prüfe #' + f.nr + '">#' + f.nr + '</span> ' : '') +
           '<span class="chip ' + txt(buch1(f).chip) + '">' + txt(buch1(f).name) + '</span> ' +
           '<span class="chip leise">gegen</span> ' +
           '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +
@@ -1132,6 +1133,14 @@
          * eine Bildschirmhöhe füllt, ist das der Unterschied zwischen
          * benutzbar und nicht benutzbar. */
         aktionen(f) +
+        /* KOMPAKT ALS NORMALFALL (Vorgabe 13.8. nachts: man scrollt zu
+         * lange). Die zwei Kopfzeilen tragen alles zum EINORDNEN; die
+         * vollstaendige Rechnung klappt auf und bleibt ueber das
+         * 2-Sekunden-Neuzeichnen hinweg offen (gleiche Merkliste wie der
+         * innere Aufklapper). */
+        '<details class="voll"' + (aufgeklappt['@voll:' + f.schluessel] ? ' open' : '') + '>' +
+          '<summary data-schluessel="@voll:' + txt(f.schluessel) + '">Vollständige Rechnung ' +
+            '<span class="leise">(so setzt du, Zeiten, Kurse, Gebühren, Prüfungen)</span></summary>' +
         abschnitt('So setzt du', soSetztDu(f), 'ab-setz') +
         abschnitt('Wann', zeitenBlock(f, imVerlauf), 'ab-zeit') +
         '<div class="ab"><div class="ab-kopf">Die zwei Kurse, aus denen das entsteht</div>' +
@@ -1169,6 +1178,7 @@
             ' (Summe der beiden Gegenwahrscheinlichkeiten; unter 1,0000 heißt: ' +
             'beide Seiten zusammen kosten weniger als der sichere Euro — genau darum geht es)' +
             ' &middot; Partie beim zweiten Buch: ' + txt(f.bf_partie) + '</div>' +
+        '</details>' +
         '</details>' +
       '</div>';
   }
@@ -1472,7 +1482,20 @@
     if (gemerkt === 'chancen' || gemerkt === 'knapp' || gemerkt === 'verlauf' || gemerkt === 'falsch') offenerBereich = gemerkt;
   } catch (e) { /* Speicher gesperrt, dann eben der Standard */ }
 
+  /* ---------- Ungelesen-Zaehler (Vorgabe 13.8., tief nachts) ----------
+   *
+   * "Ich seh eine Chance und dann verschwindet sie einfach." Eine Zeile,
+   * die in einen anderen Reiter wandert, waehrend man woanders liest, soll
+   * dort als UNGELESEN zaehlen — bis man den Reiter oeffnet. Gemerkt wird
+   * je Reiter die Menge der gesehenen Schluessel; neu ist, was beim
+   * Zeichnen dazukommt, waehrend der Reiter zu ist. Beim ersten Laden wird
+   * alles als gesehen gesetzt (sonst waere nach jedem Neuladen alles neu). */
+  var gesehen = { chancen: null, knapp: null, verlauf: null, falsch: null };
+
   function bereichZeigen(name) {
+    /* Oeffnen heisst lesen: beim naechsten Zeichnen zaehlt dieser Reiter
+     * wieder von null. */
+    gesehen[name] = null;
     offenerBereich = name;
     try { localStorage.setItem('orion-bereich', name); } catch (e) {}
     ['chancen', 'knapp', 'verlauf', 'falsch'].forEach(function (b) {
@@ -1486,19 +1509,35 @@
   }
 
   function reiterZeichnen(e) {
+    var listen = { chancen: e.chancen || [], knapp: e.knapp || [],
+                   verlauf: e.verlauf || [], falsch: e.falsch || [] };
+
+    /* Ungelesen je Reiter: Schluessel, die seit dem letzten Oeffnen
+     * dazugekommen sind. Der offene Reiter gilt immer als gelesen. */
+    var neu = {};
+    Object.keys(listen).forEach(function (t) {
+      var jetzt = new Set(listen[t].map(function (f) { return f.schluessel; }));
+      if (gesehen[t] === null || t === offenerBereich) { gesehen[t] = jetzt; neu[t] = 0; return; }
+      var z = 0;
+      jetzt.forEach(function (k) { if (!gesehen[t].has(k)) z++; });
+      neu[t] = z;
+    });
+
+    function abzeichen(t) { return neu[t] ? ' <b class="neu">+' + neu[t] + '</b>' : ''; }
     var beschriftung = {
-      chancen: 'Chancen (' + e.chancen.length + ')' +
-               (e.veraltetHoch && e.veraltetHoch.length ? ' + ' + e.veraltetHoch.length + ' veraltet' : ''),
-      knapp: 'Knappste Paare (' + e.knapp.length + ')',
-      verlauf: 'Verlauf (' + e.verlauf.length + ')',
-      falsch: 'Falsche Rechnungen (' + (e.falsch ? e.falsch.length : 0) + ')'
+      chancen: 'Chancen (' + listen.chancen.length + ')' +
+               (e.veraltetHoch && e.veraltetHoch.length ? ' + ' + e.veraltetHoch.length + ' veraltet' : '') +
+               abzeichen('chancen'),
+      knapp: 'Knappste Paare (' + listen.knapp.length + ')' + abzeichen('knapp'),
+      verlauf: 'Verlauf (' + listen.verlauf.length + ')' + abzeichen('verlauf'),
+      falsch: 'Falsche Rechnungen (' + listen.falsch.length + ')' + abzeichen('falsch')
     };
     var knoepfe = document.querySelectorAll('.reiter-knopf');
     for (var i = 0; i < knoepfe.length; i++) {
       var b = knoepfe[i].getAttribute('data-bereich');
-      /* Nur schreiben, wenn sich der Text wirklich geaendert hat: der Knopf
-       * kann gerade unter der Maus liegen (Fehlerklasse 6). */
-      if (knoepfe[i].textContent !== beschriftung[b]) knoepfe[i].textContent = beschriftung[b];
+      /* Nur schreiben, wenn sich der Inhalt wirklich geaendert hat: der
+       * Knopf kann gerade unter der Maus liegen (Fehlerklasse 6). */
+      if (knoepfe[i].innerHTML !== beschriftung[b]) knoepfe[i].innerHTML = beschriftung[b];
     }
     bereichZeigen(offenerBereich);
   }

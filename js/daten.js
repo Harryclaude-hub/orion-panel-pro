@@ -225,6 +225,19 @@
         live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); smarketsLinkRichten(f); });
         verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); smarketsLinkRichten(f); });
 
+        /* RECHNUNGSNUMMER (13.8., nachts): jede Zeile traegt eine feste
+         * fuenfstellige Nummer, abgeleitet aus ihrem Schluessel — dieselbe
+         * Zeile hat immer dieselbe Nummer, auch nach einem Neuladen. Damit
+         * kann man dem Funker sagen: pruefe #48213. Kein Zufall, kein
+         * Hochzaehlen (das verschoebe sich mit jeder neuen Zeile). */
+        function rechnungsNr(s) {
+          var h = 5381; s = String(s || '');
+          for (var i = 0; i < s.length; i++) h = ((h << 5) + h + s.charCodeAt(i)) | 0;
+          return 10000 + Math.abs(h) % 90000;
+        }
+        live.forEach(function (f) { f.nr = rechnungsNr(f.schluessel); });
+        verlauf.forEach(function (f) { f.nr = rechnungsNr(f.schluessel); });
+
         /* Zusaetzliche Wache im Browser: zwischen zwei Aufraeumlaeufen kann
          * eine frisch beendete Minuszeile durchrutschen. Im Verlauf hat sie
          * nichts verloren. */
