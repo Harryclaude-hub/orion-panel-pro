@@ -758,6 +758,87 @@
    *   4. Was heisst das in Geld
    *   5. Feinheiten, zugeklappt
    */
+  /* ---------- SO SETZT DU ---------- (Wunsch vom 13.8.2026)
+   *
+   * "Ich verstehe nicht irgendwelche mysteriösen Zahlen. Sag einfach: das
+   * sind die zwei, das ist der Einsatz, so viel setzt du dahin, so viel aufs
+   * andere."
+   *
+   * Genau das steht hier, in zwei nummerierten Schritten und einem Satz zum
+   * Ergebnis. Jede Zahl auf der Karte hat ab hier einen Satz daneben, der
+   * sagt, was sie bedeutet.
+   *
+   * WAS KANN MAN BEI DIESER WETTE ÜBERHAUPT? Das ist bei jedem Buch anders,
+   * und es ist der Grund, warum eine Seite "JA" heisst und die andere "Lay":
+   *   Polymarket / Kalshi  Anteile KAUFEN. Es gibt zwei Sorten, JA und NEIN.
+   *                        Beide kann man kaufen — "NEIN kaufen" IST das
+   *                        Dagegenhalten. Ein Verkaufen gibt es nicht.
+   *   Smarkets / Betfair   Eine Wette ANNEHMEN (Back) oder eine Wette
+   *                        ANBIETEN (Lay). Lay heisst bei Smarkets SELL.
+   * Deshalb steht auf jeder Seite im Klartext, was zu tun ist, statt nur
+   * "JA" oder "Lay". */
+  function tuWas(info, seiteText, name) {
+    var s = String(seiteText || '').toLowerCase();
+    var n = txt(name || 'diesen Ausgang');
+    if (s === 'ja' || s === 'über' || s === 'ueber') {
+      return 'kaufe <b>JA</b> auf „' + n + '"';
+    }
+    if (s === 'nein' || s === 'unter') {
+      return 'kaufe <b>NEIN</b> auf „' + n + '" (du hältst dagegen)';
+    }
+    if (s === 'back') {
+      return 'setze <b>' + (info.name === 'Smarkets' ? 'BUY (Back)' : 'BACK') + '</b> auf „' + n + '"';
+    }
+    if (s === 'lay') {
+      return 'setze <b>' + (info.name === 'Smarkets' ? 'SELL (Lay)' : 'LAY') + '</b> gegen „' + n + '"' +
+             ' — du hältst dagegen, dass das eintritt';
+    }
+    return txt(seiteText) + ' auf „' + n + '"';
+  }
+
+  function soSetztDu(f) {
+    var b1 = buch1(f), b2 = buch2(f);
+    var e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2);
+    var aus = Number(f.auszahlung);
+    if (!isFinite(e1) || !isFinite(e2) || !isFinite(aus)) return '';
+    var gesamt = e1 + e2;
+    var gewinn = aus - gesamt;
+
+    /* Der Betrag, den man WIRKLICH setzen kann, steht in max_einsatz. 100 als
+     * Rechengrundlage ist nur die Skala — wer 100 setzen will, wo nur 40 im
+     * Buch liegen, bekommt die 100 nicht zu diesem Kurs. */
+    var deckel = (f.max_einsatz === null || f.max_einsatz === undefined) ? null : Number(f.max_einsatz);
+
+    return '<div class="setz">' +
+      '<div class="setz-schritt">' +
+        '<span class="setz-nr">1</span>' +
+        '<span class="setz-buch ' + txt(b1.chip) + '">' + txt(b1.name) + '</span>' +
+        '<span class="setz-geld">' + geld(e1) + '</span>' +
+        '<span class="setz-text">' + tuWas(b1, f.pm_seite, f.mannschaft) + '</span>' +
+      '</div>' +
+      '<div class="setz-schritt">' +
+        '<span class="setz-nr">2</span>' +
+        '<span class="setz-buch ' + txt(b2.chip) + '">' + txt(b2.name) + '</span>' +
+        '<span class="setz-geld">' + geld(e2) + '</span>' +
+        '<span class="setz-text">' + tuWas(b2, f.bf_seite, f.bf_name) + '</span>' +
+      '</div>' +
+      '<div class="setz-summe">' +
+        'Zusammen <b>' + geld(gesamt) + '</b> Einsatz. ' +
+        'Egal wie es ausgeht, zurück kommen <b>' + geld(aus) + '</b> — ' +
+        'also <b class="' + (gewinn > 0 ? 'gut' : 'rot') + '">' +
+        (gewinn >= 0 ? '+' : '') + geld(gewinn) + '</b> sicher.' +
+      '</div>' +
+      (deckel === null
+        ? '<div class="setz-deckel acht">Wie viel wirklich hineinpasst, ist unbekannt — ' +
+          'eines der beiden Bücher nennt keine Menge. Unbekannt heißt nicht unbegrenzt.</div>'
+        : '<div class="setz-deckel">Das Beispiel rechnet mit ' + geld(gesamt) + '. ' +
+          'Zu diesen Kursen liegen im Buch <b>' + geld(deckel) + '</b> bereit' +
+          (f.max_gewinn === null || f.max_gewinn === undefined ? '' :
+            ', das wären dann <b>' + geld(f.max_gewinn) + '</b> Gewinn') +
+          '. Mehr geht nur zu schlechteren Kursen.</div>') +
+    '</div>';
+  }
+
   function abschnitt(name, inhalt, klasse) {
     if (!inhalt) return '';
     return '<div class="ab ' + (klasse || '') + '">' +
@@ -883,8 +964,14 @@
           '<span class="chip' + (Number(f.zuordnung) >= 0.99 ? ' gut' : ' acht') + '">Zuordnung ' + Number(f.zuordnung).toFixed(2) + '</span>' +
         '</div>' +
         warnungen(f) +
+        /* Die Knöpfe stehen OBEN, nicht am Ende. Vorher musste man an jeder
+         * Karte vorbeiscrollen, um den Link zu finden — bei einer Karte, die
+         * eine Bildschirmhöhe füllt, ist das der Unterschied zwischen
+         * benutzbar und nicht benutzbar. */
+        aktionen(f) +
+        abschnitt('So setzt du', soSetztDu(f), 'ab-setz') +
         abschnitt('Wann', zeitenBlock(f, imVerlauf), 'ab-zeit') +
-        '<div class="ab"><div class="ab-kopf">Die zwei Seiten</div>' +
+        '<div class="ab"><div class="ab-kopf">Die zwei Kurse, aus denen das entsteht</div>' +
         '<div class="seiten">' +
           '<div class="seite ' + txt(buch1(f).chip) + '">' +
             '<div class="quelle">' + txt(buch1(f).name) + '</div>' +
@@ -916,9 +1003,10 @@
           '<div class="unter leise">Bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' +
             txt(buch1(f).name) + ', ' + geld(f.einsatz_2) + ' auf ' + txt(buch2(f).name) +
             ' &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
-            ' &middot; Partie dort: ' + txt(f.bf_partie) + '</div>' +
+            ' (Summe der beiden Gegenwahrscheinlichkeiten; unter 1,0000 heißt: ' +
+            'beide Seiten zusammen kosten weniger als der sichere Euro — genau darum geht es)' +
+            ' &middot; Partie beim zweiten Buch: ' + txt(f.bf_partie) + '</div>' +
         '</details>' +
-        aktionen(f) +
       '</div>';
   }
 

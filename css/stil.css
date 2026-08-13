@@ -722,3 +722,79 @@ h2 {
 .fund details.mehr > summary:hover { border-color: rgba(212,175,55,.5); }
 .fund details.mehr > summary .leise { text-transform: none; letter-spacing: 0; opacity: .7; }
 .fund details.mehr > *:not(summary) { margin-top: 10px; }
+
+/* ---------- "So setzt du" (13.8.2026) ----------
+ * Zwei nummerierte Schritte und ein Satz zum Ergebnis. Der Wunsch dahinter
+ * war wörtlich: "keine mysteriösen Zahlen, sag einfach so viel dahin, so
+ * viel aufs andere".
+ */
+.fund .setz { display: grid; gap: 8px; }
+.fund .setz-schritt {
+  display: grid; grid-template-columns: 26px auto auto 1fr;
+  gap: 10px; align-items: center;
+  background: var(--karte-2); border: 1px solid var(--rand);
+  border-radius: 10px; padding: 9px 12px;
+}
+.fund .setz-nr {
+  width: 24px; height: 24px; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: rgba(212,175,55,.15); border: 1px solid rgba(212,175,55,.45);
+  font-weight: 700; font-size: 13px;
+}
+.fund .setz-buch { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
+.fund .setz-buch.pm { color: var(--violett); }
+.fund .setz-buch.bf { color: var(--blau); }
+.fund .setz-geld {
+  font-size: 19px; font-weight: 700; font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}
+.fund .setz-text { font-size: 14px; }
+.fund .setz-summe {
+  font-size: 15px; padding: 9px 12px;
+  border: 1px solid rgba(212,175,55,.35); border-radius: 10px;
+  background: rgba(212,175,55,.06);
+}
+.fund .setz-summe .gut { color: var(--gruen); }
+.fund .setz-summe .rot { color: var(--rot); }
+.fund .setz-deckel { font-size: 13px; color: var(--text-leise); }
+.fund .setz-deckel.acht { color: var(--orange); }
+@media (max-width: 560px) {
+  .fund .setz-schritt { grid-template-columns: 26px 1fr; }
+  .fund .setz-buch, .fund .setz-geld { grid-column: 2; }
+  .fund .setz-text { grid-column: 2; }
+}
+
+/* Knöpfe stehen jetzt oben. Damit sie dort nicht wie ein Fremdkörper
+ * wirken, bekommen sie etwas Luft nach unten. */
+.fund .aktionen { margin: 10px 0 4px; }
+
+/* ---------- Gefechtsbilanz im Sonar (13.8.2026) ----------
+ * Die rechte Hälfte der Sonartafel stand leer. Sie beantwortet jetzt die
+ * vier Fragen, die man an ein Sonar stellt. Jede Zahl trägt ihren Satz.
+ */
+.puls .s-bilanz {
+  margin-top: 12px; padding-top: 10px;
+  border-top: 1px solid rgba(120,200,160,.18);
+}
+.puls .s-bz-kopf {
+  font-size: 10px; letter-spacing: 2.4px; opacity: .55;
+  margin-bottom: 7px;
+}
+.puls .s-bz {
+  display: grid; grid-template-columns: 108px 58px 1fr;
+  gap: 4px 8px; align-items: baseline;
+  padding: 3px 0; font-size: 11px;
+}
+.puls .s-bz + .s-bz { border-top: 1px solid rgba(120,200,160,.07); }
+.puls .s-bz-name { letter-spacing: 1.4px; opacity: .7; }
+.puls .s-bz-wert {
+  font-size: 17px; font-weight: 700; text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.puls .s-bz-text { opacity: .5; font-size: 10.5px; line-height: 1.35; }
+.puls .s-bz-gut .s-bz-wert { color: var(--gruen); }
+.puls .s-bz-rot .s-bz-wert { color: var(--rot); }
+@media (max-width: 700px) {
+  .puls .s-bz { grid-template-columns: 96px 52px; }
+  .puls .s-bz-text { grid-column: 1 / -1; margin-bottom: 3px; }
+}

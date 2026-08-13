@@ -78,6 +78,7 @@
         '</div>' +
         '<div class="s-gross"><span id="s-zahl">—</span><small>Märkte im Sektor</small></div>' +
         '<div class="s-werte" id="s-werte"></div>' +
+        '<div class="s-bilanz" id="s-bilanz"></div>' +
         '<div class="s-log" id="s-log"></div>' +
       '</div>';
   }
@@ -160,6 +161,81 @@
         '<span>PING <b>' + (sAlter === null ? '—' : sAlter + ' s') + '</b></span>' +
         '<span>LAUFZEIT <b>' + (isFinite(dauer) ? (dauer / 1000).toFixed(1) + ' s' : '—') + '</b></span>' +
         '<span>KONTAKTE <b>' + (isFinite(paare) ? paare : '—') + '</b></span>';
+    }
+
+    /* ---------- GEFECHTSBILANZ ----------
+     *
+     * Die rechte Hälfte der Tafel stand leer. Sie beantwortet jetzt die vier
+     * Fragen, die man an ein Sonar stellt: was ist im Visier, was davon ist
+     * scharf, was wurde aussortiert, und was ist durchgerutscht.
+     *
+     * JEDE ZAHL HAT EINEN SATZ DANEBEN. Eine Kennzahl ohne Erklärung ist
+     * Deko — und dieser Schirm ist ausdrücklich kein Zierrat.
+     */
+    var bilanz = document.getElementById('s-bilanz');
+    if (bilanz && e) {
+      var chancen = (e.chancen || []).length;
+      var knapp = (e.knapp || []).length;
+      var veraltet = (e.veraltetHoch || []).length;
+      var verlauf = e.verlauf || [];
+      var imVisier = chancen + knapp + veraltet;
+
+      /* Aussortiert: Zeilen, die eine Nachkontrolle als falsch markiert hat.
+       * Seit dem 13.8. ist das vor allem die Buchstimmigkeit — ein Gegenbuch,
+       * dessen eigene Kurse zusammen unter 100 % ergeben, ist nicht
+       * handelbar, und was darauf beruht, ist keine Chance. */
+      var verworfen = 0;
+      for (var v = 0; v < verlauf.length; v++) {
+        if (verlauf[v].pruefung === 'falsch') verworfen++;
+      }
+
+      /* Verpasst: war einmal über der Schwelle, ist jetzt weg. Genau die
+       * Frage "hätte sich das gelohnt?" — beantwortet vom HÖCHSTSTAND, nicht
+       * vom Zufallswert beim Verschwinden. */
+      var schwelle = (K.mindestRendite || 2);
+      var verpasst = 0;
+      for (var p = 0; p < verlauf.length; p++) {
+        var best = verlauf[p].beste_rendite;
+        if (verlauf[p].pruefung === 'falsch') continue;
+        if (best !== null && best !== undefined && Number(best) >= schwelle) verpasst++;
+      }
+
+      /* Beute: was die erfassten Ziele zusammen einbrächten, wenn man ALLE
+       * bis zum Anschlag setzt. Nicht "Rendite" — Rendite ist ein
+       * Verhältnis, das hier ist Geld. */
+      var beute = 0, beuteBekannt = true;
+      for (var c = 0; c < (e.chancen || []).length; c++) {
+        var g = e.chancen[c].max_gewinn;
+        if (g === null || g === undefined || !isFinite(Number(g))) { beuteBekannt = false; continue; }
+        beute += Number(g);
+      }
+      var fx = (welt.Anzeige && welt.Anzeige.waehrung) || null;
+
+      function zeileB(name, wert, erklaerung, klasse) {
+        return '<div class="s-bz' + (klasse ? ' ' + klasse : '') + '">' +
+                 '<span class="s-bz-name">' + name + '</span>' +
+                 '<span class="s-bz-wert">' + wert + '</span>' +
+                 '<span class="s-bz-text">' + erklaerung + '</span>' +
+               '</div>';
+      }
+
+      bilanz.innerHTML =
+        '<div class="s-bz-kopf">GEFECHTSBILANZ</div>' +
+        zeileB('IM VISIER', imVisier,
+               'Paare, die gerade beobachtet werden') +
+        zeileB('ERFASST', chancen,
+               'davon über ' + schwelle.toFixed(1) + ' % <i>und</i> mit Geld dahinter',
+               chancen > 0 ? 's-bz-gut' : '') +
+        zeileB('VERWORFEN', verworfen,
+               'als nicht handelbar aussortiert',
+               verworfen > 0 ? 's-bz-rot' : '') +
+        zeileB('DURCHGERUTSCHT', verpasst,
+               'waren über der Schwelle, sind wieder weg') +
+        zeileB('BEUTE', (beute > 0 ? (beute).toFixed(2) : '0.00') + (beuteBekannt ? '' : '+'),
+               beuteBekannt
+                 ? 'was die erfassten Ziele zusammen brächten'
+                 : 'mindestens — bei einem Ziel ist die Menge unbekannt',
+               beute > 0 ? 's-bz-gut' : '');
     }
 
     /* Blips: leuchtet, wenn von diesem Buch frische Kurse kommen. */
