@@ -1614,7 +1614,7 @@
      * ihr eigenes Alter angezeigt. */
     if (s.wache_alter_s === null) {
       warn += '<div class="warnung"><b>Die Nachtwache hat noch nie gelaufen.</b> ' +
-              'Sie sollte alle 10 Minuten nachsehen.</div>';
+              'Sie läuft auf dem Server jede Minute, rund um die Uhr — auch ohne offenen Browser.</div>';
     } else if (s.wache_alter_s > 1800) {
       warn += '<div class="warnung"><b>Die Nachtwache meldet sich seit ' + dauer(s.wache_alter_s) + ' nicht.</b> ' +
               'Dann ist auch ihren Angaben nicht mehr zu trauen.</div>';
