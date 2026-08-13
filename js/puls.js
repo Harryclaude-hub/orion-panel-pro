@@ -61,6 +61,14 @@
              '</div>';
     }).join('');
 
+    /* Eine Zelle der Lagetafel: grosse Zahl, Stempel-Beschriftung darunter,
+     * Erklaerung als title. Zielmarken-Ecken kommen aus dem CSS. */
+    function zelle(id, name, erklaerung, klasse) {
+      return '<div class="s-hz' + (klasse ? ' ' + klasse : '') + '" title="' + erklaerung + '">' +
+               '<b id="' + id + '">—</b><span>' + name + '</span>' +
+             '</div>';
+    }
+
     return '' +
       '<div class="s-schirm">' +
         '<div class="s-gitter"></div>' +
@@ -71,6 +79,45 @@
         '<div class="s-rauschen"></div>' +
         '<div class="s-kontakt" id="s-kontakt"></div>' +
       '</div>' +
+
+      /* ---------- GEFECHTSSTAND ----------
+       *
+       * DIREKT NEBEN DEM SCHIRM, nicht am rechten Rand (Vorgabe 13.8.:
+       * "weiter links, man soll das Ganze sehen"). Eine dichte Lagetafel
+       * ohne Luecken: sechs Zellen, jede mit grosser Zahl und Beschriftung,
+       * dazu Zielring, Abtastzeile, zwei Jaeger, U-Boot samt Sonarping.
+       *
+       * Festes Gerippe, einmal gebaut; auffrischen() setzt NUR Zahlen.
+       * Wuerde jede Sekunde neu gebaut, stuerben alle CSS-Animationen
+       * (Fehlerklasse 6). Alles Bewegte laeuft auf transform/opacity. */
+      '<div class="s-hud">' +
+        '<div class="s-hud-ring"></div>' +
+        '<div class="s-hud-scan"></div>' +
+        '<svg class="s-hud-jet" viewBox="0 0 64 20" aria-hidden="true">' +
+          '<path fill="currentColor" d="M2 10 L22 8 L30 2 L33 8 L52 9 L62 10 L52 11 L33 12 L30 18 L22 12 Z"/>' +
+        '</svg>' +
+        '<svg class="s-hud-jet s-hud-jet2" viewBox="0 0 64 20" aria-hidden="true">' +
+          '<path fill="currentColor" d="M2 10 L22 8 L30 2 L33 8 L52 9 L62 10 L52 11 L33 12 L30 18 L22 12 Z"/>' +
+        '</svg>' +
+        '<div class="s-hud-boot">' +
+          '<svg viewBox="0 0 90 22" aria-hidden="true">' +
+            '<path fill="currentColor" d="M8 14 Q8 8 20 8 L36 8 L38 3 L46 3 L46 8 L70 8 Q84 8 84 14 Q84 19 70 19 L20 19 Q8 19 8 14 Z"/>' +
+            '<rect fill="currentColor" x="40" y="0" width="2" height="4"/>' +
+          '</svg>' +
+          '<i class="s-hud-ping"></i>' +
+        '</div>' +
+        '<div class="s-hud-kopf"><span class="s-led s-gruen" id="s-hud-led"></span>GEFECHTSSTAND' +
+          '<a class="s-hud-hilfe" href="angaben.html" title="Was die Begriffe bedeuten">?</a></div>' +
+        '<div class="s-hud-gitter">' +
+          zelle('s-hud-erfasst',   'CHANCEN',        'Über der Schwelle UND mit Geld dahinter — die Ziele, auf die man schießen kann.', 's-hz-gut') +
+          zelle('s-hud-knapp',     'KNAPP DANEBEN',  'Sichtbar, aber eine Bedingung fehlt: zu dünn, Menge unbekannt, Gewinn zu klein oder Absage-Risiko.') +
+          zelle('s-hud-veraltet',  'VERALTET',       'Rendite über der Schwelle, aber die Kurse sind zu alt zum Schießen.', 's-hz-warn') +
+          zelle('s-hud-verlauf',   'IM VERLAUF',     'Beendete Ziele im Logbuch — was einmal da war und wie hoch es stand.') +
+          zelle('s-hud-verworfen', 'ABGESCHOSSEN',   'Von der Nachkontrolle als falsch aussortiert — meist ein Buch, dessen eigene Kurse zusammen unter 100 % ergeben.', 's-hz-rot') +
+          zelle('s-hud-verpasst',  'DURCHGERUTSCHT', 'Der Höchststand lag über der Schwelle, aber das Ziel ist wieder weg, bevor jemand geschossen hat.') +
+        '</div>' +
+      '</div>' +
+
       '<div class="s-tafel">' +
         '<div class="s-zeile s-titel">' +
           '<span class="s-led" id="s-led"></span>' +
@@ -79,36 +126,6 @@
         '<div class="s-gross"><span id="s-zahl">—</span><small>Märkte im Sektor</small></div>' +
         '<div class="s-werte" id="s-werte"></div>' +
         '<div class="s-log" id="s-log"></div>' +
-      '</div>' +
-
-      /* ---------- GEFECHTSSTAND (rechte Seite) ----------
-       *
-       * Ein festes Gerippe, einmal gebaut. auffrischen() setzt nur noch
-       * Zahlen und Balkenbreiten — wuerde die Tafel jede Sekunde neu
-       * geschrieben, staerben alle CSS-Uebergaenge und der Schirm flackerte.
-       *
-       * Gleiche Hoehe wie der Schirm (190 px), damit das ganze Sonar seine
-       * alte Hoehe behaelt. Jede Zahl traegt ihre Erklaerung als title;
-       * ausfuehrlich stehen die Begriffe auf angaben.html. */
-      '<div class="s-hud">' +
-        '<div class="s-hud-ring"></div>' +
-        '<div class="s-hud-scan"></div>' +
-        '<svg class="s-hud-jet" viewBox="0 0 64 20" aria-hidden="true">' +
-          '<path fill="currentColor" d="M2 10 L22 8 L30 2 L33 8 L52 9 L62 10 L52 11 L33 12 L30 18 L22 12 Z"/>' +
-        '</svg>' +
-        '<div class="s-hud-kopf"><span class="s-led s-gruen" id="s-hud-led"></span>GEFECHTSSTAND</div>' +
-        '<div class="s-hz" title="Alle Paare, die gerade beobachtet werden — Chancen, knappe und veraltete zusammen.">' +
-          '<span>IM VISIER</span><b id="s-hud-visier">—</b></div>' +
-        '<div class="s-hud-balken" title="Zusammensetzung: grün = erfasste Chancen, grau = knapp darunter, orange = Kurse veraltet.">' +
-          '<i id="s-hud-b1"></i><i id="s-hud-b2"></i><i id="s-hud-b3"></i></div>' +
-        '<div class="s-hz s-hz-gut" title="Über der Schwelle UND mit Geld dahinter — die Ziele, auf die man schießen kann.">' +
-          '<span>ERFASST</span><b class="s-ziel" id="s-hud-erfasst"><i></i><i></i><i></i><i></i>—</b></div>' +
-        '<div class="s-hz s-hz-rot" title="Von der Nachkontrolle als nicht handelbar aussortiert — meist ein Gegenbuch, dessen eigene Kurse zusammen unter 100 % ergeben.">' +
-          '<span>VERWORFEN</span><b id="s-hud-verworfen">—</b></div>' +
-        '<div class="s-hz" title="Waren über der Schwelle und sind wieder verschwunden, bevor jemand geschossen hat.">' +
-          '<span>DURCHGERUTSCHT</span><b id="s-hud-verpasst">—</b></div>' +
-        '<div class="s-hud-beute" title="Was die erfassten Ziele zusammen einbrächten, wenn man jedes bis zum Anschlag setzt. In Dollar; die Karte rechnet in Euro um.">' +
-          '<span>BEUTE</span><b id="s-hud-beute">—</b></div>' +
       '</div>';
   }
 
@@ -194,20 +211,21 @@
 
     /* ---------- GEFECHTSSTAND ----------
      *
-     * Nur Zahlen und Balkenbreiten setzen, NIE das Gerippe neu schreiben:
-     * innerHTML im Sekundentakt wuerde jede CSS-Animation neu starten und
-     * die Uebergaenge der Balken toeten. Dieselbe Regel wie in anzeige.js
-     * (Fehlerklasse 6). */
+     * Nur Zahlen setzen, NIE das Gerippe neu schreiben: innerHTML im
+     * Sekundentakt wuerde jede CSS-Animation neu starten (Fehlerklasse 6).
+     * Sechs schlichte Zaehlungen — der ausdrueckliche Wunsch war: wie viele
+     * Chancen, wie viele knapp daneben, wie viel im Verlauf. Kein Geldwert
+     * hier; Geld steht auf der Karte, wo die Rechnung danebensteht. */
     if (e) {
       var chancen = (e.chancen || []).length;
       var knapp = (e.knapp || []).length;
       var veraltet = (e.veraltetHoch || []).length;
       var verlauf = e.verlauf || [];
-      var imVisier = chancen + knapp + veraltet;
 
-      /* Aussortiert: von der Nachkontrolle als falsch markiert — seit dem
-       * 13.8. vor allem die Buchstimmigkeit. Verpasst: der HOECHSTSTAND lag
-       * ueber der Schwelle, denn er beantwortet "haette sich das gelohnt?". */
+      /* Abgeschossen: von der Nachkontrolle als falsch markiert — seit dem
+       * 13.8. vor allem die Buchstimmigkeit. Durchgerutscht: der
+       * HOECHSTSTAND lag ueber der Schwelle, denn er beantwortet die Frage
+       * "haette sich das gelohnt?". */
       var schwelle = (K.mindestRendite || 2);
       var verworfen = 0, verpasst = 0;
       for (var v = 0; v < verlauf.length; v++) {
@@ -216,38 +234,16 @@
         if (best !== null && best !== undefined && Number(best) >= schwelle) verpasst++;
       }
 
-      /* Beute ist GELD, nicht Rendite: die Summe der erreichbaren Gewinne. */
-      var beute = 0, beuteBekannt = true;
-      for (var c = 0; c < (e.chancen || []).length; c++) {
-        var g = e.chancen[c].max_gewinn;
-        if (g === null || g === undefined || !isFinite(Number(g))) { beuteBekannt = false; continue; }
-        beute += Number(g);
-      }
-
       function setz(id, text) {
         var el = document.getElementById(id);
-        if (el && el.lastChild) {
-          /* Der Zahlknoten ist immer der LETZTE Textknoten — vor ihm koennen
-           * die Zielmarken-<i> stehen, die bleiben muessen. */
-          if (el.lastChild.nodeType === 3) { if (el.lastChild.nodeValue !== text) el.lastChild.nodeValue = text; }
-          else el.appendChild(document.createTextNode(text));
-        } else if (el) el.textContent = text;
+        if (el && el.textContent !== text) el.textContent = text;
       }
-      setz('s-hud-visier', String(imVisier));
       setz('s-hud-erfasst', String(chancen));
+      setz('s-hud-knapp', String(knapp));
+      setz('s-hud-veraltet', String(veraltet));
+      setz('s-hud-verlauf', String(verlauf.length));
       setz('s-hud-verworfen', String(verworfen));
       setz('s-hud-verpasst', String(verpasst));
-      setz('s-hud-beute', beute.toFixed(2) + ' $' + (beuteBekannt ? '' : ' +'));
-
-      /* Der Lagebalken: Anteile von IM VISIER. Breiten in Prozent, mit
-       * CSS-Uebergang — deshalb style.width statt neu bauen. */
-      function breite(id, anteil) {
-        var el = document.getElementById(id);
-        if (el) el.style.width = (imVisier > 0 ? (100 * anteil / imVisier) : 0).toFixed(1) + '%';
-      }
-      breite('s-hud-b1', chancen);
-      breite('s-hud-b2', knapp);
-      breite('s-hud-b3', veraltet);
 
       var hudLed = document.getElementById('s-hud-led');
       if (hudLed) hudLed.className = 's-led ' + (chancen > 0 ? 's-gruen' : (laeuft ? 's-grau' : 's-rot'));

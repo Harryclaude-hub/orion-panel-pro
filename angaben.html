@@ -172,20 +172,47 @@ Betfair", nicht „in Ordnung".</p>
 <h2>Der Gefechtsstand am Sonar</h2>
 
 <table>
-<tr><th style="width:34%">Zeile</th><th>Was sie zählt</th></tr>
-<tr><td><b>IM VISIER</b></td><td>Alle Paare, die gerade beobachtet werden —
-Chancen, knappe und veraltete zusammen. Der Balken darunter zeigt die
-Zusammensetzung: grün&nbsp;=&nbsp;erfasst, grau&nbsp;=&nbsp;knapp,
-orange&nbsp;=&nbsp;Kurse veraltet.</td></tr>
-<tr><td><b>ERFASST</b></td><td>Über der Schwelle <b>und</b> mit Geld
-dahinter — die Ziele, auf die man schießen kann.</td></tr>
-<tr><td><b>VERWORFEN</b></td><td>Von der Nachkontrolle als falsch
+<tr><th style="width:34%">Zelle</th><th>Was sie zählt</th></tr>
+<tr><td><b>CHANCEN</b></td><td>Über der Schwelle <b>und</b> mit Geld
+dahinter <b>und</b> ohne Absage-Risiko — die Ziele, auf die man schießen
+kann.</td></tr>
+<tr><td><b>KNAPP DANEBEN</b></td><td>Sichtbar, aber eine Bedingung fehlt:
+zu dünn, Menge unbekannt, Gewinn zu klein oder Absage-Risiko. Nichts davon
+verschwindet — es heißt nur nicht Chance.</td></tr>
+<tr><td><b>VERALTET</b></td><td>Rendite über der Schwelle, aber die Kurse
+sind zu alt, um darauf zu schießen.</td></tr>
+<tr><td><b>IM VERLAUF</b></td><td>Beendete Ziele im Logbuch — was einmal da
+war und wie hoch es stand.</td></tr>
+<tr><td><b>ABGESCHOSSEN</b></td><td>Von der Nachkontrolle als falsch
 aussortiert, meist durch die Buchprobe.</td></tr>
 <tr><td><b>DURCHGERUTSCHT</b></td><td>Der Höchststand lag über der
-Schwelle, aber die Zeile ist wieder verschwunden, bevor jemand geschossen
+Schwelle, aber das Ziel ist wieder verschwunden, bevor jemand geschossen
 hat.</td></tr>
-<tr><td><b>BEUTE</b></td><td>Was die erfassten Ziele zusammen einbrächten,
-wenn man jedes bis zum Anschlag setzt. Geld, keine Prozente.</td></tr>
+</table>
+
+<h2>Bei Absage — der dritte Ausgang, in Geld</h2>
+
+<p>Schlechtes Wetter, Abbruch, Spieler tritt nicht an: dieser Fall steht in
+keiner Rendite, und er ist das eigentliche Risiko — bei 2&nbsp;% Gewinn je
+Wette frisst <b>ein</b> Absage-Verlust von 20&nbsp;% zwanzig gewonnene
+Wetten. Deshalb rechnet jede Karte den Absage-Ausgang mit den echten
+Einsätzen aus und zeigt ihn im Abschnitt „So setzt du":</p>
+
+<table>
+<tr><th style="width:34%">Anzeige</th><th>Bedeutung</th></tr>
+<tr><td><b>kein Verlust möglich</b> <small>(grün)</small></td>
+<td>Beide Bücher zahlen bei Absage zurück — oder die 50/50-Auflösung bringt
+sogar mehr, als eingesetzt wurde (JA billig gekauft: aus 0,37 werden 0,50).
+</td></tr>
+<tr><td><b>Bei Absage Verlust</b> <small>(rot)</small></td>
+<td>Die Rückzahlungsregeln passen nicht zusammen — etwa NEIN für 0,62
+gekauft, der Markt löst bei Absage zu 0,50 auf. Solche Zeilen zählen
+<b>nicht als Chance</b>, egal wie gut die Rendite aussieht.</td></tr>
+<tr><td><b>Regel je Markt prüfen</b> <small>(orange)</small></td>
+<td>Eine Seite hat keine belegte Regel (Kalshi wertet zum letzten Kurs,
+Betfairs Regelwerk ist ungeprüft). Vor dem Setzen die Regel <b>dieses</b>
+Marktes lesen — im schlimmsten Fall wertet eine Seite, während die andere
+zurückzahlt.</td></tr>
 </table>
 
 <h2>Die Gebühren — warum 5 % weniger sein können als 7 %</h2>

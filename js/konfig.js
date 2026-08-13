@@ -162,22 +162,35 @@
      * offene geworden.
      *
      * `absage_sicher` trennt Beleg von Vermutung. Nur Smarkets hat eine
-     * zentrale, nachlesbare Regel; bei Polymarket und Kalshi steht sie JE
+     * zentrale, nachlesbare Regel; bei Polymarkt und Kalshi steht sie JE
      * MARKT und kann von Markt zu Markt verschieden sein.
-     * Belegt am 10.8.2026, Quellen auf regelwerk.html. */
+     * Belegt am 10.8.2026, Quellen auf regelwerk.html.
+     *
+     * `absage_form` macht die Regel RECHENBAR (13.8.2026). Vier Formen:
+     *   einsatz_zurueck  annulliert, Geld zurueck          -> nie Verlust
+     *   anteil_50        Markt loest 50/50 auf,
+     *                    0,50 je Anteil                    -> haengt vom KAUFPREIS ab:
+     *                       JA fuer 0,37 gekauft  -> 0,50 zurueck = Gewinn
+     *                       NEIN fuer 0,62 gekauft -> 0,50 zurueck = Verlust
+     *   letzter_preis    wertet zum letzten Kurs           -> nicht vorhersagbar,
+     *                                                         schlimmstenfalls Einsatz weg
+     *   unbekannt        Regel nicht belegt                -> wie letzter_preis rechnen
+     * Daraus rechnet die Anzeige je Fund den ABSAGE-AUSGANG in Geld aus.
+     * Diese Zahl steht in keiner Rendite — und bei 2 % Gewinn je Wette ist
+     * ein einziger Absage-Verlust groesser als zwanzig gewonnene Wetten. */
     buecher: {
       kalshi:     { name: 'Kalshi',     kurz: 'KA', chip: 'ka', art: 'preis',
                     konto: 'kein Konto', umfang: 206,
                     absage: 'oft KEINE Rückzahlung — wertet zum zuletzt gehandelten Preis',
-                    absage_sicher: false },
+                    absage_sicher: false, absage_form: 'letzter_preis' },
       polymarket: { name: 'Polymarket', kurz: 'PM', chip: 'pm', art: 'preis',
                     konto: 'kein Konto', umfang: 390,
                     absage: 'Regel steht je Markt · 50/50 zahlt 0,50 je Anteil, NICHT den Einsatz',
-                    absage_sicher: false },
+                    absage_sicher: false, absage_form: 'anteil_50' },
       smarkets:   { name: 'Smarkets',   kurz: 'SM', chip: 'sm', art: 'quote',
                     konto: 'kein Konto', umfang: 797,
                     absage: 'annulliert, voller Einsatz zurück (36-Stunden-Regel)',
-                    absage_sicher: true },
+                    absage_sicher: true, absage_form: 'einsatz_zurueck' },
       /* ABGESCHALTET am 10.8.2026, nicht geloescht.
        *
        * Betfair ist das einzige Buch, das einen laufenden Heim-PC braucht.
@@ -201,7 +214,7 @@
       betfair:    { name: 'Betfair',    kurz: 'BF', chip: 'bf', art: 'quote',
                     konto: 'Konto + Bridge', umfang: 1189, ueberBroker: true,
                     absage: 'eigenes Regelwerk, ungeprüft — Vorsicht bei Absagen',
-                    absage_sicher: false,
+                    absage_sicher: false, absage_form: 'unbekannt',
                     /* WIEDER AKTIV seit 11.8.2026 abends, über die Bridge auf
                      * einem eigenen Laptop. Aus Supabase heraus bleibt Betfair
                      * gesperrt (403) — die Bridge umgeht das nicht, sie läuft
@@ -227,6 +240,28 @@
                     aktiv: true,
                     grund: 'Bridge auf eigenem Laptop · Kurse verzögert (DELAYED)' }
     },
+
+    /* Der GRUNDEINSATZ, auf den "So setzt du" rechnet. Ausdruecklicher
+     * Wunsch vom 13.8.2026: nicht auf 100 rechnen, sondern auf den Betrag,
+     * der wirklich gesetzt werden soll. Die AUFTEILUNG ist bei jedem Betrag
+     * dieselbe; die Karte sagt zusaetzlich, wie viel zu diesen Kursen
+     * wirklich hineinpasst. In der Anzeige-Waehrung (Euro, sobald der
+     * Kurs da ist). */
+    grundEinsatz: 1000,
+
+    /* Absagen duerfen kein Geld kosten (13.8.2026, erste Prioritaet).
+     *
+     * Eine Zeile, deren ABSAGE-AUSGANG rechnerisch im Minus liegt — etwa
+     * NEIN fuer 0,62 gekauft, der Markt loest bei Absage 50/50 auf und
+     * zahlt nur 0,50 —, zaehlt NICHT mehr als Chance, egal wie gut die
+     * Rendite aussieht. Begruendung: bei 2 % Gewinn je Wette frisst EIN
+     * Absage-Verlust von 20 % zwanzig gewonnene Wetten.
+     *
+     * Zeilen mit NICHT BERECHENBAREM Absage-Ausgang (Kalshi wertet zum
+     * letzten Kurs, Betfair-Regel unbelegt) bleiben Chancen, tragen aber
+     * eine deutliche Warnung: vor dem Setzen die Regel DIESES Marktes
+     * lesen. Wer auch das sperren will, setzt hier 'hart' statt true. */
+    absageStreng: true,
 
     /* Ab wann etwas als stehengeblieben gilt. */
     bridgeMaxAlterS: 300,

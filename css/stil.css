@@ -768,105 +768,144 @@ h2 {
  * wirken, bekommen sie etwas Luft nach unten. */
 .fund .aktionen { margin: 10px 0 4px; }
 
-/* ---------- Gefechtsstand im Sonar (13.8.2026, zweite Fassung) ----------
+/* ---------- Gefechtsstand im Sonar (13.8.2026, dritte Fassung) ----------
  *
- * Rechte Spalte, GLEICHE HÖHE wie der Schirm (190 px) — das Sonar wächst
- * nicht mehr in die Länge. Die Sätze zu jeder Zahl stecken im title und
- * ausführlich auf angaben.html.
+ * DIREKT NEBEN DEM SCHIRM und in dessen Höhe (190 px): das Sonar behält
+ * seine alte Länge, und die Lagetafel füllt die Breite, statt rechts zu
+ * kleben. Sechs dichte Zellen ohne Lücken — jede mit großer Zahl und
+ * Stempel-Beschriftung, Erklärung im title und auf angaben.html.
  *
- * Alles Bewegte läuft auf transform/opacity (Grafikkarte), wie beim Schirm:
- * kein Canvas, kein Zeichenloop. Nur die Balkenbreiten ändern sich per
- * style.width, einmal je Sekunde, mit CSS-Übergang.
+ * Alles Bewegte läuft auf transform/opacity (Grafikkarte), wie beim
+ * Schirm: kein Canvas, kein Zeichenloop.
  */
 .puls .s-hud {
-  position: relative; flex: 0 0 236px; height: 190px;
-  padding: 10px 12px; overflow: hidden;
+  position: relative; flex: 1 1 auto; min-width: 0; height: 190px;
+  padding: 8px 12px 10px; overflow: hidden;
   border: 1px solid rgba(53,255,158,.28); border-radius: 10px;
   background:
-    linear-gradient(180deg, rgba(53,255,158,.07), transparent 40%),
-    radial-gradient(120% 90% at 85% 10%, rgba(53,255,158,.10), transparent 55%),
+    linear-gradient(180deg, rgba(53,255,158,.06), transparent 45%),
     #04120b;
   font-size: 11px;
 }
-/* Zielring: dreht langsam hinter den Zahlen, wie ein Periskop-Fadenkreuz. */
+.puls .s-hud-kopf {
+  display: flex; align-items: center; gap: 6px;
+  font-size: 10px; letter-spacing: 2.4px; opacity: .8; margin-bottom: 7px;
+}
+.puls .s-hud-kopf::after {
+  content: ""; flex: 1; height: 1px;
+  background: repeating-linear-gradient(90deg, rgba(53,255,158,.35) 0 6px, transparent 6px 12px);
+}
+.puls .s-hud-hilfe {
+  color: var(--sonar); text-decoration: none; opacity: .6;
+  border: 1px solid rgba(53,255,158,.4); border-radius: 50%;
+  width: 14px; height: 14px; line-height: 12px; text-align: center;
+  font-size: 10px; flex: 0 0 auto;
+}
+.puls .s-hud-hilfe:hover { opacity: 1; }
+
+/* Die Lagetafel: 3×2 Zellen, füllen die ganze Breite. Keine Lücken. */
+.puls .s-hud-gitter {
+  position: relative; z-index: 1;
+  display: grid; grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+}
+.puls .s-hz {
+  position: relative; padding: 7px 10px 6px;
+  background: rgba(53,255,158,.05);
+  border: 1px solid rgba(53,255,158,.22);
+  display: flex; flex-direction: column; gap: 2px; min-height: 58px;
+  justify-content: center;
+}
+/* Zielmarken-Ecken an jeder Zelle — Stempel-Optik einer Lagetafel. */
+.puls .s-hz::before, .puls .s-hz::after {
+  content: ""; position: absolute; width: 7px; height: 7px;
+  border: 1px solid rgba(53,255,158,.75);
+}
+.puls .s-hz::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
+.puls .s-hz::after  { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
+.puls .s-hz b {
+  font-size: 22px; font-weight: 700; line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+.puls .s-hz span {
+  font-size: 8.5px; letter-spacing: 1.6px; opacity: .6; white-space: nowrap;
+  overflow: hidden; text-overflow: ellipsis;
+}
+.puls .s-hz-gut  { border-color: rgba(53,255,158,.5); background: rgba(53,255,158,.10); }
+.puls .s-hz-gut b  { color: #8dffc4; text-shadow: 0 0 10px rgba(53,255,158,.6);
+                     animation: s-hz-glimmen 2.4s ease-in-out infinite; }
+.puls .s-hz-rot b  { color: #ff8d8d; text-shadow: 0 0 9px rgba(239,68,68,.45); }
+.puls .s-hz-warn b { color: #ffb054; }
+@keyframes s-hz-glimmen { 50% { opacity: .72; } }
+
+/* Zielring hinter der Tafel, dreht wie ein Periskop-Fadenkreuz. */
 .puls .s-hud-ring {
-  position: absolute; right: -34px; top: -34px; width: 120px; height: 120px;
-  border: 1px dashed rgba(53,255,158,.3); border-radius: 50%;
-  animation: s-hud-drehen 24s linear infinite; pointer-events: none;
+  position: absolute; right: -30px; top: -30px; width: 110px; height: 110px;
+  border: 1px dashed rgba(53,255,158,.25); border-radius: 50%;
+  animation: s-hud-drehen 26s linear infinite; pointer-events: none;
 }
 .puls .s-hud-ring::before {
-  content: ""; position: absolute; inset: 18px;
-  border: 1px solid rgba(53,255,158,.18); border-radius: 50%;
+  content: ""; position: absolute; inset: 16px;
+  border: 1px solid rgba(53,255,158,.15); border-radius: 50%;
 }
 @keyframes s-hud-drehen { to { transform: rotate(360deg); } }
-/* Abtastbalken: eine Lichtzeile wandert von oben nach unten durch. */
+/* Abtastzeile, wandert alle 5 s von oben nach unten durch. */
 .puls .s-hud-scan {
   position: absolute; left: 0; right: 0; top: -8px; height: 8px;
-  background: linear-gradient(180deg, transparent, rgba(53,255,158,.16), transparent);
+  background: linear-gradient(180deg, transparent, rgba(53,255,158,.14), transparent);
   animation: s-hud-abtasten 5s linear infinite; pointer-events: none;
 }
 @keyframes s-hud-abtasten { to { transform: translateY(206px); } }
-/* Der Jäger: zieht alle 16 Sekunden leise durchs Bild. Zierrat, aber
- * gewollter — und er kostet nur ein transform. */
+/* Zwei Jäger, versetzt: der erste zieht hoch durchs Bild, der zweite tiefer
+ * und in die andere Richtung. Nur transform und opacity. */
 .puls .s-hud-jet {
-  position: absolute; left: -70px; top: 46px; width: 56px; height: 18px;
+  position: absolute; left: -70px; top: 26px; width: 52px; height: 17px;
   color: var(--sonar); opacity: 0; pointer-events: none;
-  animation: s-hud-flug 16s linear infinite;
+  animation: s-hud-flug 14s linear infinite;
+}
+.puls .s-hud-jet2 {
+  top: 120px; animation: s-hud-flug2 23s linear infinite;
+  animation-delay: 6s; width: 40px;
 }
 @keyframes s-hud-flug {
   0%   { transform: translateX(0);     opacity: 0; }
-  6%   { opacity: .22; }
-  50%  { transform: translateX(330px); opacity: .22; }
-  56%, 100% { transform: translateX(340px); opacity: 0; }
+  5%   { opacity: .20; }
+  55%  { transform: translateX(560px); opacity: .20; }
+  60%, 100% { transform: translateX(580px); opacity: 0; }
 }
-.puls .s-hud-kopf {
-  display: flex; align-items: center; gap: 6px;
-  font-size: 10px; letter-spacing: 2.2px; opacity: .75; margin-bottom: 6px;
+@keyframes s-hud-flug2 {
+  0%   { transform: translateX(620px) scaleX(-1); opacity: 0; }
+  5%   { opacity: .14; }
+  55%  { transform: translateX(0) scaleX(-1);     opacity: .14; }
+  60%, 100% { transform: translateX(-30px) scaleX(-1); opacity: 0; }
 }
-.puls .s-hz {
-  display: flex; justify-content: space-between; align-items: baseline;
-  padding: 2px 0; position: relative; z-index: 1;
+/* Das U-Boot: fährt unten langsam hin und her und pingt dabei. */
+.puls .s-hud-boot {
+  position: absolute; left: 12px; bottom: 2px; width: 80px; height: 22px;
+  color: var(--sonar); opacity: .16; pointer-events: none;
+  animation: s-boot-fahrt 34s ease-in-out infinite alternate;
 }
-.puls .s-hz span { letter-spacing: 1.3px; opacity: .65; font-size: 10px; }
-.puls .s-hz b {
-  font-size: 16px; font-weight: 700; font-variant-numeric: tabular-nums;
-  position: relative; padding: 0 6px;
+@keyframes s-boot-fahrt { to { transform: translateX(220px); } }
+.puls .s-hud-ping {
+  position: absolute; left: 34px; top: -6px; width: 12px; height: 12px;
+  border: 1px solid var(--sonar); border-radius: 50%;
+  animation: s-boot-ping 4s ease-out infinite;
 }
-.puls .s-hz-gut b { color: #8dffc4; text-shadow: 0 0 9px rgba(53,255,158,.55); }
-.puls .s-hz-rot b { color: #ff8d8d; text-shadow: 0 0 9px rgba(239,68,68,.45); }
-/* Zielmarken: vier pulsierende Eckwinkel um die erfassten Ziele. */
-.puls .s-ziel i {
-  position: absolute; width: 6px; height: 6px;
-  border: 1px solid rgba(53,255,158,.85);
-  animation: s-ziel-puls 1.6s ease-in-out infinite;
+@keyframes s-boot-ping {
+  0%   { transform: scale(.3); opacity: .9; }
+  70%  { transform: scale(2.6); opacity: 0; }
+  100% { opacity: 0; }
 }
-.puls .s-ziel i:nth-child(1) { left: -3px; top: -2px;    border-right: 0; border-bottom: 0; }
-.puls .s-ziel i:nth-child(2) { right: -3px; top: -2px;   border-left: 0;  border-bottom: 0; }
-.puls .s-ziel i:nth-child(3) { left: -3px; bottom: -2px; border-right: 0; border-top: 0; }
-.puls .s-ziel i:nth-child(4) { right: -3px; bottom: -2px; border-left: 0; border-top: 0; }
-@keyframes s-ziel-puls { 50% { transform: scale(1.35); opacity: .5; } }
-/* Lagebalken: Zusammensetzung von IM VISIER. Breiten kommen aus JS. */
-.puls .s-hud-balken {
-  display: flex; height: 5px; margin: 2px 0 5px;
-  background: rgba(53,255,158,.08); border-radius: 3px; overflow: hidden;
+/* Die Statustafel rückt nach rechts und wird schmal — die Lage steht links. */
+.puls .s-tafel { flex: 0 0 205px; }
+@media (max-width: 900px) {
+  .puls .s-hud { flex: 1 1 100%; height: auto; }
+  .puls .s-tafel { flex: 1 1 auto; }
 }
-.puls .s-hud-balken i { display: block; height: 100%; width: 0; transition: width .9s ease; }
-.puls .s-hud-balken i:nth-child(1) { background: #35ff9e; box-shadow: 0 0 8px rgba(53,255,158,.8); }
-.puls .s-hud-balken i:nth-child(2) { background: rgba(160,200,180,.45); }
-.puls .s-hud-balken i:nth-child(3) { background: #ffb054; }
-.puls .s-hud-beute {
-  display: flex; justify-content: space-between; align-items: baseline;
-  margin-top: 5px; padding: 5px 8px; position: relative; z-index: 1;
-  border: 1px solid rgba(53,255,158,.3); border-radius: 7px;
-  background: rgba(53,255,158,.06);
-}
-.puls .s-hud-beute span { letter-spacing: 1.6px; font-size: 10px; opacity: .7; }
-.puls .s-hud-beute b {
-  font-size: 17px; color: #8dffc4;
-  text-shadow: 0 0 10px rgba(53,255,158,.6);
-  animation: s-beute-glimmen 2.6s ease-in-out infinite;
-}
-@keyframes s-beute-glimmen { 50% { opacity: .75; } }
-@media (max-width: 860px) {
-  .puls .s-hud { flex: 1 1 100%; height: auto; min-height: 170px; }
-}
+
+/* ---------- "Bei Absage" in So-setzt-du (13.8.2026) ---------- */
+.fund .setz-absage { font-size: 13.5px; padding: 8px 12px; border-radius: 10px; }
+.fund .setz-absage.gut  { border: 1px solid #3F5238; background: rgba(96,160,96,.08); color: var(--gruen); }
+.fund .setz-absage.rot  { border: 1px solid #5C3E3E; background: rgba(200,80,80,.10); color: var(--rot); }
+.fund .setz-absage.acht { border: 1px solid #5A4634; background: rgba(200,140,60,.08); color: var(--orange); }
+.fund .setz-absage a { color: inherit; }

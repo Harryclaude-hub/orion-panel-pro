@@ -409,23 +409,34 @@
         live.forEach(function (f) { f.echter_gewinn = echterGewinn(f); });
         verlauf.forEach(function (f) { f.echter_gewinn = echterGewinn(f); });
 
+        /* Der Absage-Ausgang, gerechnet in anzeige.js (EINE Formel, keine
+         * zweite Fassung). Er entscheidet seit dem 13.8. mit, was eine
+         * Chance ist: was bei Absage rechnerisch Geld kostet, zaehlt nicht. */
+        var A = welt.Anzeige && welt.Anzeige.absageBilanz;
+        if (A) {
+          live.forEach(function (f) { f.absage = A(f); });
+          verlauf.forEach(function (f) { f.absage = A(f); });
+        }
+
         /* EINE CHANCE IST EINE ZEILE, DIE GELD BRINGT.
          *
-         * Drei Bedingungen, alle drei noetig:
+         * Vier Bedingungen, alle noetig:
          *   1. Rendite ueber der Schwelle       — das Verhaeltnis stimmt
          *   2. Menge BEKANNT                    — wir wissen, was hineinpasst
          *   3. Gewinn in Geld ueber der Schwelle — es lohnt sich wirklich
+         *   4. Absage kostet nichts             — der dritte Ausgang ist gedeckt
          *
-         * Bedingung 2 und 3 sind am 10.8.2026 dazugekommen. Vorher reichte
-         * die Rendite, und dann hiess eine Zeile mit +1,03 % und drei Cent
-         * Gewinn genauso "Chance" wie eine mit 40 Euro. Nichts davon wird
-         * geloescht — was hier durchfaellt, steht unter "Knappste Paare"
-         * mit Begruendung. */
+         * Bedingung 2 und 3 sind am 10.8.2026 dazugekommen, Bedingung 4 am
+         * 13.8. (KONFIG.absageStreng): bei 2 % Gewinn je Wette frisst EIN
+         * Absage-Verlust von 20 % zwanzig gewonnene Wetten. Nichts davon
+         * wird geloescht — was hier durchfaellt, steht unter "Knappste
+         * Paare" mit Begruendung. */
         var chancen = live.filter(function (f) {
           if (f.veraltet || f.zu_duenn) return false;
           if (f.rendite < K.mindestRendite) return false;
           if (K.nurMitBekannterMenge && f.echter_gewinn === null) return false;
           if (f.echter_gewinn !== null && f.echter_gewinn < K.mindestGewinn) return false;
+          if (K.absageStreng && f.absage && f.absage.art === 'verlust') return false;
           return true;
         });
         var veraltetHoch = live.filter(function (f) { return f.rendite >= K.mindestRendite && f.veraltet; });
@@ -444,6 +455,7 @@
             if (f.zu_duenn) return true;
             if (f.echter_gewinn === null) return true;
             if (f.echter_gewinn < K.mindestGewinn) return true;
+            if (K.absageStreng && f.absage && f.absage.art === 'verlust') return true;
             return false;
           }
           return f.rendite >= K.rauschGrenze;

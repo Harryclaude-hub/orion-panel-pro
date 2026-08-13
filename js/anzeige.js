@@ -766,6 +766,51 @@
    *   4. Was heisst das in Geld
    *   5. Feinheiten, zugeklappt
    */
+  /* ---------- WAS PASSIERT BEI ABSAGE? IN GELD. ---------- (13.8.2026)
+   *
+   * Schlechtes Wetter, Abbruch, Spieler tritt nicht an: der dritte Fall,
+   * der in keiner Rendite steht. Bisher stand auf der Karte nur, WAS jedes
+   * Buch dann tut. Jetzt wird es AUSGERECHNET, mit den echten Einsaetzen
+   * dieser Zeile:
+   *
+   *   einsatz_zurueck  -> voller Einsatz zurueck
+   *   anteil_50        -> 0,50 je Anteil; Anteile = Einsatz / Kaufpreis.
+   *                       JA fuer 0,37: aus 37 werden 50  -> Gewinn.
+   *                       NEIN fuer 0,62: aus 62 werden 50 -> Verlust.
+   *   letzter_preis / unbekannt -> im SCHLIMMSTEN Fall 0. Nicht, weil das
+   *                       wahrscheinlich ist, sondern weil niemand das
+   *                       Gegenteil belegen kann. Drei Zustaende, nie zwei.
+   *
+   * Ergebnis je Zeile: 'sicher' (Absage kostet nichts oder bringt sogar),
+   * 'verlust' (Absage kostet rechnerisch Geld — KEINE Chance mehr, siehe
+   * KONFIG.absageStreng) oder 'unbekannt' (eine Seite nicht berechenbar —
+   * Chance mit Pflichthinweis). Warum das die erste Prioritaet ist: bei
+   * 2 % Gewinn je Wette frisst EIN Absage-Verlust von 20 % zwanzig
+   * gewonnene Wetten. */
+  function absageBilanz(f) {
+    var e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2);
+    if (!isFinite(e1) || !isFinite(e2) || !(e1 + e2 > 0)) return null;
+
+    function seite(info, einsatz, kurs) {
+      var form = info.absage_form || 'unbekannt';
+      if (form === 'einsatz_zurueck') return { v: einsatz, bekannt: true, belegt: info.absage_sicher === true };
+      if (form === 'anteil_50') {
+        var p = Number(kurs);
+        if (!(p > 0) || p >= 1) return { v: 0, bekannt: false, belegt: false };
+        /* Anteile = Einsatz / Preis, jeder zahlt 0,50. Die Regel steht JE
+         * MARKT — gerechnet wird sie, belegt ist sie nicht. */
+        return { v: 0.5 * einsatz / p, bekannt: true, belegt: false };
+      }
+      return { v: 0, bekannt: false, belegt: false };
+    }
+
+    var s1 = seite(buch1(f), e1, f.pm_preis);
+    var s2 = seite(buch2(f), e2, f.bf_quote);
+    var delta = s1.v + s2.v - (e1 + e2);      // je 100 Gesamteinsatz
+    var art = (s1.bekannt && s2.bekannt) ? (delta >= -1e-9 ? 'sicher' : 'verlust') : 'unbekannt';
+    return { delta: delta, art: art, belegt: s1.belegt && s2.belegt };
+  }
+
   /* ---------- SO SETZT DU ---------- (Wunsch vom 13.8.2026)
    *
    * "Ich verstehe nicht irgendwelche mysteriösen Zahlen. Sag einfach: das
@@ -809,41 +854,86 @@
     var e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2);
     var aus = Number(f.auszahlung);
     if (!isFinite(e1) || !isFinite(e2) || !isFinite(aus)) return '';
-    var gesamt = e1 + e2;
-    var gewinn = aus - gesamt;
 
-    /* Der Betrag, den man WIRKLICH setzen kann, steht in max_einsatz. 100 als
-     * Rechengrundlage ist nur die Skala — wer 100 setzen will, wo nur 40 im
-     * Buch liegen, bekommt die 100 nicht zu diesem Kurs. */
-    var deckel = (f.max_einsatz === null || f.max_einsatz === undefined) ? null : Number(f.max_einsatz);
+    /* GERECHNET WIRD AUF DEN GRUNDEINSATZ (Vorgabe: 1000 €), nicht auf
+     * abstrakte 100. Die AUFTEILUNG ist bei jedem Betrag dieselbe — nur so
+     * zahlen beide Ausgaenge denselben Betrag zurueck. einsatz_1/_2 kommen
+     * je 100 aus der Datenbank, skala rechnet sie hoch. */
+    var grund = Number((welt.KONFIG || {}).grundEinsatz) || 1000;
+    var skala = grund / 100;
+    function betrag(x) {
+      var n = x * skala;
+      return (n >= 1000 ? Math.round(n).toLocaleString('de-AT') : n.toFixed(2)) + ' ' + einheit();
+    }
+    var gewinn = (aus - 100) * skala;
+
+    /* Wie viel WIRKLICH hineinpasst, steht in max_einsatz (USD, wird in €
+     * umgerechnet). Wer 1000 setzen will, wo 140 im Buch liegen, bekommt
+     * den Rest nur zu schlechteren Kursen. */
+    var deckel = (f.max_einsatz === null || f.max_einsatz === undefined) ? null : inEur(Number(f.max_einsatz));
+    var deckelText;
+    if (deckel === null) {
+      deckelText = '<div class="setz-deckel acht">Wie viel wirklich hineinpasst, ist <b>unbekannt</b> — ' +
+        'eines der beiden Bücher nennt keine Menge. Unbekannt heißt nicht unbegrenzt.</div>';
+    } else if (deckel < grund) {
+      deckelText = '<div class="setz-deckel acht"><b>Achtung:</b> zu diesen Kursen passen nur ' +
+        '<b>' + geld(f.max_einsatz) + '</b> hinein (dann ' +
+        (f.max_gewinn === null || f.max_gewinn === undefined ? 'Gewinn unbekannt' : '<b>+' + geld(f.max_gewinn) + '</b> Gewinn') +
+        '). Die Aufteilung ' + (100 * e1 / (e1 + e2)).toFixed(1) + ' / ' + (100 * e2 / (e1 + e2)).toFixed(1) +
+        ' bleibt dieselbe — nur der Betrag schrumpft. Mehr geht nur zu schlechteren Kursen.</div>';
+    } else {
+      deckelText = '<div class="setz-deckel">Zu diesen Kursen passen <b>' + geld(f.max_einsatz) +
+        '</b> hinein — die ' + betrag(100) + ' gehen sich also aus.</div>';
+    }
+
+    /* Der Absage-Ausgang, in Geld. Die Zeile, wegen der es diesen ganzen
+     * Abschnitt gibt: sie beantwortet "was, wenn WEDER noch eintritt?". */
+    var a = absageBilanz(f);
+    var absageText = '';
+    if (a) {
+      var d = a.delta * skala;
+      if (a.art === 'sicher') {
+        absageText = '<div class="setz-absage gut">Wird abgesagt oder abgebrochen: ' +
+          (d > 0.005 ? 'du bekommst sogar <b>+' + betrag(a.delta) + '</b> heraus' : 'du bekommst dein Geld zurück') +
+          ' — <b>kein Verlust möglich</b>' +
+          (a.belegt ? '.' : ' <i>(gerechnet nach der üblichen Regel; sie steht je Markt — einmal nachlesen)</i>.') +
+        '</div>';
+      } else if (a.art === 'verlust') {
+        var frisst = Math.max(1, Math.round(-d / Math.max(gewinn, 0.01)));
+        absageText = '<div class="setz-absage rot"><b>Wird abgesagt, verlierst du ' + betrag(-a.delta) + '.</b> ' +
+          'Deshalb zählt diese Zeile NICHT als Chance: ein einziger solcher Verlust frisst ' +
+          (frisst === 1 ? 'den ganzen Gewinn einer gewonnenen Wette' : frisst + ' gewonnene Wetten') +
+          '. Nicht setzen.</div>';
+      } else {
+        absageText = '<div class="setz-absage acht"><b>Vor dem Setzen die Absage-Regel dieses Marktes lesen.</b> ' +
+          'Eine Seite (' + txt((buch1(f).absage_form === 'einsatz_zurueck' ? buch2(f) : buch1(f)).name) + ') hat keine belegte ' +
+          'Rückzahlungsregel — im schlimmsten Fall wertet sie die Wette, während die andere Seite zurückzahlt. ' +
+          'Dann wäre bis zu <b>' + betrag(-a.delta) + '</b> weg. ' +
+          '<a href="regelwerk.html" target="_blank" rel="noopener">Regelwerk der Bücher</a></div>';
+      }
+    }
 
     return '<div class="setz">' +
       '<div class="setz-schritt">' +
         '<span class="setz-nr">1</span>' +
         '<span class="setz-buch ' + txt(b1.chip) + '">' + txt(b1.name) + '</span>' +
-        '<span class="setz-geld">' + geld(e1) + '</span>' +
+        '<span class="setz-geld">' + betrag(e1) + '</span>' +
         '<span class="setz-text">' + tuWas(b1, f.pm_seite, f.mannschaft) + '</span>' +
       '</div>' +
       '<div class="setz-schritt">' +
         '<span class="setz-nr">2</span>' +
         '<span class="setz-buch ' + txt(b2.chip) + '">' + txt(b2.name) + '</span>' +
-        '<span class="setz-geld">' + geld(e2) + '</span>' +
+        '<span class="setz-geld">' + betrag(e2) + '</span>' +
         '<span class="setz-text">' + tuWas(b2, f.bf_seite, f.bf_name) + '</span>' +
       '</div>' +
       '<div class="setz-summe">' +
-        'Zusammen <b>' + geld(gesamt) + '</b> Einsatz. ' +
-        'Egal wie es ausgeht, zurück kommen <b>' + geld(aus) + '</b> — ' +
-        'also <b class="' + (gewinn > 0 ? 'gut' : 'rot') + '">' +
-        (gewinn >= 0 ? '+' : '') + geld(gewinn) + '</b> sicher.' +
+        'Zusammen <b>' + betrag(100) + '</b> Einsatz. Es gibt genau <b>zwei</b> Ausgänge, ' +
+        'und beide zahlen dasselbe: <b>' + betrag(aus) + '</b> zurück — also ' +
+        '<b class="' + (gewinn > 0 ? 'gut' : 'rot') + '">' +
+        (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' ' + einheit() + '</b> sicher.' +
       '</div>' +
-      (deckel === null
-        ? '<div class="setz-deckel acht">Wie viel wirklich hineinpasst, ist unbekannt — ' +
-          'eines der beiden Bücher nennt keine Menge. Unbekannt heißt nicht unbegrenzt.</div>'
-        : '<div class="setz-deckel">Das Beispiel rechnet mit ' + geld(gesamt) + '. ' +
-          'Zu diesen Kursen liegen im Buch <b>' + geld(deckel) + '</b> bereit' +
-          (f.max_gewinn === null || f.max_gewinn === undefined ? '' :
-            ', das wären dann <b>' + geld(f.max_gewinn) + '</b> Gewinn') +
-          '. Mehr geht nur zu schlechteren Kursen.</div>') +
+      deckelText +
+      absageText +
     '</div>';
   }
 
@@ -925,6 +1015,16 @@
       w.push('<span class="chip rot" title="Die Summe der Gegenwahrscheinlichkeiten aller Ausgaenge dieses Marktes liegt unter 1,00. Dann koennte man bei diesem einen Buch alle Ausgaenge gleichzeitig backen und sicher gewinnen - das gibt es nicht. Also ist der Schnappschuss dieses Marktes in sich unstimmig, meist weil ein Kurs stehengeblieben ist. Gemessen am 13.8.: solche Zeilen zeigen fuenfmal so oft ueber 2 Prozent wie stimmige.">' +
         'Gegenbuch unstimmig (' + Number(f.buch_summe).toFixed(4) + ')</span>');
     }
+    /* Der Absage-Ausgang als Warnung, wenn er Geld kostet oder offen ist.
+     * Die Rechnung dazu steht ausfuehrlich in "So setzt du". */
+    var ab = f.absage;
+    if (ab && ab.art === 'verlust') {
+      w.push('<span class="chip rot" title="Wird die Partie abgesagt oder abgebrochen, kostet diese Zeile rechnerisch Geld - die Rueckzahlungsregeln der beiden Buecher passen nicht zusammen. Details im Abschnitt So setzt du.">' +
+        'Bei Absage VERLUST — keine Chance</span>');
+    } else if (ab && ab.art === 'unbekannt') {
+      w.push('<span class="chip acht" title="Eine Seite hat keine belegte Rueckzahlungsregel. Vor dem Setzen die Regel dieses Marktes lesen - Details im Abschnitt So setzt du.">' +
+        'Absage-Regel je Markt prüfen</span>');
+    }
     if (!w.length) return '';
     return '<div class="warnzeile">' + w.join(' ') + '</div>';
   }
@@ -942,10 +1042,14 @@
 
   function karte(f, imVerlauf) {
     /* Eine Chance ist eine Zeile, die GELD bringt — nicht eine mit guter
-     * Prozentzahl. Dieselben drei Bedingungen wie in daten.js. */
+     * Prozentzahl. Dieselben Bedingungen wie in daten.js, seit dem 13.8.
+     * einschliesslich der Absage-Probe: was bei Absage Geld kostet, ist
+     * keine Chance (KONFIG.absageStreng). */
     var K0 = welt.KONFIG;
+    if (f.absage === undefined) f.absage = absageBilanz(f);
     var chance = f.rendite >= K0.mindestRendite && !f.zu_duenn &&
-                 f.echter_gewinn !== null && f.echter_gewinn >= K0.mindestGewinn;
+                 f.echter_gewinn !== null && f.echter_gewinn >= K0.mindestGewinn &&
+                 !(K0.absageStreng && f.absage && f.absage.art === 'verlust');
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
         '<div class="kopfzeile">' +
@@ -1506,7 +1610,10 @@
    * echte Zeilen aus der Datenbank zeichnen kann, ohne die ganze Seite und
    * ohne die Sperre. Eine Karte, die man nur im laufenden Betrieb ansehen
    * kann, wird nicht angesehen. */
+  /* absageBilanz mit herausgereicht: daten.js braucht dieselbe Rechnung
+   * fuer die Chancen-Zaehlung — zwei Fassungen derselben Formel waeren die
+   * Drift-Falle, die dieses Projekt schon kennt. */
   welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt,
-                   setzeWennAnders: setzeWennAnders, karte: karte };
+                   setzeWennAnders: setzeWennAnders, karte: karte, absageBilanz: absageBilanz };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
