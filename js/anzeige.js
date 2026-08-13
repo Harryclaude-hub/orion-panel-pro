@@ -1167,9 +1167,13 @@
     return '<span class="punkt ' + zustand + '"></span>';
   }
 
-  function anbieterZeile(name, zustand, aktualitaet, umfang, funde, tempo, hinweis) {
+  /* buchKlasse: das Kennzeichen des Buchs (pm/ka/sm/bf) oder 'supabase' —
+   * der Name traegt damit seine Wiedererkennungsfarbe aus der
+   * Design-Schicht. Reines Aussehen, keine Logik. */
+  function anbieterZeile(name, zustand, aktualitaet, umfang, funde, tempo, hinweis, buchKlasse) {
     return '<tr>' +
-      '<td class="an-name">' + ampel(zustand) + ' ' + txt(name) + '</td>' +
+      '<td class="an-name"><span class="an-buch ' + txt(buchKlasse || '') + '">' +
+        ampel(zustand) + ' ' + txt(name) + '</span></td>' +
       '<td class="an-zahl">' + aktualitaet + '</td>' +
       '<td class="an-text">' + umfang + '</td>' +
       '<td class="an-zahl">' + funde + '</td>' +
@@ -1315,10 +1319,12 @@
     reihen.sort(function (a, b) { return a.groesse - b.groesse; });
 
     reihen.forEach(function (r, i) {
+      var buchInfo = (welt.KONFIG.buecher || {})[r.buch] || {};
       zeilen += anbieterZeile(
         (i === 0 ? '① ' : '') + r.name + ' · ' + r.groesse,
         r.zustand, r.alter, r.umfang, r.funde, r.tempo,
-        (i === 0 ? '<b>kleinstes Buch — die Engstelle</b> · ' : '') + (r.hinweis || ''));
+        (i === 0 ? '<b>kleinstes Buch — die Engstelle</b> · ' : '') + (r.hinweis || ''),
+        buchInfo.chip);
     });
 
     /* Supabase selbst: die Antwortzeit dieser einen Abfrage ist das
@@ -1330,7 +1336,8 @@
         (u.takte || []).length + ' Takten aktiv',
       verlauf('polymarket'),
       'Antwortzeit gerade eben',
-      'verbunden');
+      'verbunden',
+      'supabase');
 
     var w = u.wache || {};
     var takteAus = (u.takte || []).filter(function (t) { return !t.aktiv; });

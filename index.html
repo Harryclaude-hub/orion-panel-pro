@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orion Panel Pro</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="css/stil.css?v=20">
+<link rel="stylesheet" href="css/stil.css?v=21">
 </head>
 <body>
 
@@ -24,8 +24,11 @@
     <h1>Orion Panel Pro</h1>
     <span class="chip" id="stand">bereit</span>
     <span class="luecke"></span>
-    <button id="neuladen">Jetzt ablesen</button>
-    <button id="filter-knopf" class="knopf">Filter</button>
+    <button id="neuladen" class="haupt">⟳ Jetzt ablesen</button>
+    <button id="filter-knopf" class="knopf">⛉ Filter</button>
+    <!-- Meldungen: Browser-Benachrichtigung, wenn eine neue Chance erfasst
+         wird. Der Knopf schaltet an/aus; die Beschriftung setzt js/melder.js. -->
+    <button id="melder-knopf" class="knopf" title="Benachrichtigung, sobald eine neue Chance erfasst wird — nur solange die Seite offen ist.">🔕 Meldungen</button>
     <a class="knopf" href="angaben.html">Was die Angaben bedeuten</a>
     <a class="knopf" href="logik.html">Wie gesucht wird</a>
     <a class="knopf" href="regelwerk.html" title="Was passiert bei Absage, Abbruch, Spielerausfall — je Buch verschieden">Regelwerk</a>
@@ -56,32 +59,30 @@
   <div id="verlauf"></div>
 
   <p class="leise" style="margin-top:28px">
-    Gesucht wird auf dem Server: <code>orion-lauf</code> läuft jede Minute über
-    <code>pg_cron</code> und legt jeden Fund in <code>orion_funde</code> ab, auch wenn
-    kein Browser offen ist. Diese Seite liest nur ab, alle zwei Sekunden.
-    Was nicht mehr gilt, wandert in den Verlauf statt zu verschwinden.
-    Gesucht wird zwischen <b>drei Börsen</b> — Polymarket, Kalshi und Smarkets.
-    Alle drei sind ohne Konto, ohne Schlüssel und ohne eingeschalteten PC
-    direkt aus Supabase erreichbar. Eine Arbitrage besteht immer aus
-    <b>genau zwei</b> Büchern; gibt es zur selben Frage mehrere brauchbare
-    Paare, wird daraus je eine eigene Karte.
-    <b>Betfair ist seit dem 10.08.2026 abgeschaltet</b>: es antwortet aus
-    Rechenzentren mit 403, und der einzig offene Weg über den Kursstrom
-    liefert Preise ohne Mannschaftsnamen — damit ist keine Zuordnung möglich.
-    Smarkets-Kommission ist mit 2 % angesetzt, dem dokumentierten
-    Standardtarif; gemessen ist der Satz nicht.
+    Gesucht wird auf dem Server: <code>orion-lauf</code> läuft für Fußball alle
+    <b>20 Sekunden</b> über <code>pg_cron</code> und legt jeden Fund in
+    <code>orion_funde</code> ab, auch wenn kein Browser offen ist. Diese Seite
+    liest nur ab, alle zwei Sekunden. Was nicht mehr gilt, wandert in den
+    Verlauf statt zu verschwinden. Gesucht wird zwischen <b>vier Börsen</b> —
+    Polymarket, Kalshi, Smarkets und Betfair (über die Bridge auf einem
+    eigenen Rechner, gesetzt wird über Orbit). Eine Arbitrage besteht immer
+    aus <b>genau zwei</b> Büchern und <b>genau zwei</b> Ausgängen derselben
+    Frage; jede Karte erklärt, was bei Absage passiert, und rechnet den
+    Einsatz auf 1.000&nbsp;€ vor. Verglichen wird jedes Buch mit jedem —
+    auch ohne Polymarket-Anker (seit 13.08.2026, Durchgang&nbsp;3).
   </p>
 
 </div>
 
-<script src="js/konfig.js?v=20"></script>
-<script src="js/rechnung.js?v=20"></script>
-<script src="js/zuordnung.js?v=20"></script>
-<script src="js/daten.js?v=20"></script>
-<script src="js/filter.js?v=20"></script>
-<script src="js/puls.js?v=20"></script>
-<script src="js/anzeige.js?v=20"></script>
-<script src="js/sperre.js?v=20"></script>
-<script src="js/app.js?v=20"></script>
+<script src="js/konfig.js?v=21"></script>
+<script src="js/rechnung.js?v=21"></script>
+<script src="js/zuordnung.js?v=21"></script>
+<script src="js/daten.js?v=21"></script>
+<script src="js/filter.js?v=21"></script>
+<script src="js/puls.js?v=21"></script>
+<script src="js/melder.js?v=21"></script>
+<script src="js/anzeige.js?v=21"></script>
+<script src="js/sperre.js?v=21"></script>
+<script src="js/app.js?v=21"></script>
 </body>
 </html>

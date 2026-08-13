@@ -1,27 +1,65 @@
-/* Orion Panel — Stil
- * Vorgaben des Auftraggebers (Uebergabe 7): rund statt eckig, mittel-dunkles
- * Graphit, kein Schwarz, kein Weiss, keine Neonfarben, grosse Knoepfe.
+/* ============================================================================
+ * DESIGN-SCHICHT — die EINZIGE Stelle fuer Farben (13.8.2026)
+ * ============================================================================
+ *
+ * Vorgabe des Auftraggebers: das Design ist eine EIGENE SCHICHT. Wer an der
+ * Logik arbeitet, fasst diese Datei nicht an; wer am Aussehen arbeitet,
+ * aendert NUR die Werte hier oben. Unterhalb dieser Schicht kommen Farben
+ * ausschliesslich als var(--…) vor — kein Literal, das man suchen muesste.
+ *
+ * FARBWELT: Militaer, gedeckt, ruhig. Olivgruen-Graphit statt Blaugrau,
+ * Khaki statt Gold, und das Sonar in mattem Phosphor statt Neon. Vorgabe
+ * woertlich: "keine Neonfarben, beruhigende Farben, passend zur Arbeit".
+ *
+ * Die -rgb-Zwillinge existieren, weil rgba(var(--x-rgb), .5) die einzige
+ * Form ist, mit der ein Token auch in Transparenzen funktioniert.
  */
 
 :root {
-  --grund:    #24262B;
-  --karte:    #2F3339;
-  --karte-2:  #363A41;
-  --rand:     #41464E;
-  --text:     #E8EAED;
-  --text-leise: #A8AEB8;
+  /* Grundton: dunkles Oliv-Graphit, kein Schwarz. */
+  --grund:    #1D211B;
+  --karte:    #262B22;
+  --karte-2:  #2D332A;
+  --rand:     #3D4536;
+  --text:     #E4E6DE;
+  --text-leise: #A7AC9D;
 
-  --gold:     #C8AC63;
-  --gruen:    #8FC178;
-  --violett:  #B3A1E6;   /* Polymarket */
-  --blau:     #82B3D9;   /* Betfair */
-  --tuerkis:  #6FBFB5;   /* weitere Boerse */
-  --orange:   #D9A066;
-  --rot:      #D98A8A;
+  /* Akzent: Khaki/Messing — ersetzt das alte Gold, gleiche Rolle. */
+  --gold:     #B9A970;
+  --akzent-rgb: 185, 169, 112;
+
+  /* Zustandsfarben, alle gedaempft. */
+  --gruen:    #8FB479;
+  --orange:   #C99B62;
+  --rot:      #C98A82;
+
+  /* Das Sonar: mattes Militaer-Phosphor, kein Neon. */
+  --sonar:      #8FB996;
+  --sonar-rgb:  143, 185, 150;
+  --sonar-tief: #0E1710;
+  --sonar-linie: rgba(143, 185, 150, .20);
+
+  /* DIE VIER BUECHER, in ihren Wiedererkennungsfarben (gedaempft genug
+   * fuer den dunklen Grund). Die Farbe haengt am Buch, nie an der Position. */
+  --pm: #6C93E8;   /* Polymarket — Blau */
+  --ka: #3FB59A;   /* Kalshi     — Tealgruen */
+  --sm: #5BBE7C;   /* Smarkets   — Gruen */
+  --bf: #E8C15A;   /* Betfair    — Gelb */
+
+  /* Supabase — traegt die Statusanzeige "live", ausdruecklicher Wunsch. */
+  --supabase: #3ECF8E;
+
+  /* Alt-Namen, die noch in einzelnen Regeln stehen: zeigen auf die neuen
+   * Werte, damit NICHTS zwei Farbwahrheiten hat. */
+  --violett:  var(--pm);
+  --blau:     var(--bf);
+  --tuerkis:  var(--ka);
 
   --rund:     12px;
   --rund-chip: 8px;
 }
+
+/* ======================= ENDE DESIGN-SCHICHT ============================= */
 
 * { box-sizing: border-box; }
 
@@ -60,8 +98,8 @@ button.gesperrt { opacity: .5; }
   font-size: 13px; border: 1px solid var(--rand); background: var(--karte-2);
   color: var(--text-leise);
 }
-.chip.pm { color: var(--violett); border-color: #4A4260; }
-.chip.bf { color: var(--blau);    border-color: #3C4C5C; }
+.chip.pm { color: var(--pm); border-color: color-mix(in srgb, var(--pm) 45%, transparent); }
+.chip.bf { color: var(--bf); border-color: color-mix(in srgb, var(--bf) 45%, transparent); }
 .chip.gut { color: var(--gruen);  border-color: #3F5238; }
 .chip.acht { color: var(--orange); border-color: #5A4634; }
 .chip.rot  { color: var(--rot);    border-color: #5C3E3E; }
@@ -172,13 +210,13 @@ h2 {
  * kann JEDES davon auf JEDER Seite der Karte stehen — die Farbe haengt am
  * Buch, nicht mehr an der Position. */
 
-.chip.ka { color: var(--tuerkis); border-color: #35544F; }
-.chip.bf { color: var(--blau);    border-color: #3C4C5C; }
-.chip.sm { color: var(--gold);    border-color: #5A5034; }
+.chip.ka { color: var(--ka); border-color: color-mix(in srgb, var(--ka) 45%, transparent); }
+.chip.bf { color: var(--bf); border-color: color-mix(in srgb, var(--bf) 45%, transparent); }
+.chip.sm { color: var(--sm); border-color: color-mix(in srgb, var(--sm) 45%, transparent); }
 .chip.leise { color: var(--text-leise); border-color: var(--rand); }
 
 .fund .seite.ka .quelle { color: var(--tuerkis); }
-.fund .seite.sm .quelle { color: var(--gold); }
+.fund .seite.sm .quelle { color: var(--sm); }
 
 /* ---------- Reiter ---------- */
 
@@ -382,17 +420,13 @@ h2 {
    deshalb liegen sie weit auseinander in Ton UND Helligkeit.
    ========================================================================== */
 :root {
-  --pm: #2d6cf6;   /* Polymarket - Blau */
-  --ka: #00c48c;   /* Kalshi     - Gruen */
-  --sm: #7b5cff;   /* Smarkets   - Violett */
-  --bf: #ffb80c;   /* Betfair    - Gelb */
   --sx: #ff5c8a;   /* SX Bet     - Pink, vorgemerkt */
 
   /* Guete einer Zeile. Nicht dekorativ: gruen heisst handelbar, gelb heisst
      rechnerisch da aber zu duenn, grau heisst Menge unbekannt. */
-  --gut:  #00c48c;
-  --acht: #ffb80c;
-  --tot:  #6b7280;
+  --gut:  var(--gruen);
+  --acht: var(--orange);
+  --tot:  #79806E;
 }
 
 .chip.pm, .seite.pm { border-color: var(--pm); }
@@ -488,14 +522,14 @@ h2 {
    bleiben. Alles animierte laeuft ueber transform/opacity, also auf der
    Grafikkarte - kein Zeichenloop, kein Canvas, kein Ruckeln.
    ========================================================================== */
-:root { --sonar: #35ff9e; --sonar-tief: #041a10; --sonar-linie: rgba(53,255,158,.20); }
+/* Sonar-Farben kommen aus der DESIGN-SCHICHT ganz oben. */
 
 .puls {
   display: flex; align-items: center; gap: 26px;
   margin: 18px 0 22px; padding: 18px 22px;
-  border: 1px solid rgba(53,255,158,.22); border-radius: 14px;
+  border: 1px solid rgba(var(--sonar-rgb),.22); border-radius: 14px;
   background:
-    radial-gradient(90% 120% at 15% 0%, rgba(53,255,158,.08), transparent 60%),
+    radial-gradient(90% 120% at 15% 0%, rgba(var(--sonar-rgb),.08), transparent 60%),
     linear-gradient(180deg, #05130d 0%, #030b07 100%);
   font-family: ui-monospace, "Cascadia Mono", Consolas, monospace;
   color: var(--sonar); position: relative; overflow: hidden;
@@ -511,8 +545,8 @@ h2 {
   position: relative; width: 190px; height: 190px; flex: 0 0 190px;
   border-radius: 50%; overflow: hidden;
   background: radial-gradient(circle at 50% 50%, #07271a 0%, var(--sonar-tief) 70%, #020806 100%);
-  box-shadow: inset 0 0 40px rgba(53,255,158,.16), 0 0 22px rgba(53,255,158,.10);
-  border: 1px solid rgba(53,255,158,.35);
+  box-shadow: inset 0 0 40px rgba(var(--sonar-rgb),.16), 0 0 22px rgba(var(--sonar-rgb),.10);
+  border: 1px solid rgba(var(--sonar-rgb),.35);
 }
 .s-ringe i {
   position: absolute; left: 50%; top: 50%; transform: translate(-50%,-50%);
@@ -531,8 +565,8 @@ h2 {
 .s-sweep {
   position: absolute; inset: 0; border-radius: 50%;
   background: conic-gradient(from 0deg,
-    rgba(53,255,158,.42) 0deg, rgba(53,255,158,.14) 22deg,
-    rgba(53,255,158,0) 65deg, rgba(53,255,158,0) 360deg);
+    rgba(var(--sonar-rgb),.42) 0deg, rgba(var(--sonar-rgb),.14) 22deg,
+    rgba(var(--sonar-rgb),0) 65deg, rgba(var(--sonar-rgb),0) 360deg);
   opacity: 0;
 }
 .puls.s-an .s-sweep { opacity: 1; animation: s-dreh 3.2s linear infinite; }
@@ -567,8 +601,8 @@ h2 {
 .s-kontakt { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
 .s-kontakt.s-treffer { animation: s-treffer 900ms ease-out 1; }
 @keyframes s-treffer {
-  0%   { box-shadow: inset 0 0 0 0 rgba(53,255,158,.55); }
-  100% { box-shadow: inset 0 0 60px 8px rgba(53,255,158,0); }
+  0%   { box-shadow: inset 0 0 0 0 rgba(var(--sonar-rgb),.55); }
+  100% { box-shadow: inset 0 0 60px 8px rgba(var(--sonar-rgb),0); }
 }
 
 /* Tafel rechts */
@@ -586,7 +620,7 @@ h2 {
 .s-werte { display: flex; flex-wrap: wrap; gap: 16px; font-size: 11px; letter-spacing: .1em; opacity: .8; }
 .s-werte b { font-weight: 700; }
 .s-log { margin-top: 10px; font-size: 11px; line-height: 1.65; opacity: .75; min-height: 1.65em; }
-.s-logzeile.s-treffer-log { color: #eaffe9; text-shadow: 0 0 8px rgba(53,255,158,.6); }
+.s-logzeile.s-treffer-log { color: #eaffe9; text-shadow: 0 0 8px rgba(var(--sonar-rgb),.6); }
 .s-logzeile.s-grau { opacity: .5; }
 
 @media (prefers-reduced-motion: reduce) {
@@ -608,11 +642,11 @@ h2 {
    fehler. Deshalb ein KRAEFTIGER Rahmen, kein zarter.
    ========================================================================== */
 .karte, .fund {
-  border: 2px solid rgba(212,175,55,.55) !important;
+  border: 2px solid rgba(var(--akzent-rgb),.55) !important;
   border-radius: 14px;
   padding: 18px 20px;
   margin: 22px 0;
-  background: linear-gradient(180deg, rgba(212,175,55,.05) 0%, transparent 90px), rgba(255,255,255,.015);
+  background: linear-gradient(180deg, rgba(var(--akzent-rgb),.05) 0%, transparent 90px), rgba(255,255,255,.015);
   box-shadow: 0 0 0 1px rgba(0,0,0,.35), 0 6px 22px rgba(0,0,0,.30);
   position: relative;
 }
@@ -625,9 +659,9 @@ h2 {
 /* Abschluss unten, damit auch das ENDE sichtbar ist. */
 .karte::after, .fund::after {
   content: ""; position: absolute; left: 16px; right: 16px; bottom: -2px; height: 2px;
-  background: rgba(212,175,55,.30); border-radius: 2px;
+  background: rgba(var(--akzent-rgb),.30); border-radius: 2px;
 }
-.karte:hover, .fund:hover { border-color: rgba(212,175,55,.85) !important; }
+.karte:hover, .fund:hover { border-color: rgba(var(--akzent-rgb),.85) !important; }
 
 /* Eine Karte, die tatsaechlich Geld bringt, bekommt einen gruenen Rahmen -
    Gold heisst "eine Wette", Gruen heisst "eine, die sich lohnt". */
@@ -664,10 +698,10 @@ h2 {
 .f-bereich select {
   width: 100%; padding: 9px 10px; margin-top: 4px;
   background: rgba(0,0,0,.35); color: inherit;
-  border: 1px solid rgba(212,175,55,.45); border-radius: 8px;
+  border: 1px solid rgba(var(--akzent-rgb),.45); border-radius: 8px;
   font-size: 14px; font-weight: 600;
 }
-.f-bereich select:focus { outline: none; border-color: rgba(212,175,55,.9); }
+.f-bereich select:focus { outline: none; border-color: rgba(var(--akzent-rgb),.9); }
 .f-bereich { border-bottom: 1px solid rgba(255,255,255,.12); padding-bottom: 14px; }
 
 /* ---------- Abschnitte auf der Fundkarte (13.8.2026) ----------
@@ -719,7 +753,7 @@ h2 {
 .fund details.mehr > summary::-webkit-details-marker { display: none; }
 .fund details.mehr > summary::before { content: '▸ '; }
 .fund details.mehr[open] > summary::before { content: '▾ '; }
-.fund details.mehr > summary:hover { border-color: rgba(212,175,55,.5); }
+.fund details.mehr > summary:hover { border-color: rgba(var(--akzent-rgb),.5); }
 .fund details.mehr > summary .leise { text-transform: none; letter-spacing: 0; opacity: .7; }
 .fund details.mehr > *:not(summary) { margin-top: 10px; }
 
@@ -738,7 +772,7 @@ h2 {
 .fund .setz-nr {
   width: 24px; height: 24px; border-radius: 50%;
   display: inline-flex; align-items: center; justify-content: center;
-  background: rgba(212,175,55,.15); border: 1px solid rgba(212,175,55,.45);
+  background: rgba(var(--akzent-rgb),.15); border: 1px solid rgba(var(--akzent-rgb),.45);
   font-weight: 700; font-size: 13px;
 }
 .fund .setz-buch { font-size: 12px; text-transform: uppercase; letter-spacing: .5px; }
@@ -751,8 +785,8 @@ h2 {
 .fund .setz-text { font-size: 14px; }
 .fund .setz-summe {
   font-size: 15px; padding: 9px 12px;
-  border: 1px solid rgba(212,175,55,.35); border-radius: 10px;
-  background: rgba(212,175,55,.06);
+  border: 1px solid rgba(var(--akzent-rgb),.35); border-radius: 10px;
+  background: rgba(var(--akzent-rgb),.06);
 }
 .fund .setz-summe .gut { color: var(--gruen); }
 .fund .setz-summe .rot { color: var(--rot); }
@@ -781,9 +815,9 @@ h2 {
 .puls .s-hud {
   position: relative; flex: 1 1 auto; min-width: 0; height: 190px;
   padding: 8px 12px 10px; overflow: hidden;
-  border: 1px solid rgba(53,255,158,.28); border-radius: 10px;
+  border: 1px solid rgba(var(--sonar-rgb),.28); border-radius: 10px;
   background:
-    linear-gradient(180deg, rgba(53,255,158,.06), transparent 45%),
+    linear-gradient(180deg, rgba(var(--sonar-rgb),.06), transparent 45%),
     #04120b;
   font-size: 11px;
 }
@@ -793,11 +827,11 @@ h2 {
 }
 .puls .s-hud-kopf::after {
   content: ""; flex: 1; height: 1px;
-  background: repeating-linear-gradient(90deg, rgba(53,255,158,.35) 0 6px, transparent 6px 12px);
+  background: repeating-linear-gradient(90deg, rgba(var(--sonar-rgb),.35) 0 6px, transparent 6px 12px);
 }
 .puls .s-hud-hilfe {
   color: var(--sonar); text-decoration: none; opacity: .6;
-  border: 1px solid rgba(53,255,158,.4); border-radius: 50%;
+  border: 1px solid rgba(var(--sonar-rgb),.4); border-radius: 50%;
   width: 14px; height: 14px; line-height: 12px; text-align: center;
   font-size: 10px; flex: 0 0 auto;
 }
@@ -811,15 +845,15 @@ h2 {
 }
 .puls .s-hz {
   position: relative; padding: 7px 10px 6px;
-  background: rgba(53,255,158,.05);
-  border: 1px solid rgba(53,255,158,.22);
+  background: rgba(var(--sonar-rgb),.05);
+  border: 1px solid rgba(var(--sonar-rgb),.22);
   display: flex; flex-direction: column; gap: 2px; min-height: 58px;
   justify-content: center;
 }
 /* Zielmarken-Ecken an jeder Zelle — Stempel-Optik einer Lagetafel. */
 .puls .s-hz::before, .puls .s-hz::after {
   content: ""; position: absolute; width: 7px; height: 7px;
-  border: 1px solid rgba(53,255,158,.75);
+  border: 1px solid rgba(var(--sonar-rgb),.75);
 }
 .puls .s-hz::before { left: -1px; top: -1px; border-right: 0; border-bottom: 0; }
 .puls .s-hz::after  { right: -1px; bottom: -1px; border-left: 0; border-top: 0; }
@@ -831,8 +865,8 @@ h2 {
   font-size: 8.5px; letter-spacing: 1.6px; opacity: .6; white-space: nowrap;
   overflow: hidden; text-overflow: ellipsis;
 }
-.puls .s-hz-gut  { border-color: rgba(53,255,158,.5); background: rgba(53,255,158,.10); }
-.puls .s-hz-gut b  { color: #8dffc4; text-shadow: 0 0 10px rgba(53,255,158,.6);
+.puls .s-hz-gut  { border-color: rgba(var(--sonar-rgb),.5); background: rgba(var(--sonar-rgb),.10); }
+.puls .s-hz-gut b  { color: #8dffc4; text-shadow: 0 0 10px rgba(var(--sonar-rgb),.6);
                      animation: s-hz-glimmen 2.4s ease-in-out infinite; }
 .puls .s-hz-rot b  { color: #ff8d8d; text-shadow: 0 0 9px rgba(239,68,68,.45); }
 .puls .s-hz-warn b { color: #ffb054; }
@@ -841,18 +875,18 @@ h2 {
 /* Zielring hinter der Tafel, dreht wie ein Periskop-Fadenkreuz. */
 .puls .s-hud-ring {
   position: absolute; right: -30px; top: -30px; width: 110px; height: 110px;
-  border: 1px dashed rgba(53,255,158,.25); border-radius: 50%;
+  border: 1px dashed rgba(var(--sonar-rgb),.25); border-radius: 50%;
   animation: s-hud-drehen 26s linear infinite; pointer-events: none;
 }
 .puls .s-hud-ring::before {
   content: ""; position: absolute; inset: 16px;
-  border: 1px solid rgba(53,255,158,.15); border-radius: 50%;
+  border: 1px solid rgba(var(--sonar-rgb),.15); border-radius: 50%;
 }
 @keyframes s-hud-drehen { to { transform: rotate(360deg); } }
 /* Abtastzeile, wandert alle 5 s von oben nach unten durch. */
 .puls .s-hud-scan {
   position: absolute; left: 0; right: 0; top: -8px; height: 8px;
-  background: linear-gradient(180deg, transparent, rgba(53,255,158,.14), transparent);
+  background: linear-gradient(180deg, transparent, rgba(var(--sonar-rgb),.14), transparent);
   animation: s-hud-abtasten 5s linear infinite; pointer-events: none;
 }
 @keyframes s-hud-abtasten { to { transform: translateY(206px); } }
@@ -909,3 +943,79 @@ h2 {
 .fund .setz-absage.rot  { border: 1px solid #5C3E3E; background: rgba(200,80,80,.10); color: var(--rot); }
 .fund .setz-absage.acht { border: 1px solid #5A4634; background: rgba(200,140,60,.08); color: var(--orange); }
 .fund .setz-absage a { color: inherit; }
+
+/* ============================================================================
+ * DESIGN-ANBAUTEN (13.8.2026, spaet) — nur Aussehen, keine Logik
+ * ============================================================================ */
+
+/* Die Anbietertafel: jeder Name in seiner Buchfarbe, Supabase in seiner. */
+.an-buch { font-weight: 600; }
+.an-buch.pm { color: var(--pm); }
+.an-buch.ka { color: var(--ka); }
+.an-buch.sm { color: var(--sm); }
+.an-buch.bf { color: var(--bf); }
+.an-buch.supabase { color: var(--supabase); }
+
+/* Der Stand im Kopf: "live" traegt Supabase-Gruen mit ruhig atmendem Punkt —
+ * die Daten kommen ja von dort. */
+#stand.gut {
+  color: var(--supabase);
+  border-color: color-mix(in srgb, var(--supabase) 45%, transparent);
+  background: color-mix(in srgb, var(--supabase) 10%, transparent);
+}
+#stand.gut::before {
+  content: ""; width: 7px; height: 7px; border-radius: 50%;
+  background: var(--supabase);
+  animation: stand-atmen 2.4s ease-in-out infinite;
+}
+@keyframes stand-atmen { 50% { opacity: .35; } }
+
+/* Kopf-Knoepfe: der Hauptknopf traegt den Akzent, alle heben sich beim
+ * Zeigen sichtbar, druecken sich beim Klicken. Grosse Ziele, ruhige Farben. */
+header.kopf button, header.kopf .knopf {
+  transition: background .15s ease, border-color .15s ease, transform .05s ease;
+}
+header.kopf button:hover, header.kopf .knopf:hover {
+  background: color-mix(in srgb, var(--gold) 12%, var(--karte-2));
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}
+header.kopf button:active, header.kopf .knopf:active { transform: translateY(1px); }
+button.haupt {
+  background: color-mix(in srgb, var(--gold) 18%, var(--karte-2));
+  border-color: color-mix(in srgb, var(--gold) 55%, transparent);
+  font-weight: 600;
+}
+#melder-knopf.melder-an {
+  color: var(--gruen);
+  border-color: color-mix(in srgb, var(--gruen) 45%, transparent);
+}
+
+/* Nachbrenner der Jaeger: kurzer, halbtransparenter Schweif. */
+.puls .s-jet-schweif { fill: currentColor; opacity: .35; }
+
+/* ZIEL ERFASST: der Stempel schlaegt einmal auf die Lagetafel und
+ * verblasst. Dazu pulst der Rand zweimal. Reine transform/opacity. */
+.puls .s-hud.s-alarm { animation: s-alarm-rand 1.2s ease-out 2; }
+@keyframes s-alarm-rand {
+  0%   { border-color: rgba(var(--sonar-rgb), .28); }
+  30%  { border-color: color-mix(in srgb, var(--gruen) 85%, white 15%);
+         box-shadow: 0 0 18px rgba(var(--sonar-rgb), .35); }
+  100% { border-color: rgba(var(--sonar-rgb), .28); box-shadow: none; }
+}
+.puls .s-hud.s-alarm::after {
+  content: "ZIEL ERFASST";
+  position: absolute; left: 50%; top: 50%; z-index: 3;
+  padding: 6px 16px;
+  border: 2px solid var(--gruen); border-radius: 4px;
+  color: var(--gruen); background: rgba(14, 23, 16, .85);
+  font-size: 17px; font-weight: 700; letter-spacing: 4px; white-space: nowrap;
+  transform: translate(-50%, -50%) rotate(-6deg) scale(2.2);
+  opacity: 0;
+  animation: s-alarm-stempel 2.4s ease-out forwards;
+}
+@keyframes s-alarm-stempel {
+  0%   { opacity: 0; transform: translate(-50%, -50%) rotate(-6deg) scale(2.2); }
+  12%  { opacity: 1; transform: translate(-50%, -50%) rotate(-6deg) scale(1); }
+  70%  { opacity: 1; }
+  100% { opacity: 0; transform: translate(-50%, -50%) rotate(-6deg) scale(1); }
+}

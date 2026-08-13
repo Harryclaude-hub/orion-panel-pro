@@ -93,11 +93,19 @@
       '<div class="s-hud">' +
         '<div class="s-hud-ring"></div>' +
         '<div class="s-hud-scan"></div>' +
-        '<svg class="s-hud-jet" viewBox="0 0 64 20" aria-hidden="true">' +
-          '<path fill="currentColor" d="M2 10 L22 8 L30 2 L33 8 L52 9 L62 10 L52 11 L33 12 L30 18 L22 12 Z"/>' +
+        /* Zwei Jaeger in Draufsicht: Rumpf, Pfeilfluegel, Hoehenleitwerk,
+         * dazu ein kurzer Nachbrenner-Schweif. Nase zeigt nach rechts. */
+        '<svg class="s-hud-jet" viewBox="0 0 72 24" aria-hidden="true">' +
+          '<path class="s-jet-schweif" d="M0 12 L12 11.2 L12 12.8 Z"/>' +
+          '<path fill="currentColor" d="M12 10.6 L20 10 L24 4 L27 4 L25.5 9.6 L40 8.4 ' +
+            'L52 3 L55 3 L48 9 L60 9.4 L70 11.4 L72 12 L70 12.6 L60 14.6 L48 15 ' +
+            'L55 21 L52 21 L40 15.6 L25.5 14.4 L27 20 L24 20 L20 14 L12 13.4 Z"/>' +
         '</svg>' +
-        '<svg class="s-hud-jet s-hud-jet2" viewBox="0 0 64 20" aria-hidden="true">' +
-          '<path fill="currentColor" d="M2 10 L22 8 L30 2 L33 8 L52 9 L62 10 L52 11 L33 12 L30 18 L22 12 Z"/>' +
+        '<svg class="s-hud-jet s-hud-jet2" viewBox="0 0 72 24" aria-hidden="true">' +
+          '<path class="s-jet-schweif" d="M0 12 L12 11.2 L12 12.8 Z"/>' +
+          '<path fill="currentColor" d="M12 10.6 L20 10 L24 4 L27 4 L25.5 9.6 L40 8.4 ' +
+            'L52 3 L55 3 L48 9 L60 9.4 L70 11.4 L72 12 L70 12.6 L60 14.6 L48 15 ' +
+            'L55 21 L52 21 L40 15.6 L25.5 14.4 L27 20 L24 20 L20 14 L12 13.4 Z"/>' +
         '</svg>' +
         '<div class="s-hud-boot">' +
           '<svg viewBox="0 0 90 22" aria-hidden="true">' +
@@ -132,6 +140,10 @@
   var gebaut = false;
   var letzterLauf = null;
   var letztePaare = null;
+  /* Fuer die ZIEL-ERFASST-Animation: letzter Chancen-Stand am Gefechtsstand.
+   * null = erster Durchlauf, da wird nicht gefeiert. */
+  var hudChancen = null;
+  var hudWecker = null;
 
   function zeile(text, klasse) {
     var log = document.getElementById('s-log');
@@ -247,6 +259,23 @@
 
       var hudLed = document.getElementById('s-hud-led');
       if (hudLed) hudLed.className = 's-led ' + (chancen > 0 ? 's-gruen' : (laeuft ? 's-grau' : 's-rot'));
+
+      /* ZIEL ERFASST: steigt die Zahl der Chancen, blitzt die Lagetafel
+       * einmal auf (Stempel + Randpuls, reine CSS-Animation). Beim ersten
+       * Durchlauf wird nur gemerkt, nicht gefeiert — sonst blitzte es bei
+       * jedem Seitenladen. Die Benachrichtigung dazu macht js/melder.js. */
+      if (hudChancen !== null && chancen > hudChancen) {
+        var hudEl = w.querySelector('.s-hud');
+        if (hudEl) {
+          hudEl.classList.remove('s-alarm');
+          void hudEl.offsetWidth;               // Animation neu anstossen
+          hudEl.classList.add('s-alarm');
+          if (hudWecker) clearTimeout(hudWecker);
+          hudWecker = setTimeout(function () { hudEl.classList.remove('s-alarm'); }, 2400);
+        }
+        zeile('ZIEL ERFASST — ' + chancen + ' im Visier', 's-treffer-log');
+      }
+      hudChancen = chancen;
     }
 
     /* Blips: leuchtet, wenn von diesem Buch frische Kurse kommen. */
