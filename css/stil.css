@@ -1374,3 +1374,32 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
   70%  { opacity: .5; transform: scale(5); }
   100% { opacity: 0; transform: scale(6.5); }
 }
+
+/* ---------- Letzte Feinheiten (13.8.2026, nachts) ----------
+ *
+ * 1. Kopf-Knoepfe: VOLLE Reihen, nie anderthalb. Ein Gitter, das die
+ *    Breite gleichmaessig fuellt — bei viel Platz eine Reihe, bei wenig
+ *    zwei volle, jeder Knopf gleich breit.
+ * 2. Paarungsmatrix: die Tafel-Regel "table { width: 100% }" zog die
+ *    4x4-Box auf volle Breite auseinander — sie wirkte zentriert mit
+ *    Riesenluecken. Jetzt: feste Breite, buendig links, Erklaerung
+ *    direkt daneben.
+ */
+.kopf-leiste {
+  display: grid;
+  /* IMMER volle Reihen: acht Knoepfe als 4 + 4. auto-fit ergab je nach
+   * Breite 6 + 2 - genau die anderthalb Reihen, die nicht sein sollen. */
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+}
+@media (max-width: 720px) {
+  .kopf-leiste { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+.kopf-leiste button, .kopf-leiste .knopf { width: 100%; min-width: 0; }
+.kopf-leiste small { white-space: normal; line-height: 1.25; }
+
+.tafel .paarmatrix table, .paarmatrix table {
+  width: auto; min-width: 0; border-collapse: separate;
+}
+.paarmatrix td { width: 64px; }
+.paarmatrix .pmx-erklaer { flex: 1 1 240px; max-width: 430px; margin-top: 2px; }
