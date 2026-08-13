@@ -98,10 +98,30 @@ Deno.serve(async () => {
     // Zuordnungsregel. Wer hier raet, baut Fehlpaarungen.
     // BTTS_AND_OVER und WINNER_AND_BTTS sehen aehnlich aus, sind aber
     // ZUSAMMENGESETZTE Fragen und deshalb ausdruecklich nicht dabei.
-    function spielLink(fullSlug: unknown): string {
+    /* Link auf die Partie — MIT der Event-Nummer davor.
+     *
+     * Ohne sie wirft Smarkets den Besucher nach einer Sekunde wieder hinaus.
+     * Gemessen am 13.8.2026 im Seitenquelltext:
+     *
+     *     <meta id="__next-page-redirect" http-equiv="refresh"
+     *           content="1;url=/sport/football">
+     *
+     * Daneben steht "country":"xx" — beim direkten Aufruf von aussen kennt
+     * der Server das Land nicht und schickt einen auf die Sportuebersicht.
+     * Beim Klicken INNERHALB der Seite passiert das nicht, deshalb kommt man
+     * ueber die Suche problemlos hin. Genau das hat den Fehler so lange
+     * verschleiert: der Link war nie falsch, die Seite warf einen hinaus.
+     *
+     * Die Form /event/<id>/… loest die Weiterleitung NICHT aus. An vier
+     * Spielen gegengeprueft: alte Form 4x Weiterleitung, neue Form 0x.
+     * Der Titel zeigt jeweils die richtige Partie. */
+    function spielLink(id: unknown, fullSlug: unknown): string {
   const s = String(fullSlug || '');
-  if (!s) return 'https://smarkets.com/';
-  return 'https://smarkets.com' + (s.endsWith('/') ? s : s + '/');
+  const n = String(id || '').trim();
+  if (!s) return n ? 'https://smarkets.com/event/' + n + '/' : 'https://smarkets.com/';
+  const pfad = s.endsWith('/') ? s : s + '/';
+  return n ? 'https://smarkets.com/event/' + n + pfad
+           : 'https://smarkets.com' + pfad;
 }
 
 function art(m: any): { art: string; linie: number | null } | null {
@@ -181,7 +201,7 @@ function art(m: any): { art: string; linie: number | null } | null {
          * eine Seite mit Titel. Ohne pruefbaren Unterschied wird nicht
          * geraten: ein falscher Marktpfad fuehrt ins Leere, der Spiel-Link
          * wenigstens zur Partie. */
-        link: spielLink(e.full_slug),
+        link: spielLink(e.id, e.full_slug),
         sz: 0.02,                        // Standard-Tarif, NICHT gemessen
         sz_echt: false,
         r
