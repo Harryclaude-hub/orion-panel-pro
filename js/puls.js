@@ -250,7 +250,22 @@
         var el = document.getElementById(id);
         if (el && el.textContent !== text) el.textContent = text;
       }
-      setz('s-hud-erfasst', String(chancen));
+      /* Bei null Chancen keine nackte Null: die Zelle sagt, dass GESUCHT
+       * wird - der Unterschied zwischen 'nichts da' und 'nichts los'. */
+      var erfasstB = document.getElementById('s-hud-erfasst');
+      if (erfasstB) {
+        var erfasstZelle = erfasstB.parentElement;
+        var erfasstWort = erfasstZelle ? erfasstZelle.querySelector('span') : null;
+        if (chancen > 0) {
+          if (erfasstB.textContent !== String(chancen)) erfasstB.textContent = String(chancen);
+          if (erfasstWort && erfasstWort.textContent !== 'CHANCEN') erfasstWort.textContent = 'CHANCEN';
+          if (erfasstZelle) erfasstZelle.classList.remove('s-hz-suche');
+        } else {
+          if (erfasstB.textContent !== '–') erfasstB.textContent = '–';
+          if (erfasstWort && erfasstWort.textContent !== 'SUCHE LÄUFT …') erfasstWort.textContent = 'SUCHE LÄUFT …';
+          if (erfasstZelle) erfasstZelle.classList.add('s-hz-suche');
+        }
+      }
       setz('s-hud-knapp', String(knapp));
       setz('s-hud-veraltet', String(veraltet));
       setz('s-hud-verlauf', String(verlauf.length));

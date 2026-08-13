@@ -1068,6 +1068,19 @@
    * erhalten bleiben — die Anzeige schreibt jede Sekunde neu, und ein
    * Aufklapper, der dabei zufaellt, ist schlimmer als keiner. */
   var aufgeklappt = {};
+  /* Klick IRGENDWO auf eine ZUGEKLAPPTE Karte oeffnet die vollstaendige
+   * Rechnung (Vorgabe 13.8. nachts). Knoepfe, Links und Eingaben bleiben
+   * davon unberuehrt; geschlossen wird ueber die Aufklappzeile. */
+  document.addEventListener('click', function (ev) {
+    var fund = ev.target && ev.target.closest ? ev.target.closest('.fund') : null;
+    if (!fund) return;
+    if (ev.target.closest('a, button, summary, input, select, label, details[open]')) return;
+    var d = fund.querySelector('details.voll');
+    if (!d || d.open) return;
+    d.open = true;
+    var s = d.querySelector('summary');
+    if (s) aufgeklappt[s.getAttribute('data-schluessel')] = true;
+  });
   document.addEventListener('click', function (ev) {
     var s = ev.target && ev.target.closest ? ev.target.closest('summary[data-schluessel]') : null;
     if (!s) return;

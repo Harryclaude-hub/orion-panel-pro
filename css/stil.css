@@ -1530,3 +1530,14 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
   border-color: color-mix(in srgb, var(--rot) 60%, transparent);
 }
 @keyframes neu-puls { 50% { opacity: .55; } }
+
+/* Gefechtsstand: die Chancen-Zelle im Suchzustand — kein nacktes Null. */
+.puls .s-hz.s-hz-suche b { color: var(--text-leise); text-shadow: none; animation: none; }
+.puls .s-hz.s-hz-suche span { animation: s-suche-puls 2.4s ease-in-out infinite; }
+@keyframes s-suche-puls { 50% { opacity: .35; } }
+
+/* Zugeklappte Karten laden zum Klicken ein. */
+.fund:has(details.voll:not([open])) { cursor: pointer; }
+.fund:has(details.voll:not([open])):hover {
+  border-color: color-mix(in srgb, var(--gold) 45%, transparent);
+}

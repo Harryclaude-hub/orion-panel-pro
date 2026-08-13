@@ -367,9 +367,14 @@
           /* Nachgewiesen oder rechnerisch falsch -> nur MARKIEREN; getrennt
            * wird erst nach den Schmuckschleifen unten, damit auch diese
            * Karten alle Felder tragen (Gedeckt-Pruefung ebenfalls dort). */
+          /* NICHT dabei: rechnung_ok === false. Gemessen 13.8. nachts: der
+           * Pruefer beanstandet auch 0,2-Punkte-Differenzen auf
+           * Null-Prozent-Niveau (nachgerechnet -0,008 statt 0,499) - das
+           * ist ein Hinweis-Chip auf der Karte, aber kein Beweis, dass die
+           * CHANCE falsch war. Mit dem Kriterium wanderten echte
+           * Verlaufszeilen in die falschen Rechnungen. */
           if (f.fehlpaarung ||
-              (K.maxPlausibel && beste > K.maxPlausibel) ||
-              f.rechnung_ok === false) {
+              (K.maxPlausibel && beste > K.maxPlausibel)) {
             f.rechnungFalsch = true;
           }
           /* SONST NICHTS WEITER. Vorgabe 13.8. abends: "wenn es eine Chance
