@@ -47,9 +47,20 @@
         }, { threshold: 0.15 })
       : null;
 
+    /* PUZZLE (Vorgabe 14.8. nachts): die Bereichs-Karten kommen aus vier
+     * Richtungen angeflogen und docken mit leichtem Ueberschwung an —
+     * wie Teile, die sich zusammenfinden. */
+    var puzzle = [[-110, -46, -7], [110, -52, 6], [-90, 64, 5], [95, 56, -6]];
+    var pi = 0;
     ziele.forEach(function (el, i) {
       el.classList.add('bau');
       el.style.setProperty('--bau-i', String(i));
+      if (el.classList.contains('bereichskarte') && puzzle[pi]) {
+        var p = puzzle[pi++];
+        el.style.setProperty('--bau-dx', p[0] + 'px');
+        el.style.setProperty('--bau-dy', p[1] + 'px');
+        el.style.setProperty('--bau-rot', p[2] + 'deg');
+      }
       var r = el.getBoundingClientRect();
       if (r.top < window.innerHeight || !beobachter) {
         /* Im Sichtfeld: gestaffelt antreten lassen. */

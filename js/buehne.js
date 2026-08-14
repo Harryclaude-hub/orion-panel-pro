@@ -46,12 +46,25 @@
         /* Mini-Radar oben: derselbe Sweep wie am grossen Schirm, nur klein. */
         '<div class="fl-radar"><i></i></div>' +
         '<div class="fl-wort"><span></span></div>' +
-        /* Ein Jaeger, der die Flanke entlang zieht. */
-        '<svg class="fl-jet" viewBox="0 0 72 24" aria-hidden="true">' +
-          '<path fill="currentColor" d="M12 10.6 L20 10 L24 4 L27 4 L25.5 9.6 L40 8.4 ' +
-            'L52 3 L55 3 L48 9 L60 9.4 L70 11.4 L72 12 L70 12.6 L60 14.6 L48 15 ' +
-            'L55 21 L52 21 L40 15.6 L25.5 14.4 L27 20 L24 20 L20 14 L12 13.4 Z"/>' +
-        '</svg>' +
+        /* DIE LUFTWAFFE (Vorgabe 14.8. nachts): erkennbare Silhouetten in
+         * Draufsicht — Nurfluegel-Bomber (B-2-Klasse), Doppelleitwerk-
+         * Jaeger (F-15-Klasse), Delta-Canard (Eurofighter-Klasse) und
+         * eine Langfluegel-Drohne. Jede fliegt ihre eigene Bahn die
+         * Flanke entlang, links abwaerts, rechts aufwaerts. */
+        '<div class="fl-staffel">' +
+          '<i class="flug f1"><svg class="jet-b2" viewBox="0 0 48 20" aria-hidden="true">' +
+            '<path fill="currentColor" d="M24 0 L46 15 L38 15 L32 11 L28 15 L20 15 L16 11 L10 15 L2 15 Z"/>' +
+          '</svg></i>' +
+          '<i class="flug f2"><svg class="jet-f15" viewBox="0 0 44 30" aria-hidden="true">' +
+            '<path fill="currentColor" d="M21 0 L23 0 L25 7 L25 11 L40 18 L40 21 L25 17 L25 21 L31 26 L31 28 L24 26 L20 26 L13 28 L13 26 L19 21 L19 17 L4 21 L4 18 L19 11 L19 7 Z"/>' +
+          '</svg></i>' +
+          '<i class="flug f3"><svg class="jet-euro" viewBox="0 0 44 30" aria-hidden="true">' +
+            '<path fill="currentColor" d="M21 0 L23 0 L24 6 L31 8 L31 10 L24 10 L25 15 L42 23 L42 26 L24 22 L22 28 L20 22 L2 26 L2 23 L19 15 L20 10 L13 10 L13 8 L20 6 Z"/>' +
+          '</svg></i>' +
+          '<i class="flug f4"><svg class="jet-drohne" viewBox="0 0 48 28" aria-hidden="true">' +
+            '<path fill="currentColor" d="M24 0 C21.5 0 21.5 4 21.5 6 L2 8 L2 10 L21.5 10 L21.5 19 L16 24 L17 26 L24 21 L31 26 L32 24 L26.5 19 L26.5 10 L46 10 L46 8 L26.5 6 C26.5 4 26.5 0 24 0 Z"/>' +
+          '</svg></i>' +
+        '</div>' +
         /* SCHLACHTFELD (Vorgabe 14.8. abends): "keine Scananimationen,
          * sondern Panzer, Flugzeuge, Schuesse und Soldaten." Silhouetten,
          * die die Flanke bevoelkern — alles reine CSS-Bewegung. */

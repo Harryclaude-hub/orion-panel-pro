@@ -2011,3 +2011,103 @@ canvas.titel-partikel { position: fixed; z-index: 999990; pointer-events: none; 
   .bau { opacity: 1; transform: none; filter: none; }
   .fl-panzer, .fl-soldat, .fl-soldat .bein, .fl-schuss, .fl-muendung { animation: none; }
 }
+
+/* ==========================================================================
+ * 14.8. NACHT, RUNDE 2: Luftwaffe, Elektro-Scan, markante Bereichs-Karten,
+ * Puzzle-Aufbau. Spaetere Regeln schlagen fruehere — bewusst Overrides.
+ * ========================================================================== */
+
+/* ---------- Die Staffel: vier erkennbare Maschinen je Flanke ---------- */
+.flanke .fl-staffel { position: absolute; inset: 0; pointer-events: none; }
+.flanke .flug {
+  position: absolute; top: -70px; opacity: 0;
+  color: rgba(var(--fl-farbe), .55);
+  animation: flug-runter var(--flug-d, 20s) linear var(--flug-v, 0s) infinite;
+}
+.flanke .flug svg { display: block; }
+/* Links fliegt die Staffel ABWAERTS — Nase nach unten. */
+.flanke.links .flug svg { transform: rotate(180deg); }
+.flanke.rechts .flug {
+  top: auto; bottom: -70px;
+  animation-name: flug-rauf;
+}
+@keyframes flug-runter {
+  0%   { transform: translateY(0); opacity: 0; }
+  6%   { opacity: .5; }
+  90%  { opacity: .5; }
+  100% { transform: translateY(115vh); opacity: 0; }
+}
+@keyframes flug-rauf {
+  0%   { transform: translateY(0); opacity: 0; }
+  6%   { opacity: .5; }
+  90%  { opacity: .5; }
+  100% { transform: translateY(-115vh); opacity: 0; }
+}
+.flanke .flug.f1 { left: 8%;  width: 52px; --flug-d: 34s; --flug-v: 0s; }   /* B-2: schwer, langsam */
+.flanke .flug.f2 { left: 58%; width: 40px; --flug-d: 13s; --flug-v: 6s; }   /* Jaeger: schnell */
+.flanke .flug.f3 { left: 32%; width: 40px; --flug-d: 18s; --flug-v: 11s; }  /* Delta */
+.flanke .flug.f4 { left: 63%; width: 50px; --flug-d: 46s; --flug-v: 3s; }   /* Drohne: zieht ruhig */
+.flanke .flug.f1 svg { width: 52px; } .flanke .flug.f2 svg { width: 40px; }
+.flanke .flug.f3 svg { width: 40px; } .flanke .flug.f4 svg { width: 50px; }
+
+/* ---------- Schlachtfeld HOEHER (unten wohnen Funker und Funkzeilen) ---- */
+.flanke .fl-feld { bottom: 215px; height: 38%; }
+
+/* ---------- Elektro-Scan: zittert, flackert, springt ---------- */
+.flanke .fl-scan {
+  animation: fl-scan var(--fl-tempo) linear infinite,
+             fl-zitter 1.15s steps(2, jump-none) infinite;
+}
+@keyframes fl-zitter {
+  0%, 100% { margin-left: 0;    opacity: 1; }
+  9%       { margin-left: -3px; }
+  11%      { margin-left: 2px;  opacity: .5; }
+  24%      { margin-left: 0;    opacity: .95; }
+  36%      { margin-left: 3px; }
+  38%      { margin-left: -2px; opacity: .45; }
+  52%      { margin-left: 0;    opacity: 1; }
+  67%      { margin-left: -4px; opacity: .8; }
+  69%      { margin-left: 1px;  opacity: .55; }
+  84%      { margin-left: 2px;  opacity: .9; }
+}
+/* Derselbe Elektro-Charakter fuer den Lichtbalken im Hero. */
+.hero-scan::after {
+  animation: hero-scan-zug 7s linear infinite,
+             fl-zitter 1.3s steps(2, jump-none) infinite;
+}
+
+/* ---------- Bereichs-Karten: EIGENER, markanter Block ---------- */
+#bereichs-karten {
+  position: relative;
+  gap: 10px; margin: 18px 0 22px; padding: 22px 12px 12px;
+  border: 1px solid color-mix(in srgb, var(--sonar) 35%, var(--rand));
+  background: linear-gradient(180deg, rgba(0,0,0,.16), transparent 60%);
+  clip-path: polygon(14px 0, 100% 0, 100% calc(100% - 14px), calc(100% - 14px) 100%, 0 100%, 0 14px);
+}
+#bereichs-karten::before {
+  content: "LAGE — VIER BEREICHE";
+  position: absolute; top: 6px; left: 16px;
+  font-size: 10px; font-weight: 700; letter-spacing: .32em;
+  color: var(--text-leise);
+}
+.bereichskarte { min-height: 112px; padding-top: 18px; }
+.bereichskarte .bk-zahl { font-size: 34px; }
+.bk-chancen  { box-shadow: inset 4px 0 0 var(--gruen),  inset 0 1px 0 rgba(255,255,255,.05); }
+.bk-knapp    { box-shadow: inset 4px 0 0 var(--gold),   inset 0 1px 0 rgba(255,255,255,.05); }
+.bk-verlauf  { box-shadow: inset 4px 0 0 var(--sonar),  inset 0 1px 0 rgba(255,255,255,.05); }
+.bk-falsch   { box-shadow: inset 4px 0 0 var(--rot),    inset 0 1px 0 rgba(255,255,255,.05); }
+.bk-chancen:hover  { box-shadow: inset 4px 0 0 var(--gruen), 0 8px 22px rgba(0,0,0,.4), 0 0 14px rgba(143,180,121,.3); }
+.bk-knapp:hover    { box-shadow: inset 4px 0 0 var(--gold),  0 8px 22px rgba(0,0,0,.4), 0 0 14px rgba(var(--akzent-rgb),.3); }
+.bk-verlauf:hover  { box-shadow: inset 4px 0 0 var(--sonar), 0 8px 22px rgba(0,0,0,.4), 0 0 14px rgba(var(--sonar-rgb),.3); }
+.bk-falsch:hover   { box-shadow: inset 4px 0 0 var(--rot),   0 8px 22px rgba(0,0,0,.4), 0 0 14px rgba(201,138,130,.3); }
+
+/* ---------- Puzzle-Aufbau: Teile fliegen aus vier Richtungen ein ------- */
+.bau {
+  transform: translate(var(--bau-dx, 0px), var(--bau-dy, 16px))
+             rotate(var(--bau-rot, 0deg)) scale(.985);
+}
+.bau.bau-fertig {
+  transition: opacity .6s ease,
+              transform .6s cubic-bezier(.2, .85, .3, 1.12),
+              filter .6s ease;
+}
