@@ -207,6 +207,25 @@ damit **komplett gelöscht**. Nachgewiesen: von 231 Verlaufszeilen hatte
 **keine einzige** eine negative Endrendite, die kleinste war exakt 0,00.
 Kein Zufall — das war die Löschregel.
 
+**Nachtrag 14.8.2026:** die Funktion verschont jetzt zusätzlich alles mit
+`pruefung='falsch'` — nachgewiesen falsche Rechnungen gehören in den
+Analyse-Reiter und wurden vorher stillschweigend mitgelöscht (gemessen:
+9 Falsch-Zeilen mit Minus-Rendite, alle wären beim nächsten Takt weg
+gewesen). Löschregel und Website-Anzeige sagen seither DASSELBE:
+Rauschen = nie über 0 % UND nicht als falsch nachgewiesen.
+
+**Dazu die zweite Ursache der springenden Archiv-Zahlen (14.8., gemessen
+2.112 gelöschte von 2.319 eingefügten Zeilen):** die Website lud die
+neuesten 500 Vorbei-Zeilen MITSAMT dem noch nicht gelöschten Rauschen.
+An einem vollen Fußballabend schoben hunderte Rauschzeilen die echten
+Verlaufszeilen aus dem Fenster (Verlauf 160 → 2 → 160). Fix in
+`js/daten.js`: die Vorbei-Abfrage filtert Rauschen per
+`or=(pruefung.eq.falsch,beste_rendite.gte.0,and(beste_rendite.is.null,rendite.gte.0))`
+aus und lädt bis 1000 Zeilen. **Bekannte Grenze:** wachsen die drei
+Archive (Verlauf + Falsch + Knapp-Archiv, Stand 14.8.: 442) über 1000,
+fallen die ältesten wieder aus dem Fenster — dann braucht es getrennte
+Abfragen oder eine höhere Grenze.
+
 > Karam hat es bemerkt: „Ich hab eine Chance gesehen, die war kurz da, dann
 > war sie weg — aber nicht im Verlauf."
 

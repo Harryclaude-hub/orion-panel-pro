@@ -1552,7 +1552,8 @@
       chancen: 'Chancen (' + listen.chancen.length + ')' +
                (e.veraltetHoch && e.veraltetHoch.length ? ' + ' + e.veraltetHoch.length + ' veraltet' : '') +
                abzeichen('chancen'),
-      knapp: 'Knappste Paare (' + listen.knapp.length + ')' + abzeichen('knapp'),
+      knapp: 'Knappste Paare (' + listen.knapp.length + ')' +
+             (e.knappLive ? ' + ' + e.knappLive + ' live' : '') + abzeichen('knapp'),
       verlauf: 'Verlauf (' + listen.verlauf.length + ')' + abzeichen('verlauf'),
       falsch: 'Falsche Rechnungen (' + listen.falsch.length + ')' + abzeichen('falsch')
     };
@@ -1646,6 +1647,7 @@
      * Liste wuerde bei jedem Klick weiter schrumpfen. */
     var gChancen = gefiltert(e.chancen, false);
     var gKnapp   = gefiltert(e.knapp, false);
+    var gKnappA  = gefiltert(e.knappArchiv || [], true);
     var gVerlauf = gefiltert(e.verlauf, true);
     var gFalsch  = gefiltert(e.falsch || [], true);
     var zChancen = gChancen.sichtbar, zKnapp = gKnapp.sichtbar, zVerlauf = gVerlauf.sichtbar;
@@ -1680,24 +1682,51 @@
     }
     setzeWennAnders(document.getElementById('chancen'), chancenHtml);
 
-    var knappHtml = versteckt(gKnapp.weg);
+    /* ZWEI Bloecke (Vorgabe 14.8.): oben das, was GERADE knapp daneben
+     * liegt (lebt und schwankt mit dem Spielplan — nachts 2, abends 160,
+     * das ist normal), darunter das ARCHIV der beendeten Fast-Treffer.
+     * Die Zahl im Reiter zaehlt NUR das Archiv und kann darum nur wachsen. */
+    var knappHtml = versteckt(gKnapp.weg + gKnappA.weg);
+    knappHtml += '<h2>Gerade knapp daneben — live, ändert sich laufend</h2>';
     if (zKnapp.length) {
-      knappHtml += '<p class="leise">Knapp daneben: richtig zugeordnet, nachgerechnet, aber unter ' +
+      knappHtml += '<p class="leise">Richtig zugeordnet, nachgerechnet, aber unter ' +
         K.mindestRendite.toFixed(2) + ' % Rendite. Die Kehrwertsumme sagt alles: ' +
         '<b>unter 1</b> heißt Gewinn unabhängig vom Ausgang, <b>über 1</b> heißt Verlust. ' +
-        'Alle ' + zKnapp.length + ', beste zuerst. Alles unter ' + K.rauschGrenze.toFixed(1) +
-        ' % wird nicht mehr gezeigt und auch nicht mehr aufbewahrt' +
-        (s.rauschen ? ' — gerade ' + s.rauschen + ' Zeilen' : '') + '.</p>' +
+        'Alle ' + zKnapp.length + ', beste zuerst. Diese Zahl hängt am Spielplan und darf ' +
+        'springen — das Archiv darunter nicht.</p>' +
         zKnapp.map(function (f) { return karte(f, false); }).join('');
     } else {
-      knappHtml += '<p class="leise">Keine Paare. Entweder liegen gerade keine gemeinsamen ' +
+      knappHtml += '<p class="leise">Gerade nichts. Entweder liegen keine gemeinsamen ' +
         'Partien an, eine Quelle ist stehengeblieben, oder der Filter lässt nichts durch.</p>';
+    }
+    knappHtml += '<h2>Archiv — war eine Arbitrage, hat sich nicht gelohnt (' +
+      gKnappA.sichtbar.length + ')</h2>' +
+      '<p class="leise"><b>Diese Liste kann nur wachsen.</b> Beendete Funde, die je über ' +
+      '0 % lagen — rechnerisch eine Arbitrage —, aber nie über die Chancen-Schwelle von ' +
+      K.mindestRendite.toFixed(2) + ' % kamen: nach Gebühren zu wenig. Genau diese Zahl ' +
+      'steht im Reiter.</p>';
+    if (gKnappA.sichtbar.length) {
+      knappHtml += gKnappA.sichtbar.map(function (f) { return karte(f, true); }).join('');
+    } else {
+      knappHtml += '<p class="leise">Noch nichts beendet, das hierher gehört.</p>';
     }
     setzeWennAnders(document.getElementById('knapp'), knappHtml);
 
-    var verlaufHtml = (e.statistik && e.statistik.verlauf_nie
-        ? '<p class="leise">' + e.statistik.verlauf_nie + ' weitere beendete Zeilen lagen nie über der ' +
-          'Chancen-Schwelle und werden nicht geführt — damit die Rechnung aufgeht: Verlauf + Falsche Rechnungen + diese Zahl = alle Beendeten.</p>'
+    var verlaufHtml = (s.vorbei_rauschen
+        ? '<p class="leise">' + s.vorbei_rauschen + ' weitere beendete Zeilen waren nie eine ' +
+          'Arbitrage (beste Rendite unter 0) — sie zählen nirgends und die Datenbank löscht sie ' +
+          'binnen 5 Minuten. Mathematik: Verlauf + Falsche Rechnungen (die beendeten' +
+          (s.falsch_noch_live ? ', also ohne die ' + s.falsch_noch_live + ' noch live pendelnden' : '') +
+          ') + Knapp-Archiv + diese Zahl = alle geladenen Beendeten.</p>'
+        : '') +
+      /* WIEDERBELEBTE nie stillschweigend: sie sind der einzige erlaubte
+       * Grund, warum die Verlaufszahl kurz sinken kann. */
+      (s.wiederbelebt
+        ? '<div class="warnung"><b>' + s.wiederbelebt +
+          (s.wiederbelebt === 1 ? ' Zeile ist' : ' Zeilen sind') +
+          ' gerade wieder LIVE:</b> ihr Markt ist zurückgekommen, sie stehen solange nicht ' +
+          'im Archiv. Nach dem Ende kehren sie hierher zurück — nur dadurch kann die ' +
+          'Verlaufszahl vorübergehend um einzelne Zeilen sinken.</div>'
         : '') +
       '<p class="leise"><b>Nur Funde, die im Plus waren.</b> Was nie eine Rendite über ' +
       K.verlaufMinRendite.toFixed(0) + ' % erreicht hat, wird gelöscht statt aufbewahrt. ' +
@@ -1735,7 +1764,12 @@
       'geprüftes Urteil, Buchprobe (Gegenbuch in sich unstimmig), unplausibel hohe ' +
       'Rendite (über ' + Number(K.maxPlausibel || 5).toFixed(0) + ' % — bisher immer ein ' +
       'klebender Kurs) oder Fehlpaarung. Jede Karte nennt ihren Grund. ' +
-      '<b>Das Ziel ist eine Woche, in der hier nichts steht.</b></p>';
+      '<b>Das Ziel ist eine Woche, in der hier nichts steht.</b>' +
+      (s.falsch_noch_live
+        ? ' ' + s.falsch_noch_live + ' davon ' + (s.falsch_noch_live === 1 ? 'läuft' : 'laufen') +
+          ' gerade noch (oder wieder) live — nachgewiesen falsch bleibt falsch, die Zeile ' +
+          'bleibt hier stehen, statt im Minutentakt zu verschwinden und zurückzukommen.'
+        : '') + '</p>';
     if (gFalsch.sichtbar.length) {
       falschHtml += gFalsch.sichtbar.map(function (f) { return karte(f, true); }).join('');
     } else {
@@ -1743,8 +1777,10 @@
     }
     setzeWennAnders(document.getElementById('falsch'), falschHtml);
 
-    reiterZeichnen({ chancen: zChancen, knapp: zKnapp, verlauf: zVerlauf,
-                     falsch: gFalsch.sichtbar,
+    /* Der Knapp-Reiter zaehlt das ARCHIV (waechst nur); die Live-Zahl
+     * steht heller daneben, wie "veraltet" bei den Chancen. */
+    reiterZeichnen({ chancen: zChancen, knapp: gKnappA.sichtbar, verlauf: zVerlauf,
+                     falsch: gFalsch.sichtbar, knappLive: zKnapp.length,
                      veraltetHoch: e.veraltetHoch || [] });
   }
 

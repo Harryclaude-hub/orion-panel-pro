@@ -27,9 +27,20 @@
     return db('orion_funde?status=eq.live&order=rendite.desc&limit=1000');
   }
 
-  /* Was einmal galt und nicht mehr. Neueste Beendigung zuerst. */
+  /* Was einmal galt und nicht mehr. Neueste Beendigung zuerst.
+   *
+   * OHNE RAUSCHEN, und das ist der Kern (gemessen 14.8.): Zeilen, die nie
+   * etwas wert waren (beste Rendite unter 0), stehen bis zum naechsten
+   * Loeschtakt (alle 5 min) mit in der Tabelle. An einem vollen
+   * Fussballabend fluteten hunderte davon das Neueste-zuerst-Fenster und
+   * SCHOBEN echte Verlaufszeilen ueber das Limit hinaus — der Verlauf
+   * sprang von 160 auf 2 und wieder zurueck. Deshalb laedt diese Abfrage
+   * nur, was in einen der drei Reiter gehoert: nachgewiesen falsch, oder
+   * je ueber 0 % gewesen. */
   function holeVerlauf(grenze) {
-    return db('orion_funde?status=eq.vorbei&order=vorbei_seit.desc&limit=' + (grenze || 500));
+    return db('orion_funde?status=eq.vorbei' +
+      '&or=(pruefung.eq.falsch,beste_rendite.gte.0,and(beste_rendite.is.null,rendite.gte.0))' +
+      '&order=vorbei_seit.desc&limit=' + (grenze || 1000));
   }
 
   /* Die ganze Uebersicht in EINER Abfrage. Fuenf getrennte Abfragen koennten
@@ -107,7 +118,7 @@
   }
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(500), holeLaeufe(), holeKalshi(), holeWache(),
+    return Promise.all([holeLive(), holeVerlauf(1000), holeLaeufe(), holeKalshi(), holeWache(),
                         holeUebersicht(), holeSmarkets(), kurs()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
@@ -334,9 +345,19 @@
          * Buchprobe) ODER unplausibel hoch (ueber maxPlausibel — gemessen
          * war jede solche Zeile ein Kleber) ODER vom Pruefer beanstandet
          * ODER nicht gedeckt. Nichts davon verschwindet mehr still. */
+        /* ---------- Beendete in DREI Klassen (Vorgabe 14.8.) ----------
+         *
+         * "Wenn eine Rechnung kommt: entweder ist sie falsch — dann wissen
+         * wir, was er falsch gemacht hat. Verlauf ist, wenn's eine Chance
+         * war. Knappste Chancen: es war eine Arbitrage, aber es hat sich
+         * wegen Gebuehren und so nicht gelohnt." Jede beendete Zeile
+         * bekommt GENAU EINE dieser Klassen und behaelt sie — die drei
+         * Reiter koennen dadurch nur noch wachsen. Einzige Ausnahme: stellt
+         * der Pruefer eine Zeile spaeter als falsch fest, wandert sie von
+         * Verlauf nach Falsch — sichtbar, nicht verschwunden. */
         var falsch = [];
+        var vorbeiRauschen = 0;
         verlauf = verlauf.filter(function (f) {
-          var zuletzt = Number(f.rendite);
           var beste = Number(f.beste_rendite == null ? f.rendite : f.beste_rendite);
           /* ES ZAEHLT DER BESTE WERT, NICHT DER LETZTE.
            *
@@ -359,10 +380,11 @@
            * Dazu gehoert die Loeschregel in der Datenbank
            * (orion_rauschen_loeschen), die aus demselben Grund geaendert
            * wurde: sie loescht jetzt nur noch, was NIE etwas wert war. */
-          if (beste < K.verlaufMinRendite) return false;
-          /* Unter der Chancen-Schwelle war es nie eine Chance — weder
-           * Verlauf noch falsche Rechnung, es faellt einfach weg. */
-          if (beste < K.mindestRendite) return false;
+          /* Rauschen: war nie eine Arbitrage UND ist nicht als falsch
+           * nachgewiesen. Nur DAS faellt weg — und genau das loescht auch
+           * die Datenbank binnen 5 Minuten. Anzeige und Loeschregel sagen
+           * damit dasselbe. */
+          if (beste < 0 && f.pruefung !== 'falsch') { vorbeiRauschen++; return false; }
 
           /* Nachgewiesen oder rechnerisch falsch -> nur MARKIEREN; getrennt
            * wird erst nach den Schmuckschleifen unten, damit auch diese
@@ -376,6 +398,12 @@
           if (f.fehlpaarung ||
               (K.maxPlausibel && beste > K.maxPlausibel)) {
             f.rechnungFalsch = true;
+          } else if (beste < K.mindestRendite) {
+            /* War eine Arbitrage (ueber 0), hat sich aber nie gelohnt
+             * (unter der Chancen-Schwelle): das KNAPP-ARCHIV. Vorher fielen
+             * diese Zeilen einfach weg ("verlauf_nie") — jetzt sind sie der
+             * wachsende Teil des Knapp-Reiters. */
+            f.knappArchiv = true;
           }
           /* SONST NICHTS WEITER. Vorgabe 13.8. abends: "wenn es eine Chance
            * war und sie ist abgelaufen, dann in den Verlauf." Menge- und
@@ -471,16 +499,39 @@
         /* Jetzt erst trennen: falsche Rechnungen in den eigenen Reiter.
          * Die Gedeckt-Pruefung kommt hier dazu (G existiert erst jetzt). */
         var G = welt.Anzeige && welt.Anzeige.istGedeckt;
+        /* Die Gedeckt-Pruefung schlaegt nur bei EX-CHANCEN als "falsch" an:
+         * eine Knapp-Archiv-Zeile hat nie behauptet, eine Chance zu sein. */
         verlauf.forEach(function (f) {
-          if (!f.rechnungFalsch && G && !G(f)) f.rechnungFalsch = true;
+          if (!f.rechnungFalsch && !f.knappArchiv && G && !G(f)) f.rechnungFalsch = true;
         });
         falsch = verlauf.filter(function (f) { return f.rechnungFalsch; });
-        verlauf = verlauf.filter(function (f) { return !f.rechnungFalsch; });
+        var knappArchiv = verlauf.filter(function (f) { return !f.rechnungFalsch && f.knappArchiv; });
+        verlauf = verlauf.filter(function (f) { return !f.rechnungFalsch && !f.knappArchiv; });
+
+        /* PENDLER (entdeckt 14.8.): eine per Buchprobe gesperrte Zeile wird
+         * vom Scanner wiederbelebt, solange er den Markt findet, und eine
+         * Minute spaeter erneut gesperrt. Als live fehlte sie im
+         * Falsch-Reiter — dessen Zahl sprang im Minutentakt. Nachgewiesen
+         * falsch bleibt falsch: sie steht hier, auch waehrend sie live ist. */
+        var falschNochLive = 0;
+        live.forEach(function (f) {
+          if (f.pruefung === 'falsch') {
+            f.rechnungFalsch = true;
+            falsch.push(f);
+            falschNochLive++;
+          }
+        });
 
         /* Deckung (5. Bedingung, 13.8.): beide Seiten muessen nachweislich
          * GEGENSAETZLICHE Ausgaenge decken. Zwei Wetten auf denselben
          * Ausgang sehen in der Rechnung gut aus und sind doppeltes Risiko. */
         var chancen = live.filter(function (f) {
+          /* Nachgewiesen oder rechnerisch falsch ist NIE eine Chance —
+           * egal wie gut die Zahlen aussehen. Ohne diese Zeile konnte ein
+           * wiederbelebter Kleber (Buchprobe sperrt ihn, der Scanner findet
+           * den Markt weiter und macht ihn wieder live) mit 2–5 % als
+           * Chance erscheinen. Entdeckt 14.8. an 10 pendelnden Zeilen. */
+          if (f.fehlpaarung) return false;
           if (f.veraltet || f.zu_duenn) return false;
           if (f.rendite < K.mindestRendite) return false;
           /* Bedingung 6: unplausibel hoch ist KEINE Chance (siehe KONFIG). */
@@ -505,6 +556,9 @@
          * Rauschgrenze wird nicht gezeigt — es sagt nichts, ausser dass zwei
          * Buecher eben verschieden stehen. */
         var knapp = live.filter(function (f) {
+          /* Vom Pruefer als falsch nachgewiesene Zeilen stehen im
+           * Falsch-Reiter (auch solange sie live pendeln) — nicht doppelt. */
+          if (f.pruefung === 'falsch') return false;
           if (f.veraltet) return false;
           /* Zu duenne Zeilen mit guter Rendite gehoeren hierher, nicht in
            * die Chancen — und schon gar nicht ins Nichts. */
@@ -513,6 +567,10 @@
            * Geldschwelle. Es darf auf keinen Fall verschwinden — ein Filter,
            * der stillschweigend schluckt, ist eine Falle. */
           if (f.rendite >= K.mindestRendite) {
+            /* Wort-Fehlpaarung ueber der Schwelle: aus den Chancen
+             * verbannt, aber sichtbar HIER mit ihrer Marke — nicht im
+             * unsichtbaren Rauschen. */
+            if (f.fehlpaarung) return true;
             if (K.maxPlausibel && f.rendite > K.maxPlausibel) return true;
             if (f.zu_duenn) return true;
             if (f.echter_gewinn === null) return true;
@@ -543,6 +601,7 @@
           falsch: falsch,
           veraltetHoch: veraltetHoch,
           knapp: knapp,
+          knappArchiv: knappArchiv,
           verlauf: verlauf,
           lauf: lauf,
           uebersicht: uebersicht,
@@ -558,9 +617,18 @@
             live_gesamt: live.length,
             verlauf: verlauf.length,
             falsch: falsch.length,
-            /* beendete Zeilen, die nie ueber der Chancen-Schwelle lagen -
-             * sie werden nicht gefuehrt, aber gezaehlt (Mathematik!). */
-            verlauf_nie: Math.max(0, teile[1].length - verlauf.length - falsch.length),
+            falsch_noch_live: falschNochLive,
+            knapp_archiv: knappArchiv.length,
+            /* beendete Zeilen, die NIE eine Arbitrage waren (beste unter 0)
+             * - gezaehlt, dann von der Datenbank geloescht (Mathematik:
+             * verlauf + falsch + knapp_archiv + diese Zahl = alle
+             * geladenen Beendeten). */
+            vorbei_rauschen: vorbeiRauschen,
+            /* Zeilen, deren Markt ZURUECKGEKOMMEN ist: status wieder live,
+             * die alte Beendigung steht noch dran. Solange fehlen sie in
+             * den Archiv-Reitern - deshalb kann der Verlauf um einzelne
+             * Zeilen sinken und spaeter zurueckkehren. Nie stillschweigend. */
+            wiederbelebt: live.filter(function (f) { return f.vorbei_seit; }).length,
             /* Wie viele Verlaufszeilen ueber der Schwelle als Fehlpaarung
              * ausgeschieden sind. Nie stillschweigend — die Zahl steht
              * unter dem Reiter, sonst waere der Filter eine Falle. */

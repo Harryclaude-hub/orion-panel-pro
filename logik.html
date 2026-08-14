@@ -283,7 +283,26 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
     ein solcher Vorsprung weg.
   </p>
   <p class="leise">
-    Die Schwelle steht seit dem 12.8.2026 bei 2 %. Gemessen dazu (13.8.): alle als richtig geprüften Funde lagen zwischen 2,07 und 3,27 %, alle falschen über 4,48 % — jede Zeile über 5 % war bisher eine Fehlpaarung oder ein klebender Kurs, der Wächter markiert sie. Alles zwischen −1 % und 2 % steht unter „Knappste Paare".
+    Die Schwelle steht seit dem 12.8.2026 bei 2 %. Gemessen dazu (13.8.): alle als richtig geprüften Funde lagen zwischen 2,07 und 3,27 %, alle falschen über 4,48 % — jede Zeile über 5 % war bisher eine Fehlpaarung oder ein klebender Kurs, der Wächter markiert sie. Alles zwischen 0 % und 2 % steht unter „Knappste Paare"; was nie über 0 % lag, ist Rauschen und wird gelöscht.
+  </p>
+
+  <h3>Jede beendete Zeile bekommt GENAU EINE Klasse (Stand 14.08.2026)</h3>
+  <table>
+    <tr><th>Klasse</th><th>Regel</th><th>Verhalten der Zahl</th></tr>
+    <tr><td><b>Verlauf</b></td><td>war eine echte Chance: beste Rendite je über 2 %, nicht falsch</td><td>wächst nur</td></tr>
+    <tr><td><b>Knapp-Archiv</b></td><td>war eine Arbitrage (über 0 %), kam aber nie über 2 % — nach Gebühren zu wenig</td><td>wächst nur</td></tr>
+    <tr><td><b>Falsche Rechnung</b></td><td>nachgewiesen falsch: geprüftes Urteil, Buchprobe, Fehlpaarung, oder unplausibel über 5 %</td><td>wächst nur (leer werden soll er durch bessere Regeln, nicht durch Löschen)</td></tr>
+    <tr><td>Rauschen</td><td>lag nie über 0 % — war nie etwas wert</td><td>zählt nirgends; die Datenbank löscht es binnen 5 Minuten (nachgewiesen Falsches wird dabei ausdrücklich verschont)</td></tr>
+  </table>
+  <p class="leise">
+    Warum die Zahlen früher sprangen (gemessen 14.8.): die Seite lud die neuesten 500 beendeten
+    Zeilen MITSAMT Rauschen. An einem vollen Fußballabend schoben hunderte Rauschzeilen die
+    echten Verlaufszeilen aus dem Fenster — der Verlauf fiel von 160 auf 2 und kam nach der
+    Löschung zurück. Jetzt lädt die Seite das Rauschen gar nicht mehr mit, und der Knapp-Reiter
+    zählt sein Archiv statt der Live-Schwankung. Einzige erlaubte Bewegungen: eine Zeile wandert
+    sichtbar von Verlauf nach Falsch, wenn der Prüfer sie später als falsch nachweist — und ein
+    zurückgekommener Markt macht seine Zeile wieder LIVE, dann fehlt sie im Archiv, bis er endet
+    (die Seite sagt beides ausdrücklich an).
   </p>
 
   <h3>Die sieben Bedingungen einer Chance (Stand 14.08.2026, früh)</h3>

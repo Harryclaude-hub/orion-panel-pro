@@ -141,19 +141,19 @@
     var nrTreffer = q.match(/#\s*(\d{5})\b/) || q.match(/\b(\d{5})\b/);
     if (nrTreffer && e) {
       var nr = Number(nrTreffer[1]);
-      var alleN = (e.chancen || []).concat(e.knapp || [], e.verlauf || [], e.falsch || []);
+      var alleN = (e.chancen || []).concat(e.knapp || [], e.knappArchiv || [], e.verlauf || [], e.falsch || []);
       for (var ni = 0; ni < alleN.length; ni++) {
         if (alleN[ni].nr === nr) return pruefAntwort(alleN[ni]);
       }
-      return 'Negativ, Kamerad — Rechnung #' + nr + ' ist in keiner der vier Listen. ' +
-             'Entweder älter als die geladenen 500 Verlaufszeilen, oder die Nummer stimmt nicht. ' +
+      return 'Negativ, Kamerad — Rechnung #' + nr + ' ist in keiner der Listen. ' +
+             'Entweder älter als die geladenen 1000 Archivzeilen, oder die Nummer stimmt nicht. ' +
              'Die Nummer steht vorn auf jeder Karte.';
     }
 
     /* Nachrechnen ueber den Titel. */
     if (/pr(ü|ue)f|check|rechne|nachrechnen|stimmt/.test(q)) {
       if (!e || !Array.isArray(e.chancen)) return 'Noch keine Daten geladen, Kamerad — zwei Sekunden, dann frag nochmal.';
-      var alle = (e.chancen || []).concat(e.knapp || [], e.verlauf || [], e.falsch || []);
+      var alle = (e.chancen || []).concat(e.knapp || [], e.knappArchiv || [], e.verlauf || [], e.falsch || []);
       var rest = q.replace(/.*?(pr(ü|ue)fe?|check|rechne)\s*/, '').trim();
       var ziel = null;
       if (rest.length > 2) {
@@ -181,7 +181,8 @@
       var lauf = e.lauf || {};
       var alter = lauf.gelaufen_am ? Math.round((Date.now() - Date.parse(lauf.gelaufen_am)) / 1000) : null;
       return 'MELDUNG — Lagebericht: ' + (e.chancen || []).length + ' Chancen, ' +
-             (e.knapp || []).length + ' knapp daneben, ' + (e.verlauf || []).length +
+             (e.knapp || []).length + ' gerade knapp daneben, ' +
+             ((e.knappArchiv || []).length) + ' im Knapp-Archiv, ' + (e.verlauf || []).length +
              ' im Verlauf, ' + ((e.falsch || []).length) + ' als falsch aussortiert. ' +
              'Letzter Scanner-Lauf ' + (alter === null ? 'unbekannt' : 'vor ' + alter + ' s') + '. Ende.';
     }
