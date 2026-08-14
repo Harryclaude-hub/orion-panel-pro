@@ -37,7 +37,6 @@
   function allesStumm() {
     laufend.forEach(function (a) { try { a.pause(); } catch (e) {} });
     laufend = [];
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     avatarSpricht(false);
   }
 
@@ -121,62 +120,11 @@
     o.start(); o.stop(a.currentTime + 0.4);
   }
 
-  /* ---------- Sprache ---------- */
-
-  /* STIMMWAHL (14.8., zweiter Anlauf): der Auftraggeber will einen
-   * MENSCHEN hoeren, keinen Assistenten. Was die Browser hergeben:
-   *
-   *   - Microsoft "... Online (Natural)" — neuronale Windows-11-Stimmen,
-   *     klingen wirklich menschlich. Die Seite bekommt sie NUR in EDGE.
-   *   - Microsoft SAPI (Hedda, Stefan, Katja) — altbacken, aber lokal.
-   *   - "Google Deutsch" (Chrome) — die Assistenten-Stimme, letzte Wahl.
-   *
-   * Deshalb strenge Rangfolge: Natural zuerst, maennliche Sprecher
-   * bevorzugt (Funker), Google ganz hinten. */
-  function stimmeWaehlen() {
-    if (!('speechSynthesis' in window)) return;
-    var de = (window.speechSynthesis.getVoices() || []).filter(function (v) {
-      return /^de/i.test(v.lang);
-    });
-    function rang(v) {
-      var n = v.name.toLowerCase();
-      if (n.indexOf('natural') !== -1) return 0;   // menschlich (Edge)
-      if (n.indexOf('online') !== -1)  return 1;
-      if (n.indexOf('microsoft') !== -1) return 2;
-      if (n.indexOf('google') !== -1)  return 4;   // Assistenten-Klang
-      return 3;
-    }
-    function mann(v) {
-      return /conrad|florian|jonas|stefan|killian|klaus|bernd|ralf|kasper/i.test(v.name) ? 0 : 1;
-    }
-    de.sort(function (a, b) { return rang(a) - rang(b) || mann(a) - mann(b); });
-    stimme = de[0] || null;
-  }
-
-  /* Spielweisen: derselbe Soldat, drei Gemuetslagen.
-   *   ruhig  — Begruessung, Lagemeldung (tief, gelassen)
-   *   alarm  — Chance! (schneller, druckvoller — der gestresste Funker)
-   *   fehl   — Fehlversuch (trocken, gedaempft)                          */
-  var LAGEN = {
-    ruhig: { rate: 0.97, pitch: 0.78, volume: 0.9 },
-    alarm: { rate: 1.14, pitch: 0.95, volume: 1.0 },
-    fehl:  { rate: 0.94, pitch: 0.72, volume: 0.85 }
-  };
-
-  function sprich(text, lage) {
-    if (!an() || !('speechSynthesis' in window)) return;
-    if (!geste) return;                       // Browser wuerde es verschlucken
-    klick();
-    var u = new SpeechSynthesisUtterance(text);
-    if (stimme) u.voice = stimme;
-    u.lang = (stimme && stimme.lang) || 'de-DE';
-    var l = LAGEN[lage] || LAGEN.ruhig;
-    u.rate = l.rate; u.pitch = l.pitch; u.volume = l.volume;
-    u.onstart = function () { avatarSpricht(true); };
-    u.onend = function () { avatarSpricht(false); klick(); };
-    window.speechSynthesis.speak(u);
-    funkerLog(text);
-  }
+  /* Die Browser-Sprachausgabe wurde am 15.8. AUSGEBAUT: seit die echten
+   * Aufnahmen jede Zeile abdecken, war sie toter Code — und die einzige
+   * Stelle, aus der je wieder eine Roboterstimme haette kommen koennen.
+   * Faellt eine Aufnahme aus, bleibt der Soldat lieber still; der Text
+   * steht ohnehin im Funker-Log. */
 
   /* ---------- Echte Sprecher-Aufnahmen (ElevenLabs) ----------
    *
@@ -186,8 +134,7 @@
    * will der Auftraggeber nie wieder hoeren (Rueckmeldung 14.8. abends).
    * Deshalb: Datei abspielen; schlaegt sie fehl, EIN zweiter Versuch,
    * danach lieber STILL bleiben (der Text steht ohnehin im Funker-Log).
-   * Die Browser-Stimme existiert nur noch als sprich() fuer den Fall,
-   * dass es zu einem Spruch gar keine Aufnahme-Kennung gibt. */
+   * Ohne Aufnahme-Kennung wird nur ins Funker-Log geschrieben. */
   function spiel(clip, text, lage, kanal) {
     /* TON AUS = FUNKSTILLE, ohne Ausnahme (Vorgabe 15.8.: "wenn ich Ton
      * ausmache, will ich, dass nix mehr kommt"). Der Chat-Stummknopf
@@ -199,8 +146,7 @@
      * Aufnahmen UND die Browser-Stimme. */
     laufend.forEach(function (x) { try { x.pause(); } catch (e2) {} });
     laufend = [];
-    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
-    if (!clip) { sprich(text, lage); return; }
+    if (!clip) { funkerLog(text); return; }
 
     function versuch(nochmal) {
       var a = new Audio('audio/' + clip + '.mp3');
@@ -527,15 +473,12 @@
     if (begruessungOffen && an()) {
       begruessungOffen = false;
       /* Stimmen laden asynchron — kleiner Aufschub macht die Wahl sicher. */
-      setTimeout(function () { stimmeWaehlen(); begruessung(); }, 400);
+      setTimeout(begruessung, 400);
     }
   }
 
   function start() {
-    if ('speechSynthesis' in window) {
-      stimmeWaehlen();
-      window.speechSynthesis.onvoiceschanged = stimmeWaehlen;
-    }
+
     var k = document.getElementById('ton-knopf');
     if (k) k.addEventListener('click', function () { ersteGeste(); umschalten(); });
     beschrifte();

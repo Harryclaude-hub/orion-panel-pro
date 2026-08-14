@@ -1364,6 +1364,10 @@ Zeichen vergleichen, erst danach das Passwort verdächtigen.**
 
 ## 8j. STAND 13. August, abends — hier weiterlesen bei neuer Sitzung
 
+> **NEU 15.8.: [STRUKTUR.md](STRUKTUR.md) ist die Landkarte** — welche
+> Datei zu welcher Schicht gehoert (Logik/Design/Server) und wer mit wem
+> redet. Vor jeder Aenderung dort nachsehen.
+
 Dieser Abschnitt ist die Startseite für jede neue Sitzung. Er ersetzt kein
 Gespräch, aber er bringt jemanden in fünf Minuten auf den Stand.
 

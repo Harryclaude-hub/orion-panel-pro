@@ -324,17 +324,8 @@ h2 {
   color: var(--text-leise); font-size: 13px;
 }
 .tafel .rot, .tafel-fuss .rot { color: var(--rot); }
-
-.punkt {
-  display: inline-block; width: 9px; height: 9px; border-radius: 50%;
-  vertical-align: middle; margin-right: 2px;
-}
-.punkt.gruen { background: var(--gruen); }
-.punkt.gelb  { background: var(--orange); }
-.punkt.rot   { background: var(--rot); }
 /* Abgeschaltet ist nicht kaputt: grau statt rot, damit die Ampel nicht
-   einen Ausfall behauptet, wo eine Entscheidung steht. */
-.punkt.aus   { background: transparent; border: 2px solid var(--text-leise); }
+   einen Ausfall behauptet, wo eine Entscheidung steht. *
 
 @media (max-width: 700px) {
   .tafel table { min-width: 620px; }
@@ -1317,15 +1308,7 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
 }
 @keyframes fl-radar-dreh { to { transform: rotate(360deg); } }
 
-/* Der Flanken-Jaeger: fliegt die Saeule senkrecht ab, alle 21 s. */
-.flanke .fl-jet {
-  position: absolute; left: 50%; top: -30px; width: 46px; height: 16px;
-  margin-left: -23px; color: rgb(var(--fl-farbe));
-  opacity: 0; pointer-events: none;
-  transform: rotate(90deg);
-  animation: fl-jet-flug 21s linear infinite;
-}
-.flanke.rechts .fl-jet { transform: rotate(-90deg); animation-name: fl-jet-flug-rauf; animation-delay: 9s; }
+/* Der Flanken-Jaeger: fliegt die Saeule senkrecht ab, alle 21 s. *
 @keyframes fl-jet-flug {
   0%   { transform: rotate(90deg) translateX(0);      opacity: 0; }
   4%   { opacity: .3; }
@@ -1956,13 +1939,7 @@ body.ansicht-listen #orion-puls { display: none; }
   0%   { transform: translateX(0); }
   100% { transform: translateX(240px); }
 }
-.fl-soldat { position: absolute; width: 15px; height: 26px; bottom: 2px; }
-.fl-soldat .bein { transform-origin: 50% 0; }
-.fl-soldat .bein.b1 { animation: fl-schritt .7s ease-in-out infinite alternate; }
-.fl-soldat .bein.b2 { animation: fl-schritt .7s ease-in-out infinite alternate-reverse; }
 @keyframes fl-schritt { from { transform: rotate(-14deg); } to { transform: rotate(14deg); } }
-.fl-soldat.s1 { left: -20px; animation: fl-marsch 22s linear infinite; }
-.fl-soldat.s2 { left: -20px; animation: fl-marsch 22s linear 3s infinite; }
 @keyframes fl-marsch {
   0%   { transform: translateX(0); }
   100% { transform: translateX(230px); }
@@ -2115,8 +2092,7 @@ canvas.titel-partikel { position: fixed; z-index: 999990; pointer-events: none; 
 /* ---------- 14.8. nachts, Runde 3: Feinschliff auf Befehl ---------- */
 
 /* Soldaten sind ausgemustert (Qualitaet), und alles Fliegende bekommt
- * eine eigene Kompositions-Schicht — das nimmt das Ruckeln. */
-.fl-soldat { display: none !important; }
+ * eine eigene Kompositions-Schicht — das nimmt das Ruckeln. *
 .flanke .flug, .fl-panzer, .fl-schuss, .flanke .fl-scan, #kacheln::after {
   will-change: transform, opacity;
   transform: translateZ(0);
