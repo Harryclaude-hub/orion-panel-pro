@@ -1215,8 +1215,22 @@
    * Ein Punkt ist gruen, gelb oder rot — und daneben steht IMMER die Zahl,
    * auf der das Urteil beruht. Eine Ampel ohne Messwert ist eine Meinung.
    */
+  /* Statt des gruenen Punkts: ein SATELLITEN-EMPFAENGER (Vorgabe 14.8.).
+   * Gruen = Schuessel schwenkt und funkt. Rot = Schuessel haengt schief
+   * und raucht. Gelb = funkt, aber traege. Aus = abgedeckt. Nur Optik —
+   * der Zustand kommt unveraendert aus denselben Messwerten wie vorher. */
   function ampel(zustand) {
-    return '<span class="punkt ' + zustand + '"></span>';
+    return '<span class="sat ' + zustand + '" aria-hidden="true">' +
+      '<svg viewBox="0 0 20 20">' +
+        '<path class="sat-fuss" d="M9 18 L11 18 L10.4 13 L9.6 13 Z"/>' +
+        '<g class="sat-kopf">' +
+          '<path class="sat-schuessel" d="M4 4 A 7 7 0 0 0 12 12 Z"/>' +
+          '<line class="sat-arm" x1="8" y1="8" x2="12" y2="4"/>' +
+          '<circle class="sat-auge" cx="12.5" cy="3.5" r="1.3"/>' +
+        '</g>' +
+        '<g class="sat-wellen"><path d="M13 7 q2 1.5 1.5 4"/><path d="M15 5 q3 2.5 2.5 6"/></g>' +
+        '<g class="sat-rauch"><circle cx="10" cy="9" r="1.1"/><circle cx="12" cy="6.5" r="1.4"/><circle cx="14" cy="4" r="1.7"/></g>' +
+      '</svg></span>';
   }
 
   /* buchKlasse: das Kennzeichen des Buchs (pm/ka/sm/bf) oder 'supabase' —
@@ -1431,8 +1445,11 @@
 
     reihen.forEach(function (r, i) {
       var buchInfo = (welt.KONFIG.buecher || {})[r.buch] || {};
+      /* Die Zahl hinter dem Namen sind die GELADENEN MAERKTE dieses Buchs
+       * (live gemeldet vom Sammler; Rueckfall: gemessener Umfang). Sie
+       * traegt jetzt ihr Wort dabei — eine nackte Zahl erklaert nichts. */
       zeilen += anbieterZeile(
-        (i === 0 ? '① ' : '') + r.name + ' · ' + r.groesse,
+        (i === 0 ? '① ' : '') + r.name + ' · ' + r.groesse + ' Märkte',
         r.zustand, r.alter, r.umfang, r.funde, r.tempo,
         (i === 0 ? '<b>kleinstes Buch — die Engstelle</b> · ' : '') + (r.hinweis || ''),
         buchInfo.chip);
@@ -1846,6 +1863,22 @@
       return;
     }
     if (ueberFeld()) gemeldet('kopiert'); else fehlgeschlagen();
+  });
+
+  /* DOPPELKLICK auf die #Nummer kopiert sie (Vorgabe 14.8.) — der schnelle
+   * Weg zum Funker: doppelklicken, im Funker einfügen, prüfen. Derselbe
+   * Dokument-Zuhoerer-Trick wie beim Kopieren-Knopf: die Karten werden
+   * alle zwei Sekunden neu geschrieben, Einzel-Zuhoerer waeren sofort weg. */
+  document.addEventListener('dblclick', function (e) {
+    var chip = e.target && e.target.closest ? e.target.closest('.chip.nr') : null;
+    if (!chip) return;
+    var nr = chip.textContent.trim();
+    if (!navigator.clipboard || !navigator.clipboard.writeText) return;
+    navigator.clipboard.writeText(nr).then(function () {
+      var alt = chip.textContent;
+      chip.textContent = '✔ kopiert';
+      setTimeout(function () { if (chip.textContent === '✔ kopiert') chip.textContent = alt; }, 900);
+    }, function () { /* Fenster nicht im Vordergrund — dann eben nicht */ });
   });
 
   /* karte ist mit herausgereicht, damit der Prüfstand pruefung/karte-probe.html

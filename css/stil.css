@@ -55,16 +55,17 @@
   --blau:     var(--bf);
   --tuerkis:  var(--ka);
 
-  /* MINI-LOGOS der Anbieter, selbst gezeichnet (keine fremden Markenbilder):
-   * Farbfeld + Kennbuchstabe. Als data-URI, weil CSS-Hintergruende keine
-   * var()-Farben in SVG mischen koennen — deshalb stehen die Farbwerte hier
-   * DOPPELT (einmal als Token oben, einmal im Bild). Wer eine Buchfarbe
-   * aendert, aendert BEIDE Stellen. */
-  --logo-pm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%236C93E8'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3EP%3C/text%3E%3C/svg%3E");
-  --logo-ka: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%233FB59A'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3EK%3C/text%3E%3C/svg%3E");
-  --logo-sm: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%235BBE7C'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3ES%3C/text%3E%3C/svg%3E");
-  --logo-bf: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%23E8C15A'/%3E%3Ctext x='8' y='12' text-anchor='middle' font-family='Arial' font-size='11' font-weight='bold' fill='%231D211B'%3EB%3C/text%3E%3C/svg%3E");
-  --logo-supabase: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16'%3E%3Crect x='1' y='1' width='14' height='14' rx='4' fill='%233ECF8E'/%3E%3Cpath d='M9 2 L4 9 H8 L7 14 L12 7 H8 Z' fill='%231D211B'/%3E%3C/svg%3E");
+  /* ECHTE MINI-LOGOS der Anbieter (14.8., Wunsch des Auftraggebers):
+   * die Favicons der Anbieter-Seiten, als data-URI fest eingebettet
+   * (Polymarket/Betfair direkt, Kalshi/Smarkets ueber den Google-
+   * Favicon-Dienst in 64 px, Supabase 32 px). Kennzeichnungszweck auf
+   * einer privaten, passwortgeschuetzten Seite. Wer sie tauschen will,
+   * ersetzt nur diese fuenf Werte. */
+  --logo-pm: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAllBMVEUWUvD///7////j6/AAQOf///wAROmftOrL1+sASe+6yewARu8XUfEVU+////oASPAITfEAQ+OOp+YkWeURUeNiheeru+jl7PXm7+5FbeHG1ez2+/lliN6tvucASuFBbdt/mOAAQ/EASeZMduXW4+9WfOIvY9ju8/jAzukrXuN5leMvYd9Odt+JoeauwuZyj+GRqN+asuDVOMjUAAAC3UlEQVRYhe2W22KiMBCGSSDBmBDCwUNFUSiKlgr2/V9uZ7B27Z4I7cXeOLeQL5OZf/7EcR7xiP8Q6luLleTJVwnKGJnO5otlNHahE8DOIiyf4lXGGHG90XubUCbrjcsopWQ0QBmRb+NJRhlhuF7TEQClQi/tpjWhhFKtabbatcQyAxUoUZTPfqVhY8Yo0dV8XxaFT60AyoT8sJvWsJpoyHt53J1KYRxHDAMCB7qV7N8qrBhhjGWV/5pKofruC3/wCKZsdscadsWa63r60nCpVPD+dRhg4gUj1+WsuryWISb+U3rDAD6hGGyxWSfFe953YQPAnpFq13jFHzRvBSBaE0KZu5klvD/BaECmGQgOlJetzttS3jPsjjBtQLogHxQQddsu5aHpB8oaUMgon20WGpIADdNsctlGhTH2AAlKNiJqzqsMxYAtrduugUSkLaBvvRFgIG8VZAFFgdJU/nN5oQPTeAO8hzKybF6ONaxnWNbatc3gFqBhJWS+9ysYCyyKHgm4JSKipGsX2JYvAfAoHI7yFQAMohIc3RjUCSod8sRfAWAOVzdGR2Rag0rtALBv70vJusWtcTpINokPb8SqjUGgsG5PKGkoPKxny3adeqGlkAphorRrlwQTh1PDUB283tVCK8DG218qFDHsTdGNc9lPE4QVgNV1b4gg4RrcWAgzztJA+fpqif4+BVf79NnOUEAsy7Y7oRs7TvDps10GYIowvSfvPndrgGj7KxRnr/JneKHgaH+48zBA5Se4TdECwNB0djw3pQQvsr9Y8CnB0+d4onF2EbRAd76dZriNfRjwotO6ddEC8JqpV/EhkldPtLudMREjo6fLpFcENEa77Trnoe317vQvIxgmD90ZNIEUvCwPPhuYxt84Jiyb+FhDRVBemo564nwweDKbgynicIzNwLk6PFraAdwZu+vykYAPkOA5vFyYO/ahec8wwks6M/zjvyHfW/+IR/wlfgAYDTXlnQAuuQAAAABJRU5ErkJggg==");
+  --logo-ka: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAEAAAABACAMAAACdt4HsAAAAZlBMVEUA3ZQBIBoA4JYBAAkAsHYBHhkA5ZkBAAABDhIA6JsBGRYBAAYA2pIBFBMA1I4Am2kAv4EBUDgBMyYBBw8BVTwAxYQAom4BiV4BPy4BWT4BcE0BTDYBKB8AzooA76ABRTEBfVUBZEV4kVV3AAABkUlEQVRYhe2W227CMAyGSUqSntJCu3FaN8b7v+QqsTheY2E3l1P/KxThD//GdrLbbdr0L6UtCB9b+piI37syCH21hcOx5gCFesqYCKje/O+pcu96PcCemhBfnFkLKUB34UzVFyaeBFTHOpy5z9cGSIDtwUDTcwkQAGTAX9l4AoAM+JaNTwHIgNtzBSAAuoP48lbx8Qmg+gADk+D3EwA2cMgA6M4ZaQuSgGiAb0EKEA0IWpACRAOCFkwB6useDPij5B9cAoYePo6CFkwAagq/rxpJC6YAFQpQX8UG/gJAY5eXAcivSAEDYJHK5nAJMMM3EIzPyMAoO0IKslFeAEzVRzvCWVzOwgVawQw5w6QPDlLIHOdbrKNwHhcbqY1VqGUDlay0SGhOEhPLpWqHWMdSMpPJWkd19JJmSC6W6oE6WtAM6dXWwmKfr4acuxHXceSbgbreBwOErPcBrmN95+pIvlBQHdlmIB9Z8YaeZ4JpBvqVdkZr6vHaxPzQLJ5qipisnZoiiF1vGkQeavmC3rRphX4AVYsSJkrSttAAAAAASUVORK5CYII=");
+  --logo-sm: url("data:image/png;base64,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");
+  --logo-bf: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAMAAAAoLQ9TAAAABlBMVEUnOkf///9SImrwAAAAI0lEQVQYlWNgoCZgBAJ8AoxQAOPBRJAVo/IhIth0E2UhyQAAHPQAOflRobAAAAAASUVORK5CYII=");
+  --logo-supabase: url("data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACAAAAAgCAMAAABEpIrGAAAAw1BMVEUcHBwcHBwcHBwAAAAcHBwcHBwcHBwcHBwcHBwcHBwcHBw+z44+0Y8dIR8/0pAcGRoznG0eKyUeJyIdJCE6x4gztnswr3UcHh06woU2v4Ixs3k0oXErpW42u4A0uX03sHopl2Yqk2QrdVQ5xIY4snsuqnIpnmkuiWAlTDo8zIs8yYo5tH01qXUroGsvmmkxjmQrg1spbE4oYEcmUj4iPzIgMyoeLygeKSQ5v4MzlGglk2ElkmElfVUje1MidlApYkkoWkOF8UFJAAAACnRSTlP1skIA1r+8STza4wUXkQAAARBJREFUOMuF09dugzAUgGEDWbUNDmbv1YTsPbrb93+qQsIFQfLJf+tPlo+sg5SRhLAgJMkKGvUwUE9GEgYbIASD+hyuA1QDBvq2VCGg7rREh8B+TiHAji6lr2LATktKAMDOASU1YALAt5RUYHk2qjjnRgc4Oamj7vfP167MNkHw9wh+F+RW8fE5DW3LK0iitwCbvdE7MNN0PfFjzyQBbwEeaKQB0/qCyJ1HM9YC15XWtAjD2wXugT284fg+blqHth+5Zu50p1DvXbJJ9USzNATfjfXM9uNifGEAsLzViWERuKZ+lFQDCAFPLeuAMQA2ce5AQN3nHEMAOw7uArjniyPBoI9kcHlfhkiRB+L17w+VfxV3NZyee9V6AAAAAElFTkSuQmCC");
 
   --rund:     12px;
   --rund-chip: 8px;
@@ -1639,13 +1640,12 @@ header.kopf.hero > * { position: relative; z-index: 2; }
 }
 @keyframes hero-led-puls { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
 
-/* Knopfleiste: NEUN Knöpfe als ZWEI VOLLE Reihen (5er-Raster, Sofort-
- * ablesen doppelt breit). Regel des Auftraggebers: nie anderthalb Reihen. */
+/* Knopfleiste: ZEHN Knöpfe als ZWEI VOLLE 5er-Reihen (seit 14.8. mit dem
+ * Animations-Knopf; Sofort-ablesen wieder einfach breit dafür). Regel des
+ * Auftraggebers: nie anderthalb Reihen. */
 header.kopf.hero .kopf-leiste { grid-template-columns: repeat(5, minmax(0, 1fr)); }
-header.kopf.hero #neuladen { grid-column: span 2; }
 @media (max-width: 900px) {
   header.kopf.hero .kopf-leiste { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-  header.kopf.hero #neuladen { grid-column: span 2; }
   .hero-radar { display: none; }
 }
 
@@ -1680,3 +1680,106 @@ header.kopf.hero #neuladen { grid-column: span 2; }
   #funker-knopf .av-auge, #funker-knopf.spricht .av-mund,
   #funker-knopf.spricht .av-licht { animation: none; }
 }
+
+/* ==========================================================================
+ * KRIEGSGERAET-PAKET (14.8., zweiter Teil): Panzerknoepfe, Satelliten,
+ * Avatar-Lagen, Animationsstufen. Reine Design-Schicht, alles loeschbar.
+ * ========================================================================== */
+
+/* ---------- Panzerknoepfe: jeder Knopf ein Stueck Kriegsgeraet ---------- */
+header.kopf.hero .kopf-leiste button,
+header.kopf.hero .kopf-leiste .knopf {
+  clip-path: polygon(9px 0, 100% 0, 100% calc(100% - 9px),
+                     calc(100% - 9px) 100%, 0 100%, 0 9px);
+  background:
+    radial-gradient(circle at 12px 6px, rgba(0,0,0,.35) 1.2px, transparent 1.6px),
+    radial-gradient(circle at calc(100% - 12px) calc(100% - 6px), rgba(0,0,0,.35) 1.2px, transparent 1.6px),
+    linear-gradient(180deg, var(--karte-2), var(--karte));
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), inset 0 -2px 6px rgba(0,0,0,.25);
+}
+header.kopf.hero .kopf-leiste button:hover,
+header.kopf.hero .kopf-leiste .knopf:hover {
+  box-shadow: inset 0 1px 0 rgba(255,255,255,.05), inset 0 -2px 6px rgba(0,0,0,.25),
+              0 0 10px rgba(var(--sonar-rgb), .25);
+}
+svg.mil {
+  width: 27px; height: 17px; display: block; margin-bottom: 3px;
+  fill: currentColor; opacity: .85;
+}
+.kopf-leiste .haupt svg.mil { opacity: 1; }
+
+/* ---------- Satelliten-Empfaenger statt Ampelpunkt ---------- */
+.sat { display: inline-flex; width: 19px; height: 19px; vertical-align: -4px; margin-right: 3px; }
+.sat svg { width: 100%; height: 100%; overflow: visible; }
+.sat .sat-fuss { fill: var(--text-leise); }
+.sat .sat-schuessel { fill: var(--gruen); }
+.sat .sat-arm { stroke: var(--gruen); stroke-width: 1.2; }
+.sat .sat-auge { fill: var(--gruen); }
+.sat .sat-wellen path { fill: none; stroke: var(--gruen); stroke-width: 1.2; stroke-linecap: round; }
+.sat .sat-rauch { display: none; fill: var(--text-leise); }
+.sat .sat-kopf { transform-origin: 8px 8px; }
+
+/* GRUEN: die Schuessel schwenkt und funkt. */
+.sat.gruen .sat-kopf { animation: sat-schwenk 3.6s ease-in-out infinite; }
+.sat.gruen .sat-wellen { animation: sat-funk 1.6s linear infinite; }
+@keyframes sat-schwenk { 0%, 100% { transform: rotate(-8deg); } 50% { transform: rotate(10deg); } }
+@keyframes sat-funk { 0% { opacity: 0; } 30% { opacity: 1; } 100% { opacity: 0; } }
+
+/* GELB: funkt noch, aber traege. */
+.sat.gelb .sat-schuessel, .sat.gelb .sat-auge { fill: var(--orange); }
+.sat.gelb .sat-arm, .sat.gelb .sat-wellen path { stroke: var(--orange); }
+.sat.gelb .sat-wellen { animation: sat-funk 3.4s linear infinite; }
+
+/* ROT: Schuessel haengt schief, kein Funk, RAUCH steigt auf. */
+.sat.rot .sat-schuessel, .sat.rot .sat-auge { fill: var(--rot); }
+.sat.rot .sat-arm { stroke: var(--rot); }
+.sat.rot .sat-kopf { transform: rotate(34deg); }
+.sat.rot .sat-wellen { display: none; }
+.sat.rot .sat-rauch { display: block; }
+.sat.rot .sat-rauch circle { animation: sat-rauch 1.8s ease-out infinite; opacity: 0; }
+.sat.rot .sat-rauch circle:nth-child(2) { animation-delay: .6s; }
+.sat.rot .sat-rauch circle:nth-child(3) { animation-delay: 1.2s; }
+@keyframes sat-rauch {
+  0%   { transform: translateY(3px); opacity: 0; }
+  25%  { opacity: .55; }
+  100% { transform: translateY(-5px); opacity: 0; }
+}
+
+/* AUS: abgedeckt, bewusst still — Abschalten ist kein Schaden. */
+.sat.aus { opacity: .45; }
+.sat.aus .sat-schuessel, .sat.aus .sat-auge { fill: var(--text-leise); }
+.sat.aus .sat-arm { stroke: var(--text-leise); }
+.sat.aus .sat-wellen { display: none; }
+
+/* ---------- Avatar-Lagen: der Funker lebt ---------- */
+#funker-knopf .avatar svg { animation: av-atmen 4.2s ease-in-out infinite; }
+@keyframes av-atmen { 0%, 100% { transform: scale(1); } 50% { transform: scale(1.035); } }
+#funker-knopf .avatar { transition: transform .25s ease; }
+#funker-knopf.hoert .avatar { transform: rotate(-6deg) translateY(-1px); }
+#funker-knopf.hoert .av-auge { transform: scaleY(1.3); }
+#funker-knopf.nickt .avatar { animation: av-nick .65s ease; }
+@keyframes av-nick { 0%, 100% { transform: none; } 40% { transform: translateY(2.5px) rotate(4deg); } }
+#funker-knopf.salut .avatar { animation: av-salut 1.15s ease; }
+@keyframes av-salut { 0%, 100% { transform: none; } 30%, 60% { transform: translateY(-2px) rotate(-5deg); } }
+#funker-knopf.schaut .av-auge { animation: av-blick 1.1s ease; }
+@keyframes av-blick { 0%, 100% { transform: translateX(0); } 40%, 70% { transform: translateX(1.7px); } }
+
+/* ---------- Animationsstufen (Klasse an <html>, gesetzt von buehne.js) ----
+ * Stufe 1 SCHONUNG: alles Dauerlaufende steht. Stufe 2 STANDARD: das
+ * Teuerste steht (Bodengitter, Scanbalken), der Rest laeuft. Stufe 3:
+ * volles Kino. Einmalige Effekte (Kino, Nicken) laufen in jeder Stufe —
+ * Waerme machen die DAUER-Schleifen, nicht der einzelne Moment. */
+html.anim-2 .hero-gitter,
+html.anim-2 .hero-scan::after { animation: none; }
+
+html.anim-1 .hero-gitter,
+html.anim-1 .hero-scan::after,
+html.anim-1 .hero-radar::before,
+html.anim-1 .hero-led,
+html.anim-1 .sat .sat-kopf,
+html.anim-1 .sat .sat-wellen,
+html.anim-1 .sat .sat-rauch circle,
+html.anim-1 #funker-knopf .avatar svg,
+html.anim-1 #funker-knopf .av-auge { animation: none; }
+html.anim-1 #flanke-l, html.anim-1 #flanke-r { display: none; }
+html.anim-2 #flanke-l, html.anim-2 #flanke-r { opacity: .55; }

@@ -319,6 +319,71 @@
     if (k) k.classList.toggle('spricht', ja);
   }
 
+  function avatarLage(klasse, dauerMs) {
+    var k = document.getElementById('funker-knopf');
+    if (!k) return;
+    k.classList.add(klasse);
+    if (dauerMs) setTimeout(function () { k.classList.remove(klasse); }, dauerMs);
+  }
+
+  /* ---------- Der Funker REDET im Chat (Vorgabe 14.8.) ----------
+   *
+   * Alles ueber Ereignis-Weiterleitung am Dokument, weil der Funker seine
+   * Oberflaeche selbst baut (Reihenfolge egal, Zuhoerer ueberleben):
+   *   - Fenster geht auf  -> Begruessung (echte Aufnahme), Avatar salutiert
+   *   - Eingabefeld aktiv -> er hoert zu (Augen auf, Kopf geneigt)
+   *   - Befehl abgeschickt -> Nicken + "Befehl erhalten" / "Verstanden"
+   *   - Antwort beginnt mit "Negativ" -> die Negativ-Aufnahme
+   * Die ausfuehrliche Antwort bleibt Text im Fenster - eine feste Aufnahme
+   * kann keine wechselnden Zahlen sprechen, und der Bericht ist lang. */
+  var letzteChatBegruessung = 0;
+
+  document.addEventListener('click', function (ev) {
+    var k = ev.target && ev.target.closest ? ev.target.closest('#funker-knopf') : null;
+    if (!k) return;
+    var p = document.getElementById('funker');
+    if (!p || !p.classList.contains('offen')) return;   // gerade geschlossen
+    if (Date.now() - letzteChatBegruessung < 60000) return;
+    letzteChatBegruessung = Date.now();
+    avatarLage('salut', 1200);
+    spiel('funker-gruss', 'Funker auf Empfang, Offizier. Was liegt an?', 'ruhig');
+  });
+
+  document.addEventListener('focusin', function (ev) {
+    if (ev.target && ev.target.id === 'funker-frage') avatarLage('hoert');
+  });
+  document.addEventListener('focusout', function (ev) {
+    if (ev.target && ev.target.id === 'funker-frage') {
+      var k = document.getElementById('funker-knopf');
+      if (k) k.classList.remove('hoert');
+    }
+  });
+
+  document.addEventListener('submit', function (ev) {
+    if (!ev.target || ev.target.id !== 'funker-form') return;
+    var feld = document.getElementById('funker-frage');
+    var befehl = feld ? feld.value.trim().toLowerCase() : '';
+    avatarLage('nickt', 700);
+    /* Kurz warten, bis der Funker seine Antwort geschrieben hat, dann die
+     * passende Aufnahme dazu — Negativ klingt anders als Befehl erhalten. */
+    setTimeout(function () {
+      var zeilen = document.querySelectorAll('#funker-log .fu-zeile.funker');
+      var letzte = zeilen.length ? zeilen[zeilen.length - 1].textContent : '';
+      if (letzte.indexOf('Negativ') === 0) {
+        spiel('funker-negativ', 'Negativ, Offizier — Ziel nicht gefunden.', 'fehl');
+      } else if (/pr(ü|ue)f|#\s*\d|check|rechne/.test(befehl)) {
+        spiel('funker-bestaetigt', 'Befehl erhalten — Prüfung läuft.', 'ruhig');
+      } else {
+        spiel('funker-verstanden', 'Verstanden, Offizier.', 'ruhig');
+      }
+    }, 200);
+  });
+
+  /* Leerlauf-Leben: alle paar Sekunden ein kurzer Seitenblick. */
+  setInterval(function () {
+    if (Math.random() < 0.45) avatarLage('schaut', 1100);
+  }, 6000);
+
   /* ---------- Knopf im Kopf ---------- */
 
   function beschrifte() {

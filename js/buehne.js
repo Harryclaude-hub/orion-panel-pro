@@ -222,7 +222,65 @@
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
   else start();
 
+  /* ---------- ANIMATIONSSTUFEN (Vorgabe 14.8.) ----------
+   *
+   * Drei Stufen gegen heisse Laptops. Die Stufe steht als Klasse am
+   * <html>-Element (anim-1/2/3), die Drosselung passiert KOMPLETT in
+   * stil.css - hier wird nur geschaltet und empfohlen. Der Scanner ist
+   * davon voellig unberuehrt: er laeuft auf dem Server, die Stufen
+   * betreffen NUR die Anzeige-Animationen im Browser.
+   *
+   *   1 SCHONUNG  - alles Dauerlaufende steht (Gitter, Radar, Flanken)
+   *   2 STANDARD  - Radar + LED + Avatar laufen, Bodengitter/Scan stehen
+   *   3 VOLLES KINO - alles
+   *
+   * EMPFEHLUNG statt Bevormundung: aus Kernzahl und Speicher des Geraets
+   * wird eine Stufe empfohlen und beim ersten Besuch gesetzt; danach
+   * gilt der gespeicherte Wunsch. */
+  var ANIM_SCHLUESSEL = 'orion-anim';
+
+  function animEmpfehlung() {
+    var kerne = Number(navigator.hardwareConcurrency) || 4;
+    var speicher = Number(navigator.deviceMemory) || 4;   // GB; Firefox kennt es nicht -> 4
+    if (kerne >= 8 && speicher >= 8) return 3;
+    if (kerne >= 4) return 2;
+    return 1;
+  }
+
+  function animStufe() {
+    var s = Number(localStorage.getItem(ANIM_SCHLUESSEL));
+    return (s === 1 || s === 2 || s === 3) ? s : animEmpfehlung();
+  }
+
+  function animSetzen(stufe) {
+    var wurzel = document.documentElement;
+    wurzel.classList.remove('anim-1', 'anim-2', 'anim-3');
+    wurzel.classList.add('anim-' + stufe);
+    var NAMEN = { 1: 'SCHONUNG', 2: 'STANDARD', 3: 'VOLLES KINO' };
+    var t = document.getElementById('anim-text');
+    var k = document.getElementById('anim-klein');
+    if (t) t.textContent = 'Animation: Stufe ' + stufe + ' — ' + NAMEN[stufe];
+    if (k) {
+      var e = animEmpfehlung();
+      k.textContent = (stufe === e ? 'entspricht der Empfehlung fuer dieses Geraet'
+                                   : 'empfohlen fuer dieses Geraet: Stufe ' + e) +
+                      ' (' + (Number(navigator.hardwareConcurrency) || '?') + ' Kerne)';
+    }
+  }
+
+  function animStart() {
+    animSetzen(animStufe());
+    var knopf = document.getElementById('anim-knopf');
+    if (knopf) knopf.addEventListener('click', function () {
+      var neu = animStufe() % 3 + 1;
+      localStorage.setItem(ANIM_SCHLUESSEL, String(neu));
+      animSetzen(neu);
+    });
+  }
+  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', animStart);
+  else animStart();
+
   /* Fuer den Pruefstand von aussen anstossbar. */
-  welt.Buehne = { spiele: spiele, lage: lage };
+  welt.Buehne = { spiele: spiele, lage: lage, animStufe: animStufe };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
