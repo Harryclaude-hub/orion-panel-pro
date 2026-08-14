@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orion Panel Pro</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="css/stil.css?v=30">
+<link rel="stylesheet" href="css/stil.css?v=31">
 </head>
 <body>
 
@@ -20,13 +20,28 @@
 
 <div class="huelle">
 
-  <!-- Kopf in ZWEI festen Zeilen: oben Titel und Live-Stand, darunter ALLE
-       Knöpfe in einer Reihe mit fester Reihenfolge. Nichts springt mehr,
-       wenn sich der Stand-Text ändert. -->
-  <header class="kopf">
+  <!-- GEFECHTSSTAND-HERO (14.8.): Titel und Live-Stand in fester Zeile,
+       darunter ALLE Knöpfe in VOLLEN Reihen (5er-Raster, Sofort-ablesen
+       doppelt breit = exakt zwei volle Reihen). Alles Dekorative liegt in
+       .hero-lage und ist reine Design-Schicht — löschbar, ohne dass ein
+       Wert fehlt. -->
+  <header class="kopf hero">
+    <div class="hero-lage" aria-hidden="true">
+      <div class="hero-gitter"></div>
+      <div class="hero-radar"></div>
+      <div class="hero-scan"></div>
+      <b class="hero-eck e1"></b><b class="hero-eck e2"></b>
+      <b class="hero-eck e3"></b><b class="hero-eck e4"></b>
+    </div>
     <div class="kopf-titel">
-      <h1>Orion Panel Pro</h1>
-      <span class="chip" id="stand">bereit</span>
+      <div class="hero-marke">
+        <h1>Orion Panel Pro</h1>
+        <div class="hero-unter">GEFECHTSSTAND · VIER BÖRSEN · DAUERBETRIEB</div>
+      </div>
+      <div class="hero-status">
+        <span class="chip" id="stand">bereit</span>
+        <span class="hero-uhrfeld"><i class="hero-led"></i>WIEN <b id="hero-uhr">--:--:--</b></span>
+      </div>
     </div>
     <nav class="kopf-leiste">
       <!-- "Sofort ablesen": die Seite liest OHNEHIN alle 2 Sekunden ab.
@@ -36,6 +51,8 @@
       <button id="filter-knopf" class="knopf"><b>⛉ Filter</b><small>blendet nur aus, sucht nie</small></button>
       <!-- Beschriftung setzt js/melder.js (AN / AUS / vom Browser gesperrt). -->
       <button id="melder-knopf" class="knopf"><b id="melder-text">🔕 Meldungen</b><small>meldet jede NEUE Chance</small></button>
+      <!-- Beschriftung setzt js/stimme.js (AN / AUS). -->
+      <button id="ton-knopf" class="knopf"><b id="ton-text">🔊 Ton</b><small>Begrüßung + Funksprüche + Effekte</small></button>
       <a class="knopf" href="angaben.html"><b>ℹ Angaben</b><small>jedes Wort der Karten erklärt</small></a>
       <a class="knopf" href="logik.html"><b>⌕ Wie gesucht wird</b><small>jede Schwelle, jede Formel</small></a>
       <a class="knopf" href="knoepfe.html"><b>⌨ Knöpfe erklärt</b><small>was jeder Klick wirklich tut</small></a>
@@ -85,17 +102,18 @@
 
 </div>
 
-<script src="js/konfig.js?v=30"></script>
-<script src="js/rechnung.js?v=30"></script>
-<script src="js/zuordnung.js?v=30"></script>
-<script src="js/daten.js?v=30"></script>
-<script src="js/filter.js?v=30"></script>
-<script src="js/puls.js?v=30"></script>
-<script src="js/melder.js?v=30"></script>
-<script src="js/buehne.js?v=30"></script>
-<script src="js/funker.js?v=30"></script>
-<script src="js/anzeige.js?v=30"></script>
-<script src="js/sperre.js?v=30"></script>
-<script src="js/app.js?v=30"></script>
+<script src="js/konfig.js?v=31"></script>
+<script src="js/rechnung.js?v=31"></script>
+<script src="js/zuordnung.js?v=31"></script>
+<script src="js/daten.js?v=31"></script>
+<script src="js/filter.js?v=31"></script>
+<script src="js/puls.js?v=31"></script>
+<script src="js/melder.js?v=31"></script>
+<script src="js/buehne.js?v=31"></script>
+<script src="js/stimme.js?v=31"></script>
+<script src="js/funker.js?v=31"></script>
+<script src="js/anzeige.js?v=31"></script>
+<script src="js/sperre.js?v=31"></script>
+<script src="js/app.js?v=31"></script>
 </body>
 </html>

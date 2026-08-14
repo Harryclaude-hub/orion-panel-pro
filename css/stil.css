@@ -1541,3 +1541,142 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
 .fund:has(details.voll:not([open])):hover {
   border-color: color-mix(in srgb, var(--gold) 45%, transparent);
 }
+
+/* ==========================================================================
+ * GEFECHTSSTAND-HERO + STIMME + AVATAR (14.8.2026) — reine Design-Schicht.
+ * Alles hier ist löschbar; darunter fehlt dann nur Schmuck, nie ein Wert.
+ * ========================================================================== */
+
+header.kopf.hero {
+  position: relative; overflow: hidden;
+  padding: 22px 20px 16px;
+  background:
+    radial-gradient(120% 140% at 85% 0%, rgba(var(--sonar-rgb), .07), transparent 55%),
+    linear-gradient(180deg, var(--karte-2), var(--karte));
+  border: 1px solid var(--rand);
+}
+header.kopf.hero > * { position: relative; z-index: 2; }
+.hero-lage { position: absolute; inset: 0; z-index: 1 !important; pointer-events: none; }
+
+/* Bodengitter in 3D: eine Ebene, perspektivisch gekippt, zieht langsam
+ * nach vorn — der "Kartentisch" des Gefechtsstands. */
+.hero-gitter {
+  position: absolute; left: -20%; right: -20%; bottom: -55%; height: 130%;
+  background:
+    repeating-linear-gradient(0deg, rgba(var(--sonar-rgb), .13) 0 1px, transparent 1px 34px),
+    repeating-linear-gradient(90deg, rgba(var(--sonar-rgb), .13) 0 1px, transparent 1px 34px);
+  transform: perspective(560px) rotateX(62deg);
+  transform-origin: 50% 100%;
+  animation: hero-gitter-zug 14s linear infinite;
+  -webkit-mask-image: linear-gradient(180deg, transparent 0%, #000 45%);
+          mask-image: linear-gradient(180deg, transparent 0%, #000 45%);
+}
+@keyframes hero-gitter-zug { from { background-position: 0 0, 0 0; } to { background-position: 0 34px, 0 0; } }
+
+/* Radarschirm rechts: Ringe + umlaufender Wischstrahl. */
+.hero-radar {
+  position: absolute; right: -46px; top: -46px; width: 230px; height: 230px;
+  border-radius: 50%;
+  background:
+    repeating-radial-gradient(circle at 50% 50%, transparent 0 26px, rgba(var(--sonar-rgb), .16) 26px 27px),
+    radial-gradient(circle at 50% 50%, rgba(var(--sonar-rgb), .10), transparent 70%);
+  opacity: .8;
+}
+.hero-radar::before {
+  content: ""; position: absolute; inset: 0; border-radius: 50%;
+  background: conic-gradient(from 0deg, rgba(var(--sonar-rgb), .35), transparent 70deg, transparent 360deg);
+  animation: hero-radar-dreh 5s linear infinite;
+}
+.hero-radar::after {
+  content: ""; position: absolute; left: 50%; top: 50%; width: 4px; height: 4px;
+  margin: -2px 0 0 -2px; border-radius: 50%; background: rgba(var(--sonar-rgb), .8);
+}
+@keyframes hero-radar-dreh { to { transform: rotate(360deg); } }
+
+/* Scanzeilen + ein wandernder Lichtbalken, sehr leise. */
+.hero-scan {
+  position: absolute; inset: 0;
+  background: repeating-linear-gradient(0deg, rgba(0,0,0,.10) 0 1px, transparent 1px 3px);
+}
+.hero-scan::after {
+  content: ""; position: absolute; left: 0; right: 0; height: 44px; top: -44px;
+  background: linear-gradient(180deg, transparent, rgba(var(--sonar-rgb), .05), transparent);
+  animation: hero-scan-zug 7s linear infinite;
+}
+@keyframes hero-scan-zug { to { transform: translateY(260px); } }
+
+/* Eckwinkel wie auf der Zieloptik. */
+.hero-eck { position: absolute; width: 16px; height: 16px; border: 2px solid rgba(var(--sonar-rgb), .5); }
+.hero-eck.e1 { left: 6px;  top: 6px;    border-right: 0; border-bottom: 0; }
+.hero-eck.e2 { right: 6px; top: 6px;    border-left: 0;  border-bottom: 0; }
+.hero-eck.e3 { left: 6px;  bottom: 6px; border-right: 0; border-top: 0; }
+.hero-eck.e4 { right: 6px; bottom: 6px; border-left: 0;  border-top: 0; }
+
+/* Titelblock: Stencil-Anmutung ohne Fremdschrift. */
+.hero .kopf-titel { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
+.hero-marke h1 {
+  margin: 0; letter-spacing: .14em; text-transform: uppercase;
+  font-weight: 800; font-size: 26px;
+  text-shadow: 0 0 18px rgba(var(--sonar-rgb), .25);
+}
+.hero-unter {
+  font-size: 10.5px; letter-spacing: .34em; color: var(--text-leise);
+  margin-top: 2px; white-space: nowrap;
+}
+.hero-status { margin-left: auto; display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.hero-uhrfeld {
+  display: inline-flex; align-items: center; gap: 7px;
+  font: 13px/1 ui-monospace, "Cascadia Mono", Consolas, monospace;
+  letter-spacing: .08em; color: var(--text-leise);
+  border: 1px solid var(--rand); border-radius: var(--rund-chip);
+  padding: 7px 10px; background: rgba(0,0,0,.18);
+}
+.hero-uhrfeld b { color: var(--text); font-weight: 600; }
+.hero-led {
+  width: 7px; height: 7px; border-radius: 50%; background: var(--sonar);
+  box-shadow: 0 0 6px rgba(var(--sonar-rgb), .8);
+  animation: hero-led-puls 2.2s ease-in-out infinite;
+}
+@keyframes hero-led-puls { 0%, 100% { opacity: 1; } 50% { opacity: .35; } }
+
+/* Knopfleiste: NEUN Knöpfe als ZWEI VOLLE Reihen (5er-Raster, Sofort-
+ * ablesen doppelt breit). Regel des Auftraggebers: nie anderthalb Reihen. */
+header.kopf.hero .kopf-leiste { grid-template-columns: repeat(5, minmax(0, 1fr)); }
+header.kopf.hero #neuladen { grid-column: span 2; }
+@media (max-width: 900px) {
+  header.kopf.hero .kopf-leiste { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  header.kopf.hero #neuladen { grid-column: span 2; }
+  .hero-radar { display: none; }
+}
+
+/* ---------- Funker-Knopf mit Soldaten-Avatar ---------- */
+#funker-knopf {
+  display: flex; align-items: center; gap: 10px;
+  padding: 6px 18px 6px 8px; min-height: 56px;
+}
+#funker-knopf .avatar { display: inline-flex; }
+#funker-knopf .avatar svg { display: block; }
+#funker-knopf .funker-wort { letter-spacing: 1.5px; }
+
+/* Blinzeln im Leerlauf. */
+#funker-knopf .av-auge { animation: av-blinzeln 4.6s infinite; transform-origin: center; }
+@keyframes av-blinzeln { 0%, 94%, 100% { transform: scaleY(1); } 96% { transform: scaleY(.12); } }
+
+/* Beim Sprechen: Mund arbeitet, Headset-Licht flackert, Knopf glimmt. */
+#funker-knopf .av-mund { transform-origin: center; }
+#funker-knopf.spricht .av-mund { animation: av-sprechen .22s ease-in-out infinite alternate; }
+@keyframes av-sprechen { from { transform: scaleY(1); } to { transform: scaleY(2.6); } }
+#funker-knopf .av-licht { opacity: .5; }
+#funker-knopf.spricht .av-licht { animation: av-funklicht .3s steps(2) infinite; }
+@keyframes av-funklicht { from { opacity: 1; } to { opacity: .25; } }
+#funker-knopf.spricht {
+  border-color: var(--sonar);
+  box-shadow: 0 0 14px rgba(var(--sonar-rgb), .35);
+}
+
+/* Wer weniger Bewegung will, bekommt weniger Bewegung. */
+@media (prefers-reduced-motion: reduce) {
+  .hero-gitter, .hero-radar::before, .hero-scan::after, .hero-led,
+  #funker-knopf .av-auge, #funker-knopf.spricht .av-mund,
+  #funker-knopf.spricht .av-licht { animation: none; }
+}
