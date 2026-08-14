@@ -25,6 +25,10 @@
   var stimme = null;              // gewaehlte deutsche Stimme
 
   function an() { return localStorage.getItem(SCHLUESSEL) !== 'aus'; }  // Standard: AN
+  /* Der Funker-Chat hat seinen EIGENEN Schalter (Vorgabe 15.8.): der
+   * globale Ton-Knopf regelt nur die Hintergrund-Funksprueche; den
+   * Chat-Soldaten schaltet man im Chatfenster selbst stumm. */
+  function funkerAn() { return localStorage.getItem('orion-funker-ton') !== 'aus'; }
 
   /* Gerade spielende Aufnahmen: Ton-AUS muss sie SOFORT stoppen, nicht
    * erst die naechste verhindern (Rueckmeldung 14.8.: "Ton aus bringt
@@ -184,8 +188,8 @@
    * danach lieber STILL bleiben (der Text steht ohnehin im Funker-Log).
    * Die Browser-Stimme existiert nur noch als sprich() fuer den Fall,
    * dass es zu einem Spruch gar keine Aufnahme-Kennung gibt. */
-  function spiel(clip, text, lage) {
-    if (!an()) return;
+  function spiel(clip, text, lage, kanal) {
+    if (kanal === 'funker' ? !funkerAn() : !an()) return;
     /* NIE zwei Stimmen uebereinander (Vorgabe 14.8. nachts): wer neu
      * spricht, bringt zuerst alle anderen zum Schweigen — laufende
      * Aufnahmen UND die Browser-Stimme. */
@@ -333,6 +337,24 @@
 
   /* ---------- Avatar: der Soldat unten rechts am Funker-Knopf ---------- */
 
+  function stummknopfBauen() {
+    var kopf = document.querySelector('#funker .fu-kopf');
+    if (!kopf || kopf.querySelector('.fu-stumm')) return;
+    var k = document.createElement('button');
+    k.type = 'button';
+    k.className = 'fu-stumm';
+    k.title = 'Nur den Funker stumm schalten — die Hintergrundstimmen regelt der Ton-Knopf oben';
+    function b() { k.textContent = funkerAn() ? '🔊' : '🔇'; }
+    b();
+    k.addEventListener('click', function () {
+      localStorage.setItem('orion-funker-ton', funkerAn() ? 'aus' : 'an');
+      if (!funkerAn()) allesStumm();
+      b();
+    });
+    var zu = kopf.querySelector('.fu-zu');
+    kopf.insertBefore(k, zu || null);
+  }
+
   function avatarBauen() {
     var k = document.getElementById('funker-knopf');
     if (!k || k.querySelector('.avatar')) return;
@@ -416,7 +438,7 @@
     avatarLage('salut', 1200);
     avatarAusdruck('froh', 2200);
     var wg = zufall(pool('funker_gruss', [{ c: 'funker-gruss-1', t: 'Funker auf Empfang, Offizier. Was liegt an?' }]));
-    spiel(wg.c, wg.t, 'ruhig');
+    spiel(wg.c, wg.t, 'ruhig', 'funker');
   });
 
   document.addEventListener('focusin', function (ev) {
@@ -455,13 +477,13 @@
       var w2;
       if (letzte.indexOf('Negativ') === 0) {
         w2 = zufall(pool('funker_negativ', [{ c: 'funker-negativ-1', t: 'Negativ, Offizier — Ziel nicht gefunden.' }]));
-        spiel(w2.c, w2.t, 'fehl');
+        spiel(w2.c, w2.t, 'fehl', 'funker');
       } else if (/pr(ü|ue)f|#\s*\d|check|rechne/.test(befehl)) {
         w2 = zufall(pool('funker_bestaetigt', [{ c: 'funker-bestaetigt-1', t: 'Befehl erhalten — Prüfung läuft.' }]));
-        spiel(w2.c, w2.t, 'ruhig');
+        spiel(w2.c, w2.t, 'ruhig', 'funker');
       } else {
         w2 = zufall(pool('funker_verstanden', [{ c: 'funker-verstanden-1', t: 'Verstanden, Offizier.' }]));
-        spiel(w2.c, w2.t, 'ruhig');
+        spiel(w2.c, w2.t, 'ruhig', 'funker');
       }
     }, 200);
   });
@@ -518,7 +540,8 @@
     document.addEventListener('pointerdown', ersteGeste, { once: false });
 
     avatarBauen();
-    setInterval(avatarBauen, 3000);   // falls der Funker spaeter baut
+    stummknopfBauen();
+    setInterval(function () { avatarBauen(); stummknopfBauen(); }, 3000);   // falls der Funker spaeter baut
     setInterval(pruefe, 2000);
 
     /* Wiener Uhr im Hero — reine Anzeige, kein Rechenweg. */

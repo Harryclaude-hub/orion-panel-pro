@@ -2272,3 +2272,44 @@ html.anim-1 .paarmatrix .pmx-emblem .pmx-blip { animation: none; }
   .hero-status { margin-left: 0; }
   .hero-marke h1 { font-size: 21px; letter-spacing: .1em; }
 }
+
+/* ==========================================================================
+ * 15.8.: MILITAER-SCHRIFT fuer die ganze Seite + grosse Matrix-Lesart.
+ * Schriften liegen selbst gehostet in schrift/ (OFL-Lizenz):
+ *   Black Ops One  — Stencil, fuer Titel und Bereichs-Beschriftungen
+ *   Rajdhani       — kantiger Fliesstext (etwas groesser gestellt)
+ *   Share Tech Mono — alle Zahlen und Uhren
+ * ========================================================================== */
+html, body {
+  font-family: 'Rajdhani', system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  font-size: 17.5px;
+}
+h1, h2,
+.hero-marke h1, .pmx-kopf, .fl-wort span,
+.kino-text b, .reiter-knopf, #bereichs-karten::before,
+.bereichskarte .bk-name, .funker-wort, #funker .fu-kopf {
+  font-family: 'Black Ops One', 'Rajdhani', system-ui, sans-serif;
+  font-weight: 400;                 /* Black Ops One hat nur einen Schnitt */
+}
+.hero-marke h1 { letter-spacing: .1em; }
+.reiter-knopf { letter-spacing: .04em; }
+.hero-uhrfeld, .bereichskarte .bk-zahl, .kachel .wert,
+.paarmatrix td b, .paarmatrix td i, .chip.nr, #stand {
+  font-family: 'Share Tech Mono', ui-monospace, Consolas, monospace;
+}
+
+/* Matrix-Lesart: fuellt den Platz neben der Tafel und liest sich gross
+ * (Vorgabe 15.8.: "so gross wie die Paarungsmatrix"). */
+.paarmatrix .pmx-erklaer {
+  flex: 1 1 340px; max-width: none;
+  font-size: 14.5px; line-height: 1.75;
+  align-self: stretch; display: flex; flex-direction: column; justify-content: center;
+}
+.paarmatrix .pmx-emblem { flex: 0 1 170px; }
+.paarmatrix td { cursor: help; }
+
+/* Chat-Kopf: der neue Stumm-Knopf des Funkers. */
+#funker .fu-stumm {
+  min-height: 0; padding: 0 8px; font-size: 15px;
+  border: 0; background: transparent; cursor: pointer;
+}

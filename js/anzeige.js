@@ -1309,7 +1309,14 @@
         if (x && x.chancen > 0) kl.push('pmx-chance');
         if (s === aktivstes) kl.push('pmx-aktiv');
         if (s === bestes && beste !== null && beste >= 2) kl.push('pmx-beste');
-        html += '<td class="' + kl.join(' ') + '"><b>' + live + '</b>' +
+        /* Jede Zelle erklaert ihre Zahlen selbst (Vorgabe 15.8.): grosse
+         * Zahl = wie viele Paare dieser Richtung GERADE live verglichen
+         * werden, kleine Zahl = die beste Rendite darunter. */
+        var zellTitel = ((K[a] || {}).name || a) + ' (FÜR) gegen ' + ((K[b] || {}).name || b) + ' (GEGEN): ' +
+          (live ? live + (live === 1 ? ' Paar wird' : ' Paare werden') + ' gerade live verglichen' +
+                  (beste !== null ? ', das beste rechnet sich auf ' + beste.toFixed(2).replace('.', ',') + ' % Rendite' : '')
+                : 'gerade kein gemeinsames Paar in dieser Richtung');
+        html += '<td class="' + kl.join(' ') + '" title="' + txt(zellTitel) + '"><b>' + live + '</b>' +
                 (beste === null ? '<i>&nbsp;</i>' : '<i>' + beste.toFixed(2) + ' %</i>') + '</td>';
       });
       html += '</tr>';
@@ -1319,13 +1326,17 @@
        * Riesenluecke, und dazuschreiben, was man sieht). */
       '<div class="pmx-erklaer">' +
         '<b>Lesart:</b> Zeile = das Buch der FÜR-Seite, Spalte = das Buch der ' +
-        'GEGEN-Seite. Große Zahl = laufende Paare in diesem Feld, darunter die ' +
-        'beste Rendite. Die schraffierte Diagonale ist gesperrt — ein Buch gegen ' +
-        'sich selbst ist keine Arbitrage. ' +
+        'GEGEN-Seite. ' +
+        '<b>Was die Zahlen heißen:</b> Die große Zahl zählt, wie viele Paare ' +
+        'dieser Richtung GERADE live verglichen werden — steht im Feld ' +
+        'Polymarket→Smarkets eine 3, hält der Scanner dort gerade drei Paare ' +
+        'gegeneinander. Die kleine Zahl darunter ist die beste Rendite dieser ' +
+        'Paare. Zeig auf ein Feld, dann sagt es dir seine Zahlen im Klartext. ' +
+        'Die schraffierte Diagonale ist gesperrt — ein Buch gegen sich selbst ' +
+        'ist keine Arbitrage. ' +
         '<span class="pmx-l1">Khaki-Rand</span> = aktivstes Feld, ' +
         '<span class="pmx-l2">grüner Rand</span> = Feld mit Chance über 2 %. ' +
-        'Jedes Feld steht immer an derselben Stelle, auch mit Null — so sieht ' +
-        'man sofort, WO gerade etwas läuft und wo nicht.' +
+        'Jedes Feld steht immer an derselben Stelle, auch mit Null.' +
       '</div>' +
       /* Das EMBLEM fuellt den Restraum rechts (Vorgabe 14.8. nachts:
        * "die Luecke wirkt so leer") — reiner Schmuck, Design-Schicht. */

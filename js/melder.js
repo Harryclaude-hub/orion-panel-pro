@@ -89,10 +89,63 @@
     bekannt = jetzt;
   }
 
+  /* ---------- E-MAIL-MELDUNGEN (Vorgabe 15.8.) ----------
+   *
+   * RECHTSKLICK auf den Meldungen-Knopf richtet die E-Mail ein. Die
+   * Adresse liegt in der Datenbank (orion_mail), denn VERSCHICKEN muss
+   * der Server: Mails sollen auch kommen, wenn kein Browser offen ist.
+   * Den eigentlichen Versand macht die Serverfunktion orion-melder-mail
+   * im Minutentakt — sie braucht einen RESEND_API_KEY als Supabase-
+   * Geheimnis (kostenloses Resend-Konto). Push und Mail schalten sich
+   * GETRENNT: Linksklick = Push, Rechtsklick = Mail.  */
+  function mailBeschrifte(zeile) {
+    var k = document.getElementById('melder-klein');
+    if (k) k.textContent = zeile;
+  }
+  function mailLaden() {
+    var K = welt.KONFIG;
+    return fetch(K.supabase + '/rest/v1/orion_mail?id=eq.1', {
+      headers: { apikey: K.key, authorization: 'Bearer ' + K.key }
+    }).then(function (r) { return r.json(); })
+      .then(function (z) { return z[0] || null; })
+      .catch(function () { return null; });
+  }
+  function mailSpeichern(email, aktiv) {
+    var K = welt.KONFIG;
+    return fetch(K.supabase + '/rest/v1/orion_mail?id=eq.1', {
+      method: 'PATCH',
+      headers: { apikey: K.key, authorization: 'Bearer ' + K.key,
+                 'content-type': 'application/json', prefer: 'return=representation' },
+      body: JSON.stringify({ email: email, aktiv: aktiv, geaendert_am: new Date().toISOString() })
+    }).then(function (r) { return r.ok; }).catch(function () { return false; });
+  }
+  function mailDialog() {
+    mailLaden().then(function (m) {
+      var alt = (m && m.email) || '';
+      var eingabe = window.prompt(
+        'E-Mail für Meldungen bei jeder neuen Chance.\n' +
+        'Leer lassen und OK = Mail-Meldungen AUS.\n' +
+        '(Versand läuft auf dem Server — kommt auch, wenn die Seite zu ist.)', alt);
+      if (eingabe === null) return;                    // Abbrechen
+      var email = eingabe.trim();
+      var aktiv = email.length > 3 && email.indexOf('@') !== -1;
+      mailSpeichern(email, aktiv).then(function (ok) {
+        mailBeschrifte(!ok ? 'Mail: Speichern fehlgeschlagen'
+          : aktiv ? 'Mail: AN → ' + email : 'Mail: AUS · Rechtsklick ändert');
+      });
+    });
+  }
+
   function start() {
     var k = document.getElementById('melder-knopf') || knopf();
-    if (k) k.addEventListener('click', umschalten);
+    if (k) {
+      k.addEventListener('click', umschalten);
+      k.addEventListener('contextmenu', function (ev) { ev.preventDefault(); mailDialog(); });
+    }
     beschrifte();
+    mailLaden().then(function (m) {
+      if (m && m.aktiv && m.email) mailBeschrifte('Mail: AN → ' + m.email);
+    });
     setInterval(pruefe, 2000);
   }
 

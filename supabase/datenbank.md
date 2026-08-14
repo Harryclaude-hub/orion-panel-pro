@@ -412,3 +412,18 @@ geprüft. Deshalb:
   ein wiederbelebter Fund behält seine (der Upsert schreibt `nr` nicht).
 - Frische Zeilen haben bis zu eine Minute lang keine Nummer — die Karte
   zeigt den Chip dann nicht, der Funker sagt es dazu.
+
+## E-Mail-Meldungen (15.8.2026)
+
+- Tabelle `orion_mail` (eine Zeile, id=1): `email`, `aktiv` — gepflegt vom
+  Browser per Rechtsklick auf den Meldungen-Knopf (RLS: anon darf lesen
+  und ändern; private, passwortgeschützte Seite).
+- Spalte `orion_funde.gemailt` — jeder Fund wird höchstens einmal gemailt.
+- Edge-Funktion `orion-melder-mail` (verify_jwt false), Takt
+  `orion-mail-takt` minütlich: serverseitige Näherung der Chance
+  (live, Rendite 2–5 %, ≥25 s bewährt, Menge bekannt, Gewinn ≥5 $),
+  Versand über Resend. **Braucht das Geheimnis `RESEND_API_KEY`**
+  (Dashboard → Project Settings → Edge Functions → Secrets); ohne meldet
+  sie ehrlich `RESEND_API_KEY fehlt`. Absender `onboarding@resend.dev`
+  darf beim Gratis-Resend nur an die eigene Konto-Adresse senden —
+  Empfänger-Mail = Resend-Konto-Mail.
