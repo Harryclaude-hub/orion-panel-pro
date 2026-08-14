@@ -235,12 +235,15 @@
     { c: 'chance-1', t: 'Lücke in der feindlichen Verteidigung entdeckt — Angriffsfenster offen. Feuer frei!' },
     { c: 'chance-2', t: 'Ziel erfasst, Offizier! Zwei Bücher weit auseinander — Zugriff empfohlen!' },
     { c: 'chance-3', t: 'Treffer im Raster! Der Gegner hat eine Flanke offen — wir können angreifen!' },
-    { c: 'chance-4', t: 'Chance bestätigt, alle sieben Prüfungen bestanden — Angriffsbefehl liegt bei Ihnen, Offizier!' }
+    { c: 'chance-4', t: 'Chance bestätigt, alle sieben Prüfungen bestanden — Angriffsbefehl liegt bei Ihnen, Offizier!' },
+    { c: 'chance-5', t: 'Es hat sich geöffnet, Offizier! Die Lücke steht — wir greifen an!' },
+    { c: 'chance-6', t: 'Angriffsfenster offen! Auf Ihren Befehl — Zugriff, Zugriff, Zugriff!' }
   ];
   var FEHL_SPRUECHE = [
     { c: 'fehl-1', t: 'Fehlversuch registriert. Rechnung als falsch markiert — geht in die Analyse.' },
     { c: 'fehl-2', t: 'Blindgänger, Offizier. Die Zahlen lügen — aussortiert und dokumentiert.' },
-    { c: 'fehl-3', t: 'Falscher Alarm: ein Kurs klebt. Ziel gestrichen, wir bleiben im Raster.' }
+    { c: 'fehl-3', t: 'Falscher Alarm: ein Kurs klebt. Ziel gestrichen, wir bleiben im Raster.' },
+    { c: 'fehl-4', t: 'Negativ, Offizier. Der Treffer war ein Trugbild — gestrichen.' }
   ];
 
   /* ---------- Beobachtung: wie der Melder, nur mit Stimme ---------- */
