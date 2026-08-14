@@ -618,6 +618,16 @@
     });
     window.addEventListener('pagehide', allesStumm);
 
+    /* SCHALTER GELTEN IN ALLEN TABS (15.8., der wahre Taeter war ein
+     * vergessener Hintergrund-Tab mit altem Code): aendert IRGENDEIN
+     * Tab den Ton-Schalter auf aus, verstummt auch dieser hier sofort. */
+    window.addEventListener('storage', function (ev) {
+      if (ev.key === 'orion-ton' && ev.newValue === 'aus') {
+        allesStumm();
+        if (welt.Musik) welt.Musik.stopp();
+      }
+    });
+
     avatarBauen();
     stummknopfBauen();
     vorleseKnoepfe(); mikroBauen();

@@ -160,6 +160,9 @@
       if (document.hidden) stopp(); else if (an()) start();
     });
     window.addEventListener('pagehide', stopp);
+    window.addEventListener('storage', function (ev) {
+      if ((ev.key === 'orion-musik' || ev.key === 'orion-ton') && ev.newValue === 'aus') stopp();
+    });
     /* Wachhund: laeuft die Ambiente, obwohl sie aus sein soll (auch
      * wegen Ton-Hauptschalter AUS), stirbt sie binnen einer Sekunde. */
     setInterval(function () { if (laeuft && !an()) stopp(); }, 1000);
