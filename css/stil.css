@@ -1804,3 +1804,72 @@ header.kopf.hero .kopf-leiste .knopf { min-width: 0; overflow: hidden; }
 #funker-knopf.spricht .av-mund { animation: av-sprechen .18s ease-in-out infinite alternate; }
 html.anim-1 #funker-knopf.spricht .avatar,
 html.anim-1 #funker-knopf.redet .avatar { animation: av-wackel .45s ease-in-out 4; }
+
+/* ---------- 14.8. spät: Funker NEBEN dem Chat + Gesichtsausdruecke,
+ * Kachel-Animationen (fluessig, nur transform/opacity) ---------- */
+
+/* Ist der Chat offen, tritt der Soldat GROSS neben das Fenster. */
+body:has(#funker.offen) #funker-knopf {
+  right: calc(18px + min(400px, 100vw - 36px) + 14px);
+  bottom: 74px;
+  flex-direction: column; gap: 2px; padding: 10px 14px;
+}
+body:has(#funker.offen) #funker-knopf .avatar svg { width: 74px; height: 74px; }
+@media (max-width: 620px) {
+  /* Auf schmalen Schirmen ist neben dem Chat kein Platz — dann bleibt er
+   * unten in der Ecke, das Fenster liegt ohnehin darueber. */
+  body:has(#funker.offen) #funker-knopf { right: 18px; bottom: 18px; }
+  body:has(#funker.offen) #funker-knopf .avatar svg { width: 46px; height: 46px; }
+}
+
+/* Muender: genau einer sichtbar. */
+#funker-knopf .av-mund-froh, #funker-knopf .av-mund-ernst { display: none; }
+#funker-knopf.froh .av-mund, #funker-knopf.ernst .av-mund { display: none; }
+#funker-knopf.froh .av-mund-froh { display: block; }
+#funker-knopf.ernst .av-mund-ernst { display: block; }
+/* Beim Sprechen arbeitet immer der neutrale Mund. */
+#funker-knopf.spricht .av-mund { display: block; }
+#funker-knopf.spricht .av-mund-froh, #funker-knopf.spricht .av-mund-ernst { display: none; }
+
+/* Brauen: Ausdruecke. */
+#funker-knopf .av-braue { transition: transform .25s ease; transform-origin: center; }
+#funker-knopf.denkt .av-braue.b-l { transform: translateY(1px) rotate(10deg); }
+#funker-knopf.denkt .av-braue.b-r { transform: translateY(1px) rotate(-10deg); }
+#funker-knopf.ernst .av-braue.b-l { transform: translateY(1.4px) rotate(14deg); }
+#funker-knopf.ernst .av-braue.b-r { transform: translateY(1.4px) rotate(-14deg); }
+#funker-knopf.staunt .av-braue { transform: translateY(-1.6px); }
+#funker-knopf.froh .av-braue { transform: translateY(-0.8px); }
+#funker-knopf.denkt .av-auge { transform: scaleY(.7); }
+
+/* ---------- Kacheln: fluessig animiert ----------
+ * Nur transform/opacity (GPU), und die Zellen werden seit heute IN PLACE
+ * aktualisiert statt neu gebaut — nichts startet mehr staendig von vorn. */
+#kacheln { position: relative; }
+.kachel {
+  transition: transform .2s ease, box-shadow .2s ease;
+  will-change: transform;
+}
+.kachel:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 18px rgba(0,0,0,.35), 0 0 10px rgba(var(--sonar-rgb), .15);
+}
+.kachel .wert { display: inline-block; }
+.kachel .wert.frisch { animation: kachel-frisch .7s ease; }
+@keyframes kachel-frisch {
+  0%   { transform: scale(1.18); text-shadow: 0 0 14px rgba(var(--sonar-rgb), .8); }
+  100% { transform: scale(1); text-shadow: none; }
+}
+/* Ein leiser Lichtstreif wandert alle paar Sekunden ueber die Reihe —
+ * er liegt auf dem CONTAINER (der nie neu gebaut wird): immer fluessig. */
+#kacheln::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: linear-gradient(105deg, transparent 44%, rgba(var(--sonar-rgb), .07) 50%, transparent 56%);
+  background-size: 300% 100%;
+  animation: kachel-streif 9s linear infinite;
+}
+@keyframes kachel-streif { 0% { background-position: 120% 0; } 100% { background-position: -60% 0; } }
+
+/* Stufen-Drossel: Streif nur im vollen Kino, Puls ab Standard. */
+html.anim-1 #kacheln::after, html.anim-2 #kacheln::after { animation: none; opacity: 0; }
+html.anim-1 .kachel .wert.frisch { animation: none; }
+html.anim-1 .kachel, html.anim-1 .kachel:hover { transform: none; box-shadow: none; }

@@ -1509,10 +1509,37 @@
       { name: 'Wächter · läuft immer', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
         farbe: (s.wache_gut === true && s.wache_alter_s !== null && s.wache_alter_s < 1800)
           ? 'var(--gruen)' : 'var(--rot)' }
-    ].map(function (k) {
-      return '<div class="kachel"><div class="wert" style="color:' + (k.farbe || 'var(--text)') + '">' +
-             txt(k.wert) + '</div><div class="name">' + txt(k.name) + '</div></div>';
-    }).join('');
+    ];
+  }
+
+  /* Kacheln IN PLACE auffrischen statt alles neu zu schreiben (14.8.):
+   * der komplette Neuaufbau alle zwei Sekunden liess jede laufende
+   * CSS-Animation von vorn beginnen — das war das Ruckeln. Jetzt wird
+   * nur der Text getauscht, der sich wirklich geaendert hat; die
+   * geaenderte Zahl bekommt einen kurzen Puls (Klasse frisch). */
+  function kachelnSetzen(el, daten) {
+    if (!el) return;
+    if (el.children.length !== daten.length) {
+      el.innerHTML = daten.map(function (k, i) {
+        return '<div class="kachel" style="--k-i:' + i + '"><div class="wert" style="color:' +
+               (k.farbe || 'var(--text)') + '">' + txt(k.wert) +
+               '</div><div class="name">' + txt(k.name) + '</div></div>';
+      }).join('');
+      return;
+    }
+    daten.forEach(function (k, i) {
+      var kachel = el.children[i];
+      var wert = kachel.firstChild, name = kachel.lastChild;
+      var farbe = k.farbe || 'var(--text)';
+      if (wert.getAttribute('style') !== 'color:' + farbe) wert.setAttribute('style', 'color:' + farbe);
+      if (name.textContent !== String(k.name)) name.textContent = k.name;
+      if (wert.textContent !== String(k.wert)) {
+        wert.textContent = k.wert;
+        wert.classList.remove('frisch');
+        void wert.offsetWidth;               // Animation neu anstossen
+        wert.classList.add('frisch');
+      }
+    });
   }
 
   /* Welcher Bereich gerade offen ist. Bleibt ueber das Auffrischen hinweg
@@ -1598,7 +1625,7 @@
     setzeKurs(e.kurs);
 
     setzeWennAnders(document.getElementById('tafel'), anbieterTafel(e));
-    setzeWennAnders(document.getElementById('kacheln'), kacheln(s));
+    kachelnSetzen(document.getElementById('kacheln'), kacheln(s));
 
     var warn = '';
     if (s.lauf_alter_s === null) {

@@ -41,7 +41,7 @@
    * aus der die Aufnahmen erzeugt wurden (eine Quelle, kein Drift).
    * 10-20 Varianten je Ereignis; ohne Datei greifen kleine Notpools. */
   var POOLS = null;
-  fetch('audio/sprueche.json').then(function (r) { return r.ok ? r.json() : null; })
+  fetch('audio/sprueche.json?v=39').then(function (r) { return r.ok ? r.json() : null; })
     .then(function (j) { POOLS = j; })
     .catch(function () { /* Notpools unten */ });
   function pool(name, ersatz) {
@@ -174,23 +174,21 @@
     funkerLog(text);
   }
 
-  /* ---------- Echte Sprecher-Aufnahmen (ElevenLabs), falls vorhanden ----
+  /* ---------- Echte Sprecher-Aufnahmen (ElevenLabs) ----------
    *
-   * Liegen unter audio/ echte MP3-Aufnahmen eines menschlichen Sprechers,
-   * spielen DIE — die Browser-Stimme ist nur noch der Ersatz. Welche
-   * Dateien es gibt, sagt audio/liste.json (ein JSON-Feld mit Namen ohne
-   * Endung). Nichts wird geraten: keine Liste, keine Aufnahmen. Die
-   * Zahlen (Rendite, Rechnungsnummer) stehen weiterhin im Funker-Log —
-   * eine feste Aufnahme kann keine wechselnden Zahlen sprechen. */
-  var CLIPS = {};
-  fetch('audio/liste.json').then(function (r) { return r.ok ? r.json() : []; })
-    .then(function (namen) { (namen || []).forEach(function (n) { CLIPS[n] = true; }); })
-    .catch(function () { /* keine Liste, dann eben Browser-Stimme */ });
-
+   * Die Aufnahme wird IMMER direkt versucht — frueher stand davor eine
+   * Existenz-Liste (liste.json), und wenn die noch nicht geladen oder im
+   * Browser-Cache veraltet war, sprang die ROBOTER-Stimme ein. Genau die
+   * will der Auftraggeber nie wieder hoeren (Rueckmeldung 14.8. abends).
+   * Deshalb: Datei abspielen; schlaegt sie fehl, EIN zweiter Versuch,
+   * danach lieber STILL bleiben (der Text steht ohnehin im Funker-Log).
+   * Die Browser-Stimme existiert nur noch als sprich() fuer den Fall,
+   * dass es zu einem Spruch gar keine Aufnahme-Kennung gibt. */
   function spiel(clip, text, lage) {
     if (!an()) return;
-    if (clip && CLIPS[clip]) {
-      klick();
+    if (!clip) { sprich(text, lage); return; }
+
+    function versuch(nochmal) {
       var a = new Audio('audio/' + clip + '.mp3');
       a.volume = 0.95;
       laufend.push(a);
@@ -199,12 +197,20 @@
         laufend = laufend.filter(function (x) { return x !== a; });
         avatarSpricht(false); klick();
       };
-      a.onerror = function () { avatarSpricht(false); sprich(text, lage); };
-      a.play().then(function () { funkerLog(text); })
-        .catch(function () { avatarSpricht(false); sprich(text, lage); });
-      return;
+      a.onerror = function () {
+        laufend = laufend.filter(function (x) { return x !== a; });
+        avatarSpricht(false);
+        if (nochmal) setTimeout(function () { versuch(false); }, 400);
+      };
+      a.play().catch(function () {
+        laufend = laufend.filter(function (x) { return x !== a; });
+        avatarSpricht(false);
+        if (nochmal) setTimeout(function () { versuch(false); }, 400);
+      });
     }
-    sprich(text, lage);
+    klick();
+    versuch(true);
+    funkerLog(text);
   }
 
   /* Jeder gesprochene Spruch steht auch im Funker-Fenster — nichts nur
@@ -332,11 +338,17 @@
           '<rect x="6" y="23" width="36" height="4" rx="2" fill="#3A4133"/>' +
           /* Gesicht */
           '<path d="M12 27 Q12 40 24 40 Q36 40 36 27 Z" fill="#C9A279"/>' +
+          /* Brauen (Ausdruecke per CSS: denkt/ernst runter, staunt hoch) */
+          '<rect class="av-braue b-l" x="16.5" y="27" width="5" height="1.6" rx="0.8" fill="#2E3428"/>' +
+          '<rect class="av-braue b-r" x="26.5" y="27" width="5" height="1.6" rx="0.8" fill="#2E3428"/>' +
           /* Augen (blinzeln per CSS) */
-          '<rect class="av-auge" x="17" y="29" width="4" height="3" rx="1.5" fill="#2E3428"/>' +
-          '<rect class="av-auge" x="27" y="29" width="4" height="3" rx="1.5" fill="#2E3428"/>' +
-          /* Mund (spricht per CSS) */
+          '<rect class="av-auge" x="17" y="29.5" width="4" height="3" rx="1.5" fill="#2E3428"/>' +
+          '<rect class="av-auge" x="27" y="29.5" width="4" height="3" rx="1.5" fill="#2E3428"/>' +
+          /* Muender: neutral (Strich), froh (Laecheln), ernst (Bogen runter)
+           * — sichtbar ist immer genau einer, per CSS-Klasse am Knopf. */
           '<rect class="av-mund" x="20" y="35.5" width="8" height="1.8" rx="0.9" fill="#7A5B41"/>' +
+          '<path class="av-mund-froh" d="M19 34.5 Q24 39 29 34.5" fill="none" stroke="#7A5B41" stroke-width="1.8" stroke-linecap="round"/>' +
+          '<path class="av-mund-ernst" d="M19 37.5 Q24 33.5 29 37.5" fill="none" stroke="#7A5B41" stroke-width="1.8" stroke-linecap="round"/>' +
           /* Headset */
           '<rect x="6" y="26" width="5" height="8" rx="2" fill="#2E3428"/>' +
           '<rect x="37" y="26" width="5" height="8" rx="2" fill="#2E3428"/>' +
@@ -345,6 +357,23 @@
         '</svg>' +
       '</span>' +
       '<span class="funker-wort">FUNKER</span>';
+  }
+
+  /* Gesichtsausdruck setzen: genau einer zur Zeit, faellt von selbst auf
+   * neutral zurueck. */
+  var AUSDRUECKE = ['froh', 'ernst', 'denkt', 'staunt'];
+  var ausdruckWecker = null;
+  function avatarAusdruck(klasse, dauerMs) {
+    var k = document.getElementById('funker-knopf');
+    if (!k) return;
+    AUSDRUECKE.forEach(function (a) { k.classList.remove(a); });
+    if (klasse) k.classList.add(klasse);
+    if (ausdruckWecker) clearTimeout(ausdruckWecker);
+    if (klasse && dauerMs) {
+      ausdruckWecker = setTimeout(function () {
+        AUSDRUECKE.forEach(function (a) { k.classList.remove(a); });
+      }, dauerMs);
+    }
   }
 
   function avatarSpricht(ja) {
@@ -379,6 +408,7 @@
     if (Date.now() - letzteChatBegruessung < 60000) return;
     letzteChatBegruessung = Date.now();
     avatarLage('salut', 1200);
+    avatarAusdruck('froh', 2200);
     var wg = zufall(pool('funker_gruss', [{ c: 'funker-gruss-1', t: 'Funker auf Empfang, Offizier. Was liegt an?' }]));
     spiel(wg.c, wg.t, 'ruhig');
   });
@@ -398,13 +428,24 @@
     var feld = document.getElementById('funker-frage');
     var befehl = feld ? feld.value.trim().toLowerCase() : '';
     avatarLage('nickt', 700);
+    /* Beim Pruefen: konzentrierter Blick, solange gerechnet wird. */
+    if (/pr(ü|ue)f|#\s*\d|check|rechne/.test(befehl)) avatarAusdruck('denkt', 2500);
     /* Kurz warten, bis der Funker seine Antwort geschrieben hat, dann die
      * passende Aufnahme dazu — Negativ klingt anders als Befehl erhalten. */
     setTimeout(function () {
       var zeilen = document.querySelectorAll('#funker-log .fu-zeile.funker');
       var letzte = zeilen.length ? zeilen[zeilen.length - 1].textContent : '';
-      /* Sichtbare Reaktion IMMER, auch bei Ton aus: er wackelt kurz. */
+      /* Sichtbare Reaktion IMMER, auch bei Ton aus: er wackelt kurz —
+       * und das Gesicht passt sich der Antwort an. */
       avatarLage('redet', 1600);
+      if (letzte.indexOf('Negativ') === 0 || letzte.indexOf('ABWEICHUNG') !== -1 ||
+          letzte.indexOf('WEICHT AB') !== -1) {
+        avatarAusdruck('ernst', 4000);
+      } else if (letzte.indexOf('BESTÄTIGT') !== -1 || letzte.indexOf('BESTAETIGT') !== -1) {
+        avatarAusdruck('froh', 4000);
+      } else if (letzte.indexOf('Lagebericht') !== -1) {
+        avatarAusdruck('staunt', 2500);
+      }
       var w2;
       if (letzte.indexOf('Negativ') === 0) {
         w2 = zufall(pool('funker_negativ', [{ c: 'funker-negativ-1', t: 'Negativ, Offizier — Ziel nicht gefunden.' }]));

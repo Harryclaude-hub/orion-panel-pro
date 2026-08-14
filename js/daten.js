@@ -117,8 +117,26 @@
     return db('smarkets_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
   }
 
+  /* Der Verlauf ist die mit Abstand SCHWERSTE Abfrage (450+ Zeilen, alle
+   * Spalten) und aendert sich nur, wenn etwas endet — nicht im
+   * 2-Sekunden-Takt. Deshalb wird er nur alle 10 Sekunden frisch geholt
+   * (Rueckmeldung 14.8.: Ladezeit war von ~100 auf ~1000 ms gestiegen;
+   * gemessen war der Verlauf der Hauptbrocken, dazu kam eine gerade
+   * langsame Supabase-Instanz). Beendetes erscheint damit hoechstens
+   * 10 s spaeter im Archiv — der Scanner selbst ist unberuehrt. */
+  var verlaufPuffer = { zeit: 0, daten: null };
+  function holeVerlaufGepuffert() {
+    if (verlaufPuffer.daten && Date.now() - verlaufPuffer.zeit < 10000) {
+      return Promise.resolve(verlaufPuffer.daten);
+    }
+    return holeVerlauf(1000).then(function (v) {
+      verlaufPuffer = { zeit: Date.now(), daten: v };
+      return v;
+    });
+  }
+
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlauf(1000), holeLaeufe(), holeKalshi(), holeWache(),
+    return Promise.all([holeLive(), holeVerlaufGepuffert(), holeLaeufe(), holeKalshi(), holeWache(),
                         holeUebersicht(), holeSmarkets(), kurs()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
