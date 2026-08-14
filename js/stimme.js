@@ -488,6 +488,13 @@
     if (e) e.addEventListener('click', ersteGeste);
     document.addEventListener('pointerdown', ersteGeste, { once: false });
 
+    /* Tab verdeckt oder geschlossen -> laufende Aufnahmen SOFORT stumm
+     * (Vorgabe 15.8.: "auch wenn man die Website schliesst"). */
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) allesStumm();
+    });
+    window.addEventListener('pagehide', allesStumm);
+
     avatarBauen();
     stummknopfBauen();
     setInterval(function () { avatarBauen(); stummknopfBauen(); }, 3000);   // falls der Funker spaeter baut

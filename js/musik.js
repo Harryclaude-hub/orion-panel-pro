@@ -96,6 +96,8 @@
         setTimeout(function () {
           alteTeile.forEach(function (t) { try { t.stop(); } catch (e) {} });
           try { altesMaster.disconnect(); } catch (e) {}
+          /* Kontext schlafen legen: danach kann NICHTS mehr toenen. */
+          try { if (ctx && !laeuft) ctx.suspend(); } catch (e) {}
         }, 900);
       } catch (e) {}
     }
@@ -113,6 +115,20 @@
   }
 
   function anhaengen() {
+    /* EINMALIGE harte Zuruecksetzung (15.8., zweite Runde des
+     * Ton-geht-nicht-aus-Problems): wer noch ein altes "an" im
+     * Speicher hat, startet ab jetzt mit Ambiente AUS. */
+    if (!localStorage.getItem('orion-musik-r1')) {
+      localStorage.setItem('orion-musik', 'aus');
+      localStorage.setItem('orion-musik-r1', '1');
+    }
+    /* Tab weg (verdeckt, gewechselt, geschlossen) -> sofortige Stille;
+     * kommt er zurueck und die Ambiente ist gewollt, faehrt sie wieder
+     * hoch. */
+    document.addEventListener('visibilitychange', function () {
+      if (document.hidden) stopp(); else if (an()) start();
+    });
+    window.addEventListener('pagehide', stopp);
     var knopf = document.getElementById('ton-knopf');
     if (!knopf) return;
     knopf.addEventListener('contextmenu', function (ev) {
