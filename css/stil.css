@@ -2260,3 +2260,15 @@ header.kopf.hero .kopf-leiste .knopf:hover svg.mil { transform: translateY(-1.5p
 .paarmatrix .pmx-emblem .pmx-blip { animation: pmx-blip 3s ease-in-out infinite; }
 @keyframes pmx-blip { 0%, 100% { opacity: .15; } 50% { opacity: .9; } }
 html.anim-1 .paarmatrix .pmx-emblem .pmx-blip { animation: none; }
+
+/* Mobil ragte der Hero rechts raus (gemessen 412 px auf 375er-Schirm):
+ * die Sperrschrift-Unterzeile durfte nicht umbrechen und drueckte den
+ * ganzen Kopf breit. Auf schmalen Schirmen darf sie jetzt umbrechen und
+ * laeuft enger; nichts scrollt mehr seitlich. */
+@media (max-width: 640px) {
+  .hero-unter { white-space: normal; letter-spacing: .16em; line-height: 1.5; }
+  .hero-marke { min-width: 0; }
+  .hero .kopf-titel { min-width: 0; }
+  .hero-status { margin-left: 0; }
+  .hero-marke h1 { font-size: 21px; letter-spacing: .1em; }
+}
