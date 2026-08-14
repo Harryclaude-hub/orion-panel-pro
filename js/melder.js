@@ -56,7 +56,8 @@
         /* Eine Probe-Meldung, damit man sofort sieht, wie es aussieht. */
         new Notification('Orion Panel Pro', {
           body: 'Meldungen sind an. Du hörst von mir, sobald ein Ziel erfasst wird.',
-          tag: 'orion-probe'
+          tag: 'orion-chance',
+          silent: true
         });
       }
     });
@@ -82,7 +83,11 @@
         new Notification('Ziel erfasst: +' + Number(f.rendite).toFixed(2) + ' %', {
           body: String(f.titel || '') + '\n' +
                 (f.echter_gewinn != null ? 'holbar rund ' + Number(f.echter_gewinn).toFixed(2) + ' $' : ''),
-          tag: 'orion-' + f.schluessel     // dieselbe Chance meldet sich nur einmal
+          /* EIN gemeinsames Etikett: die neue Meldung ERSETZT die alte,
+           * statt sich in der Benachrichtigungszentrale zu stapeln — und
+           * LAUTLOS ist sie auch: Ton macht allein der Ton-Knopf. */
+          tag: 'orion-chance',
+          silent: true
         });
       }
     }

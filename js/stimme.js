@@ -189,7 +189,11 @@
    * Die Browser-Stimme existiert nur noch als sprich() fuer den Fall,
    * dass es zu einem Spruch gar keine Aufnahme-Kennung gibt. */
   function spiel(clip, text, lage, kanal) {
-    if (kanal === 'funker' ? !funkerAn() : !an()) return;
+    /* TON AUS = FUNKSTILLE, ohne Ausnahme (Vorgabe 15.8.: "wenn ich Ton
+     * ausmache, will ich, dass nix mehr kommt"). Der Chat-Stummknopf
+     * wirkt nur ZUSAETZLICH, er kann den Hauptschalter nie umgehen. */
+    if (!an()) return;
+    if (kanal === 'funker' && !funkerAn()) return;
     /* NIE zwei Stimmen uebereinander (Vorgabe 14.8. nachts): wer neu
      * spricht, bringt zuerst alle anderen zum Schweigen — laufende
      * Aufnahmen UND die Browser-Stimme. */
@@ -505,10 +509,12 @@
     beschrifte();
     if (an()) {
       geste = true; klick();
+      if (welt.Musik) welt.Musik.start();         // Ambiente zurueck, falls gewollt
       var wt = zufall(pool('ton_an', [{ c: 'ton-an-1', t: 'Ton ist an, Offizier. Sie hören von mir.' }]));
       spiel(wt.c, wt.t, 'ruhig');
     } else {
       allesStumm();
+      if (welt.Musik) welt.Musik.stopp();          // AUS erstickt auch die Ambiente
     }
   }
 

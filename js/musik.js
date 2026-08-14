@@ -16,7 +16,12 @@
   var SCHLUESSEL = 'orion-musik';
   var ctx = null, master = null, teile = [], wecker = [], laeuft = false;
 
-  function an() { return localStorage.getItem(SCHLUESSEL) === 'an'; }   // Standard: AUS
+  /* Gewollt ist die Ambiente nur, wenn ihr eigener Schalter AN ist UND
+   * der Haupt-Ton nicht aus — Ton AUS heisst Funkstille, komplett. */
+  function an() {
+    return localStorage.getItem(SCHLUESSEL) === 'an' &&
+           localStorage.getItem('orion-ton') !== 'aus';
+  }
 
   function start() {
     if (laeuft || !an()) return;
