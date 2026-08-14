@@ -148,6 +148,35 @@
     funkerLog(text);
   }
 
+  /* ---------- Echte Sprecher-Aufnahmen (ElevenLabs), falls vorhanden ----
+   *
+   * Liegen unter audio/ echte MP3-Aufnahmen eines menschlichen Sprechers,
+   * spielen DIE — die Browser-Stimme ist nur noch der Ersatz. Welche
+   * Dateien es gibt, sagt audio/liste.json (ein JSON-Feld mit Namen ohne
+   * Endung). Nichts wird geraten: keine Liste, keine Aufnahmen. Die
+   * Zahlen (Rendite, Rechnungsnummer) stehen weiterhin im Funker-Log —
+   * eine feste Aufnahme kann keine wechselnden Zahlen sprechen. */
+  var CLIPS = {};
+  fetch('audio/liste.json').then(function (r) { return r.ok ? r.json() : []; })
+    .then(function (namen) { (namen || []).forEach(function (n) { CLIPS[n] = true; }); })
+    .catch(function () { /* keine Liste, dann eben Browser-Stimme */ });
+
+  function spiel(clip, text, lage) {
+    if (!an()) return;
+    if (clip && CLIPS[clip]) {
+      klick();
+      var a = new Audio('audio/' + clip + '.mp3');
+      a.volume = 0.95;
+      avatarSpricht(true);
+      a.onended = function () { avatarSpricht(false); klick(); };
+      a.onerror = function () { avatarSpricht(false); sprich(text, lage); };
+      a.play().then(function () { funkerLog(text); })
+        .catch(function () { avatarSpricht(false); sprich(text, lage); });
+      return;
+    }
+    sprich(text, lage);
+  }
+
   /* Jeder gesprochene Spruch steht auch im Funker-Fenster — nichts nur
    * fluechtig in der Luft. */
   function funkerLog(text) {
@@ -174,41 +203,44 @@
     }).formatToParts(new Date());
     var stunde = Number((teile.find(function (t) { return t.type === 'hour'; }) || {}).value);
     if (isNaN(stunde)) stunde = new Date().getHours();   // Notnagel: Ortszeit
+    /* Jeder Spruch traegt seinen Aufnahme-Namen (c) — liegt die Datei in
+     * audio/, spricht der echte Sprecher, sonst die Browser-Stimme. */
     var pool;
     if (stunde >= 5 && stunde < 11) pool = [
-      'Guten Morgen, Offizier! Alle Systeme auf Station, der Scanner lief die ganze Nacht durch.',
-      'Guten Morgen, Offizier. Nachtwache ohne Vorkommnisse — vier Börsen im Raster, wir sind auf Empfang.',
-      'Morgenmeldung, Offizier: Gefechtsstand besetzt, alle Takte laufen. Erwarte Befehle.'
+      { c: 'gruss-morgen-1', t: 'Guten Morgen, Offizier! Alle Systeme auf Station, der Scanner lief die ganze Nacht durch.' },
+      { c: 'gruss-morgen-2', t: 'Guten Morgen, Offizier. Nachtwache ohne Vorkommnisse — vier Börsen im Raster, wir sind auf Empfang.' },
+      { c: 'gruss-morgen-3', t: 'Morgenmeldung, Offizier: Gefechtsstand besetzt, alle Takte laufen. Erwarte Befehle.' }
     ];
     else if (stunde >= 11 && stunde < 17) pool = [
-      'Guten Tag, Offizier! Gefechtsstand gefechtsbereit, alle vier Börsen unter Beobachtung.',
-      'Mittagsmeldung, Offizier: Scanner im Zwanzig-Sekunden-Takt, Wächter auf Posten. Lage ruhig.',
-      'Willkommen zurück, Offizier. Das Raster steht, wir haben nichts durchgelassen.'
+      { c: 'gruss-tag-1', t: 'Guten Tag, Offizier! Gefechtsstand gefechtsbereit, alle vier Börsen unter Beobachtung.' },
+      { c: 'gruss-tag-2', t: 'Mittagsmeldung, Offizier: Scanner im Zwanzig-Sekunden-Takt, Wächter auf Posten. Lage ruhig.' },
+      { c: 'gruss-tag-3', t: 'Willkommen zurück, Offizier. Das Raster steht, wir haben nichts durchgelassen.' }
     ];
     else if (stunde >= 17 && stunde < 23) pool = [
-      'Schönen Abend, Offizier! Der Spielplan füllt sich — beste Jagdzeit. Wir sind auf Empfang.',
-      'Guten Abend, Offizier. Abendlage: alle Einheiten auf Station, das Sonar läuft heiß.',
-      'Abendmeldung, Offizier: vier Börsen, ein Raster, keine Lücke unbeobachtet. Erwarte Befehle.'
+      { c: 'gruss-abend-1', t: 'Schönen Abend, Offizier! Der Spielplan füllt sich — beste Jagdzeit. Wir sind auf Empfang.' },
+      { c: 'gruss-abend-2', t: 'Guten Abend, Offizier. Abendlage: alle Einheiten auf Station, das Sonar läuft heiß.' },
+      { c: 'gruss-abend-3', t: 'Abendmeldung, Offizier: vier Börsen, ein Raster, keine Lücke unbeobachtet. Erwarte Befehle.' }
     ];
     else pool = [
-      'Nachtschicht, Offizier. Die Nachtwache übernimmt — Sie können ruhig schlafen, wir nicht.',
-      'Späte Stunde, Offizier. Der Scanner kennt keine Nacht — alles unter Kontrolle.',
-      'Nachtmeldung: Gefechtsstand besetzt, Takte laufen. Der Gegner schläft — wir beobachten.'
+      { c: 'gruss-nacht-1', t: 'Nachtschicht, Offizier. Die Nachtwache übernimmt — Sie können ruhig schlafen, wir nicht.' },
+      { c: 'gruss-nacht-2', t: 'Späte Stunde, Offizier. Der Scanner kennt keine Nacht — alles unter Kontrolle.' },
+      { c: 'gruss-nacht-3', t: 'Nachtmeldung: Gefechtsstand besetzt, Takte laufen. Der Gegner schläft — wir beobachten.' }
     ];
-    sprich(zufall(pool), 'ruhig');
+    var g = zufall(pool);
+    spiel(g.c, g.t, 'ruhig');
     ping();
   }
 
   var CHANCE_SPRUECHE = [
-    'Lücke in der feindlichen Verteidigung entdeckt — Angriffsfenster offen. Feuer frei!',
-    'Ziel erfasst, Offizier! Zwei Bücher weit auseinander — Zugriff empfohlen!',
-    'Treffer im Raster! Der Gegner hat eine Flanke offen — wir können angreifen!',
-    'Chance bestätigt, alle sieben Prüfungen bestanden — Angriffsbefehl liegt bei Ihnen, Offizier!'
+    { c: 'chance-1', t: 'Lücke in der feindlichen Verteidigung entdeckt — Angriffsfenster offen. Feuer frei!' },
+    { c: 'chance-2', t: 'Ziel erfasst, Offizier! Zwei Bücher weit auseinander — Zugriff empfohlen!' },
+    { c: 'chance-3', t: 'Treffer im Raster! Der Gegner hat eine Flanke offen — wir können angreifen!' },
+    { c: 'chance-4', t: 'Chance bestätigt, alle sieben Prüfungen bestanden — Angriffsbefehl liegt bei Ihnen, Offizier!' }
   ];
   var FEHL_SPRUECHE = [
-    'Fehlversuch registriert. Rechnung als falsch markiert — geht in die Analyse.',
-    'Blindgänger, Offizier. Die Zahlen lügen — aussortiert und dokumentiert.',
-    'Falscher Alarm: ein Kurs klebt. Ziel gestrichen, wir bleiben im Raster.'
+    { c: 'fehl-1', t: 'Fehlversuch registriert. Rechnung als falsch markiert — geht in die Analyse.' },
+    { c: 'fehl-2', t: 'Blindgänger, Offizier. Die Zahlen lügen — aussortiert und dokumentiert.' },
+    { c: 'fehl-3', t: 'Falscher Alarm: ein Kurs klebt. Ziel gestrichen, wir bleiben im Raster.' }
   ];
 
   /* ---------- Beobachtung: wie der Melder, nur mit Stimme ---------- */
@@ -229,9 +261,12 @@
       if (neueC.length) {
         alarm();
         var f0 = neueC[0];
-        sprich(zufall(CHANCE_SPRUECHE) + ' Rendite ' +
-               Number(f0.rendite).toFixed(2).replace('.', ',') + ' Prozent' +
-               (f0.nr ? ', Rechnung Nummer ' + f0.nr : '') + '.', 'alarm');
+        var w = zufall(CHANCE_SPRUECHE);
+        /* Mit echter Aufnahme spricht der Sprecher den Spruch; die Zahlen
+         * stehen im Log. Ohne Aufnahme spricht die Browser-Stimme alles. */
+        spiel(w.c, w.t + ' Rendite ' +
+              Number(f0.rendite).toFixed(2).replace('.', ',') + ' Prozent' +
+              (f0.nr ? ', Rechnung Nummer ' + f0.nr : '') + '.', 'alarm');
       }
       /* Fehlversuche sind haeufiger — hoechstens alle 60 Sekunden ein
        * Spruch, sonst redet der Soldat pausenlos dazwischen. */
@@ -240,7 +275,8 @@
       if (neueF && Date.now() - letzterFehlSpruch > 60000) {
         letzterFehlSpruch = Date.now();
         fehl();
-        sprich(zufall(FEHL_SPRUECHE), 'fehl');
+        var wf = zufall(FEHL_SPRUECHE);
+        spiel(wf.c, wf.t, 'fehl');
       }
     }
     bekannteChancen = jetztC;
@@ -290,7 +326,7 @@
   function umschalten() {
     localStorage.setItem(SCHLUESSEL, an() ? 'aus' : 'an');
     beschrifte();
-    if (an()) { geste = true; klick(); sprich('Ton ist an, Offizier. Sie hören von mir.', 'ruhig'); }
+    if (an()) { geste = true; klick(); spiel('ton-an', 'Ton ist an, Offizier. Sie hören von mir.', 'ruhig'); }
     else if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
