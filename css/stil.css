@@ -2387,3 +2387,49 @@ input[type=text], input[type=password], textarea { cursor: text; }
   80%  { top: 16px; opacity: 1; }
   100% { top: -60px; opacity: 0; }
 }
+
+/* ---------- 15.8., allerletzter Wunsch: Verbindungsleiste, Vorlesen,
+ * Mikrofon ---------- */
+
+/* Verbindungsstatus oben auf der Listen-Seite — klebt beim Scrollen. */
+#listen-status {
+  position: sticky; top: 0; z-index: 60;
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px 18px;
+  padding: 10px 14px; margin: 0 0 14px;
+  background: color-mix(in srgb, var(--grund) 92%, var(--sonar));
+  border: 1px solid var(--rand);
+  border-left: 4px solid var(--sonar);
+  font-size: 13.5px;
+}
+#listen-status .ls-wort {
+  font-family: 'Black Ops One', sans-serif;
+  font-size: 11px; letter-spacing: .28em; color: var(--text-leise);
+}
+#listen-status .ls-eintrag { display: inline-flex; align-items: center; gap: 5px; white-space: nowrap; }
+#listen-status .ls-eintrag b {
+  font-family: 'Share Tech Mono', ui-monospace, monospace; font-weight: 400;
+}
+#listen-status .ls-lauf { margin-left: auto; color: var(--text-leise); }
+@media (max-width: 700px) { #listen-status .ls-lauf { margin-left: 0; } }
+
+/* Vorlese-Knopf an jeder Funker-Antwort. */
+.fu-zeile .fu-lesen {
+  margin-left: 8px; padding: 0 6px; min-height: 0;
+  border: 1px solid var(--rand); border-radius: 6px;
+  background: transparent; font-size: 13px; cursor: pointer;
+  vertical-align: middle;
+}
+.fu-zeile .fu-lesen:hover { border-color: var(--sonar); }
+
+/* Mikrofon im Funker-Formular. */
+#funker-form .fu-mikro {
+  min-height: 0; padding: 0 10px; font-size: 16px;
+  border: 1px solid var(--rand); border-radius: 8px;
+  background: transparent; cursor: pointer;
+}
+#funker-form .fu-mikro.hoert-zu {
+  border-color: var(--rot); color: var(--rot);
+  animation: mikro-puls 1s ease-in-out infinite;
+}
+@keyframes mikro-puls { 0%, 100% { box-shadow: 0 0 0 0 rgba(201,138,130,.5); } 50% { box-shadow: 0 0 0 6px rgba(201,138,130,0); } }
+#funker-form .fu-mikro.geht-nicht { opacity: .4; cursor: not-allowed; }

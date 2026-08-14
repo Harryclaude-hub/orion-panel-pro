@@ -1716,6 +1716,29 @@
     setzeWennAnders(document.getElementById('tafel'), anbieterTafel(e));
     kachelnSetzen(document.getElementById('kacheln'), kacheln(s));
 
+    /* Verbindungsleiste der LISTEN-Seite: die vier Anbieter mit Alter
+     * plus der juengste Scanner-Lauf — dieselben Messwerte wie ueberall,
+     * nur kompakt und beim Scrollen oben klebend. */
+    (function () {
+      var el = document.getElementById('listen-status');
+      if (!el) return;
+      var bfAn2 = (((K.buecher || {}).betfair || {}).aktiv !== false);
+      function eintrag(chip, name, alter, max, aus) {
+        var zustand = aus ? 'aus'
+          : (alter !== null && isFinite(Number(alter)) && Number(alter) < max ? 'gruen' : 'rot');
+        return '<span class="ls-eintrag an-buch ' + chip + '">' + ampel(zustand) +
+               txt(name) + ' <b>' + (aus ? 'aus' : dauer(alter)) + '</b></span>';
+      }
+      setzeWennAnders(el,
+        '<span class="ls-wort">VERBINDUNG</span>' +
+        eintrag('pm', 'Polymarket', s.lauf_alter_s, K.laufMaxAlterS) +
+        eintrag('ka', 'Kalshi', s.kalshi_alter_s, K.kalshiMaxAlterS) +
+        eintrag('sm', 'Smarkets', s.smarkets_alter_s, K.smarketsMaxAlterS) +
+        eintrag('bf', 'Betfair', s.bf_alter_s, K.bridgeMaxAlterS, !bfAn2) +
+        '<span class="ls-eintrag ls-lauf">letzter Scan <b>' +
+        (s.lauf_alter_s === null ? 'nie' : 'vor ' + dauer(s.lauf_alter_s)) + '</b></span>');
+    })();
+
     var warn = '';
     if (s.lauf_alter_s === null) {
       warn += '<div class="warnung"><b>Der Scanner hat noch nie gelaufen.</b> ' +

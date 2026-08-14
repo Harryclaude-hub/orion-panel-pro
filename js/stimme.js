@@ -380,6 +380,113 @@
     if (dauerMs) setTimeout(function () { k.classList.remove(klasse); }, dauerMs);
   }
 
+  /* ---------- VORLESEN auf Knopfdruck (15.8., letzter Wunsch) ----------
+   *
+   * Jede Funker-Antwort bekommt einen kleinen Lautsprecher-Knopf. Ein
+   * Klick schickt den Text an die Serverfunktion orion-stimme, die mit
+   * der echten Liam-Stimme antwortet (Schluessel bleibt auf dem Server).
+   * KEIN Automatismus: Vorlesen kostet ~1 Credit je Zeichen, ein voller
+   * Bericht ~700 - auf Knopfdruck bleibt das im Gratis-Rahmen. */
+  function vorlesen(text, knopf) {
+    if (!an() || !funkerAn()) { tonBanner('🔇 Ton ist aus — erst einschalten'); return; }
+    var K2 = welt.KONFIG || {};
+    knopf.disabled = true; knopf.textContent = '…';
+    fetch(K2.supabase + '/functions/v1/orion-stimme', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({ text: text })
+    }).then(function (r) {
+      var typ = r.headers.get('content-type') || '';
+      if (typ.indexOf('audio') === -1) {
+        return r.json().then(function (j) {
+          knopf.textContent = '⚠';
+          knopf.title = j.grund || j.fehler || 'Vorlesen fehlgeschlagen';
+          knopf.disabled = false;
+        });
+      }
+      return r.blob().then(function (b) {
+        var adresse = URL.createObjectURL(b);
+        var a = new Audio(adresse);
+        a.volume = 0.95;
+        /* dieselben Regeln wie jede Aufnahme: exklusiv + Wachhund-Liste */
+        laufend.forEach(function (x) { try { x.pause(); } catch (e2) {} });
+        laufend = [a];
+        avatarSpricht(true);
+        a.onended = function () {
+          laufend = laufend.filter(function (x) { return x !== a; });
+          avatarSpricht(false); URL.revokeObjectURL(adresse);
+          knopf.textContent = '🔈'; knopf.disabled = false;
+        };
+        a.onerror = function () { avatarSpricht(false); knopf.textContent = '⚠'; knopf.disabled = false; };
+        a.play().catch(function () { avatarSpricht(false); knopf.textContent = '⚠'; knopf.disabled = false; });
+      });
+    }).catch(function () { knopf.textContent = '⚠'; knopf.disabled = false; });
+  }
+
+  /* Jede NEUE Funker-Zeile bekommt ihren Lautsprecher. */
+  function vorleseKnoepfe() {
+    var log = document.getElementById('funker-log');
+    if (!log || log.dataset.beobachtet) return;
+    log.dataset.beobachtet = '1';
+    new MutationObserver(function (aenderungen) {
+      aenderungen.forEach(function (a2) {
+        Array.prototype.forEach.call(a2.addedNodes, function (z) {
+          if (!z.classList || !z.classList.contains('funker') || z.querySelector('.fu-lesen')) return;
+          var text = z.textContent;
+          var k = document.createElement('button');
+          k.type = 'button'; k.className = 'fu-lesen'; k.textContent = '🔈';
+          k.title = 'Diese Antwort mit echter Stimme vorlesen (kostet ~1 Credit je Zeichen)';
+          k.addEventListener('click', function () { vorlesen(text, k); });
+          z.appendChild(k);
+        });
+      });
+    }).observe(log, { childList: true });
+  }
+
+  /* ---------- MIKROFON (15.8., letzter Wunsch): mit dem Funker reden ----
+   *
+   * Eingebaute Spracherkennung des Browsers (Chrome/Edge, Deutsch),
+   * kostenlos. Klick auf 🎤 = zuhoeren, das Gesagte landet im Feld und
+   * wird beim Verstummen abgeschickt. Browser ohne Erkennung bekommen
+   * einen ehrlichen Hinweis statt eines toten Knopfs. */
+  function mikroBauen() {
+    var form = document.getElementById('funker-form');
+    if (!form || form.querySelector('.fu-mikro')) return;
+    var R = window.SpeechRecognition || window.webkitSpeechRecognition;
+    var k = document.createElement('button');
+    k.type = 'button'; k.className = 'fu-mikro'; k.textContent = '🎤';
+    form.insertBefore(k, form.querySelector('button[type=submit]') || null);
+    if (!R) {
+      k.classList.add('geht-nicht');
+      k.title = 'Dieser Browser kann keine Spracheingabe — Chrome und Edge können es.';
+      k.addEventListener('click', function (ev) { ev.preventDefault(); });
+      return;
+    }
+    k.title = 'Mit dem Funker reden: Klick, sprechen, fertig — der Befehl schickt sich selbst ab.';
+    var laeuftM = false, erkenner = null;
+    k.addEventListener('click', function () {
+      if (laeuftM) { try { erkenner.stop(); } catch (e2) {} return; }
+      erkenner = new R();
+      erkenner.lang = 'de-DE';
+      erkenner.interimResults = true;
+      var feld = document.getElementById('funker-frage');
+      erkenner.onresult = function (ev) {
+        var t = '';
+        for (var i = 0; i < ev.results.length; i++) t += ev.results[i][0].transcript;
+        if (feld) feld.value = t.trim();
+      };
+      erkenner.onend = function () {
+        laeuftM = false; k.classList.remove('hoert-zu');
+        if (feld && feld.value.trim()) {
+          form.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }));
+        }
+      };
+      erkenner.onerror = function () { laeuftM = false; k.classList.remove('hoert-zu'); };
+      laeuftM = true; k.classList.add('hoert-zu');
+      try { erkenner.start(); } catch (e2) { laeuftM = false; k.classList.remove('hoert-zu'); }
+    });
+  }
+
   /* ---------- Der Funker REDET im Chat (Vorgabe 14.8.) ----------
    *
    * Alles ueber Ereignis-Weiterleitung am Dokument, weil der Funker seine
@@ -513,7 +620,8 @@
 
     avatarBauen();
     stummknopfBauen();
-    setInterval(function () { avatarBauen(); stummknopfBauen(); }, 3000);   // falls der Funker spaeter baut
+    vorleseKnoepfe(); mikroBauen();
+    setInterval(function () { avatarBauen(); stummknopfBauen(); vorleseKnoepfe(); mikroBauen(); }, 3000);   // falls der Funker spaeter baut
     setInterval(pruefe, 2000);
 
     /* DER WACHHUND (15.8., letzte Runde des Ton-Problems): jede Sekunde
