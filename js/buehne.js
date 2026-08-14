@@ -256,15 +256,15 @@
     var wurzel = document.documentElement;
     wurzel.classList.remove('anim-1', 'anim-2', 'anim-3');
     wurzel.classList.add('anim-' + stufe);
-    var NAMEN = { 1: 'SCHONUNG', 2: 'STANDARD', 3: 'VOLLES KINO' };
+    /* KURZE Woerter — die langen ragten aus dem Knopf (Rueckmeldung 14.8.). */
+    var NAMEN = { 1: 'SCHONUNG', 2: 'STANDARD', 3: 'KINO' };
     var t = document.getElementById('anim-text');
     var k = document.getElementById('anim-klein');
-    if (t) t.textContent = 'Animation: Stufe ' + stufe + ' — ' + NAMEN[stufe];
+    if (t) t.textContent = 'Stufe ' + stufe + ' · ' + NAMEN[stufe];
     if (k) {
       var e = animEmpfehlung();
-      k.textContent = (stufe === e ? 'entspricht der Empfehlung fuer dieses Geraet'
-                                   : 'empfohlen fuer dieses Geraet: Stufe ' + e) +
-                      ' (' + (Number(navigator.hardwareConcurrency) || '?') + ' Kerne)';
+      k.textContent = (stufe === e ? '✓ Empfehlung für dieses Gerät'
+                                   : 'Empfehlung: Stufe ' + e);
     }
   }
 

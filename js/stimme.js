@@ -26,6 +26,28 @@
 
   function an() { return localStorage.getItem(SCHLUESSEL) !== 'aus'; }  // Standard: AN
 
+  /* Gerade spielende Aufnahmen: Ton-AUS muss sie SOFORT stoppen, nicht
+   * erst die naechste verhindern (Rueckmeldung 14.8.: "Ton aus bringt
+   * nix" — eine laufende 8-Sekunden-Aufnahme plapperte weiter). */
+  var laufend = [];
+  function allesStumm() {
+    laufend.forEach(function (a) { try { a.pause(); } catch (e) {} });
+    laufend = [];
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    avatarSpricht(false);
+  }
+
+  /* Die Sprueche-Pools kommen aus audio/sprueche.json — derselben Datei,
+   * aus der die Aufnahmen erzeugt wurden (eine Quelle, kein Drift).
+   * 10-20 Varianten je Ereignis; ohne Datei greifen kleine Notpools. */
+  var POOLS = null;
+  fetch('audio/sprueche.json').then(function (r) { return r.ok ? r.json() : null; })
+    .then(function (j) { POOLS = j; })
+    .catch(function () { /* Notpools unten */ });
+  function pool(name, ersatz) {
+    return (POOLS && POOLS[name] && POOLS[name].length) ? POOLS[name] : ersatz;
+  }
+
   /* ---------- Soundeffekte, alle selbst erzeugt ---------- */
 
   function audio() {
@@ -41,6 +63,7 @@
   /* Funk-Knacken: kurzes Rauschen durch einen Bandpass — das "Taste
    * gedrueckt"-Geraeusch vor und nach jedem Spruch. */
   function klick() {
+    if (!an()) return;
     var a = audio(); if (!a) return;
     var n = a.createBufferSource();
     var puffer = a.createBuffer(1, a.sampleRate * 0.06, a.sampleRate);
@@ -55,6 +78,7 @@
 
   /* Sonar-Ping fuers Hochfahren. */
   function ping() {
+    if (!an()) return;
     var a = audio(); if (!a) return;
     var o = a.createOscillator(), g = a.createGain();
     o.type = 'sine'; o.frequency.value = 760;
@@ -66,6 +90,7 @@
 
   /* Alarm bei einer CHANCE: zwei kurze, harte Toene — Signal, kein Neon. */
   function alarm() {
+    if (!an()) return;
     var a = audio(); if (!a) return;
     [[520, 0], [780, 0.16]].forEach(function (t) {
       var o = a.createOscillator(), g = a.createGain();
@@ -80,6 +105,7 @@
 
   /* Fehlversuch: ein fallender, dumpfer Ton. */
   function fehl() {
+    if (!an()) return;
     var a = audio(); if (!a) return;
     var o = a.createOscillator(), g = a.createGain();
     o.type = 'triangle';
@@ -167,8 +193,12 @@
       klick();
       var a = new Audio('audio/' + clip + '.mp3');
       a.volume = 0.95;
+      laufend.push(a);
       avatarSpricht(true);
-      a.onended = function () { avatarSpricht(false); klick(); };
+      a.onended = function () {
+        laufend = laufend.filter(function (x) { return x !== a; });
+        avatarSpricht(false); klick();
+      };
       a.onerror = function () { avatarSpricht(false); sprich(text, lage); };
       a.play().then(function () { funkerLog(text); })
         .catch(function () { avatarSpricht(false); sprich(text, lage); });
@@ -203,30 +233,33 @@
     }).formatToParts(new Date());
     var stunde = Number((teile.find(function (t) { return t.type === 'hour'; }) || {}).value);
     if (isNaN(stunde)) stunde = new Date().getHours();   // Notnagel: Ortszeit
-    /* Jeder Spruch traegt seinen Aufnahme-Namen (c) — liegt die Datei in
-     * audio/, spricht der echte Sprecher, sonst die Browser-Stimme. */
-    var pool;
-    if (stunde >= 5 && stunde < 11) pool = [
+    /* Notpools (die ersten drei je Zeit); die grossen 6er-Pools kommen
+     * aus sprueche.json. */
+    var pool_;
+    if (stunde >= 5 && stunde < 11) pool_ = [
       { c: 'gruss-morgen-1', t: 'Guten Morgen, Offizier! Alle Systeme auf Station, der Scanner lief die ganze Nacht durch.' },
       { c: 'gruss-morgen-2', t: 'Guten Morgen, Offizier. Nachtwache ohne Vorkommnisse — vier Börsen im Raster, wir sind auf Empfang.' },
       { c: 'gruss-morgen-3', t: 'Morgenmeldung, Offizier: Gefechtsstand besetzt, alle Takte laufen. Erwarte Befehle.' }
     ];
-    else if (stunde >= 11 && stunde < 17) pool = [
+    else if (stunde >= 11 && stunde < 17) pool_ = [
       { c: 'gruss-tag-1', t: 'Guten Tag, Offizier! Gefechtsstand gefechtsbereit, alle vier Börsen unter Beobachtung.' },
       { c: 'gruss-tag-2', t: 'Mittagsmeldung, Offizier: Scanner im Zwanzig-Sekunden-Takt, Wächter auf Posten. Lage ruhig.' },
       { c: 'gruss-tag-3', t: 'Willkommen zurück, Offizier. Das Raster steht, wir haben nichts durchgelassen.' }
     ];
-    else if (stunde >= 17 && stunde < 23) pool = [
+    else if (stunde >= 17 && stunde < 23) pool_ = [
       { c: 'gruss-abend-1', t: 'Schönen Abend, Offizier! Der Spielplan füllt sich — beste Jagdzeit. Wir sind auf Empfang.' },
       { c: 'gruss-abend-2', t: 'Guten Abend, Offizier. Abendlage: alle Einheiten auf Station, das Sonar läuft heiß.' },
       { c: 'gruss-abend-3', t: 'Abendmeldung, Offizier: vier Börsen, ein Raster, keine Lücke unbeobachtet. Erwarte Befehle.' }
     ];
-    else pool = [
+    else pool_ = [
       { c: 'gruss-nacht-1', t: 'Nachtschicht, Offizier. Die Nachtwache übernimmt — Sie können ruhig schlafen, wir nicht.' },
       { c: 'gruss-nacht-2', t: 'Späte Stunde, Offizier. Der Scanner kennt keine Nacht — alles unter Kontrolle.' },
       { c: 'gruss-nacht-3', t: 'Nachtmeldung: Gefechtsstand besetzt, Takte laufen. Der Gegner schläft — wir beobachten.' }
     ];
-    var g = zufall(pool);
+    var schluesselName = (stunde >= 5 && stunde < 11) ? 'gruss_morgen'
+      : (stunde >= 11 && stunde < 17) ? 'gruss_tag'
+      : (stunde >= 17 && stunde < 23) ? 'gruss_abend' : 'gruss_nacht';
+    var g = zufall(pool(schluesselName, pool_));
     spiel(g.c, g.t, 'ruhig');
     ping();
   }
@@ -264,7 +297,7 @@
       if (neueC.length) {
         alarm();
         var f0 = neueC[0];
-        var w = zufall(CHANCE_SPRUECHE);
+        var w = zufall(pool('chance', CHANCE_SPRUECHE));
         /* Mit echter Aufnahme spricht der Sprecher den Spruch; die Zahlen
          * stehen im Log. Ohne Aufnahme spricht die Browser-Stimme alles. */
         spiel(w.c, w.t + ' Rendite ' +
@@ -278,7 +311,7 @@
       if (neueF && Date.now() - letzterFehlSpruch > 60000) {
         letzterFehlSpruch = Date.now();
         fehl();
-        var wf = zufall(FEHL_SPRUECHE);
+        var wf = zufall(pool('fehl', FEHL_SPRUECHE));
         spiel(wf.c, wf.t, 'fehl');
       }
     }
@@ -346,7 +379,8 @@
     if (Date.now() - letzteChatBegruessung < 60000) return;
     letzteChatBegruessung = Date.now();
     avatarLage('salut', 1200);
-    spiel('funker-gruss', 'Funker auf Empfang, Offizier. Was liegt an?', 'ruhig');
+    var wg = zufall(pool('funker_gruss', [{ c: 'funker-gruss-1', t: 'Funker auf Empfang, Offizier. Was liegt an?' }]));
+    spiel(wg.c, wg.t, 'ruhig');
   });
 
   document.addEventListener('focusin', function (ev) {
@@ -369,12 +403,18 @@
     setTimeout(function () {
       var zeilen = document.querySelectorAll('#funker-log .fu-zeile.funker');
       var letzte = zeilen.length ? zeilen[zeilen.length - 1].textContent : '';
+      /* Sichtbare Reaktion IMMER, auch bei Ton aus: er wackelt kurz. */
+      avatarLage('redet', 1600);
+      var w2;
       if (letzte.indexOf('Negativ') === 0) {
-        spiel('funker-negativ', 'Negativ, Offizier — Ziel nicht gefunden.', 'fehl');
+        w2 = zufall(pool('funker_negativ', [{ c: 'funker-negativ-1', t: 'Negativ, Offizier — Ziel nicht gefunden.' }]));
+        spiel(w2.c, w2.t, 'fehl');
       } else if (/pr(ü|ue)f|#\s*\d|check|rechne/.test(befehl)) {
-        spiel('funker-bestaetigt', 'Befehl erhalten — Prüfung läuft.', 'ruhig');
+        w2 = zufall(pool('funker_bestaetigt', [{ c: 'funker-bestaetigt-1', t: 'Befehl erhalten — Prüfung läuft.' }]));
+        spiel(w2.c, w2.t, 'ruhig');
       } else {
-        spiel('funker-verstanden', 'Verstanden, Offizier.', 'ruhig');
+        w2 = zufall(pool('funker_verstanden', [{ c: 'funker-verstanden-1', t: 'Verstanden, Offizier.' }]));
+        spiel(w2.c, w2.t, 'ruhig');
       }
     }, 200);
   });
@@ -394,8 +434,13 @@
   function umschalten() {
     localStorage.setItem(SCHLUESSEL, an() ? 'aus' : 'an');
     beschrifte();
-    if (an()) { geste = true; klick(); spiel('ton-an', 'Ton ist an, Offizier. Sie hören von mir.', 'ruhig'); }
-    else if ('speechSynthesis' in window) window.speechSynthesis.cancel();
+    if (an()) {
+      geste = true; klick();
+      var wt = zufall(pool('ton_an', [{ c: 'ton-an-1', t: 'Ton ist an, Offizier. Sie hören von mir.' }]));
+      spiel(wt.c, wt.t, 'ruhig');
+    } else {
+      allesStumm();
+    }
   }
 
   /* ---------- Start ---------- */

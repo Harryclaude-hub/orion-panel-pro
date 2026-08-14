@@ -1,0 +1,300 @@
+{
+ "gruss_morgen": [
+  {
+   "c": "gruss-morgen-1",
+   "t": "Guten Morgen, Offizier! Alle Systeme auf Station, der Scanner lief die ganze Nacht durch."
+  },
+  {
+   "c": "gruss-morgen-2",
+   "t": "Guten Morgen, Offizier. Nachtwache ohne Vorkommnisse — vier Börsen im Raster."
+  },
+  {
+   "c": "gruss-morgen-3",
+   "t": "Morgenmeldung: Gefechtsstand besetzt, alle Takte laufen. Erwarte Befehle."
+  },
+  {
+   "c": "gruss-morgen-4",
+   "t": "Der Offizier ist wach! Kaffee fassen, Lage lesen — wir haben die Nacht durchgescannt."
+  },
+  {
+   "c": "gruss-morgen-5",
+   "t": "Morgen, Chef. Kein Vorfall, keine Lücke verpennt. Das Raster stand die ganze Nacht."
+  },
+  {
+   "c": "gruss-morgen-6",
+   "t": "Sonnenaufgang über dem Gefechtsstand, Offizier. Alle vier Börsen melden sich einsatzbereit."
+  }
+ ],
+ "gruss_tag": [
+  {
+   "c": "gruss-tag-1",
+   "t": "Guten Tag, Offizier! Gefechtsstand gefechtsbereit, alle vier Börsen unter Beobachtung."
+  },
+  {
+   "c": "gruss-tag-2",
+   "t": "Mittagsmeldung: Scanner im Zwanzig-Sekunden-Takt, Wächter auf Posten. Lage ruhig."
+  },
+  {
+   "c": "gruss-tag-3",
+   "t": "Willkommen zurück, Offizier. Das Raster steht, wir haben nichts durchgelassen."
+  },
+  {
+   "c": "gruss-tag-4",
+   "t": "Tagdienst läuft, Offizier. Vier Börsen, ein Raster — und wir sitzen am Abzug."
+  },
+  {
+   "c": "gruss-tag-5",
+   "t": "Schön, Sie zu sehen, Chef. Alle Einheiten auf Station, keine besonderen Vorkommnisse."
+  },
+  {
+   "c": "gruss-tag-6",
+   "t": "Lagebericht Mittag: Verbindungen stabil, Wächter wach, Prüfer rechnet. Erwarte Befehle."
+  }
+ ],
+ "gruss_abend": [
+  {
+   "c": "gruss-abend-1",
+   "t": "Schönen Abend, Offizier! Der Spielplan füllt sich — beste Jagdzeit."
+  },
+  {
+   "c": "gruss-abend-2",
+   "t": "Guten Abend, Offizier. Abendlage: alle Einheiten auf Station, das Sonar läuft heiß."
+  },
+  {
+   "c": "gruss-abend-3",
+   "t": "Abendmeldung: vier Börsen, ein Raster, keine Lücke unbeobachtet."
+  },
+  {
+   "c": "gruss-abend-4",
+   "t": "Der Abend gehört uns, Offizier. Die Bücher füllen sich, wir halten die Augen offen."
+  },
+  {
+   "c": "gruss-abend-5",
+   "t": "Guten Abend, Chef. Hauptsendezeit an den Börsen — genau unsere Stunde."
+  },
+  {
+   "c": "gruss-abend-6",
+   "t": "Abendschicht übernommen, Offizier. Wenn sich heute etwas öffnet, hören Sie es zuerst."
+  }
+ ],
+ "gruss_nacht": [
+  {
+   "c": "gruss-nacht-1",
+   "t": "Nachtschicht, Offizier. Die Nachtwache übernimmt — Sie können ruhig schlafen, wir nicht."
+  },
+  {
+   "c": "gruss-nacht-2",
+   "t": "Späte Stunde, Offizier. Der Scanner kennt keine Nacht — alles unter Kontrolle."
+  },
+  {
+   "c": "gruss-nacht-3",
+   "t": "Nachtmeldung: Gefechtsstand besetzt, Takte laufen. Der Gegner schläft — wir beobachten."
+  },
+  {
+   "c": "gruss-nacht-4",
+   "t": "Noch wach, Offizier? Wir auch. Wir sind immer wach."
+  },
+  {
+   "c": "gruss-nacht-5",
+   "t": "Mitternachtslage: ruhig, aber das Raster bleibt scharf. Gute Nacht, Chef."
+  },
+  {
+   "c": "gruss-nacht-6",
+   "t": "Die Stadt schläft, die Börsen nicht ganz. Nachtwache steht, Offizier."
+  }
+ ],
+ "chance": [
+  {
+   "c": "chance-1",
+   "t": "Lücke in der feindlichen Verteidigung entdeckt — Angriffsfenster offen. Feuer frei!"
+  },
+  {
+   "c": "chance-2",
+   "t": "Ziel erfasst, Offizier! Zwei Bücher weit auseinander — Zugriff empfohlen!"
+  },
+  {
+   "c": "chance-3",
+   "t": "Treffer im Raster! Der Gegner hat eine Flanke offen — wir können angreifen!"
+  },
+  {
+   "c": "chance-4",
+   "t": "Chance bestätigt, alle sieben Prüfungen bestanden — Angriffsbefehl liegt bei Ihnen, Offizier!"
+  },
+  {
+   "c": "chance-5",
+   "t": "Es hat sich geöffnet, Offizier! Die Lücke steht — wir greifen an!"
+  },
+  {
+   "c": "chance-6",
+   "t": "Angriffsfenster offen! Auf Ihren Befehl — Zugriff, Zugriff, Zugriff!"
+  },
+  {
+   "c": "chance-7",
+   "t": "Da ist das Loch in der Front, Offizier! Beide Seiten gedeckt — grünes Licht!"
+  },
+  {
+   "c": "chance-8",
+   "t": "Alarm, Alarm — echte Chance im Anflug! Die Zahlen stehen, der Weg ist frei!"
+  },
+  {
+   "c": "chance-9",
+   "t": "Der Gegner hat gepennt, Offizier! Das Fenster ist offen — rein da!"
+  },
+  {
+   "c": "chance-10",
+   "t": "Volltreffer im Sonar! Geprüft, bestätigt, gedeckt — Ihr Befehl, Offizier!"
+  },
+  {
+   "c": "chance-11",
+   "t": "Bresche geschlagen! Zwei Börsen, eine Lücke — Angriff lohnt sich!"
+  },
+  {
+   "c": "chance-12",
+   "t": "Jetzt oder nie, Offizier — die Front ist offen und wir stehen bereit!"
+  },
+  {
+   "c": "chance-13",
+   "t": "Meldung vom Spähtrupp: bestätigte Chance, alle Prüfungen grün. Feuer frei?"
+  },
+  {
+   "c": "chance-14",
+   "t": "Sirenen an, Offizier! Das Raster hat zugebissen — die Beute steht auf der Karte!"
+  }
+ ],
+ "fehl": [
+  {
+   "c": "fehl-1",
+   "t": "Fehlversuch registriert. Rechnung als falsch markiert — geht in die Analyse."
+  },
+  {
+   "c": "fehl-2",
+   "t": "Blindgänger, Offizier. Die Zahlen lügen — aussortiert und dokumentiert."
+  },
+  {
+   "c": "fehl-3",
+   "t": "Falscher Alarm: ein Kurs klebt. Ziel gestrichen, wir bleiben im Raster."
+  },
+  {
+   "c": "fehl-4",
+   "t": "Negativ, Offizier. Der Treffer war ein Trugbild — gestrichen."
+  },
+  {
+   "c": "fehl-5",
+   "t": "Wieder eine Attrappe. Sieht gut aus, rechnet sich nicht — weg damit."
+  },
+  {
+   "c": "fehl-6",
+   "t": "Der Köder war falsch, Offizier. Buchprobe durchgefallen — Akte angelegt."
+  },
+  {
+   "c": "fehl-7",
+   "t": "Kein Grund zur Aufregung. Eine falsche Rechnung mehr im Archiv, sonst nichts."
+  },
+  {
+   "c": "fehl-8",
+   "t": "Ziel entpuppt sich als Pappkamerad. Gestrichen, Bericht liegt im Falsch-Reiter."
+  },
+  {
+   "c": "fehl-9",
+   "t": "Die Zahlen haben geblufft, Offizier. Wir nicht — aussortiert."
+  },
+  {
+   "c": "fehl-10",
+   "t": "Trockene Meldung: Fehlrechnung erkannt und abgelegt. Das Raster läuft weiter."
+  }
+ ],
+ "funker_gruss": [
+  {
+   "c": "funker-gruss-1",
+   "t": "Funker auf Empfang, Offizier. Was liegt an?"
+  },
+  {
+   "c": "funker-gruss-2",
+   "t": "Hier Funkstelle Orion — sprechen Sie, Offizier."
+  },
+  {
+   "c": "funker-gruss-3",
+   "t": "Zu Diensten, Offizier. Nummer oder Titel — ich prüfe alles nach."
+  },
+  {
+   "c": "funker-gruss-4",
+   "t": "Kanal offen, Offizier. Ihr Befehl?"
+  },
+  {
+   "c": "funker-gruss-5",
+   "t": "Funker meldet sich zur Stelle. Womit kann ich dienen, Offizier?"
+  },
+  {
+   "c": "funker-gruss-6",
+   "t": "Empfang steht, Offizier. Geben Sie durch."
+  }
+ ],
+ "funker_bestaetigt": [
+  {
+   "c": "funker-bestaetigt-1",
+   "t": "Befehl erhalten — Prüfung läuft."
+  },
+  {
+   "c": "funker-bestaetigt-2",
+   "t": "Verstanden, wird geprüft. Einen Moment, Offizier."
+  },
+  {
+   "c": "funker-bestaetigt-3",
+   "t": "Roger. Ich nehme die Rechnung auseinander."
+  },
+  {
+   "c": "funker-bestaetigt-4",
+   "t": "Auftrag angenommen — die Zahlen kommen sofort."
+  },
+  {
+   "c": "funker-bestaetigt-5",
+   "t": "Läuft, Offizier. Kein Wert bleibt ungeprüft."
+  }
+ ],
+ "funker_verstanden": [
+  {
+   "c": "funker-verstanden-1",
+   "t": "Verstanden, Offizier."
+  },
+  {
+   "c": "funker-verstanden-2",
+   "t": "Jawohl — kommt sofort."
+  },
+  {
+   "c": "funker-verstanden-3",
+   "t": "Roger, Offizier. Antwort steht im Fenster."
+  },
+  {
+   "c": "funker-verstanden-4",
+   "t": "Aye. Lesen Sie mit, Offizier."
+  }
+ ],
+ "funker_negativ": [
+  {
+   "c": "funker-negativ-1",
+   "t": "Negativ, Offizier — Ziel nicht gefunden."
+  },
+  {
+   "c": "funker-negativ-2",
+   "t": "Negativ. Die Nummer ist nicht in meinen Listen."
+  },
+  {
+   "c": "funker-negativ-3",
+   "t": "Kein Treffer, Offizier. Prüfen Sie die Nummer auf der Karte."
+  },
+  {
+   "c": "funker-negativ-4",
+   "t": "Da ist nichts, Offizier — entweder zu alt oder falsch geschrieben."
+  }
+ ],
+ "ton_an": [
+  {
+   "c": "ton-an-1",
+   "t": "Ton ist an, Offizier. Sie hören von mir."
+  },
+  {
+   "c": "ton-an-2",
+   "t": "Lautsprecher frei — ab jetzt melde ich mich hörbar."
+  }
+ ]
+}

@@ -1783,3 +1783,24 @@ html.anim-1 #funker-knopf .avatar svg,
 html.anim-1 #funker-knopf .av-auge { animation: none; }
 html.anim-1 #flanke-l, html.anim-1 #flanke-r { display: none; }
 html.anim-2 #flanke-l, html.anim-2 #flanke-r { opacity: .55; }
+
+/* ---------- Nachbesserungen 14.8. abends ----------
+ * 1) Knopftexte bleiben IN der Box (die Animations-Beschriftung ragte
+ *    heraus): fette Zeile darf umbrechen, nichts läuft mehr über.
+ * 2) Funker sichtbar lebendiger: groesser, wackelt beim Sprechen mit dem
+ *    ganzen Kopf, und "redet"-Wackeln auch bei Ton AUS. */
+header.kopf.hero .kopf-leiste b { white-space: normal; overflow-wrap: anywhere; }
+header.kopf.hero .kopf-leiste button,
+header.kopf.hero .kopf-leiste .knopf { min-width: 0; overflow: hidden; }
+
+#funker-knopf .avatar svg { width: 46px; height: 46px; }
+#funker-knopf.spricht .avatar,
+#funker-knopf.redet .avatar { animation: av-wackel .45s ease-in-out infinite; }
+#funker-knopf.redet:not(.spricht) .avatar { animation-iteration-count: 4; }
+@keyframes av-wackel {
+  0%, 100% { transform: rotate(-3deg); }
+  50%      { transform: rotate(3.5deg) translateY(-1.5px); }
+}
+#funker-knopf.spricht .av-mund { animation: av-sprechen .18s ease-in-out infinite alternate; }
+html.anim-1 #funker-knopf.spricht .avatar,
+html.anim-1 #funker-knopf.redet .avatar { animation: av-wackel .45s ease-in-out 4; }
