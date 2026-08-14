@@ -77,20 +77,6 @@
             '<path fill="currentColor" d="M24 6 h12 v6 h-12 z"/>' +
             '<rect fill="currentColor" x="36" y="8" width="24" height="2.6"/>' +
           '</svg>' +
-          '<svg class="fl-soldat s1" viewBox="0 0 20 34" aria-hidden="true">' +
-            '<circle cx="10" cy="5" r="3.6" fill="currentColor"/>' +
-            '<rect x="7" y="9" width="6" height="12" rx="2" fill="currentColor"/>' +
-            '<rect x="12" y="10" width="7" height="2.4" rx="1.2" fill="currentColor"/>' +
-            '<path class="bein b1" d="M8.6 21 L7 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
-            '<path class="bein b2" d="M11.4 21 L13 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
-          '</svg>' +
-          '<svg class="fl-soldat s2" viewBox="0 0 20 34" aria-hidden="true">' +
-            '<circle cx="10" cy="5" r="3.6" fill="currentColor"/>' +
-            '<rect x="7" y="9" width="6" height="12" rx="2" fill="currentColor"/>' +
-            '<rect x="12" y="10" width="7" height="2.4" rx="1.2" fill="currentColor"/>' +
-            '<path class="bein b1" d="M8.6 21 L7 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
-            '<path class="bein b2" d="M11.4 21 L13 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
-          '</svg>' +
           '<i class="fl-schuss sch1"></i>' +
           '<i class="fl-schuss sch2"></i>' +
           '<i class="fl-muendung"></i>' +
@@ -171,6 +157,15 @@
    * Alle paar Sekunden eine Meldung im Gefechtston, passend zur Lage.
    * Ereignisse (Ziel erfasst) draengen sich sofort dazwischen. Nur die
    * letzten drei Zeilen bleiben stehen — ein Funkgeraet, kein Protokoll. */
+  /* Motivationsfunk (Vorgabe 14.8. nachts): ab und zu spricht das
+   * Funkgeraet dem Offizier Mut zu — Kasernenhof-Weisheiten. */
+  var MOTIVATION = [
+    'DURCHHALTEN, OFFIZIER', 'DAS RASTER SCHLÄFT NIE', 'GEDULD SCHLÄGT GIER',
+    'DISZIPLIN GEWINNT KRIEGE', 'RUHE BEWAHREN — PRÄZISE BLEIBEN',
+    'JEDE PRÜFUNG MACHT UNS SCHÄRFER', 'WER MISST, GEWINNT',
+    'KEIN ZIEL BLEIBT UNGEPRÜFT', 'STANDHAFT WIE DAS RASTER'
+  ];
+
   var FUNK = {
     ruhig: ['SEKTOR WIRD ABGETASTET …', 'KEIN KONTAKT — WEITER SUCHEN',
             'ALLE EINHEITEN AUF STATION', 'LAGE RUHIG — AUGEN OFFEN',
@@ -182,7 +177,9 @@
   };
 
   function funken(text) {
-    ['flanke-l', 'flanke-r'].forEach(function (id) {
+    /* Nur die LINKE Flanke traegt Funkzeilen: unten rechts sitzt der
+     * Funker-Knopf, dort stoerte die Laufschrift (Vorgabe 14.8. nachts). */
+    ['flanke-l'].forEach(function (id) {
       var f = document.getElementById(id);
       var funk = f && f.querySelector('.fl-funk');
       if (!funk) return;
@@ -200,6 +197,10 @@
      * nicht nur Stimmung machen. */
     if (e && Array.isArray(e.chancen) && e.chancen.length && Math.random() < 0.4) {
       funken(e.chancen.length + (e.chancen.length === 1 ? ' ZIEL' : ' ZIELE') + ' IM VISIER');
+      return;
+    }
+    if ((letzteStufe || 'ruhig') === 'ruhig' && Math.random() < 0.35) {
+      funken(MOTIVATION[Math.floor(Math.random() * MOTIVATION.length)]);
       return;
     }
     funken(pool[Math.floor(Math.random() * pool.length)]);

@@ -2111,3 +2111,55 @@ canvas.titel-partikel { position: fixed; z-index: 999990; pointer-events: none; 
               transform .6s cubic-bezier(.2, .85, .3, 1.12),
               filter .6s ease;
 }
+
+/* ---------- 14.8. nachts, Runde 3: Feinschliff auf Befehl ---------- */
+
+/* Soldaten sind ausgemustert (Qualitaet), und alles Fliegende bekommt
+ * eine eigene Kompositions-Schicht — das nimmt das Ruckeln. */
+.fl-soldat { display: none !important; }
+.flanke .flug, .fl-panzer, .fl-schuss, .flanke .fl-scan, #kacheln::after {
+  will-change: transform, opacity;
+  transform: translateZ(0);
+}
+
+/* Funkzeilen: sauber GETRENNT vom Schlachtfeld — eine Linie, eigener
+ * Grund, und nur links (rechts wohnt der Funker, dort gibt es keine). */
+.flanke .fl-funk {
+  border-top: 1px solid rgba(var(--fl-farbe), .4);
+  background: linear-gradient(180deg, rgba(0, 0, 0, .35), transparent);
+  padding-top: 10px;
+}
+.flanke.rechts .fl-funk { display: none; }
+
+/* Bereichs-Karten: NOCH mehr Gewicht (zweite Rueckmeldung). */
+#bereichs-karten {
+  border-width: 2px;
+  padding: 30px 14px 16px;
+  background:
+    radial-gradient(140% 120% at 50% 0%, rgba(var(--sonar-rgb), .06), transparent 60%),
+    linear-gradient(180deg, rgba(0, 0, 0, .2), transparent 60%);
+}
+#bereichs-karten::before {
+  font-size: 11px; letter-spacing: .38em; color: var(--sonar);
+  text-shadow: 0 0 12px rgba(var(--sonar-rgb), .5);
+}
+.bereichskarte { min-height: 126px; padding: 20px 18px 16px; border-width: 2px; }
+.bereichskarte .bk-zahl { font-size: 42px; }
+.bereichskarte .bk-name { font-size: 13px; color: var(--text); }
+.bereichskarte .bk-info { font-size: 12px; min-height: 16px; }
+.bk-chancen .bk-name { color: var(--gruen); }
+.bk-knapp .bk-name { color: var(--gold); }
+.bk-verlauf .bk-name { color: var(--sonar); }
+.bk-falsch .bk-name { color: var(--rot); }
+.bk-chancen  { box-shadow: inset 6px 0 0 var(--gruen), inset 0 1px 0 rgba(255,255,255,.05), 0 0 16px rgba(143,180,121,.12); }
+.bk-knapp    { box-shadow: inset 6px 0 0 var(--gold),  inset 0 1px 0 rgba(255,255,255,.05), 0 0 16px rgba(var(--akzent-rgb),.12); }
+.bk-verlauf  { box-shadow: inset 6px 0 0 var(--sonar), inset 0 1px 0 rgba(255,255,255,.05), 0 0 16px rgba(var(--sonar-rgb),.12); }
+.bk-falsch   { box-shadow: inset 6px 0 0 var(--rot),   inset 0 1px 0 rgba(255,255,255,.05), 0 0 16px rgba(201,138,130,.12); }
+
+/* Aufbau: LANGSAMER und wuchtiger — das Zusammenfinden soll man sehen
+ * (dritte Rueckmeldung: "soll paar Sekunden dauern"). */
+.bau.bau-fertig {
+  transition: opacity 1.1s ease,
+              transform 1.1s cubic-bezier(.18, .8, .28, 1.1),
+              filter 1.1s ease;
+}

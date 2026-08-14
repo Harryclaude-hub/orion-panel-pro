@@ -186,6 +186,12 @@
    * dass es zu einem Spruch gar keine Aufnahme-Kennung gibt. */
   function spiel(clip, text, lage) {
     if (!an()) return;
+    /* NIE zwei Stimmen uebereinander (Vorgabe 14.8. nachts): wer neu
+     * spricht, bringt zuerst alle anderen zum Schweigen — laufende
+     * Aufnahmen UND die Browser-Stimme. */
+    laufend.forEach(function (x) { try { x.pause(); } catch (e2) {} });
+    laufend = [];
+    if ('speechSynthesis' in window) window.speechSynthesis.cancel();
     if (!clip) { sprich(text, lage); return; }
 
     function versuch(nochmal) {

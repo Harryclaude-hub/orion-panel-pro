@@ -50,7 +50,7 @@
     /* PUZZLE (Vorgabe 14.8. nachts): die Bereichs-Karten kommen aus vier
      * Richtungen angeflogen und docken mit leichtem Ueberschwung an —
      * wie Teile, die sich zusammenfinden. */
-    var puzzle = [[-110, -46, -7], [110, -52, 6], [-90, 64, 5], [95, 56, -6]];
+    var puzzle = [[-170, -80, -10], [170, -90, 9], [-150, 100, 8], [160, 90, -9]];
     var pi = 0;
     ziele.forEach(function (el, i) {
       el.classList.add('bau');
@@ -64,7 +64,7 @@
       var r = el.getBoundingClientRect();
       if (r.top < window.innerHeight || !beobachter) {
         /* Im Sichtfeld: gestaffelt antreten lassen. */
-        setTimeout(function () { el.classList.add('bau-fertig'); }, 60 + i * 110);
+        setTimeout(function () { el.classList.add('bau-fertig'); }, 200 + i * 260);
       } else {
         /* Unter der Falz: erst beim ersten Hineinscrollen. */
         beobachter.observe(el);
@@ -128,7 +128,7 @@
     if (!teilchen.length) { leinwand.remove(); return; }
 
     h1.style.opacity = '0';
-    var start = null, DAUER = 1350;
+    var start = null, DAUER = 2600;
     function mal(t) {
       if (start === null) start = t;
       var u = Math.min(1, (t - start) / DAUER);

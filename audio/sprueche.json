@@ -23,6 +23,10 @@
   {
    "c": "gruss-morgen-6",
    "t": "Sonnenaufgang über dem Gefechtsstand, Offizier. Alle vier Börsen melden sich einsatzbereit."
+  },
+  {
+   "c": "gruss-morgen-7",
+   "t": "Guten Morgen, Offizier. Die Zentrale hat übernommen — alles ruhig."
   }
  ],
  "gruss_tag": [
@@ -49,6 +53,10 @@
   {
    "c": "gruss-tag-6",
    "t": "Lagebericht Mittag: Verbindungen stabil, Wächter wach, Prüfer rechnet. Erwarte Befehle."
+  },
+  {
+   "c": "gruss-tag-7",
+   "t": "Zentrale an Offizier: Tageslage stabil, alle Börsen im Blick."
   }
  ],
  "gruss_abend": [
@@ -75,6 +83,10 @@
   {
    "c": "gruss-abend-6",
    "t": "Abendschicht übernommen, Offizier. Wenn sich heute etwas öffnet, hören Sie es zuerst."
+  },
+  {
+   "c": "gruss-abend-7",
+   "t": "Guten Abend, Offizier. Die Nacht gehört uns — wir sind bereit."
   }
  ],
  "gruss_nacht": [
@@ -101,6 +113,10 @@
   {
    "c": "gruss-nacht-6",
    "t": "Die Stadt schläft, die Börsen nicht ganz. Nachtwache steht, Offizier."
+  },
+  {
+   "c": "gruss-nacht-7",
+   "t": "Nachtzentrale übernimmt, Offizier. Schlafen Sie — wir wachen."
   }
  ],
  "chance": [
@@ -159,6 +175,22 @@
   {
    "c": "chance-14",
    "t": "Sirenen an, Offizier! Das Raster hat zugebissen — die Beute steht auf der Karte!"
+  },
+  {
+   "c": "chance-15",
+   "t": "Feindliche Linie durchbrochen — Angriffskorridor offen, Offizier!"
+  },
+  {
+   "c": "chance-16",
+   "t": "Zentrale an Offizier: bestätigte Chance im Raster. Zugriff freigegeben!"
+  },
+  {
+   "c": "chance-17",
+   "t": "Da ist die Lücke! Alle Prüfungen grün — Ihr Zug, Offizier!"
+  },
+  {
+   "c": "chance-18",
+   "t": "Aufklärung meldet: der Gegner steht offen. Feuer frei!"
   }
  ],
  "fehl": [
@@ -201,6 +233,18 @@
   {
    "c": "fehl-10",
    "t": "Trockene Meldung: Fehlrechnung erkannt und abgelegt. Das Raster läuft weiter."
+  },
+  {
+   "c": "fehl-11",
+   "t": "Zentrale meldet: Fehlrechnung erkannt und archiviert."
+  },
+  {
+   "c": "fehl-12",
+   "t": "Das war ein Köder — gestrichen. Wir bleiben wachsam."
+  },
+  {
+   "c": "fehl-13",
+   "t": "Prüfung negativ. Ziel gestrichen, das Raster läuft weiter."
   }
  ],
  "funker_gruss": [
@@ -227,14 +271,6 @@
   {
    "c": "funker-gruss-6",
    "t": "Empfang steht, Offizier. Geben Sie durch."
-  },
-  {
-   "c": "funker-gruss-7",
-   "t": "Funkraum besetzt, Offizier — was brauchen Sie?"
-  },
-  {
-   "c": "funker-gruss-8",
-   "t": "Hier der Alte vom Dienst. Sprechen Sie, Offizier."
   }
  ],
  "funker_bestaetigt": [
@@ -257,14 +293,6 @@
   {
    "c": "funker-bestaetigt-5",
    "t": "Läuft, Offizier. Kein Wert bleibt ungeprüft."
-  },
-  {
-   "c": "funker-bestaetigt-6",
-   "t": "Geht klar — ich rechne nach."
-  },
-  {
-   "c": "funker-bestaetigt-7",
-   "t": "Auftrag verstanden. Die Prüfung läuft bereits."
   }
  ],
  "funker_verstanden": [
@@ -283,14 +311,6 @@
   {
    "c": "funker-verstanden-4",
    "t": "Aye. Lesen Sie mit, Offizier."
-  },
-  {
-   "c": "funker-verstanden-5",
-   "t": "Verstanden. Steht alles im Fenster, Offizier."
-  },
-  {
-   "c": "funker-verstanden-6",
-   "t": "Roger, Roger — erledigt!"
   }
  ],
  "funker_negativ": [
@@ -309,14 +329,6 @@
   {
    "c": "funker-negativ-4",
    "t": "Da ist nichts, Offizier — entweder zu alt oder falsch geschrieben."
-  },
-  {
-   "c": "funker-negativ-5",
-   "t": "Negativ. Dieses Ziel führt keine Akte."
-  },
-  {
-   "c": "funker-negativ-6",
-   "t": "Negativ, Offizier. Da draußen ist nichts mit dieser Nummer."
   }
  ],
  "ton_an": [
