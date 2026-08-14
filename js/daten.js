@@ -117,27 +117,41 @@
     return db('smarkets_snapshot?id=eq.1&select=updated_at,stats').then(function (z) { return z[0] || null; });
   }
 
-  /* Der Verlauf ist die mit Abstand SCHWERSTE Abfrage (450+ Zeilen, alle
-   * Spalten) und aendert sich nur, wenn etwas endet — nicht im
-   * 2-Sekunden-Takt. Deshalb wird er nur alle 10 Sekunden frisch geholt
-   * (Rueckmeldung 14.8.: Ladezeit war von ~100 auf ~1000 ms gestiegen;
-   * gemessen war der Verlauf der Hauptbrocken, dazu kam eine gerade
-   * langsame Supabase-Instanz). Beendetes erscheint damit hoechstens
-   * 10 s spaeter im Archiv — der Scanner selbst ist unberuehrt. */
-  var verlaufPuffer = { zeit: 0, daten: null };
-  function holeVerlaufGepuffert() {
-    if (verlaufPuffer.daten && Date.now() - verlaufPuffer.zeit < 10000) {
-      return Promise.resolve(verlaufPuffer.daten);
-    }
-    return holeVerlauf(1000).then(function (v) {
-      verlaufPuffer = { zeit: Date.now(), daten: v };
-      return v;
-    });
+  /* GEMESSEN 14.8. abends: JEDE Anfrage kostet gerade ~600 ms Grundzeit
+   * (auch Einzeiler wie der Wechselkurs — das ist die Instanz, nicht die
+   * Datenmenge), der Verlauf mit 450+ Zeilen sogar 1,4 s. Acht parallele
+   * Anfragen je Takt hiessen also: die Anzeige haengt an der langsamsten.
+   *
+   * Deshalb PUFFER fuer alles, was sich langsam aendert. Der 2-Sekunden-
+   * Takt traegt damit meistens nur noch EINE Anfrage (die Live-Funde) —
+   * die Chancen bleiben so frisch wie immer, der Rest ist ein paar
+   * Sekunden alt, was seinem Wesen entspricht (Verlauf aendert sich nur,
+   * wenn etwas endet; der Wechselkurs einmal am Tag). Die Alter-Anzeigen
+   * rechnen ohnehin client-seitig aus den Zeitstempeln — sie bleiben
+   * korrekt, auch wenn der Schnappschuss gepuffert ist. */
+  function gepuffert(hole, haltbarMs) {
+    var p = { zeit: 0, daten: null, hat: false };
+    return function () {
+      if (p.hat && Date.now() - p.zeit < haltbarMs) return Promise.resolve(p.daten);
+      return hole().then(function (d) {
+        /* Einen FEHLER nicht einfrieren: der naechste Takt darf es sofort
+         * wieder versuchen. */
+        if (!(d && d.fehler)) p = { zeit: Date.now(), daten: d, hat: true };
+        return d;
+      });
+    };
   }
+  var holeVerlaufG   = gepuffert(function () { return holeVerlauf(1000); }, 10000);
+  var holeLaeufeG    = gepuffert(holeLaeufe, 6000);
+  var holeUebersichtG = gepuffert(holeUebersicht, 6000);
+  var holeKalshiG    = gepuffert(holeKalshi, 10000);
+  var holeSmarketsG  = gepuffert(holeSmarkets, 10000);
+  var holeWacheG     = gepuffert(holeWache, 10000);
+  var kursG          = gepuffert(kurs, 300000);
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlaufGepuffert(), holeLaeufe(), holeKalshi(), holeWache(),
-                        holeUebersicht(), holeSmarkets(), kurs()])
+    return Promise.all([holeLive(), holeVerlaufG(), holeLaeufeG(), holeKalshiG(), holeWacheG(),
+                        holeUebersichtG(), holeSmarketsG(), kursG()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
         var fx = teile[7];

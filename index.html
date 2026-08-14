@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Orion Panel Pro</title>
 <meta name="robots" content="noindex, nofollow">
-<link rel="stylesheet" href="css/stil.css?v=39">
+<link rel="stylesheet" href="css/stil.css?v=40">
 </head>
 <body>
 
@@ -74,21 +74,35 @@
        wäre Zierrat — und schlimmer: sie würde einen Ausfall verstecken. -->
   <section id="orion-puls" class="puls"></section>
 
+  <!-- ZWEI ANSICHTEN (Vorgabe 14.8. abends): die Startseite ist NUR die
+       Übersicht; die vier Listen leben auf einer eigenen Listen-Seite.
+       Direkt unter dem Radar: vier grosse Bereichs-Karten mit Gesamtzahl,
+       Ungelesen-Abzeichen und Live-Stand — Klick öffnet den Bereich.
+       Inhalte setzt js/anzeige.js (reiterZeichnen). -->
+  <section id="bereichs-karten" aria-label="Bereiche">
+    <button class="bereichskarte bk-chancen" data-bereich="chancen"><b class="bk-zahl">–</b><span class="bk-name">Chancen</span><small class="bk-info">lädt …</small></button>
+    <button class="bereichskarte bk-knapp" data-bereich="knapp"><b class="bk-zahl">–</b><span class="bk-name">Knappste Paare</span><small class="bk-info">lädt …</small></button>
+    <button class="bereichskarte bk-verlauf" data-bereich="verlauf"><b class="bk-zahl">–</b><span class="bk-name">Verlauf</span><small class="bk-info">lädt …</small></button>
+    <button class="bereichskarte bk-falsch" data-bereich="falsch"><b class="bk-zahl">–</b><span class="bk-name">Falsche Rechnungen</span><small class="bk-info">lädt …</small></button>
+  </section>
+
   <div id="tafel"></div>
   <div class="zeile-oben" id="kacheln"></div>
   <div id="warnungen"></div>
 
-  <nav class="reiter" id="reiter">
-    <button class="reiter-knopf" data-bereich="chancen">Chancen</button>
-    <button class="reiter-knopf" data-bereich="knapp">Knappste Paare</button>
-    <button class="reiter-knopf" data-bereich="verlauf">Verlauf</button>
-    <button class="reiter-knopf" data-bereich="falsch">Falsche Rechnungen</button>
-  </nav>
-
-  <div id="chancen"></div>
-  <div id="knapp"></div>
-  <div id="verlauf"></div>
-  <div id="falsch"></div>
+  <section id="listen-seite">
+    <button id="zurueck-knopf" type="button">← Zurück zur Übersicht</button>
+    <nav class="reiter" id="reiter">
+      <button class="reiter-knopf" data-bereich="chancen">Chancen</button>
+      <button class="reiter-knopf" data-bereich="knapp">Knappste Paare</button>
+      <button class="reiter-knopf" data-bereich="verlauf">Verlauf</button>
+      <button class="reiter-knopf" data-bereich="falsch">Falsche Rechnungen</button>
+    </nav>
+    <div id="chancen"></div>
+    <div id="knapp"></div>
+    <div id="verlauf"></div>
+    <div id="falsch"></div>
+  </section>
 
   <p class="leise" style="margin-top:28px">
     Gesucht wird auf dem Server: <code>orion-lauf</code> läuft für Fußball alle
@@ -106,18 +120,19 @@
 
 </div>
 
-<script src="js/konfig.js?v=39"></script>
-<script src="js/rechnung.js?v=39"></script>
-<script src="js/zuordnung.js?v=39"></script>
-<script src="js/daten.js?v=39"></script>
-<script src="js/filter.js?v=39"></script>
-<script src="js/puls.js?v=39"></script>
-<script src="js/melder.js?v=39"></script>
-<script src="js/buehne.js?v=39"></script>
-<script src="js/stimme.js?v=39"></script>
-<script src="js/funker.js?v=39"></script>
-<script src="js/anzeige.js?v=39"></script>
-<script src="js/sperre.js?v=39"></script>
-<script src="js/app.js?v=39"></script>
+<script src="js/konfig.js?v=40"></script>
+<script src="js/rechnung.js?v=40"></script>
+<script src="js/zuordnung.js?v=40"></script>
+<script src="js/daten.js?v=40"></script>
+<script src="js/filter.js?v=40"></script>
+<script src="js/puls.js?v=40"></script>
+<script src="js/melder.js?v=40"></script>
+<script src="js/buehne.js?v=40"></script>
+<script src="js/partikel.js?v=40"></script>
+<script src="js/stimme.js?v=40"></script>
+<script src="js/funker.js?v=40"></script>
+<script src="js/anzeige.js?v=40"></script>
+<script src="js/sperre.js?v=40"></script>
+<script src="js/app.js?v=40"></script>
 </body>
 </html>

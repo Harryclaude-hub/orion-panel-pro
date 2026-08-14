@@ -52,6 +52,36 @@
             'L52 3 L55 3 L48 9 L60 9.4 L70 11.4 L72 12 L70 12.6 L60 14.6 L48 15 ' +
             'L55 21 L52 21 L40 15.6 L25.5 14.4 L27 20 L24 20 L20 14 L12 13.4 Z"/>' +
         '</svg>' +
+        /* SCHLACHTFELD (Vorgabe 14.8. abends): "keine Scananimationen,
+         * sondern Panzer, Flugzeuge, Schuesse und Soldaten." Silhouetten,
+         * die die Flanke bevoelkern — alles reine CSS-Bewegung. */
+        '<div class="fl-feld">' +
+          '<svg class="fl-panzer" viewBox="0 0 64 28" aria-hidden="true">' +
+            '<path fill="currentColor" d="M4 20 h56 l-5 6 h-46 z"/>' +
+            '<circle cx="14" cy="23" r="2.2" fill="#1D211B"/><circle cx="24" cy="23" r="2.2" fill="#1D211B"/>' +
+            '<circle cx="34" cy="23" r="2.2" fill="#1D211B"/><circle cx="44" cy="23" r="2.2" fill="#1D211B"/>' +
+            '<path fill="currentColor" d="M16 12 h24 v8 h-28 z"/>' +
+            '<path fill="currentColor" d="M24 6 h12 v6 h-12 z"/>' +
+            '<rect fill="currentColor" x="36" y="8" width="24" height="2.6"/>' +
+          '</svg>' +
+          '<svg class="fl-soldat s1" viewBox="0 0 20 34" aria-hidden="true">' +
+            '<circle cx="10" cy="5" r="3.6" fill="currentColor"/>' +
+            '<rect x="7" y="9" width="6" height="12" rx="2" fill="currentColor"/>' +
+            '<rect x="12" y="10" width="7" height="2.4" rx="1.2" fill="currentColor"/>' +
+            '<path class="bein b1" d="M8.6 21 L7 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
+            '<path class="bein b2" d="M11.4 21 L13 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
+          '</svg>' +
+          '<svg class="fl-soldat s2" viewBox="0 0 20 34" aria-hidden="true">' +
+            '<circle cx="10" cy="5" r="3.6" fill="currentColor"/>' +
+            '<rect x="7" y="9" width="6" height="12" rx="2" fill="currentColor"/>' +
+            '<rect x="12" y="10" width="7" height="2.4" rx="1.2" fill="currentColor"/>' +
+            '<path class="bein b1" d="M8.6 21 L7 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
+            '<path class="bein b2" d="M11.4 21 L13 32" stroke="currentColor" stroke-width="3" stroke-linecap="round"/>' +
+          '</svg>' +
+          '<i class="fl-schuss sch1"></i>' +
+          '<i class="fl-schuss sch2"></i>' +
+          '<i class="fl-muendung"></i>' +
+        '</div>' +
         /* Funkgeraet unten: die letzten drei Meldungen vom Gefecht. */
         '<div class="fl-funk"></div>' +
         /* Explosion bei Zielerfassung: Blitz + Druckwelle, per Klasse gezuendet. */

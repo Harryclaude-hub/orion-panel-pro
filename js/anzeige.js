@@ -1581,15 +1581,37 @@
                    verlauf: e.verlauf || [], falsch: e.falsch || [] };
 
     /* Ungelesen je Reiter: Schluessel, die seit dem letzten Oeffnen
-     * dazugekommen sind. Der offene Reiter gilt immer als gelesen. */
+     * dazugekommen sind. Als GELESEN gilt der offene Reiter nur, wenn die
+     * Listen-Seite wirklich offen ist — auf der Uebersicht sammeln ALLE
+     * vier Bereiche ihre Neu-Zaehler (Vorgabe 14.8. abends). */
+    var aktiv = document.body.classList.contains('ansicht-listen') ? offenerBereich : null;
     var neu = {};
     Object.keys(listen).forEach(function (t) {
       var jetzt = new Set(listen[t].map(function (f) { return f.schluessel; }));
-      if (gesehen[t] === null || t === offenerBereich) { gesehen[t] = jetzt; neu[t] = 0; return; }
+      if (gesehen[t] === null || t === aktiv) { gesehen[t] = jetzt; neu[t] = 0; return; }
       var z = 0;
       jetzt.forEach(function (k) { if (!gesehen[t].has(k)) z++; });
       neu[t] = z;
     });
+
+    /* Die vier grossen Bereichs-Karten der Uebersicht: Gesamtzahl,
+     * Ungelesen, Live-Zusatz. */
+    var karten = document.querySelectorAll('#bereichs-karten .bereichskarte');
+    for (var ci = 0; ci < karten.length; ci++) {
+      var kb = karten[ci].getAttribute('data-bereich');
+      if (!listen[kb]) continue;
+      var zahlEl = karten[ci].querySelector('.bk-zahl');
+      var infoEl = karten[ci].querySelector('.bk-info');
+      var zahl = String(listen[kb].length);
+      var info = [];
+      if (neu[kb]) info.push('+' + neu[kb] + ' neu');
+      if (kb === 'chancen' && e.veraltetHoch && e.veraltetHoch.length) info.push(e.veraltetHoch.length + ' veraltet');
+      if (kb === 'knapp' && e.knappLive) info.push(e.knappLive + ' gerade live');
+      var infoText = info.join(' · ') || ' ';
+      if (zahlEl && zahlEl.textContent !== zahl) zahlEl.textContent = zahl;
+      if (infoEl && infoEl.textContent !== infoText) infoEl.textContent = infoText;
+      karten[ci].classList.toggle('hat-neu', !!neu[kb]);
+    }
 
     function abzeichen(t) { return neu[t] ? ' <b class="neu">+' + neu[t] + '</b>' : ''; }
     var beschriftung = {
@@ -1616,6 +1638,32 @@
     if (!k) return;
     bereichZeigen(k.getAttribute('data-bereich'));
   });
+
+  /* ---------- Zwei Ansichten: Uebersicht und Listen-Seite ----------
+   * Die Startseite zeigt NUR die Uebersicht (Radar, Bereichs-Karten,
+   * Tafel, Kacheln); die vier Listen wohnen auf einer eigenen Ansicht
+   * mit Zurueck-Knopf. Die gewaehlte Ansicht ueberlebt das Neuladen. */
+  function ansichtZeigen(name) {
+    document.body.classList.toggle('ansicht-listen', name === 'listen');
+    try { localStorage.setItem('orion-ansicht', name); } catch (e) {}
+    window.scrollTo(0, 0);
+  }
+  document.addEventListener('click', function (ev) {
+    var karte = ev.target && ev.target.closest ? ev.target.closest('.bereichskarte') : null;
+    if (karte) {
+      bereichZeigen(karte.getAttribute('data-bereich'));
+      ansichtZeigen('listen');
+      return;
+    }
+    if (ev.target && ev.target.closest && ev.target.closest('#zurueck-knopf')) {
+      ansichtZeigen('uebersicht');
+    }
+  });
+  (function () {
+    var a = null;
+    try { a = localStorage.getItem('orion-ansicht'); } catch (e) {}
+    if (a === 'listen') document.body.classList.add('ansicht-listen');
+  })();
 
   function zeichne(e) {
     var K = welt.KONFIG;
