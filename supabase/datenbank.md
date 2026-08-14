@@ -393,3 +393,22 @@ denselben Ausgang, Renditen −0,94 bis +1,78 %. Nach dem Ausrollen: Fußball
 3,9–4,1 s je Lauf (unverändert), Tennis 0,5 s, 0 Fehler, erste
 Direkt-Zeilen live (Hearts–Benfica, Fylkir–Afturelding, Santos–Macara —
 alles Partien, die Polymarket nicht führt).
+
+## Rechnungsnummern vergibt die Datenbank (14.8.2026)
+
+Vorher errechnete der Browser die #Nummer als djb2-Hash des Schlüssels
+(90.000er-Raum). **Gemessen an 507 echten Zeilen: eine Kollision** —
+#73641 gehörte zwei verschiedenen Funden, der Funker hätte den falschen
+geprüft. Deshalb:
+
+- Folge `orion_nr_folge` ab 10000, Spalte `orion_funde.nr` (bigint,
+  eindeutiger Teilindex `orion_funde_nr_eindeutig`).
+- `orion_nummern_vergeben()` nummeriert alle Zeilen ohne Nummer, älteste
+  zuerst — hängt als vierter Aufruf im Minutentakt `orion-zeiten-takt`.
+- **Kein Spalten-Default:** der 20-Sekunden-Upsert würde bei JEDEM Lauf
+  für jede gesehene Zeile eine Nummer verbrennen (ON CONFLICT zieht den
+  Default trotzdem) — die Nummern wären binnen Tagen siebenstellig.
+- Eine Nummer wird nie neu vergeben (auch nicht nach Rauschen-Löschung);
+  ein wiederbelebter Fund behält seine (der Upsert schreibt `nr` nicht).
+- Frische Zeilen haben bis zu eine Minute lang keine Nummer — die Karte
+  zeigt den Chip dann nicht, der Funker sagt es dazu.

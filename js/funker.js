@@ -9,8 +9,9 @@
  * Quelle wie die Angaben-Seite, den Lagebericht liest er aus den echten
  * Live-Daten.
  *
- * JEDE Zeile traegt eine feste fuenfstellige Rechnungsnummer (daten.js,
- * vorn auf jeder Karte). "pruefe #48213" liefert die Tiefenpruefung:
+ * JEDE Zeile traegt eine feste Rechnungsnummer, die die DATENBANK
+ * vergibt (Spalte nr, fortlaufend ab #10000, nie doppelt — vorn auf
+ * jeder Karte). "pruefe #10023" liefert die Tiefenpruefung:
  * beide Seiten einzeln, Kehrwertsumme, Aufteilung, Abgleich mit der
  * gespeicherten Zeile, die sechs Bedingungen, die Buchprobe, das Urteil.
  *
@@ -129,7 +130,7 @@
     plausibel: 'PLAUSIBILITÄT = Bedingung 6: über ' + ((welt.KONFIG || {}).maxPlausibel || 5) + ' % Rendite ist keine Chance. Gemessen: richtig war 2,07 bis 3,27 %, falsch alles über 4,48 — über 5 % war es IMMER ein klebender Kurs oder eine Fehlpaarung.',
     gedeckt: 'GEDECKT = beide Seiten decken nachweislich GEGENSÄTZLICHE Ausgänge derselben Frage. Ein Unentschieden ist kein dritter Verlustfall: „X gewinnt nicht“ schließt es mit ein.',
     nachtwache: 'NACHTWACHE = der Wächter (orion_waechter_lauf), läuft jede Minute rund um die Uhr. Prüft die MASCHINE: Zuordnungen unabhängig nachgerechnet, Links repariert, Verwaiste beendet, Unplausibles markiert, Buchprobe und Anpfiff nachgetragen. Beanstandet = in der letzten Minute stand ein Verdacht auf der Liste — meist Arbeit, die sie selbst erledigt. Ernst erst, wenn sie sich SELBST über 30 min nicht meldet.',
-    nummer: 'RECHNUNGSNUMMER = die #Zahl vorn auf jeder Karte. Fest aus dem Schlüssel der Zeile abgeleitet — dieselbe Zeile trägt immer dieselbe Nummer. Sag „prüfe #48213“, und ich nehme genau diese Zeile auseinander.'
+    nummer: 'RECHNUNGSNUMMER = die #Zahl vorn auf jeder Karte. Vergibt die DATENBANK selbst: fortlaufend ab #10000, im Minutentakt, nie doppelt, nie wiederverwendet — auch nicht, wenn eine Zeile gelöscht wird. Ein wiederbelebter Fund behält seine Nummer. Eine ganz frische Zeile (unter einer Minute) hat noch keine — dann kurz warten. Sag „prüfe #10023“, und ich nehme genau diese Zeile auseinander.'
   };
 
   /* ---------- Antworten finden ---------- */
@@ -137,8 +138,10 @@
     var q = String(frage || '').toLowerCase();
     var e = welt.letztesErgebnis;
 
-    /* Nummern-Befehl: #48213 findet die Zeile in ALLEN vier Listen. */
-    var nrTreffer = q.match(/#\s*(\d{5})\b/) || q.match(/\b(\d{5})\b/);
+    /* Nummern-Befehl: #10023 findet die Zeile in ALLEN Listen. Die Folge
+     * beginnt bei 10000 und waechst ueber 99999 hinaus — deshalb 5 bis 10
+     * Stellen, nicht fest fuenf. */
+    var nrTreffer = q.match(/#\s*(\d{4,10})\b/) || q.match(/\b(\d{5,10})\b/);
     if (nrTreffer && e) {
       var nr = Number(nrTreffer[1]);
       var alleN = (e.chancen || []).concat(e.knapp || [], e.knappArchiv || [], e.verlauf || [], e.falsch || []);
@@ -146,7 +149,8 @@
         if (alleN[ni].nr === nr) return pruefAntwort(alleN[ni]);
       }
       return 'Negativ, Kamerad — Rechnung #' + nr + ' ist in keiner der Listen. ' +
-             'Entweder älter als die geladenen 1000 Archivzeilen, oder die Nummer stimmt nicht. ' +
+             'Entweder älter als die geladenen 1000 Archivzeilen, als Rauschen gelöscht ' +
+             '(die Nummer wird trotzdem nie neu vergeben), oder die Nummer stimmt nicht. ' +
              'Die Nummer steht vorn auf jeder Karte.';
     }
 
