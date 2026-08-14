@@ -2163,3 +2163,100 @@ canvas.titel-partikel { position: fixed; z-index: 999990; pointer-events: none; 
               transform 1.1s cubic-bezier(.18, .8, .28, 1.1),
               filter 1.1s ease;
 }
+
+/* ==========================================================================
+ * 15.8. FEINSCHLIFF: zwei Kachel-Zeilen, ruckelfreie Animationen,
+ * Druckgefuehl auf den Knoepfen, Emblem in der Matrix-Luecke.
+ * ========================================================================== */
+
+/* ---------- Kacheln: ZWEI feste 4er-Zeilen (oben Lage, unten Anbieter) -- */
+#kacheln {
+  display: grid; grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px; overflow: hidden;
+}
+@media (max-width: 760px) { #kacheln { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+.kachel { cursor: help; }
+.kachel .unter {
+  font-size: 10.5px; line-height: 1.35; color: var(--text-leise);
+  margin-top: 3px;
+}
+.kachel .unter:empty { display: none; }
+
+/* ---------- Ruckelquellen ausgebaut ----------
+ * 1) Der Lichtstreif lief ueber background-position (malt jeden Rahmen
+ *    neu) — jetzt ein schmaler Streifen per transform (GPU).
+ * 2) Das Elektro-Zittern lief ueber margin-left (Layout jeden Rahmen!) —
+ *    jetzt ist der Versatz in die Lauf-Keyframes eingebacken: EINE
+ *    transform-Animation, nichts rechnet das Layout neu. */
+#kacheln::after {
+  inset: auto; left: 0; top: 0; bottom: 0; width: 55%;
+  background: linear-gradient(105deg, transparent, rgba(var(--sonar-rgb), .07) 50%, transparent);
+  background-size: auto; transform: translateX(-130%);
+  animation: kachel-streif 9s linear infinite;
+}
+@keyframes kachel-streif { to { transform: translateX(330%); } }
+
+.flanke .fl-scan { animation: fl-scan var(--fl-tempo) linear infinite; margin-left: 0; }
+@keyframes fl-scan {
+  0%   { transform: translateY(0)      translateX(0);    opacity: 1; }
+  9%   { transform: translateY(85%)    translateX(-3px); }
+  10%  { transform: translateY(95%)    translateX(2px);  opacity: .5; }
+  24%  { transform: translateY(228%)   translateX(0);    opacity: .95; }
+  37%  { transform: translateY(351%)   translateX(3px); }
+  39%  { transform: translateY(370%)   translateX(-2px); opacity: .5; }
+  53%  { transform: translateY(503%)   translateX(0);    opacity: 1; }
+  68%  { transform: translateY(646%)   translateX(-4px); opacity: .8; }
+  70%  { transform: translateY(665%)   translateX(1px);  opacity: .55; }
+  85%  { transform: translateY(807%)   translateX(2px);  opacity: .9; }
+  100% { transform: translateY(950%)   translateX(0);    opacity: 1; }
+}
+.hero-scan::after { animation: hero-scan-zug 7s linear infinite; margin-left: 0; }
+@keyframes hero-scan-zug {
+  0%   { transform: translateY(0)     translateX(0);    opacity: 1; }
+  10%  { transform: translateY(26px)  translateX(-3px); }
+  11%  { transform: translateY(29px)  translateX(2px);  opacity: .5; }
+  25%  { transform: translateY(65px)  translateX(0);    opacity: .95; }
+  38%  { transform: translateY(99px)  translateX(3px); }
+  40%  { transform: translateY(104px) translateX(-2px); opacity: .5; }
+  55%  { transform: translateY(143px) translateX(0);    opacity: 1; }
+  70%  { transform: translateY(182px) translateX(-4px); opacity: .8; }
+  72%  { transform: translateY(187px) translateX(1px);  opacity: .55; }
+  86%  { transform: translateY(224px) translateX(2px);  opacity: .9; }
+  100% { transform: translateY(260px) translateX(0);    opacity: 1; }
+}
+
+/* ---------- Knoepfe mit DRUCKGEFUEHL ---------- */
+header.kopf.hero .kopf-leiste button,
+header.kopf.hero .kopf-leiste .knopf,
+.bereichskarte, .reiter-knopf, #zurueck-knopf, #funker-knopf {
+  transition: transform .12s ease, box-shadow .18s ease, border-color .18s ease, filter .12s ease;
+}
+header.kopf.hero .kopf-leiste button:active,
+header.kopf.hero .kopf-leiste .knopf:active,
+.bereichskarte:active, .reiter-knopf:active, #zurueck-knopf:active, #funker-knopf:active {
+  transform: translateY(1.5px) scale(.985);
+  filter: brightness(1.12);
+}
+header.kopf.hero .kopf-leiste svg.mil { transition: transform .18s ease; }
+header.kopf.hero .kopf-leiste button:hover svg.mil,
+header.kopf.hero .kopf-leiste .knopf:hover svg.mil { transform: translateY(-1.5px) scale(1.1); }
+.kopf-leiste button:focus-visible, .kopf-leiste .knopf:focus-visible,
+.bereichskarte:focus-visible { outline: 2px solid var(--sonar); outline-offset: 2px; }
+
+/* ---------- Emblem in der Matrix-Luecke ---------- */
+.paarmatrix .pmx-emblem {
+  flex: 1 1 150px; align-self: center;
+  display: flex; flex-direction: column; align-items: center; gap: 3px;
+  color: rgba(var(--sonar-rgb), .55);
+  padding: 8px 0; min-width: 130px;
+}
+.paarmatrix .pmx-emblem svg { width: 96px; height: 96px; }
+.paarmatrix .pmx-emblem b {
+  font-size: 12px; letter-spacing: .34em; color: var(--text-leise);
+}
+.paarmatrix .pmx-emblem small {
+  font-size: 9px; letter-spacing: .22em; color: var(--text-leise); opacity: .7;
+}
+.paarmatrix .pmx-emblem .pmx-blip { animation: pmx-blip 3s ease-in-out infinite; }
+@keyframes pmx-blip { 0%, 100% { opacity: .15; } 50% { opacity: .9; } }
+html.anim-1 .paarmatrix .pmx-emblem .pmx-blip { animation: none; }

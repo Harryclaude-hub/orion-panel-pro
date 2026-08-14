@@ -1326,6 +1326,19 @@
         '<span class="pmx-l2">grüner Rand</span> = Feld mit Chance über 2 %. ' +
         'Jedes Feld steht immer an derselben Stelle, auch mit Null — so sieht ' +
         'man sofort, WO gerade etwas läuft und wo nicht.' +
+      '</div>' +
+      /* Das EMBLEM fuellt den Restraum rechts (Vorgabe 14.8. nachts:
+       * "die Luecke wirkt so leer") — reiner Schmuck, Design-Schicht. */
+      '<div class="pmx-emblem" aria-hidden="true">' +
+        '<svg viewBox="0 0 120 120">' +
+          '<circle cx="60" cy="60" r="54" fill="none" stroke="currentColor" stroke-width="2"/>' +
+          '<circle cx="60" cy="60" r="44" fill="none" stroke="currentColor" stroke-width="1" opacity=".5"/>' +
+          '<circle cx="60" cy="60" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity=".35"/>' +
+          '<path d="M60 6 v18 M60 96 v18 M6 60 h18 M96 60 h18" stroke="currentColor" stroke-width="2"/>' +
+          '<path d="M60 34 L66 52 L84 52 L70 63 L75 81 L60 70 L45 81 L50 63 L36 52 L54 52 Z" fill="currentColor" opacity=".9"/>' +
+          '<circle class="pmx-blip" cx="82" cy="42" r="3" fill="currentColor"/>' +
+        '</svg>' +
+        '<b>OP ORION</b><small>VIER BÖRSEN · EIN RASTER</small>' +
       '</div></div>';
     return html;
   }
@@ -1492,23 +1505,37 @@
     var betfairAn = (((welt.KONFIG.buecher || {}).betfair || {}).aktiv !== false);
     var kalshiLaeuft = s.kalshi_alter_s !== null && s.kalshi_alter_s < welt.KONFIG.kalshiMaxAlterS;
     var smarketsLaeuft = s.smarkets_alter_s !== null && s.smarkets_alter_s < welt.KONFIG.smarketsMaxAlterS;
+    /* ZWEI KLARE ZEILEN (Vorgabe 14.8. nachts): oben die LAGE, unten die
+     * VIER ANBIETER mit ihrem Alter. Jede Kachel traegt eine Erklaerung
+     * als Tooltip; der Waechter (die Nachtwache) sagt seine sogar
+     * sichtbar dazu, weil sie sich sonst "unerklaert anfuehlt". */
     return [
-      { name: 'Chancen live', wert: s.chancen, farbe: s.chancen > 0 ? 'var(--gruen)' : 'var(--text-leise)' },
-      { name: 'Knappe Paare', wert: s.knapp },
-      { name: 'Im Verlauf', wert: s.verlauf },
-      { name: 'Scanner', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--gruen)' : 'var(--rot)' },
-      { name: 'Kalshi · ohne Konto', wert: dauer(s.kalshi_alter_s),
-        farbe: kalshiLaeuft ? 'var(--tuerkis)' : 'var(--rot)' },
-      { name: 'Smarkets · ohne Konto', wert: dauer(s.smarkets_alter_s),
-        farbe: smarketsLaeuft ? 'var(--gold)' : 'var(--rot)' },
-      /* Betfair ist abgeschaltet: die Kachel zeigt das, statt ein Alter zu
-       * melden, das niemanden mehr interessiert. */
-      betfairAn
-        ? { name: 'Bridge · Heim-PC', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--gruen)' : 'var(--rot)' }
-        : { name: 'Betfair', wert: 'aus', farbe: 'var(--text-leise)' },
-      { name: 'Wächter · läuft immer', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
+      /* --- Zeile 1: die Lage --- */
+      { name: 'Chancen live', wert: s.chancen, farbe: s.chancen > 0 ? 'var(--gruen)' : 'var(--text-leise)',
+        titel: 'Zeilen, die JETZT alle sieben Bedingungen erfüllen — dieselbe Zählung wie auf der Chancen-Karte.' },
+      { name: 'Knapp daneben', wert: s.knapp,
+        titel: 'Live-Zeilen unter der 2-%-Schwelle. Hängt am Spielplan: nachts wenige, am Fußballabend viele.' },
+      { name: 'Im Verlauf', wert: s.verlauf,
+        titel: 'Beendete echte Chancen (beste Rendite je über 2 %). Diese Zahl wächst nur.' },
+      { name: 'Wächter · Nachtwache', wert: s.wache_alter_s === null ? 'nie' : dauer(s.wache_alter_s),
         farbe: (s.wache_gut === true && s.wache_alter_s !== null && s.wache_alter_s < 1800)
-          ? 'var(--gruen)' : 'var(--rot)' }
+          ? 'var(--gruen)' : 'var(--rot)',
+        unter: 'prüft jede Minute die Maschine — auf dem Server, auch ohne Browser',
+        titel: 'Die Nachtwache ist der unabhängige Kontrolleur: sie rechnet jede Minute die Zuordnungen nach, ' +
+               'repariert Links, beendet Verwaiste, prüft Buchprobe und Anpfiff — serverseitig, rund um die Uhr. ' +
+               'Der Wert hier ist ihr Alter: wann sie sich zuletzt gemeldet hat.' },
+      /* --- Zeile 2: die vier Anbieter mit ihren Sekunden --- */
+      { name: 'Polymarket', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--pm)' : 'var(--rot)',
+        titel: 'Alter des jüngsten Scanner-Laufs — der Scanner holt Polymarket bei jedem Lauf direkt (Fußball alle 20 s).' },
+      { name: 'Kalshi', wert: dauer(s.kalshi_alter_s), farbe: kalshiLaeuft ? 'var(--ka)' : 'var(--rot)',
+        titel: 'Alter des Kalshi-Schnappschusses — gesammelt alle 2 Minuten, öffentlich, ohne Konto.' },
+      { name: 'Smarkets', wert: dauer(s.smarkets_alter_s), farbe: smarketsLaeuft ? 'var(--sm)' : 'var(--rot)',
+        titel: 'Alter des Smarkets-Schnappschusses — gesammelt alle 2 Minuten, öffentlich, ohne Konto.' },
+      betfairAn
+        ? { name: 'Betfair · Bridge', wert: dauer(s.bf_alter_s), farbe: bridgeLaeuft ? 'var(--bf)' : 'var(--rot)',
+            titel: 'Alter der Betfair-Daten von der Bridge auf deinem Heim-PC — lädt normalerweise im Minutentakt hoch.' }
+        : { name: 'Betfair', wert: 'aus', farbe: 'var(--text-leise)',
+            titel: 'Betfair ist bewusst abgeschaltet — kein Fehler, eine Entscheidung.' }
     ];
   }
 
@@ -1521,18 +1548,21 @@
     if (!el) return;
     if (el.children.length !== daten.length) {
       el.innerHTML = daten.map(function (k, i) {
-        return '<div class="kachel" style="--k-i:' + i + '"><div class="wert" style="color:' +
-               (k.farbe || 'var(--text)') + '">' + txt(k.wert) +
-               '</div><div class="name">' + txt(k.name) + '</div></div>';
+        return '<div class="kachel" style="--k-i:' + i + '" title="' + txt(k.titel || '') + '">' +
+               '<div class="wert" style="color:' + (k.farbe || 'var(--text)') + '">' + txt(k.wert) +
+               '</div><div class="name">' + txt(k.name) + '</div>' +
+               '<div class="unter">' + txt(k.unter || '') + '</div></div>';
       }).join('');
       return;
     }
     daten.forEach(function (k, i) {
       var kachel = el.children[i];
-      var wert = kachel.firstChild, name = kachel.lastChild;
+      var wert = kachel.children[0], name = kachel.children[1], unter = kachel.children[2];
       var farbe = k.farbe || 'var(--text)';
+      if (kachel.getAttribute('title') !== (k.titel || '')) kachel.setAttribute('title', k.titel || '');
       if (wert.getAttribute('style') !== 'color:' + farbe) wert.setAttribute('style', 'color:' + farbe);
       if (name.textContent !== String(k.name)) name.textContent = k.name;
+      if (unter && unter.textContent !== String(k.unter || '')) unter.textContent = k.unter || '';
       if (wert.textContent !== String(k.wert)) {
         wert.textContent = k.wert;
         wert.classList.remove('frisch');
