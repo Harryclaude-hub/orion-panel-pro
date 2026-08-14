@@ -1326,17 +1326,26 @@
        * Riesenluecke, und dazuschreiben, was man sieht). */
       '<div class="pmx-erklaer">' +
         '<b>Lesart:</b> Zeile = das Buch der FÜR-Seite, Spalte = das Buch der ' +
-        'GEGEN-Seite. ' +
-        '<b>Was die Zahlen heißen:</b> Die große Zahl zählt, wie viele Paare ' +
-        'dieser Richtung GERADE live verglichen werden — steht im Feld ' +
-        'Polymarket→Smarkets eine 3, hält der Scanner dort gerade drei Paare ' +
-        'gegeneinander. Die kleine Zahl darunter ist die beste Rendite dieser ' +
-        'Paare. Zeig auf ein Feld, dann sagt es dir seine Zahlen im Klartext. ' +
-        'Die schraffierte Diagonale ist gesperrt — ein Buch gegen sich selbst ' +
-        'ist keine Arbitrage. ' +
+        'GEGEN-Seite. Die große Zahl zählt, wie viele <b>Paare</b> dieser ' +
+        'Richtung GERADE live verglichen werden; die kleine ist die beste ' +
+        'Rendite dieser Paare. Zeig auf ein Feld, dann sagt es seine Zahlen ' +
+        'im Klartext. ' +
+        '<b>Paare sind nicht Märkte:</b> Polymarket kann 300 Märkte im Raster ' +
+        'haben — ein PAAR entsteht erst, wenn dieselbe Frage auch auf der ' +
+        'zweiten Börse existiert (gleiche Partie, gleicher Markt, gleicher ' +
+        'Zeitraum, gleicher Bereich) und beide Seiten handelbare Kurse haben. ' +
+        'Diese Überlappung ist selten — deshalb sind die Zahlen klein. ' +
+        '<b>Warum bei Betfair oft 0 steht:</b> Betfair-Kurse kommen nur von ' +
+        'der Bridge auf deinem Heim-PC. Läuft der PC nicht, altern die Kurse, ' +
+        'laufende Betfair-Paare enden und neue entstehen nicht — kein ' +
+        'frischer Kurs, kein Paar. Das ist Ehrlichkeit, kein Fehler. ' +
+        '<b>Die Prozente:</b> negativ heißt, selbst das beste Paar rechnet ' +
+        'sich nicht (Normalfall). Auffällig hohe Prozente auf alten ' +
+        'Betfair-Kursen sind kein Geschenk, sondern der Beweis, dass die ' +
+        'Zahl alt ist — die Chancen-Prüfung wirft genau solche raus. ' +
+        'Diagonale gesperrt (ein Buch gegen sich selbst ist keine Arbitrage); ' +
         '<span class="pmx-l1">Khaki-Rand</span> = aktivstes Feld, ' +
-        '<span class="pmx-l2">grüner Rand</span> = Feld mit Chance über 2 %. ' +
-        'Jedes Feld steht immer an derselben Stelle, auch mit Null.' +
+        '<span class="pmx-l2">grüner Rand</span> = Feld mit Chance über 2 %.' +
       '</div>' +
       /* Das EMBLEM fuellt den Restraum rechts (Vorgabe 14.8. nachts:
        * "die Luecke wirkt so leer") — reiner Schmuck, Design-Schicht. */
