@@ -93,23 +93,55 @@
 
   /* ---------- Sprache ---------- */
 
+  /* STIMMWAHL (14.8., zweiter Anlauf): der Auftraggeber will einen
+   * MENSCHEN hoeren, keinen Assistenten. Was die Browser hergeben:
+   *
+   *   - Microsoft "... Online (Natural)" — neuronale Windows-11-Stimmen,
+   *     klingen wirklich menschlich. Die Seite bekommt sie NUR in EDGE.
+   *   - Microsoft SAPI (Hedda, Stefan, Katja) — altbacken, aber lokal.
+   *   - "Google Deutsch" (Chrome) — die Assistenten-Stimme, letzte Wahl.
+   *
+   * Deshalb strenge Rangfolge: Natural zuerst, maennliche Sprecher
+   * bevorzugt (Funker), Google ganz hinten. */
   function stimmeWaehlen() {
     if (!('speechSynthesis' in window)) return;
-    var alle = window.speechSynthesis.getVoices() || [];
-    /* Erst oesterreichisch, dann deutsch, dann irgendwas mit de. */
-    stimme = alle.find(function (v) { return /de[-_]AT/i.test(v.lang); }) ||
-             alle.find(function (v) { return /de[-_]DE/i.test(v.lang); }) ||
-             alle.find(function (v) { return /^de/i.test(v.lang); }) || null;
+    var de = (window.speechSynthesis.getVoices() || []).filter(function (v) {
+      return /^de/i.test(v.lang);
+    });
+    function rang(v) {
+      var n = v.name.toLowerCase();
+      if (n.indexOf('natural') !== -1) return 0;   // menschlich (Edge)
+      if (n.indexOf('online') !== -1)  return 1;
+      if (n.indexOf('microsoft') !== -1) return 2;
+      if (n.indexOf('google') !== -1)  return 4;   // Assistenten-Klang
+      return 3;
+    }
+    function mann(v) {
+      return /conrad|florian|jonas|stefan|killian|klaus|bernd|ralf|kasper/i.test(v.name) ? 0 : 1;
+    }
+    de.sort(function (a, b) { return rang(a) - rang(b) || mann(a) - mann(b); });
+    stimme = de[0] || null;
   }
 
-  function sprich(text) {
+  /* Spielweisen: derselbe Soldat, drei Gemuetslagen.
+   *   ruhig  — Begruessung, Lagemeldung (tief, gelassen)
+   *   alarm  — Chance! (schneller, druckvoller — der gestresste Funker)
+   *   fehl   — Fehlversuch (trocken, gedaempft)                          */
+  var LAGEN = {
+    ruhig: { rate: 0.97, pitch: 0.78, volume: 0.9 },
+    alarm: { rate: 1.14, pitch: 0.95, volume: 1.0 },
+    fehl:  { rate: 0.94, pitch: 0.72, volume: 0.85 }
+  };
+
+  function sprich(text, lage) {
     if (!an() || !('speechSynthesis' in window)) return;
     if (!geste) return;                       // Browser wuerde es verschlucken
     klick();
     var u = new SpeechSynthesisUtterance(text);
     if (stimme) u.voice = stimme;
     u.lang = (stimme && stimme.lang) || 'de-DE';
-    u.rate = 1.02; u.pitch = 0.82; u.volume = 0.9;   // tiefer = Funkerton
+    var l = LAGEN[lage] || LAGEN.ruhig;
+    u.rate = l.rate; u.pitch = l.pitch; u.volume = l.volume;
     u.onstart = function () { avatarSpricht(true); };
     u.onend = function () { avatarSpricht(false); klick(); };
     window.speechSynthesis.speak(u);
@@ -163,7 +195,7 @@
       'Späte Stunde, Offizier. Der Scanner kennt keine Nacht — alles unter Kontrolle.',
       'Nachtmeldung: Gefechtsstand besetzt, Takte laufen. Der Gegner schläft — wir beobachten.'
     ];
-    sprich(zufall(pool));
+    sprich(zufall(pool), 'ruhig');
     ping();
   }
 
@@ -199,7 +231,7 @@
         var f0 = neueC[0];
         sprich(zufall(CHANCE_SPRUECHE) + ' Rendite ' +
                Number(f0.rendite).toFixed(2).replace('.', ',') + ' Prozent' +
-               (f0.nr ? ', Rechnung Nummer ' + f0.nr : '') + '.');
+               (f0.nr ? ', Rechnung Nummer ' + f0.nr : '') + '.', 'alarm');
       }
       /* Fehlversuche sind haeufiger — hoechstens alle 60 Sekunden ein
        * Spruch, sonst redet der Soldat pausenlos dazwischen. */
@@ -208,7 +240,7 @@
       if (neueF && Date.now() - letzterFehlSpruch > 60000) {
         letzterFehlSpruch = Date.now();
         fehl();
-        sprich(zufall(FEHL_SPRUECHE));
+        sprich(zufall(FEHL_SPRUECHE), 'fehl');
       }
     }
     bekannteChancen = jetztC;
@@ -258,7 +290,7 @@
   function umschalten() {
     localStorage.setItem(SCHLUESSEL, an() ? 'aus' : 'an');
     beschrifte();
-    if (an()) { geste = true; klick(); sprich('Ton ist an, Offizier. Sie hören von mir.'); }
+    if (an()) { geste = true; klick(); sprich('Ton ist an, Offizier. Sie hören von mir.', 'ruhig'); }
     else if ('speechSynthesis' in window) window.speechSynthesis.cancel();
   }
 
