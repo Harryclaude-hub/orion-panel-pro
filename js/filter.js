@@ -378,7 +378,13 @@
      * weiss nicht, dass er gerade ausschliesslich Fussball sieht — und
      * wundert sich, warum nichts kommt. */
     var b = bereichName();
-    knopf.textContent = b ? ('Bereich: ' + b) : (aktiv() ? 'Filter aktiv' : 'Filter');
+    var text = b ? ('Bereich: ' + b) : (aktiv() ? 'Filter aktiv' : 'Filter');
+    /* NICHT knopf.textContent — das loeschte das Militaer-Symbol und die
+     * Unterzeile des Knopfs (14.8. entdeckt). Beschriftet wird nur die
+     * fette Zeile; gibt es sie nicht, der ganze Knopf wie frueher. */
+    var fett = knopf.querySelector('b');
+    if (fett) { if (fett.textContent !== text) fett.textContent = text; }
+    else if (knopf.textContent !== text) knopf.textContent = text;
   }
 
   function binden(panel) {
