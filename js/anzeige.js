@@ -1607,7 +1607,7 @@
       if (neu[kb]) info.push('+' + neu[kb] + ' neu');
       if (kb === 'chancen' && e.veraltetHoch && e.veraltetHoch.length) info.push(e.veraltetHoch.length + ' veraltet');
       if (kb === 'knapp' && e.knappLive) info.push(e.knappLive + ' gerade live');
-      var infoText = info.join(' · ') || ' ';
+      var infoText = info.join(' · ') || 'keine neuen';
       if (zahlEl && zahlEl.textContent !== zahl) zahlEl.textContent = zahl;
       if (infoEl && infoEl.textContent !== infoText) infoEl.textContent = infoText;
       karten[ci].classList.toggle('hat-neu', !!neu[kb]);
