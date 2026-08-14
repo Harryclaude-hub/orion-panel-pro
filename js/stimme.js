@@ -133,9 +133,15 @@
   function zufall(liste) { return liste[Math.floor(Math.random() * liste.length)]; }
 
   function begruessung() {
-    var stunde = Number(new Intl.DateTimeFormat('de-AT', {
+    /* NICHT format() + Number(): de-AT liefert "17 Uhr", Number davon ist
+     * NaN, und NaN fiel durch alle Zweige in die Nachtschicht — gemessen
+     * am 14.8. um 17:38 Wiener Zeit. formatToParts liefert die Stunde
+     * als reines Zahlfeld. */
+    var teile = new Intl.DateTimeFormat('de-AT', {
       timeZone: 'Europe/Vienna', hour: 'numeric', hourCycle: 'h23'
-    }).format(new Date()));
+    }).formatToParts(new Date());
+    var stunde = Number((teile.find(function (t) { return t.type === 'hour'; }) || {}).value);
+    if (isNaN(stunde)) stunde = new Date().getHours();   // Notnagel: Ortszeit
     var pool;
     if (stunde >= 5 && stunde < 11) pool = [
       'Guten Morgen, Offizier! Alle Systeme auf Station, der Scanner lief die ganze Nacht durch.',
