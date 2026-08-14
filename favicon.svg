@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 96 96">
+  <!-- Das Orion-Wappen als Favicon (15.8.2026). Feste Farben, weil ein
+       Favicon keine CSS-Variablen der Seite kennt. -->
+  <circle cx="48" cy="48" r="46" fill="#1D211B"/>
+  <circle cx="48" cy="48" r="42" fill="none" stroke="#B9A970" stroke-width="4"/>
+  <circle cx="48" cy="48" r="33" fill="none" stroke="#8FB996" stroke-width="2" stroke-dasharray="6 7" opacity=".7"/>
+  <path d="M48 4 v10 M48 82 v10 M4 48 h10 M82 48 h10" stroke="#B9A970" stroke-width="4"/>
+  <path d="M48 24 L54.5 42 L73 42 L58.5 53 L64 71 L48 60 L32 71 L37.5 53 L23 42 L41.5 42 Z" fill="#8FB996"/>
+  <circle cx="66" cy="32" r="3.4" fill="#B9A970"/>
+</svg>

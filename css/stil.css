@@ -2333,3 +2333,57 @@ input[type=text], input[type=password], textarea { cursor: text; }
 
 /* ---------- Textmarkierung: SCHWARZ mit Sonar-Schrift ---------- */
 ::selection { background: #000; color: var(--sonar); }
+
+/* ---------- 15.8., Schlussrunde: Stempel, Bereichs-Symbole, Ton-Banner -- */
+
+/* Militaer-Stempel links oben im Hero (die Ecke war leer). */
+.hero-stempel {
+  position: absolute; left: 14px; top: 12px;
+  transform: rotate(-7deg);
+  font-family: 'Black Ops One', sans-serif;
+  font-size: 12px; letter-spacing: .18em; line-height: 1.35;
+  color: rgba(var(--akzent-rgb), .55);
+  border: 2px solid rgba(var(--akzent-rgb), .45);
+  border-radius: 4px; padding: 3px 10px;
+  pointer-events: none; text-align: center;
+}
+.hero-stempel span {
+  display: block; font-family: 'Rajdhani', sans-serif;
+  font-size: 9px; font-weight: 600; letter-spacing: .3em;
+  color: rgba(var(--sonar-rgb), .6);
+}
+@media (max-width: 900px) { .hero-stempel { display: none; } }
+
+/* Die vier Bereichs-Symbole: Orden (Chancen), Fast-Treffer (Knapp),
+ * Logbuch (Verlauf), gestrichenes Ziel (Falsch). */
+.bereichskarte .bk-sym {
+  position: absolute; right: 14px; top: 50%;
+  width: 38px; height: 38px; transform: translateY(-50%);
+  opacity: .35; pointer-events: none;
+  transition: opacity .2s ease, transform .2s ease;
+}
+.bereichskarte:hover .bk-sym { opacity: .8; transform: translateY(-50%) scale(1.12); }
+.bk-chancen .bk-sym { fill: var(--gruen); color: var(--gruen); }
+.bk-knapp   .bk-sym { fill: var(--gold); color: var(--gold); }
+.bk-verlauf .bk-sym { fill: var(--sonar); color: var(--sonar); }
+.bk-falsch  .bk-sym { fill: var(--rot); color: var(--rot); }
+
+/* Sichtbare Ton-Bestaetigung: rollt oben mittig ein, verschwindet von
+ * selbst — "geklickt und nichts passiert" gibt es damit nicht mehr. */
+#ton-banner {
+  position: fixed; left: 50%; top: -60px; transform: translateX(-50%);
+  z-index: 999995; pointer-events: none;
+  font-family: 'Black Ops One', sans-serif;
+  font-size: 14px; letter-spacing: .12em;
+  color: var(--text); background: var(--karte-2);
+  border: 2px solid var(--sonar); border-radius: 8px;
+  padding: 10px 22px; opacity: 0;
+  box-shadow: 0 8px 30px rgba(0, 0, 0, .5);
+}
+#ton-banner.zeigt { animation: ton-banner-lauf 2.6s ease forwards; }
+@keyframes ton-banner-lauf {
+  0%   { top: -60px; opacity: 0; }
+  12%  { top: 16px; opacity: 1; }
+  80%  { top: 16px; opacity: 1; }
+  100% { top: -60px; opacity: 0; }
+}

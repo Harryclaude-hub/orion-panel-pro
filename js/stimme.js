@@ -34,6 +34,20 @@
    * erst die naechste verhindern (Rueckmeldung 14.8.: "Ton aus bringt
    * nix" — eine laufende 8-Sekunden-Aufnahme plapperte weiter). */
   var laufend = [];
+  /* SICHTBARE Bestaetigung am oberen Rand — "ich habe geklickt und
+   * nichts ist passiert" soll es nie wieder geben koennen. */
+  function tonBanner(text) {
+    var b = document.getElementById('ton-banner');
+    if (!b) {
+      b = document.createElement('div');
+      b.id = 'ton-banner';
+      document.body.appendChild(b);
+    }
+    b.textContent = text;
+    b.classList.remove('zeigt');
+    void b.offsetWidth;
+    b.classList.add('zeigt');
+  }
   function allesStumm() {
     laufend.forEach(function (a) { try { a.pause(); } catch (e) {} });
     laufend = [];
@@ -458,9 +472,11 @@
       if (welt.Musik) welt.Musik.start();         // Ambiente zurueck, falls gewollt
       var wt = zufall(pool('ton_an', [{ c: 'ton-an-1', t: 'Ton ist an, Offizier. Sie hören von mir.' }]));
       spiel(wt.c, wt.t, 'ruhig');
+      tonBanner('🔊 TON AN — der Funker meldet sich wieder');
     } else {
       allesStumm();
       if (welt.Musik) welt.Musik.stopp();          // AUS erstickt auch die Ambiente
+      tonBanner('🔇 FUNKSTILLE — alles stumm, Befehl ausgefuehrt');
     }
   }
 
@@ -499,6 +515,14 @@
     stummknopfBauen();
     setInterval(function () { avatarBauen(); stummknopfBauen(); }, 3000);   // falls der Funker spaeter baut
     setInterval(pruefe, 2000);
+
+    /* DER WACHHUND (15.8., letzte Runde des Ton-Problems): jede Sekunde
+     * wird erzwungen, was der Schalter sagt. Selbst wenn irgendein Weg
+     * jemals wieder klemmen sollte - laenger als eine Sekunde kann
+     * nichts mehr toenen. */
+    setInterval(function () {
+      if (!an() && laufend.length) allesStumm();
+    }, 1000);
 
     /* Wiener Uhr im Hero — reine Anzeige, kein Rechenweg. */
     var uhrFeld = document.getElementById('hero-uhr');

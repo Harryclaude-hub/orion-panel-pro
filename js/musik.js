@@ -59,8 +59,19 @@
     n.connect(tp); tp.connect(ng); ng.connect(master);
     n.start(); teile.push(n);
 
-    wecker.push(setInterval(ping, 9000));
-    wecker.push(setInterval(grollen, 27000));
+    /* U-BOOT-MASCHINE: tiefes Stampfen, langsam pulsierend (Schraube). */
+    var schraube = ctx.createOscillator(), schraubeG = ctx.createGain(), puls = ctx.createOscillator(), pulsG = ctx.createGain();
+    schraube.type = 'triangle'; schraube.frequency.value = 38;
+    puls.type = 'sine'; puls.frequency.value = 1.1;          // Umdrehungen
+    pulsG.gain.value = 0.012;
+    schraubeG.gain.value = 0.014;
+    puls.connect(pulsG); pulsG.connect(schraubeG.gain);      // Amplituden-Puls
+    schraube.connect(schraubeG); schraubeG.connect(master);
+    schraube.start(); puls.start(); teile.push(schraube, puls);
+
+    wecker.push(setInterval(ping, 12000));       // Sonar (U-Boot)
+    wecker.push(setInterval(grollen, 27000));    // fernes Panzer-Grollen
+    wecker.push(setInterval(jet, 36000));        // Jet-Ueberflug
   }
 
   function ping() {
@@ -71,6 +82,26 @@
     g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + 1.5);
     o.connect(g); g.connect(master);
     o.start(); o.stop(ctx.currentTime + 1.5);
+  }
+
+  /* JET-UEBERFLUG: gefiltertes Rauschen schwillt an, faellt in der
+   * Tonhoehe (Vorbeiflug) und zieht davon - alle ~36 s, ganz fern. */
+  function jet(  ) {
+    if (!laeuft) return;
+    var dauer = 5;
+    var puffer = ctx.createBuffer(1, ctx.sampleRate * dauer, ctx.sampleRate);
+    var d = puffer.getChannelData(0);
+    for (var i = 0; i < d.length; i++) d[i] = Math.random() * 2 - 1;
+    var q = ctx.createBufferSource(); q.buffer = puffer;
+    var bp = ctx.createBiquadFilter(); bp.type = 'bandpass'; bp.Q.value = 1.2;
+    bp.frequency.setValueAtTime(1400, ctx.currentTime);
+    bp.frequency.exponentialRampToValueAtTime(240, ctx.currentTime + dauer);
+    var g = ctx.createGain();
+    g.gain.setValueAtTime(0.0001, ctx.currentTime);
+    g.gain.linearRampToValueAtTime(0.035, ctx.currentTime + dauer * 0.45);
+    g.gain.exponentialRampToValueAtTime(0.0001, ctx.currentTime + dauer);
+    q.connect(bp); bp.connect(g); g.connect(master);
+    q.start();
   }
 
   function grollen() {
@@ -129,6 +160,9 @@
       if (document.hidden) stopp(); else if (an()) start();
     });
     window.addEventListener('pagehide', stopp);
+    /* Wachhund: laeuft die Ambiente, obwohl sie aus sein soll (auch
+     * wegen Ton-Hauptschalter AUS), stirbt sie binnen einer Sekunde. */
+    setInterval(function () { if (laeuft && !an()) stopp(); }, 1000);
     var knopf = document.getElementById('ton-knopf');
     if (!knopf) return;
     knopf.addEventListener('contextmenu', function (ev) {
