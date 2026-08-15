@@ -588,68 +588,48 @@ html.seite-ruht #orion-puls *,
 }
 
 /* ══════════════════════════════════════════════════════════════════════
-   BEREICHS-BAND — die Luecke unter der Bereichs-Matrix
+   ENTRUEMPELUNG — auf Wunsch vom 15.8. ("da fliegt zu viel Zeug")
    ══════════════════════════════════════════════════════════════════════
-   Ein flaches Band mit drei Umlaufkoerpern. Bewusst sparsam gebaut:
-   drei Elemente, nur transform, und ruhe.js haelt es an, sobald es aus
-   dem Bild scrollt.                                                    */
-#bereichs-band{
-  position:relative; height:96px; margin:12px 0 0;
-  border:1px solid var(--hud-linie);
-  background:
-    radial-gradient(140% 200% at 50% 140%, rgba(143,185,150,.07), transparent 62%),
-    var(--karte);
-  overflow:hidden;
-  clip-path: polygon(
-    var(--hud-kappe) 0, 100% 0, 100% calc(100% - var(--hud-kappe)),
-    calc(100% - var(--hud-kappe)) 100%, 0 100%, 0 var(--hud-kappe));
-}
-#bereichs-band::before{
-  content:""; position:absolute; left:0; right:0; top:0; height:8px;
-  background:repeating-linear-gradient(90deg, var(--hud-linie) 0 1px, transparent 1px 12px);
-}
-#bereichs-band .bb-schrift{
-  position:absolute; left:14px; bottom:9px;
-  font-family:var(--hud-mono); font-size:9px; letter-spacing:.2em;
-  text-transform:uppercase; color:rgba(185,169,112,.5);
-}
-.bb-raum{
-  position:absolute; inset:0;
-  display:flex; align-items:center; justify-content:center; gap:64px;
-  perspective:520px;
-}
-.bb-koerper{
-  position:relative; width:56px; height:56px;
-  transform-style:preserve-3d;
-  transform:rotateX(-20deg);
-}
-.bb-koerper i{
-  position:absolute; inset:0; border-radius:50%;
-  border:1px solid rgba(143,185,150,.32);
-  transform:rotateY(var(--w));
-}
-.bb-koerper i:nth-child(1){ border-color:rgba(185,169,112,.5); }
-.bb-koerper b{
-  position:absolute; inset:0; border-radius:50%;
-  border:1px solid rgba(185,169,112,.3);
-  transform:rotateX(90deg);
-}
-.bb-koerper.k2{ width:38px; height:38px; }
-.bb-koerper.k3{ width:70px; height:70px; }
+   Nachgemessen, was sich bewegte, ohne etwas auszusagen. Die Staffel
+   war gut die HAELFTE aller verbliebenen Animationen:
 
-@keyframes bb-dreh{ to { transform:rotateX(-20deg) rotateY(360deg); } }
-.bb-koerper{ animation:bb-dreh 40s linear infinite; }
-.bb-koerper.k2{ animation-duration:28s; animation-direction:reverse; }
-.bb-koerper.k3{ animation-duration:54s; }
+     .s-hud-jet   ×2   Jets, je eine Flugbahn
+     .flug        ×4   je ZWEI Animationen (rauf und runter) = 8
+     .fl-schuss   ×4   Geschosse
+     .fl-panzer   ×2   fahrende Panzer
+     .fl-muendung ×2   Muendungsfeuer
+     .s-hud-boot  ×1   Boot, dazu sein Ping
 
-html.anim-1 .bb-koerper{ animation:none; }
+   Diese Einheiten melden KEINEN Zustand. Ein fahrender Panzer sagt
+   nichts ueber Kurse, Bridge oder Waechter — er kostet nur Bilder pro
+   Sekunde. Deshalb sind sie ausgeblendet, nicht bloss angehalten:
+   ein angehaltener Panzer stuende weiterhin als Standbild herum.
 
-@media (prefers-reduced-motion: reduce){
-  .bb-koerper{ animation:none !important; }
+   Was BLEIBT, weil es etwas aussagt oder Atmosphaere ohne Kosten
+   traegt: Radar, Suchstrahl, LED, Puls, Logoring, Avatar, Flanken.
+
+   ZURUECKHOLEN: diesen einen Block loeschen, sonst nichts.           */
+.s-hud-jet,
+.s-hud-boot,
+.fl-staffel,
+.flug,
+.fl-panzer,
+.fl-schuss,
+.fl-muendung{
+  display: none !important;
 }
-@media (max-width: 620px){
-  #bereichs-band{ height:74px; }
-  .bb-raum{ gap:30px; }
+
+/* Glueheffekte auf bewegten Elementen zwingen zum Neuzeichnen der
+   Umgebung. Gemessen: 2 Stueck. Die Farbe bleibt, der Schein geht. */
+.s-led.s-gruen{ box-shadow: none !important; }
+
+/* Lange Seite, viel Inhalt: der Browser darf alles ueberspringen, was
+   gerade nicht im Bild ist. Die Hoehenangabe verhindert, dass die
+   Bildlaufleiste dabei springt. */
+#listen-seite,
+#zeitstatistik{
+  content-visibility: auto;
+  contain-intrinsic-size: auto 480px;
 }
 
 /* Wer im System weniger Bewegung eingestellt hat, bekommt hier nichts
