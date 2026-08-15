@@ -1,0 +1,288 @@
+/* ══════════════════════════════════════════════════════════════════════
+   hud.css — DESIGN-SCHICHT, 15.08.2026
+   ══════════════════════════════════════════════════════════════════════
+   Laedt NACH css/stil.css und ueberschreibt nur Aussehen.
+
+   REGELN, die hier gelten:
+   1. Kein einziger Rechenweg, keine Schwelle, keine Zahl wird hier
+      beruehrt. Diese Datei kennt keine Daten.
+   2. Kein display/position/flex-Umbau, der eine Anordnung veraendert.
+      Nur Farbe, Rand, Schrift, Ecke, Unterstrich.
+   3. Die bestehenden Animationen (hero-radar, hero-scan, hero-gitter,
+      puls, partikel) werden NICHT angefasst. Sie bleiben genau, wie
+      sie waren — das ist die "Kombi".
+   4. Faellt diese Datei weg, sieht die Seite exakt aus wie vorher.
+      Zurueckrudern = die eine <link>-Zeile aus den HTML-Dateien loeschen.
+
+   Vorbild: HUD-Formensprache (gekappte Ecken, Haarlinien, Unterstrich
+   je Feld, Kennung in der Ecke, monospaced Zahlen, Ticklineale).
+   Farben bleiben unsere Militaerfarben.
+   ══════════════════════════════════════════════════════════════════════ */
+
+:root{
+  /* Grund wird tiefer. Haarlinien tragen auf dem hellen Oliv nicht. */
+  --grund:    #0C0F0B;
+  --karte:    #12160F;
+  --karte-2:  #171C13;
+  --rand:     #2A3123;
+
+  /* Gold und Sonar bleiben unveraendert — das ist unsere Farbe. */
+
+  /* Haarlinien in zwei Staerken. */
+  --hud-linie:  rgba(185,169,112,.24);
+  --hud-linie-2:rgba(185,169,112,.52);
+  --hud-mono: ui-monospace, "JetBrains Mono", Consolas, "Courier New", monospace;
+
+  /* Rundung raus. Ab hier wird gekappt statt gerundet. */
+  --rund: 0px;
+  --rund-chip: 0px;
+  --hud-kappe: 12px;
+}
+
+/* Feines Grundgitter hinter allem — dasselbe Motiv wie im Vorbild. */
+body{
+  background-color: var(--grund);
+  background-image:
+    linear-gradient(rgba(185,169,112,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(185,169,112,.028) 1px, transparent 1px);
+  background-size: 64px 64px, 64px 64px;
+  background-attachment: fixed;
+}
+
+/* Alle Zahlen laufen monospaced, damit beim Ticken nichts springt. */
+.kachel .wert,
+.bk-zahl,
+.fund .seite .zahl,
+.fund .zt-wann,
+#hero-uhr,
+.chip{
+  font-family: var(--hud-mono);
+  font-variant-numeric: tabular-nums;
+  letter-spacing: -.01em;
+}
+
+/* ─── Der Kopf: Ticklineal oben, Eckwinkel ──────────────────────────── */
+.kopf.hero{
+  border: 1px solid var(--hud-linie);
+  border-radius: 0;
+}
+.kopf.hero::after{
+  content:""; position:absolute; left:0; right:0; top:0; height:9px;
+  background: repeating-linear-gradient(90deg, var(--hud-linie) 0 1px, transparent 1px 13px);
+  opacity:.85; pointer-events:none; z-index:2;
+}
+/* Die vier vorhandenen Eck-Elemente werden zu Winkeln statt Punkten. */
+.hero-eck{
+  border: 1px solid var(--hud-linie-2) !important;
+  border-radius: 0 !important;
+  background: none !important;
+  width: 15px !important; height: 15px !important;
+}
+.hero-eck.e1{ border-right:0 !important; border-bottom:0 !important; }
+.hero-eck.e2{ border-left:0  !important; border-bottom:0 !important; }
+.hero-eck.e3{ border-right:0 !important; border-top:0    !important; }
+.hero-eck.e4{ border-left:0  !important; border-top:0    !important; }
+
+.kopf.hero h1{ letter-spacing:.10em; text-transform:uppercase; }
+.hero-unter{
+  font-family: var(--hud-mono); font-size:10px;
+  letter-spacing:.28em; text-transform:uppercase;
+}
+
+/* ─── Statuschips ───────────────────────────────────────────────────── */
+.chip{
+  border:1px solid var(--hud-linie-2);
+  border-radius:0;
+  font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
+  background: rgba(185,169,112,.07);
+  padding:3px 11px;
+}
+
+/* ─── Knoepfe: Haarlinie plus Unterstrich, der beim Zeigen aufleuchtet ─ */
+.knopf, .haupt, button.knopf, a.knopf{
+  border:1px solid var(--hud-linie);
+  border-radius:0;
+  position:relative;
+  transition: border-color .16s, background .16s, transform .16s;
+}
+.knopf::after, .haupt::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background: var(--hud-linie-2);
+  transition: background .16s, height .16s;
+}
+.knopf:hover, .haupt:hover{
+  border-color: var(--hud-linie-2);
+  transform: translateY(-1px);
+}
+.knopf:hover::after, .haupt:hover::after{ background: var(--gold); height:3px; }
+.knopf b{ letter-spacing:.05em; }
+.knopf small{ font-size:11px; }
+
+/* Der Hauptknopf bleibt hervorgehoben. */
+.haupt{ background: rgba(185,169,112,.12); border-color: var(--hud-linie-2); }
+.haupt::after{ background: var(--gold); }
+
+/* ─── Die Kacheln werden zu HUD-Feldern ─────────────────────────────
+   Struktur liegt schon vor: .kachel > .wert / .name / .unter.
+   Hier kommt nur der Rahmen, der Unterstrich und die Kennung dazu.
+   Die laufende Nummer erzeugt CSS selbst — kein JavaScript noetig.  */
+#kacheln{ counter-reset: hudfeld; }
+
+.kachel{
+  position: relative;
+  counter-increment: hudfeld;
+  border:1px solid var(--hud-linie);
+  border-radius:0;
+  background: var(--karte);
+  padding-top: 20px;
+  clip-path: polygon(
+    var(--hud-kappe) 0, 100% 0, 100% calc(100% - var(--hud-kappe)),
+    calc(100% - var(--hud-kappe)) 100%, 0 100%, 0 var(--hud-kappe));
+}
+/* Kennung oben rechts, wie "01_TK" im Vorbild. */
+.kachel::before{
+  content: counter(hudfeld, decimal-leading-zero);
+  position:absolute; top:6px; right:9px;
+  font-family: var(--hud-mono); font-size:9px; letter-spacing:.12em;
+  color: rgba(185,169,112,.42); pointer-events:none;
+}
+/* Der dicke Unterstrich. */
+.kachel::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  background: var(--gold); opacity:.75;
+}
+.kachel .name{
+  font-family: var(--hud-mono);
+  font-size:9.5px; letter-spacing:.17em; text-transform:uppercase;
+  color: var(--text-leise);
+}
+.kachel .wert{ font-size:24px; line-height:1.15; }
+.kachel .unter{ font-size:11px; color: var(--text-leise); }
+
+/* ─── Bereichskarten ────────────────────────────────────────────────── */
+.bereichskarte{
+  position:relative;
+  border:1px solid var(--hud-linie);
+  border-radius:0;
+  background: var(--karte);
+  clip-path: polygon(
+    var(--hud-kappe) 0, 100% 0, 100% calc(100% - var(--hud-kappe)),
+    calc(100% - var(--hud-kappe)) 100%, 0 100%, 0 var(--hud-kappe));
+  transition: border-color .16s, background .16s;
+}
+.bereichskarte::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  background: var(--hud-linie-2); transition: background .16s;
+}
+.bereichskarte:hover{ border-color: var(--hud-linie-2); background: var(--karte-2); }
+.bereichskarte:hover::after{ background: var(--gold); }
+.bk-zahl{ font-size:32px; line-height:1; }
+.bk-name{ letter-spacing:.06em; text-transform:uppercase; }
+.bk-info{ font-size:11.5px; }
+
+/* ─── Karten und Funde: Eckwinkel statt Rundung ──────────────────────
+   KEIN clip-path hier. Die Funde klappen auf (.ab) und tragen Stempel,
+   die aus der Karte ragen duerfen — clip-path wuerde sie abschneiden. */
+.karte, .fund{
+  border-radius:0;
+  border:1px solid var(--hud-linie);
+  background: var(--karte);
+}
+.karte::before, .fund::before{
+  /* Eckwinkel oben links. */
+  content:""; position:absolute; top:6px; left:6px;
+  width:13px; height:13px;
+  border-left:1px solid var(--hud-linie-2);
+  border-top:1px solid var(--hud-linie-2);
+  background:none !important;
+  pointer-events:none;
+}
+.karte::after, .fund::after{
+  /* Unterstrich statt der bisherigen Zierlinie. */
+  content:""; position:absolute; left:0; right:0; bottom:0; top:auto;
+  width:auto; height:3px;
+  background: var(--hud-linie-2);
+  pointer-events:none;
+}
+.fund:hover::after{ background: var(--gold); }
+.fund .titel{ letter-spacing:.03em; }
+.fund .unter{ font-size:12.5px; }
+
+/* Die Buchseiten innerhalb eines Fundes. */
+.fund .seite{
+  border:1px solid var(--hud-linie);
+  border-radius:0;
+  background: var(--grund);
+}
+.fund .seite .quelle{
+  font-family: var(--hud-mono);
+  font-size:9.5px; letter-spacing:.16em;
+}
+.fund .seite .zahl{ font-size:19px; }
+
+/* Der Aufklapp-Kopf bleibt funktional unveraendert, nur ruhiger. */
+.fund .ab-kopf{
+  border:1px solid var(--hud-linie);
+  border-radius:0;
+  font-family: var(--hud-mono);
+  font-size:11px; letter-spacing:.1em; text-transform:uppercase;
+}
+.fund .stempel, .fund .stempel-zwei{
+  border-radius:0;
+  font-family: var(--hud-mono);
+  font-size:9.5px; letter-spacing:.14em;
+}
+
+/* ─── Reiter ────────────────────────────────────────────────────────── */
+.reiter-knopf{
+  border:1px solid var(--hud-linie);
+  border-radius:0;
+  position:relative;
+  font-family: var(--hud-mono);
+  font-size:11px; letter-spacing:.13em; text-transform:uppercase;
+}
+.reiter-knopf::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background: transparent; transition: background .16s;
+}
+.reiter-knopf:hover::after{ background: var(--hud-linie-2); }
+.reiter-knopf.aktiv::after,
+.reiter-knopf[aria-selected="true"]::after{ background: var(--gold); height:3px; }
+
+/* ─── Filterfeld, Warnungen, Verbindungsleiste ──────────────────────── */
+#filter-panel, #warnungen > *, #listen-status, #tafel{
+  border-radius:0;
+}
+#listen-status{
+  border:1px solid var(--hud-linie);
+  font-family: var(--hud-mono);
+  font-size:10.5px; letter-spacing:.11em; text-transform:uppercase;
+}
+#tafel table{ font-variant-numeric: tabular-nums; }
+#tafel th{
+  font-family: var(--hud-mono);
+  font-size:9.5px; letter-spacing:.15em; text-transform:uppercase;
+  color: var(--text-leise); font-weight:500;
+}
+
+/* ─── Eingabefelder und Sperre ──────────────────────────────────────── */
+#sperre .kasten{
+  border:1px solid var(--hud-linie-2);
+  border-radius:0;
+  background: var(--karte);
+}
+#sperre .kasten h2{ letter-spacing:.12em; text-transform:uppercase; }
+input[type=text], input[type=password], select, textarea{
+  border-radius:0 !important;
+  border:1px solid var(--hud-linie) !important;
+  font-family: var(--hud-mono);
+}
+
+/* ─── Schmale Fenster: Kappen kleiner, sonst fressen sie den Inhalt ─── */
+@media (max-width: 720px){
+  :root{ --hud-kappe: 8px; }
+  .kachel{ padding-top:18px; }
+}
+
+/* Wer im System weniger Bewegung eingestellt hat, bekommt hier nichts
+   Zusaetzliches — die bestehenden Regeln in stil.css gelten weiter. */
