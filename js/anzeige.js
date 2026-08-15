@@ -990,8 +990,11 @@
     var anpfiff = Date.parse(f.beginnt_am || f.endet_am || '');
     if (!isFinite(anpfiff)) {
       return '<div class="fristen fehlt">' +
-               '<span class="fr-name">Letzter Einsatz</span>' +
-               '<span class="fr-wert">nicht hinterlegt</span>' +
+               '<span class="fr-block">' +
+                 '<span class="fr-name">Einsatz bis</span>' +
+                 '<span class="fr-wert">nicht hinterlegt</span>' +
+                 '<span class="fr-dazu">kein Buch nennt einen Anpfiff</span>' +
+               '</span>' +
              '</div>';
     }
 
@@ -1004,32 +1007,32 @@
     else if (restMin < 0) einsatzText = 'nicht mehr möglich';
     else                  einsatzText = 'noch ' + bis(f.beginnt_am || f.endet_am);
 
-    /* Die Auflösung nur schaetzen, wo die Dauer wirklich bekannt ist. */
+    /* Wann kommt das Geld zurueck? Nur schaetzen, wo die Spieldauer
+     * wirklich bekannt ist. Die Boerse zahlt aus, sobald sie den Markt
+     * abrechnet — wie lange DAS dauert, ist nicht gemessen und wird
+     * deshalb auch nicht als Zahl behauptet. */
     var dauer = SPIELDAUER_MIN[f.bereich];
-    var aufloesung, aufloesungText, geschaetzt = false;
+    var zurueckText, zurueckDazu, sicherheit;
     if (dauer) {
-      aufloesung = anpfiff + dauer * 60000;
-      geschaetzt = true;
-      aufloesungText = uhrzeit(new Date(aufloesung).toISOString());
+      zurueckText = '≈ ab ' + uhrzeit(new Date(anpfiff + dauer * 60000).toISOString());
+      zurueckDazu = 'Spielende geschätzt, dann rechnet die Börse ab';
+      sicherheit = ' geschaetzt';
     } else {
-      aufloesungText = 'nicht hinterlegt';
+      zurueckText = 'nicht hinterlegt';
+      zurueckDazu = 'keine Spieldauer für diesen Bereich bekannt';
+      sicherheit = ' unbekannt';
     }
 
     return '<div class="fristen ' + zustand + '">' +
       '<span class="fr-block">' +
-        '<span class="fr-name">Letzter Einsatz</span>' +
+        '<span class="fr-name">Einsatz bis</span>' +
         '<span class="fr-wert">' + txt(uhrzeit(f.beginnt_am || f.endet_am)) + '</span>' +
         '<span class="fr-dazu">' + txt(einsatzText) + '</span>' +
       '</span>' +
       '<span class="fr-block">' +
-        '<span class="fr-name">Auflösung</span>' +
-        '<span class="fr-wert' + (geschaetzt ? ' geschaetzt' : ' unbekannt') + '">' +
-          (geschaetzt ? '≈ ' : '') + txt(aufloesungText) + '</span>' +
-        '<span class="fr-dazu">' +
-          (geschaetzt
-            ? 'geschätzt, Anpfiff + ' + (dauer / 60) + ' h'
-            : 'steht nicht in der Datenbank') +
-        '</span>' +
+        '<span class="fr-name">Geld zurück</span>' +
+        '<span class="fr-wert' + sicherheit + '">' + txt(zurueckText) + '</span>' +
+        '<span class="fr-dazu">' + txt(zurueckDazu) + '</span>' +
       '</span>' +
     '</div>';
   }
@@ -1177,27 +1180,25 @@
                  !(K0.absageStreng && f.absage && f.absage.art === 'verlust') &&
                  !(K0.bewaehrungS && (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K0.bewaehrungS * 1000) &&
                  istGedeckt(f);
-    /* Die Rendite auch als CSS-Zahl mitgeben (15.8.). Rein fuer die
-     * Anzeige: der Ring auf der Karte wird daraus in reinem CSS
-     * gezeichnet. KEINE neue Rechnung — derselbe Wert, der eine Zeile
-     * tiefer schon als Text ausgegeben wird. Faellt die Design-Schicht
-     * weg, ist das Attribut wirkungslos. */
-    var rendFuerRing = imVerlauf && f.beste_rendite != null ? f.beste_rendite : f.rendite;
-    rendFuerRing = Number(rendFuerRing);
-    if (!isFinite(rendFuerRing)) rendFuerRing = 0;
-
-    /* Der Ring ist auf 5 % voll — und ein VOLLER Ring ist eine Warnung,
-     * kein Erfolg. Messung vom 13.08.2026: alle nachweislich richtigen
-     * Funde lagen zwischen 2,07 und 3,27 %, alle falschen ueber 4,48 %.
-     * Deshalb faerbt sich der Ring ab 5 % um, statt still auszureizen. */
-    var ringVoll = rendFuerRing >= 5;
+    /* DER RENDITERING IST WIEDER RAUS (15.8.). Er zeigte die Rendite als
+     * Kreisanteil, aber die Zahl steht ohnehin einen Zentimeter daneben
+     * im Klartext — er wiederholte sie nur schlechter. Ohne Beschriftung
+     * war er nicht lesbar; bei niedriger Rendite sah man fast nur die
+     * blasse Leerspur und hielt ihn fuer einen weissen Fleck.
+     *
+     * Die EINE Aussage, die er hatte, bleibt erhalten: ueber 5 % faerbt
+     * sich die Renditezahl selbst um. Messung vom 13.08.2026 — alle
+     * nachweislich richtigen Funde lagen zwischen 2,07 und 3,27 %, alle
+     * falschen ueber 4,48 %. Eine hohe Zahl ist hier ein Warnzeichen. */
+    var rendWert = imVerlauf && f.beste_rendite != null ? f.beste_rendite : f.rendite;
+    rendWert = Number(rendWert);
+    if (!isFinite(rendWert)) rendWert = 0;
+    var unplausibel = rendWert >= 5;
 
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') +
-           (ringVoll ? ' ring-verdacht' : '') + '"' +
-           ' style="--rend:' + rendFuerRing.toFixed(2) +
-           ';--rend-anteil:' + Math.max(0, Math.min(100, rendFuerRing / 5 * 100)).toFixed(1) + '"' +
-           ' data-rendite="' + rendFuerRing.toFixed(2) + '">' +
+           (unplausibel ? ' rendite-verdacht' : '') + '"' +
+           ' data-rendite="' + rendWert.toFixed(2) + '">' +
         '<div class="kopfzeile">' +
           /* Die Rendite DIREKT neben dem Titel (Vorgabe 13.8.): man soll die
            * Zahl sehen, ohne die Zeile darunter lesen zu muessen. Im Verlauf
