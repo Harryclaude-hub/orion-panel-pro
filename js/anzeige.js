@@ -964,6 +964,76 @@
            '</div>';
   }
 
+  /* ════════════════════════════════════════════════════════════════════
+     FRISTEN — was gemessen ist und was nicht (Stand 15.08.2026)
+     ════════════════════════════════════════════════════════════════════
+     Nachgemessen an 59 Live-Zeilen:
+       endet_am    liegt bei 59 von 59 vor
+       beginnt_am  liegt bei 39 von 59 vor, IMMER gleich endet_am
+     Die Werte sind runde Zeiten (13:30, 14:00) — das sind ANPFIFFE.
+     Der Name "endet_am" taeuscht: die Spalte haelt den Anpfiff, nicht
+     das Spielende. Die echte AUFLOESUNGSZEIT steht nirgends in der
+     Datenbank.
+
+     Deshalb wird hier getrennt:
+       "Letzter Einsatz" = harte Zahl aus der Datenbank.
+       "Auflösung"       = SCHAETZUNG, und zwar nur fuer Fussball, wo die
+                           Dauer bekannt ist (~2 h mit Halbzeit und
+                           Nachspiel). Ueberall sonst steht ehrlich
+                           "nicht hinterlegt".
+     Eine erfundene Frist waere hier besonders gefaehrlich: es geht um
+     die Frage, ob man noch setzen darf.
+     ════════════════════════════════════════════════════════════════════ */
+  var SPIELDAUER_MIN = { fussball: 120 };
+
+  function fristenZeile(f, imVerlauf) {
+    var anpfiff = Date.parse(f.beginnt_am || f.endet_am || '');
+    if (!isFinite(anpfiff)) {
+      return '<div class="fristen fehlt">' +
+               '<span class="fr-name">Letzter Einsatz</span>' +
+               '<span class="fr-wert">nicht hinterlegt</span>' +
+             '</div>';
+    }
+
+    var jetzt = Date.now();
+    var restMin = Math.round((anpfiff - jetzt) / 60000);
+    var zustand = imVerlauf ? 'alt' : (restMin < 0 ? 'zu' : (restMin <= 15 ? 'knapp' : 'offen'));
+
+    var einsatzText;
+    if (imVerlauf)        einsatzText = 'vorbei';
+    else if (restMin < 0) einsatzText = 'nicht mehr möglich';
+    else                  einsatzText = 'noch ' + bis(f.beginnt_am || f.endet_am);
+
+    /* Die Auflösung nur schaetzen, wo die Dauer wirklich bekannt ist. */
+    var dauer = SPIELDAUER_MIN[f.bereich];
+    var aufloesung, aufloesungText, geschaetzt = false;
+    if (dauer) {
+      aufloesung = anpfiff + dauer * 60000;
+      geschaetzt = true;
+      aufloesungText = uhrzeit(new Date(aufloesung).toISOString());
+    } else {
+      aufloesungText = 'nicht hinterlegt';
+    }
+
+    return '<div class="fristen ' + zustand + '">' +
+      '<span class="fr-block">' +
+        '<span class="fr-name">Letzter Einsatz</span>' +
+        '<span class="fr-wert">' + txt(uhrzeit(f.beginnt_am || f.endet_am)) + '</span>' +
+        '<span class="fr-dazu">' + txt(einsatzText) + '</span>' +
+      '</span>' +
+      '<span class="fr-block">' +
+        '<span class="fr-name">Auflösung</span>' +
+        '<span class="fr-wert' + (geschaetzt ? ' geschaetzt' : ' unbekannt') + '">' +
+          (geschaetzt ? '≈ ' : '') + txt(aufloesungText) + '</span>' +
+        '<span class="fr-dazu">' +
+          (geschaetzt
+            ? 'geschätzt, Anpfiff + ' + (dauer / 60) + ' h'
+            : 'steht nicht in der Datenbank') +
+        '</span>' +
+      '</span>' +
+    '</div>';
+  }
+
   function zeitZeile(was, wann, dazu, quelle) {
     return '<div class="zt">' +
       '<span class="zt-was">' + txt(was) + '</span>' +
@@ -1147,6 +1217,13 @@
                        : '<span class="stempel-zwei">vor ' + seit(f.zuerst_gesehen) + '</span>') +
           '</div>' +
         '</div>' +
+
+        /* FRISTENZEILE (15.8.) — auf JEDER Karte sichtbar, nicht erst im
+         * aufgeklappten Teil. Zwei Fragen, die vor dem Setzen zaehlen:
+         * bis wann kann ich ueberhaupt noch setzen, und wann weiss ich,
+         * ob es aufgegangen ist. */
+        fristenZeile(f, imVerlauf) +
+
         /* Kurzzeile: nur, was man zum EINORDNEN braucht. Alles Weitere hat
          * jetzt einen eigenen Abschnitt. */
         '<div class="unter">' +

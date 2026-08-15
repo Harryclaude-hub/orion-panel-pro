@@ -39,14 +39,18 @@
   --hud-kappe: 12px;
 }
 
-/* Feines Grundgitter hinter allem — dasselbe Motiv wie im Vorbild. */
+/* Feines Grundgitter hinter allem — dasselbe Motiv wie im Vorbild.
+   KEIN background-attachment:fixed. Das stand hier bis zum 15.8. und war
+   der Hauptgrund fuers Ruckeln beim Scrollen: bei "fixed" muss der
+   Browser das Gitter in JEDEM Scroll-Bild ueber das ganze Sichtfeld neu
+   zeichnen, hier ein 64er-Raster ueber gut 2000 px Seite. Mitscrollend
+   wird es einmal gezeichnet und danach nur noch verschoben. */
 body{
   background-color: var(--grund);
   background-image:
     linear-gradient(rgba(185,169,112,.028) 1px, transparent 1px),
     linear-gradient(90deg, rgba(185,169,112,.028) 1px, transparent 1px);
   background-size: 64px 64px, 64px 64px;
-  background-attachment: fixed;
 }
 
 /* Alle Zahlen laufen monospaced, damit beim Ticken nichts springt. */
@@ -623,14 +627,67 @@ html.seite-ruht #orion-puls *,
    Umgebung. Gemessen: 2 Stueck. Die Farbe bleibt, der Schein geht. */
 .s-led.s-gruen{ box-shadow: none !important; }
 
-/* Lange Seite, viel Inhalt: der Browser darf alles ueberspringen, was
-   gerade nicht im Bild ist. Die Hoehenangabe verhindert, dass die
-   Bildlaufleiste dabei springt. */
-#listen-seite,
+/* Lange Seite: der Browser darf ueberspringen, was nicht im Bild ist.
+   NUR fuer den Fundverlauf, dessen Hoehe feststeht (gemessen 482 px,
+   angenommen 480 — die Bildlaufleiste bleibt ruhig).
+   NICHT fuer #listen-seite: die Liste ist mal leer, mal dreissig Karten
+   lang. Eine falsche Hoehenannahme laesst die Bildlaufleiste beim
+   Scrollen springen, und genau das fuehlt sich wie Ruckeln an. */
 #zeitstatistik{
   content-visibility: auto;
   contain-intrinsic-size: auto 480px;
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   FRISTENZEILE auf jeder Wettkarte
+   ══════════════════════════════════════════════════════════════════════
+   Zwei Fragen vor dem Setzen: bis wann kann ich noch, und wann weiss
+   ich Bescheid. Der linke Balken faerbt sich nach Dringlichkeit —
+   das ist eine Warnung, keine Zierde, deshalb bleibt sie auf jeder
+   Animationsstufe sichtbar und bewegt sich nie.                        */
+.fristen{
+  display:flex; gap:26px; flex-wrap:wrap;
+  margin:8px 0 2px; padding:7px 11px;
+  border:1px solid var(--hud-linie);
+  border-left:3px solid var(--hud-linie-2);
+  background:var(--grund);
+}
+.fr-block{ display:flex; align-items:baseline; gap:8px; }
+.fr-name{
+  font-family:var(--hud-mono); font-size:8.5px; letter-spacing:.15em;
+  text-transform:uppercase; color:var(--text-leise);
+}
+.fr-wert{
+  font-family:var(--hud-mono); font-size:14px;
+  font-variant-numeric:tabular-nums; color:var(--text);
+}
+.fr-wert.geschaetzt{ color:var(--text-leise); }
+.fr-wert.unbekannt { color:var(--text-leise); font-size:11.5px; }
+.fr-dazu{ font-size:11px; color:var(--text-leise); }
+
+/* Noch Zeit. */
+.fristen.offen{ border-left-color:var(--gruen); }
+/* Unter einer Viertelstunde bis Anpfiff. */
+.fristen.knapp{ border-left-color:var(--acht); background:rgba(201,155,98,.06); }
+.fristen.knapp .fr-dazu{ color:var(--acht); }
+/* Anpfiff vorbei: hier darf nicht mehr gesetzt werden. */
+.fristen.zu{ border-left-color:var(--rot); background:rgba(201,138,130,.07); }
+.fristen.zu .fr-dazu{ color:var(--rot); font-weight:600; }
+.fristen.zu .fr-wert{ text-decoration:line-through; color:var(--text-leise); }
+/* Im Verlauf ist die Frist nur noch Rueckblick. */
+.fristen.alt{ border-left-color:var(--hud-linie-2); opacity:.75; }
+/* Gar keine Zeitangabe vorhanden — auch das wird gezeigt, nicht verschwiegen. */
+.fristen.fehlt{ border-left-color:var(--acht); }
+.fristen.fehlt .fr-wert{ color:var(--acht); font-size:11.5px; }
+
+@media (max-width: 520px){
+  .fristen{ gap:6px; flex-direction:column; }
+}
+
+/* Weiche Schlagschatten muessen beim Scrollen mitgerechnet werden.
+   Gemessen: drei mit 20 px und mehr. Der Rand traegt die Abgrenzung
+   ohnehin — das HUD lebt von Linien, nicht von Wolken. */
+#filter-panel, .s-schirm{ box-shadow: none !important; }
 
 /* Wer im System weniger Bewegung eingestellt hat, bekommt hier nichts
    Zusaetzliches — die bestehenden Regeln in stil.css gelten weiter. */
