@@ -101,6 +101,20 @@
     <button class="bereichskarte bk-falsch" data-bereich="falsch"><svg class="bk-sym" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 7 L17 17 M17 7 L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><b class="bk-zahl">–</b><span class="bk-name">Falsche Rechnungen</span><small class="bk-info">lädt …</small></button>
   </section>
 
+  <!-- BEREICHS-BAND (15.8.): füllt die Lücke unter der Bereichs-Matrix.
+       Drei Umlaufkörper in echtem CSS-3D. Reine Zierschicht — kein Wert,
+       keine Aussage, ersatzlos löschbar. Bewusst sparsam: drei Elemente,
+       nur transform, und js/ruhe.js hält sie an, sobald sie aus dem
+       Bild scrollen. -->
+  <div id="bereichs-band" aria-hidden="true">
+    <div class="bb-raum">
+      <div class="bb-koerper k2"><i style="--w:0deg"></i><i style="--w:36deg"></i><i style="--w:72deg"></i><i style="--w:108deg"></i><i style="--w:144deg"></i><b></b></div>
+      <div class="bb-koerper k3"><i style="--w:0deg"></i><i style="--w:30deg"></i><i style="--w:60deg"></i><i style="--w:90deg"></i><i style="--w:120deg"></i><i style="--w:150deg"></i><b></b></div>
+      <div class="bb-koerper k2"><i style="--w:0deg"></i><i style="--w:36deg"></i><i style="--w:72deg"></i><i style="--w:108deg"></i><i style="--w:144deg"></i><b></b></div>
+    </div>
+    <span class="bb-schrift">Lage · vier Börsen im Umlauf</span>
+  </div>
+
   <!-- FUNDVERLAUF (15.8.): zwischen der Bereichs-Matrix und den Listen.
        Zeigt, wie viel je Zeitraum gefunden wurde, mit Zeitfilter.
        Die Zahlen kommen aus der SQL-Funktion orion_zeitstatistik — hier
@@ -197,6 +211,7 @@
 <script src="js/funker.js?v=52"></script>
 <script src="js/anzeige.js?v=52"></script>
 <script src="js/zeitstatistik.js?v=53"></script>
+<script src="js/ruhe.js?v=53"></script>
 <script src="js/sperre.js?v=52"></script>
 <script src="js/app.js?v=52"></script>
 </body>

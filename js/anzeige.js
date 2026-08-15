@@ -1107,8 +1107,27 @@
                  !(K0.absageStreng && f.absage && f.absage.art === 'verlust') &&
                  !(K0.bewaehrungS && (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K0.bewaehrungS * 1000) &&
                  istGedeckt(f);
+    /* Die Rendite auch als CSS-Zahl mitgeben (15.8.). Rein fuer die
+     * Anzeige: der Ring auf der Karte wird daraus in reinem CSS
+     * gezeichnet. KEINE neue Rechnung — derselbe Wert, der eine Zeile
+     * tiefer schon als Text ausgegeben wird. Faellt die Design-Schicht
+     * weg, ist das Attribut wirkungslos. */
+    var rendFuerRing = imVerlauf && f.beste_rendite != null ? f.beste_rendite : f.rendite;
+    rendFuerRing = Number(rendFuerRing);
+    if (!isFinite(rendFuerRing)) rendFuerRing = 0;
+
+    /* Der Ring ist auf 5 % voll — und ein VOLLER Ring ist eine Warnung,
+     * kein Erfolg. Messung vom 13.08.2026: alle nachweislich richtigen
+     * Funde lagen zwischen 2,07 und 3,27 %, alle falschen ueber 4,48 %.
+     * Deshalb faerbt sich der Ring ab 5 % um, statt still auszureizen. */
+    var ringVoll = rendFuerRing >= 5;
+
     return '' +
-      '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') + '">' +
+      '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') +
+           (ringVoll ? ' ring-verdacht' : '') + '"' +
+           ' style="--rend:' + rendFuerRing.toFixed(2) +
+           ';--rend-anteil:' + Math.max(0, Math.min(100, rendFuerRing / 5 * 100)).toFixed(1) + '"' +
+           ' data-rendite="' + rendFuerRing.toFixed(2) + '">' +
         '<div class="kopfzeile">' +
           /* Die Rendite DIREKT neben dem Titel (Vorgabe 13.8.): man soll die
            * Zahl sehen, ohne die Zeile darunter lesen zu muessen. Im Verlauf
