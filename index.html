@@ -101,6 +101,50 @@
     <button class="bereichskarte bk-falsch" data-bereich="falsch"><svg class="bk-sym" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 7 L17 17 M17 7 L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg><b class="bk-zahl">–</b><span class="bk-name">Falsche Rechnungen</span><small class="bk-info">lädt …</small></button>
   </section>
 
+  <!-- FUNDVERLAUF (15.8.): zwischen der Bereichs-Matrix und den Listen.
+       Zeigt, wie viel je Zeitraum gefunden wurde, mit Zeitfilter.
+       Die Zahlen kommen aus der SQL-Funktion orion_zeitstatistik — hier
+       wird NICHTS gerechnet, nur gezeichnet. Gelesen wird alle 60 s,
+       nicht alle 2 s: die Supabase-Instanz ist klein.
+       Der Globus links ist reine Design-Schicht (js/zeitstatistik.js
+       fasst ihn nicht an) und kann ersatzlos gelöscht werden. -->
+  <section id="zeitstatistik" class="zstat" aria-label="Fundverlauf">
+    <div class="zstat-kopf">
+      <div class="zstat-titel">Fundverlauf<span class="zstat-kennung">ZS_01</span></div>
+      <nav class="zstat-filter" id="zstat-filter" aria-label="Zeitraum"></nav>
+    </div>
+    <div class="zstat-leib">
+      <!-- Der Körper: gebaut aus gedrehten Ringen, echtes CSS-3D,
+           keine Fremdbibliothek. Dreht sich erst ab Animationsstufe 2. -->
+      <div class="zstat-globus" aria-hidden="true">
+        <div class="glo-raum">
+          <div class="glo-kugel">
+            <i style="--w:0deg"></i><i style="--w:22.5deg"></i><i style="--w:45deg"></i>
+            <i style="--w:67.5deg"></i><i style="--w:90deg"></i><i style="--w:112.5deg"></i>
+            <i style="--w:135deg"></i><i style="--w:157.5deg"></i>
+            <b class="glo-breite b1"></b><b class="glo-breite b2"></b><b class="glo-breite b3"></b>
+          </div>
+          <div class="glo-bahn bahn1"></div>
+          <div class="glo-bahn bahn2"></div>
+        </div>
+        <div class="glo-lineal"></div>
+      </div>
+
+      <div class="zstat-rechts">
+        <div class="zstat-zahlen" id="zstat-zahlen"></div>
+        <div class="zstat-bild" id="zstat-bild">
+          <div class="zstat-leer">lädt …</div>
+        </div>
+      </div>
+    </div>
+    <div class="zstat-fuss">
+      Gezählt wird nach <b>erstem Auftauchen</b>. Die Töpfe sind auf volle
+      Einheiten gerundet, der erste Topf reicht deshalb etwas vor den Zeitraum
+      zurück. Die Datenbank läuft seit dem <b>09.08.2026</b> — längere Zeiträume
+      als das wachsen erst noch zu.
+    </div>
+  </section>
+
   <div id="tafel"></div>
   <div class="zeile-oben" id="kacheln"></div>
   <div id="warnungen"></div>
@@ -152,6 +196,7 @@
 <script src="js/stimme.js?v=52"></script>
 <script src="js/funker.js?v=52"></script>
 <script src="js/anzeige.js?v=52"></script>
+<script src="js/zeitstatistik.js?v=53"></script>
 <script src="js/sperre.js?v=52"></script>
 <script src="js/app.js?v=52"></script>
 </body>

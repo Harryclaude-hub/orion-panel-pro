@@ -66,6 +66,13 @@ body{
   border: 1px solid var(--hud-linie);
   border-radius: 0;
 }
+/* HIER STAND KURZ .hero-lage{overflow:hidden} — wieder entfernt.
+   Anlass war ein gemessener Querlauf (scrollWidth 911 bei 768). Der kam
+   aber NICHT vom ueberstehenden .hero-gitter, sondern daher, dass die
+   Bereichskarten hinter der Sperre im Einflug-Zustand .bau geparkt
+   stehen. Sobald sie einfliegen: 911 -> 768, kein Querlauf. Die Zeile
+   hat nachweislich nichts bewirkt (768 mit wie ohne) und haette nur das
+   absichtlich ueberstehende Gitter beschnitten. */
 .kopf.hero::after{
   content:""; position:absolute; left:0; right:0; top:0; height:9px;
   background: repeating-linear-gradient(90deg, var(--hud-linie) 0 1px, transparent 1px 13px);
@@ -282,6 +289,229 @@ input[type=text], input[type=password], select, textarea{
 @media (max-width: 720px){
   :root{ --hud-kappe: 8px; }
   .kachel{ padding-top:18px; }
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   FUNDVERLAUF — der Abschnitt zwischen Bereichs-Matrix und Listen
+   ══════════════════════════════════════════════════════════════════════ */
+.zstat{
+  position:relative;
+  margin:20px 0;
+  border:1px solid var(--hud-linie);
+  background:var(--karte);
+  clip-path: polygon(
+    var(--hud-kappe) 0, 100% 0, 100% calc(100% - var(--hud-kappe)),
+    calc(100% - var(--hud-kappe)) 100%, 0 100%, 0 var(--hud-kappe));
+}
+.zstat::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:3px;
+  background:var(--gold); opacity:.75;
+}
+.zstat.laedt{ opacity:.75; }
+
+.zstat-kopf{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  flex-wrap:wrap;
+  padding:10px 15px;
+  border-bottom:1px solid var(--hud-linie);
+  background:linear-gradient(90deg, rgba(185,169,112,.06), transparent);
+}
+.zstat-titel{
+  font-family:var(--hud-mono); font-size:11px; letter-spacing:.2em;
+  text-transform:uppercase; color:var(--text);
+  display:flex; align-items:center; gap:10px;
+}
+.zstat-kennung{ font-size:9px; color:rgba(185,169,112,.45); letter-spacing:.12em; }
+
+.zstat-filter{ display:flex; gap:6px; flex-wrap:wrap; }
+.zstat-knopf{
+  font-family:var(--hud-mono); font-size:10.5px; letter-spacing:.12em;
+  text-transform:uppercase; cursor:pointer;
+  padding:4px 11px;
+  background:transparent; color:var(--text-leise);
+  border:1px solid var(--hud-linie);
+  transition:background .16s, color .16s, border-color .16s;
+}
+.zstat-knopf:hover{ border-color:var(--hud-linie-2); color:var(--text); }
+.zstat-knopf.aktiv{ background:var(--gold); color:#0C0F0B; border-color:var(--gold); font-weight:700; }
+
+.zstat-leib{ display:grid; grid-template-columns:196px 1fr; gap:16px; padding:16px 15px; }
+.zstat-rechts{ min-width:0; }
+
+/* Die fuenf Kennzahlen ueber dem Bild. */
+.zstat-zahlen{ display:flex; gap:10px; flex-wrap:wrap; margin-bottom:14px; }
+.zstat-feld{
+  flex:1 1 90px; min-width:90px;
+  border:1px solid var(--hud-linie); background:var(--grund);
+  padding:6px 9px 8px; position:relative;
+}
+.zstat-feld::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:var(--hud-linie-2);
+}
+.zstat-name{
+  display:block; font-family:var(--hud-mono); font-size:8.5px;
+  letter-spacing:.15em; text-transform:uppercase; color:var(--text-leise);
+}
+.zstat-wert{
+  display:block; font-family:var(--hud-mono); font-size:19px; line-height:1.2;
+  color:var(--gold); font-variant-numeric:tabular-nums;
+}
+.zstat-unter{ display:block; font-size:10px; color:var(--text-leise); }
+
+/* Das Balkenbild. */
+.zstat-bild{ position:relative; }
+.zstat-balken{
+  display:flex; align-items:flex-end; gap:2px;
+  height:132px; padding-bottom:16px;
+  border-bottom:1px solid var(--hud-linie);
+  background:
+    repeating-linear-gradient(0deg, transparent 0 25%, rgba(185,169,112,.07) 25%, rgba(185,169,112,.07) calc(25% + 1px));
+}
+.zstat-saeule{
+  flex:1 1 0; min-width:0; height:100%;
+  display:flex; flex-direction:column; justify-content:flex-end; align-items:stretch;
+  position:relative;
+}
+.zstat-stab{
+  display:block; width:100%;
+  background:rgba(185,169,112,.22);
+  border-top:1px solid rgba(185,169,112,.45);
+  position:relative;
+  transform-origin:bottom;
+}
+/* Der satte Kopf: der Anteil ueber der 2-%-Marke. */
+.zstat-stab i{
+  position:absolute; left:0; right:0; bottom:0;
+  background:var(--gold);
+  display:block;
+}
+.zstat-marke{
+  position:absolute; bottom:-15px; left:0; right:0;
+  font-family:var(--hud-mono); font-size:8px; font-weight:400;
+  color:var(--text-leise); text-align:center;
+  white-space:nowrap; overflow:hidden; text-overflow:clip;
+}
+/* Bei vielen Toepfen wuerden sich die Beschriftungen ueberlagern —
+   dann bleibt nur jede vierte stehen. */
+.zstat-balken:has(.zstat-saeule:nth-child(15)) .zstat-marke{ display:none; }
+.zstat-balken:has(.zstat-saeule:nth-child(15)) .zstat-saeule:nth-child(4n+1) .zstat-marke{ display:block; }
+
+.zstat-leer{
+  padding:34px 12px; text-align:center;
+  font-family:var(--hud-mono); font-size:11px; letter-spacing:.12em;
+  text-transform:uppercase; color:var(--text-leise);
+}
+.zstat-fehler{ color:var(--rot); }
+
+.zstat-fuss{
+  padding:9px 15px 12px; border-top:1px solid var(--hud-linie);
+  font-size:11.5px; color:var(--text-leise); line-height:1.5;
+}
+.zstat-fuss b{ color:var(--text); }
+
+/* ══════════════════════════════════════════════════════════════════════
+   DER GLOBUS — echtes CSS-3D aus gedrehten Ringen, keine Bibliothek
+   ══════════════════════════════════════════════════════════════════════ */
+.zstat-globus{
+  position:relative; width:196px; height:196px;
+  perspective:620px;
+  display:flex; align-items:center; justify-content:center;
+}
+.glo-raum{
+  position:relative; width:130px; height:130px;
+  transform-style:preserve-3d;
+  transform:rotateX(-18deg);
+}
+.glo-kugel{
+  position:absolute; inset:0;
+  transform-style:preserve-3d;
+}
+/* Die Laengenkreise: acht Ringe, jeder um die Hochachse weitergedreht. */
+.glo-kugel > i{
+  position:absolute; inset:0;
+  border:1px solid rgba(143,185,150,.34);
+  border-radius:50%;
+  transform:rotateY(var(--w));
+}
+.glo-kugel > i:nth-child(1){ border-color:rgba(185,169,112,.55); }
+.glo-kugel > i:nth-child(5){ border-color:rgba(185,169,112,.42); }
+/* Die Breitenkreise: flach gelegt und nach oben/unten versetzt. */
+.glo-breite{
+  position:absolute; border:1px solid rgba(143,185,150,.26);
+  border-radius:50%; transform-style:preserve-3d;
+}
+.glo-breite.b1{ inset:0;        transform:rotateX(90deg); border-color:rgba(185,169,112,.42); }
+.glo-breite.b2{ inset:22px 12px; transform:rotateX(90deg) translateZ(42px); }
+.glo-breite.b3{ inset:22px 12px; transform:rotateX(90deg) translateZ(-42px); }
+
+/* Zwei Umlaufbahnen, groesser als die Kugel und gekippt. */
+.glo-bahn{
+  position:absolute; border-radius:50%;
+  border:1px dashed rgba(185,169,112,.38);
+  transform-style:preserve-3d;
+}
+.glo-bahn.bahn1{ inset:-26px -8px; transform:rotateX(76deg) rotateZ(12deg); }
+.glo-bahn.bahn2{ inset:-14px -30px; transform:rotateX(66deg) rotateZ(-38deg);
+                 border-style:solid; border-color:rgba(143,185,150,.24); }
+/* Der Laeufer auf der Bahn. */
+.glo-bahn.bahn1::after{
+  content:""; position:absolute; top:-3px; left:50%;
+  width:6px; height:6px; margin-left:-3px;
+  background:var(--gold); border-radius:50%;
+  box-shadow:0 0 8px rgba(185,169,112,.9);
+}
+.glo-lineal{
+  position:absolute; left:0; right:0; bottom:2px; height:8px;
+  background:repeating-linear-gradient(90deg, var(--hud-linie) 0 1px, transparent 1px 10px);
+}
+
+/* ══════════════════════════════════════════════════════════════════════
+   BEWEGUNG — an die vorhandenen Stufen von js/buehne.js gehaengt.
+   Muster wie in stil.css: normal definieren, bei niedriger Stufe
+   abschalten. Stufe 3 = alles, Stufe 1 = nur was einen Zustand zeigt,
+   Stufe 0 kennt buehne.js nicht, dort greift prefers-reduced-motion.
+   ══════════════════════════════════════════════════════════════════════ */
+@keyframes glo-dreh    { to { transform:rotateY(360deg); } }
+@keyframes glo-gegen   { to { transform:rotateX(76deg) rotateZ(372deg); } }
+@keyframes glo-gegen2  { to { transform:rotateX(66deg) rotateZ(322deg); } }
+@keyframes zstat-wachs { from { transform:scaleY(0); } to { transform:scaleY(1); } }
+@keyframes zstat-zug   { 0% { left:-18%; } 100% { left:118%; } }
+
+.glo-kugel{ animation:glo-dreh 34s linear infinite; }
+.glo-bahn.bahn1{ animation:glo-gegen 17s linear infinite; }
+.glo-bahn.bahn2{ animation:glo-gegen2 25s linear infinite reverse; }
+
+/* Die Balken wachsen gestaffelt hoch, wenn ein Zeitraum gewechselt wird. */
+.zstat-stab{ animation:zstat-wachs .5s cubic-bezier(.2,.8,.3,1) backwards; animation-delay:calc(var(--i) * 22ms); }
+
+/* Ein Suchstrahl ueber dem Balkenbild. */
+.zstat-bild::after{
+  content:""; position:absolute; top:0; bottom:16px; width:2px; left:-18%;
+  background:linear-gradient(180deg, transparent, rgba(143,185,150,.5), transparent);
+  animation:zstat-zug 9s linear infinite; pointer-events:none;
+}
+
+/* Stufe 2: der Suchstrahl faellt weg, der Globus dreht weiter. */
+html.anim-2 .zstat-bild::after{ display:none; }
+
+/* Stufe 1: alles Zusaetzliche steht still. Der Globus bleibt sichtbar,
+   er hoert nur auf zu drehen — ein stehendes Bild ist kein Fehler. */
+html.anim-1 .glo-kugel,
+html.anim-1 .glo-bahn.bahn1,
+html.anim-1 .glo-bahn.bahn2,
+html.anim-1 .zstat-stab{ animation:none; }
+html.anim-1 .zstat-bild::after{ display:none; }
+
+@media (prefers-reduced-motion: reduce){
+  .glo-kugel, .glo-bahn, .zstat-stab{ animation:none !important; }
+  .zstat-bild::after{ display:none !important; }
+}
+
+@media (max-width: 780px){
+  .zstat-leib{ grid-template-columns:1fr; }
+  .zstat-globus{ width:100%; height:150px; }
+  .zstat-balken{ height:104px; }
 }
 
 /* Wer im System weniger Bewegung eingestellt hat, bekommt hier nichts
