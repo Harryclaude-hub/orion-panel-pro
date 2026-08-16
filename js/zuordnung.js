@@ -116,8 +116,16 @@
 
   /* "A vs B" oder "A v B" in seine zwei Seiten zerlegen.
    * Betfair haengt oft " vs The Draw" an, das wird vorher abgeschnitten. */
+  /* Siehe zuordnung.ts: Esport-Titel auf die reine Partie kuerzen. */
+  function esportRein(titel) {
+    var s = norm(titel);
+    s = s.replace(/^(valorant|lol|league of legends|rocket league|cs2|counter strike 2|counter strike|dota 2|dota|overwatch|call of duty)\s+/, '');
+    s = s.replace(/\s+bo\d\b.*$/, '');
+    return s.trim();
+  }
+
   function paar(titel) {
-    var s = norm(titel).replace(/\s+vs\s+/g, ' v ');
+    var s = esportRein(titel).replace(/\s+vs\s+/g, ' v ');
     s = s.replace(/\s+v\s+the draw\s*$/, '');
     var m = s.match(/^(.+?)\s+v\s+(.+)$/);
     if (!m) return null;
@@ -244,6 +252,8 @@
     if (/\bat halftime\b/.test(f)) {
       return norm(teil) === 'draw' ? 'hz_unentschieden' : 'hz_sieger';
     }
+    /* ESPORT-MATCH — siehe zuordnung.ts: nur "Match Winner" MIT (BOx). */
+    if (norm(teil) === 'match winner' && /\bbo\d\b/.test(f)) return 'sieger';
     return null;
   }
 
@@ -620,6 +630,8 @@
     tennis: 'tennis', nhl: 'eishockey', golf: 'golf', cricket: 'cricket',
     mma: 'mma', f1: 'motorsport',
     lol: 'lol', valorant: 'valorant', esports: 'esport',
+    'league-of-legends': 'lol', 'rocket-league': 'esport',
+    cs2: 'esport', 'counter-strike': 'esport', dota: 'esport',
     politics: 'politik', elections: 'politik', geopolitics: 'politik',
     crypto: 'krypto', bitcoin: 'krypto', ethereum: 'krypto',
     economics: 'wirtschaft', inflation: 'wirtschaft', fed: 'wirtschaft',
@@ -710,6 +722,7 @@
     bfOuLinie: bfOuLinie,
     ouKandidaten: ouKandidaten,
     ouLaeufer: ouLaeufer,
+    esportRein: esportRein,
     paar: paar,
     partieVon: partieVon,
     ohneAnhang: ohneAnhang,

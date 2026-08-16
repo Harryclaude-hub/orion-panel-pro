@@ -108,11 +108,33 @@ export function marktArt(frage: unknown, teil?: unknown): Art {
   if (/\bat halftime\b/.test(f)) {
     return norm(teil) === 'draw' ? 'hz_unentschieden' : 'hz_sieger';
   }
+  /* ESPORT-MATCH: Polymarket fuehrt je Partie DUTZENDE Maerkte —
+   * "Game 1 Winner", "First Blood", "Any Player Penta Kill". Nur der
+   * Match-Markt stellt dieselbe Frage wie Kalshis "Will X win the
+   * match?". Gemessen am 16.8. ueber Valorant, LoL und Rocket League:
+   * 36 Match-Maerkte, alle mit Teilname "Match Winner" UND "(BOx)" in
+   * der Frage — und von 600+ Nebenmaerkten traegt KEIN einziger beides.
+   * Deshalb sind beide Bedingungen noetig; eine allein waere zu weit
+   * und wuerde eine einzelne Map gegen das ganze Match stellen. */
+  if (norm(teil) === 'match winner' && /\bbo\d\b/.test(f)) return 'sieger';
   return null;
 }
 
+/* ESPORT-TITEL (16.8.2026): Polymarket schreibt Partien als
+ *   "Valorant: G2 Gozen vs Gentle Mates GC (BO3) - VCT Playoffs"
+ * Fuer die Partie zaehlt nur "G2 Gozen vs Gentle Mates GC" — Spielname
+ * und Turnier sind Beiwerk und wuerden die Wortpruefung verwaessern.
+ * ENG gefasst: nur feste Spielnamen am Anfang, Schnitt am BO-Format.
+ * Fussball- und Betfair-Titel tragen weder das eine noch das andere. */
+export function esportRein(titel: unknown): string {
+  let s = norm(titel);
+  s = s.replace(/^(valorant|lol|league of legends|rocket league|cs2|counter strike 2|counter strike|dota 2|dota|overwatch|call of duty)\s+/, '');
+  s = s.replace(/\s+bo\d\b.*$/, '');
+  return s.trim();
+}
+
 export function paar(titel: unknown): [string, string] | null {
-  let s = norm(titel).replace(/\s+vs\s+/g, ' v ');
+  let s = esportRein(titel).replace(/\s+vs\s+/g, ' v ');
   s = s.replace(/\s+v\s+the draw\s*$/, '');
   const m = s.match(/^(.+?)\s+v\s+(.+)$/);
   if (!m) return null;
@@ -367,6 +389,11 @@ const PM_BEREICH: Record<string, string> = {
   tennis: 'tennis', nhl: 'eishockey', golf: 'golf', cricket: 'cricket',
   mma: 'mma', f1: 'motorsport',
   lol: 'lol', valorant: 'valorant', esports: 'esport',
+  /* 16.8.: gemessen liefert der Tag "lol" NULL Maerkte, waehrend
+   * "league-of-legends" 763 handelbare traegt; ebenso "rocket-league".
+   * Die Tags im Register orion_bereiche sind mitgezogen. */
+  'league-of-legends': 'lol', 'rocket-league': 'esport',
+  cs2: 'esport', 'counter-strike': 'esport', dota: 'esport',
   politics: 'politik', elections: 'politik', geopolitics: 'politik',
   crypto: 'krypto', bitcoin: 'krypto', ethereum: 'krypto',
   economics: 'wirtschaft', inflation: 'wirtschaft', fed: 'wirtschaft',
