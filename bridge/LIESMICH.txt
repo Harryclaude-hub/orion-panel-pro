@@ -1,0 +1,89 @@
+ORION BRIDGE 4.0  (Build 20, 16.08.2026)
+==============================================================
+
+WAS SIE TUT
+-----------
+Sie holt Betfair-Kurse und lädt sie zum Panel hoch. Sonst nichts.
+Gerechnet wird auf dem Server: Der Scanner dort vergleicht die vier
+Börsen, prüft dreifach nach und entscheidet, was eine Chance ist.
+
+
+EINRICHTEN (einmal, zwei Minuten)
+---------------------------------
+1. Diesen Ordner irgendwohin entpacken, z. B. auf den Desktop.
+2. Die Datei  bridge-config.json  aus dem ALTEN Bridge-Ordner
+   HIERHER kopieren. Sie enthält deine Zugangsdaten — bitte nicht
+   neu ausfüllen, die alte ist richtig.
+3. Doppelklick auf  Bridge-start.cmd
+4. Fenster offen lassen. Fertig.
+
+Voraussetzung: Node muss auf dem Rechner sein (nodejs.org, LTS).
+Die Startdatei sagt es dir, falls es fehlt.
+
+
+WAS ANDERS IST ALS BEI 3.8
+--------------------------
+Du hattest gemeldet: „lässt sich nicht mehr öffnen, wird immer größer."
+Beides ist behoben, und zwar an der Wurzel:
+
+1. SPORTART FÜR SPORTART, abwechselnd.
+   3.8 zog in EINEM Durchlauf alle Sportarten in einen einzigen
+   Katalog und hielt sie gleichzeitig im Speicher. 4.0 hat für jede
+   Sportart einen eigenen, getrennten Vorrat und erneuert je Durchlauf
+   genau EINEN. Die Reihenfolge ist verschränkt:
+       Fußball, Tennis, Fußball, Basketball, Fußball, Baseball, …
+   Fußball also in jeder zweiten Runde (dort liegen die meisten
+   Partien), jede andere Sportart spätestens alle 20 Runden.
+
+2. ALTES FLIEGT RAUS.
+   Ein Markt verschwindet aus dem Vorrat, wenn sein Anpfiff über
+   3 Stunden zurückliegt oder er 30 Minuten nicht mehr gesehen wurde.
+   Das war der Grund fürs Anwachsen: 3.8 sammelte, ohne je zu
+   vergessen.
+
+3. NUR NOCH BETFAIR.
+   Der Polymarket-Scan, die eigene Arbitrage-Rechnung und die
+   Telegram-Meldungen sind raus — das macht seit dem 11.8. der Server,
+   mit eigenem Takt je Sportart und dreifacher Prüfung. Zwei
+   Rechenwege für dieselbe Sache wären die Drift-Falle, die dieses
+   Projekt schon zweimal getroffen hat.
+
+4. KEINE 92-MB-DATEI MEHR.
+   Statt der großen .exe ein Textprogramm von rund 440 Zeilen. Es
+   startet sofort, du kannst es lesen, und ich kann es in Sekunden
+   ändern.
+
+Unverändert bleiben — mit Absicht: die Zugangsdatei, die Adresse
+(bf-bridge) und das Format der hochgeladenen Daten. Der Server
+erwartet genau das.
+
+
+WAS IM FENSTER STEHT
+--------------------
+  21:23:45  Tennis   Vorrat 1393 · Kurse 400 · hochgeladen 436 · verfallen 0 · 2.8 s
+
+  Tennis        welche Sportart in dieser Runde erneuert wurde
+  Vorrat        wie viele Märkte insgesamt beobachtet werden
+  Kurse         wie viele davon in dieser Runde frische Kurse bekamen
+  hochgeladen   wie viele mit vollständigen Kursen zum Panel gingen
+  verfallen     wie viele alte Märkte vergessen wurden
+  2.8 s         wie lange die Runde gedauert hat
+
+„Angemeldet — Konto eingeschränkt (SUSPENDED)" ist KEIN Fehler:
+Wetten über die Schnittstelle sind gesperrt, Kurse lesen ist erlaubt.
+Genau das brauchen wir.
+
+
+WENN ETWAS NICHT GEHT
+---------------------
+„Anmeldung fehlgeschlagen"   → zuerst den Benutzernamen in
+                               bridge-config.json prüfen (häufigster Fall)
+„Blockiert (HTML statt Daten)" → VPN aus; Betfair sperrt Rechenzentren
+Fenster schließt sofort       → Node fehlt (nodejs.org, LTS)
+Panel zeigt „Betfair-Daten sind X alt" → die Bridge läuft nicht oder
+                               der Rechner schläft. Standby aus:
+                               Einmalig-Standby-abschalten.cmd
+
+Getestet am 16.08.2026 gegen das echte Betfair-Konto: Anmeldung,
+Katalog, Kurse und Upload liefen; das Panel bestätigte 259 Märkte,
+alle mit Sportart und echtem Gebührensatz.

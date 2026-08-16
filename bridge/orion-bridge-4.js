@@ -1,0 +1,446 @@
+/* ============================================================================
+ * ORION BRIDGE 4.0 — schlank, sportartweise, ohne Ballast
+ * ============================================================================
+ *
+ * WOZU: Betfair beantwortet Anfragen aus Rechenzentren mit 403. Deshalb —
+ * und NUR deshalb — muss dieses eine Stück auf einem Rechner zu Hause
+ * laufen. Es holt Betfair-Kurse und lädt sie zum Panel hoch. Sonst nichts.
+ *
+ * WAS SICH GEGENÜBER 3.8 ÄNDERT (16.8.2026, Auftrag des Auftraggebers:
+ * „die Bridge lässt sich nicht mehr öffnen, sie wird immer größer …
+ *  scanne mehrere Sachen separat, nicht alles auf einmal"):
+ *
+ *   1. SPORTART FÜR SPORTART, im Rotationsverfahren. 3.8 zog in einem
+ *      Durchlauf ALLE Sportarten in einen einzigen Katalog und hielt sie
+ *      alle gleichzeitig im Speicher. Jetzt ist jede Sportart ein eigener,
+ *      getrennter Vorrat, und je Durchlauf wird GENAU EINER erneuert
+ *      (Fußball öfter, weil dort die Partien liegen). Das ist derselbe
+ *      Gedanke wie beim Server-Scanner: getrennt scannen, nichts vermischen.
+ *   2. VERFALL. Jeder Markt, dessen Anpfiff über 3 Stunden zurückliegt
+ *      oder der über 30 Minuten nicht mehr gesehen wurde, fliegt raus.
+ *      Damit hört der Speicher auf zu wachsen — das war der Grund, warum
+ *      3.8 mit den Stunden immer träger wurde.
+ *   3. NUR NOCH BETFAIR. Der Polymarket-Scan, die eigene Arbitrage-Rechnung
+ *      und die Telegram-Meldungen sind RAUS: das macht seit dem 11.8. alles
+ *      der Server (orion-lauf, jede Sportart mit eigenem Takt, dreifach
+ *      geprüft). Zwei Rechenwege für dieselbe Sache sind die Drift-Falle,
+ *      die dieses Projekt schon zweimal getroffen hat.
+ *   4. KEINE 92-MB-EXE mehr, sondern ein Node-Skript von ~350 Zeilen.
+ *      Es startet sofort, lässt sich lesen und ändern.
+ *
+ * WAS ABSICHTLICH GLEICH BLEIBT — HARTE REGEL:
+ *   Das Upload-Format (Felder k, r, mt, ev, st, ip, sz, et, link sowie
+ *   data/v:2/stats), die Adresse bf-bridge und die Zugangsdatei
+ *   bridge-config.json. Der Server erwartet genau das. Wer daran etwas
+ *   ändert, bricht den laufenden Betrieb.
+ *
+ * START:  Bridge-start.cmd  (oder: node orion-bridge-4.js)
+ * ========================================================================== */
+
+'use strict';
+
+const fs = require('fs');
+const pfad = require('path');
+
+const VERSION = '4.0';
+const BUILD = 20;
+
+/* ---------- Zugangsdatei ---------- */
+const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
+let CFG;
+try {
+  CFG = JSON.parse(fs.readFileSync(CFG_DATEI, 'utf8'));
+} catch (e) {
+  console.error('\n  Die Datei bridge-config.json fehlt oder ist beschädigt.');
+  console.error('  Sie gehört NEBEN dieses Programm. ' + e.message + '\n');
+  process.exit(1);
+}
+for (const feld of ['betfairUsername', 'betfairPassword', 'betfairAppKey', 'bridgeToken', 'bridgeUrl']) {
+  if (!CFG[feld]) { console.error('\n  In bridge-config.json fehlt: ' + feld + '\n'); process.exit(1); }
+}
+
+/* ---------- Adressen (nie ändern) ---------- */
+const BF_LOGIN = 'https://identitysso.betfair.com/api/login';
+const BF_KEEP  = 'https://identitysso.betfair.com/api/keepAlive';
+const BF_RPC   = 'https://api.betfair.com/exchange/betting/json-rpc/v1';
+
+/* ---------- Einstellungen ---------- */
+const O = {
+  /* Wie weit voraus geschaut wird. Der Server nimmt ohnehin nur Märkte,
+   * die innerhalb von 72 Stunden starten. */
+  fensterStunden: zahl(CFG.windowHours, 72),
+  /* Sekunden zwischen zwei Durchläufen. Je Durchlauf wird EINE Sportart
+   * erneuert und danach werden die Kurse der dringlichsten Märkte gelesen. */
+  taktSekunden: zahl(CFG.intervalSeconds, 30),
+  /* Wie viele Märkte je Durchlauf Kurse bekommen. Betfair rechnet
+   * EX_BEST_OFFERS mit Gewicht 5 und erlaubt 200 je Aufruf — 40 je Paket. */
+  kurseProDurchlauf: zahl(CFG.marketsPerRun, 400),
+  /* Höchstzahl hochgeladener Märkte (der Server deckelt ohnehin). */
+  uploadLimit: zahl(CFG.uploadLimit, 1200),
+  /* Rückfall-Kommission, falls Betfair für einen Markt keine meldet. */
+  feeBf: zahl(CFG.feeBetfairPercent, 3) / 100,
+  /* Sportarten, die nie geladen werden (Standard: 7 = Pferde, 4339 = Hunde). */
+  aus: (CFG.excludeEventTypeIds || ['7', '4339']).map(String)
+};
+
+const PAKET = 40;
+const VERFALL_MIN = 30;          // nicht mehr gesehen -> vergessen
+const NACH_ANPFIFF_STD = 3;      // so lange nach Anpfiff bleibt ein Markt
+
+/* Sportarten, die der Server überhaupt zuordnen kann (orion_bf_sport).
+ * Alles andere zu laden wäre Arbeit für nichts — der Server verwirft es.
+ * Fußball steht vorn und kommt öfter dran. */
+const SPORT = [
+  { et: '1',        name: 'Fußball',           anteil: 4 },
+  { et: '2',        name: 'Tennis',            anteil: 1 },
+  { et: '7522',     name: 'Basketball',        anteil: 1 },
+  { et: '7511',     name: 'Baseball',          anteil: 1 },
+  { et: '6423',     name: 'American Football', anteil: 1 },
+  { et: '7524',     name: 'Eishockey',         anteil: 1 },
+  { et: '4',        name: 'Cricket',           anteil: 1 },
+  { et: '6',        name: 'Boxen',             anteil: 1 },
+  { et: '26420387', name: 'MMA',               anteil: 1 },
+  { et: '8',        name: 'Motorsport',        anteil: 1 },
+  { et: '27454571', name: 'E-Sport',           anteil: 1 }
+];
+
+/* Nur diese Markttypen kann der Server paaren. Alles andere ist Ballast. */
+const TYPEN = /^(MATCH_ODDS|OVER_UNDER_\d+)$/;
+
+function zahl(x, standard) { const n = Number(x); return isFinite(n) ? n : standard; }
+function schlaf(ms) { return new Promise(r => setTimeout(r, ms)); }
+function zeit() { return new Date().toLocaleTimeString('de-AT'); }
+function log(s) { console.log(zeit() + '  ' + s); }
+
+/* ---------- Betfair: Anmeldung ---------- */
+let sitzung = null, letzteAnmeldung = 0;
+
+async function anmelden() {
+  const r = await fetch(BF_LOGIN, {
+    method: 'POST',
+    headers: {
+      'X-Application': CFG.betfairAppKey,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      'Accept': 'application/json'
+    },
+    body: 'username=' + encodeURIComponent(CFG.betfairUsername) +
+          '&password=' + encodeURIComponent(CFG.betfairPassword)
+  });
+  const txt = await r.text();
+  let j = null; try { j = JSON.parse(txt); } catch (e) {}
+  if (!j) throw new Error('Unerwartete Antwort von Betfair: ' + txt.slice(0, 120));
+  /* Bei eingeschränktem Konto (SUSPENDED, KYC) kommt TROTZDEM ein Token:
+   * wetten gesperrt, Kurse lesen erlaubt. Genau das brauchen wir. */
+  if (!j.token) {
+    throw new Error('Anmeldung fehlgeschlagen: ' + (j.error || j.status || 'unbekannt') +
+                    ' — prüfe zuerst den Benutzernamen in bridge-config.json');
+  }
+  sitzung = j.token;
+  letzteAnmeldung = Date.now();
+  log(j.status === 'SUCCESS'
+    ? 'Bei Betfair angemeldet.'
+    : 'Angemeldet — Konto eingeschränkt (' + (j.error || j.status) + '), Kurse lesen geht.');
+}
+
+async function wachhalten() {
+  try {
+    await fetch(BF_KEEP, { headers: { 'X-Application': CFG.betfairAppKey, 'X-Authentication': sitzung } });
+    letzteAnmeldung = Date.now();
+  } catch (e) { sitzung = null; }
+}
+
+/* ---------- Betfair: Anfragen ---------- */
+let letzteAnfrage = 0;
+async function rpc(methode, params) {
+  /* Sanfte Bremse: Betfair drosselt bei zu vielen Anfragen je Sekunde. */
+  const abstand = Date.now() - letzteAnfrage;
+  if (abstand < 120) await schlaf(120 - abstand);
+  letzteAnfrage = Date.now();
+
+  const r = await fetch(BF_RPC, {
+    method: 'POST',
+    headers: {
+      'X-Application': CFG.betfairAppKey, 'X-Authentication': sitzung,
+      'Content-Type': 'application/json', 'Accept': 'application/json'
+    },
+    body: JSON.stringify([{ jsonrpc: '2.0', method: 'SportsAPING/v1.0/' + methode, params, id: 1 }])
+  });
+  const txt = await r.text();
+  if (txt.trim().startsWith('<')) {
+    throw new Error('Blockiert (HTML statt Daten) — läuft das Programm wirklich zu Hause? VPN aus?');
+  }
+  const j = JSON.parse(txt);
+  const erste = Array.isArray(j) ? j[0] : j;
+  if (erste && erste.error) {
+    const d = erste.error.data && erste.error.data.APINGException;
+    throw new Error((d && (d.errorCode || d.errorDetails)) || erste.error.message || 'Betfair-Fehler');
+  }
+  return erste ? erste.result : null;
+}
+
+/* ---------- Der Vorrat: JE SPORTART getrennt ----------
+ * Das ist der Kern der Änderung. 3.8 hatte EINEN Katalog für alles; hier
+ * hat jede Sportart ihren eigenen, und nur einer wird je Durchlauf
+ * angefasst. Nichts vermischt sich, nichts wächst unbegrenzt. */
+const VORRAT = new Map();   // etId -> Map(marketId -> markt)
+
+function vorratVon(et) {
+  let m = VORRAT.get(et);
+  if (!m) { m = new Map(); VORRAT.set(et, m); }
+  return m;
+}
+
+/* Fenster halbieren, wenn Betfair „zu viel verlangt" meldet — das ist
+ * kein Fehler, sondern der normale Weg bei großen Sportarten. */
+async function katalog(et, vonMs, bisMs, tiefe) {
+  let res;
+  try {
+    res = await rpc('listMarketCatalogue', {
+      filter: {
+        eventTypeIds: [et],
+        marketTypeCodes: ['MATCH_ODDS', 'OVER_UNDER_05', 'OVER_UNDER_15', 'OVER_UNDER_25',
+                          'OVER_UNDER_35', 'OVER_UNDER_45', 'OVER_UNDER_55'],
+        marketStartTime: { from: new Date(vonMs).toISOString(), to: new Date(bisMs).toISOString() }
+      },
+      maxResults: 1000, sort: 'FIRST_TO_START',
+      marketProjection: ['RUNNER_DESCRIPTION', 'EVENT', 'MARKET_START_TIME', 'MARKET_DESCRIPTION']
+    });
+  } catch (e) {
+    const zuViel = /TOO_MUCH_DATA|ANGX-0001/i.test(String(e.message || ''));
+    if (zuViel && bisMs - vonMs > 2 * 60e3 && tiefe < 20) {
+      const mitte = Math.floor((vonMs + bisMs) / 2);
+      await katalog(et, vonMs, mitte, tiefe + 1);
+      await katalog(et, mitte, bisMs, tiefe + 1);
+      return;
+    }
+    if (zuViel) return;          // kleinstes Fenster, trotzdem zu viel: auslassen
+    throw e;                     // Anmeldung, Netz: echter Fehler
+  }
+  if (!res) return;
+
+  const jetzt = Date.now();
+  const vorrat = vorratVon(et);
+  for (const c of res) {
+    const bd = c.description || {};
+    if (!TYPEN.test(String(bd.marketType || ''))) continue;
+    const satz = isFinite(+bd.marketBaseRate) && +bd.marketBaseRate >= 0 ? +bd.marketBaseRate / 100 : O.feeBf;
+    vorrat.set(c.marketId, {
+      ev: (c.event && c.event.name) || '',
+      mt: bd.marketType || '',
+      satz,
+      start: c.marketStartTime || (c.event && c.event.openDate) || null,
+      et,
+      laeufer: (c.runners || []).map(r => ({ id: r.selectionId, name: r.runnerName })),
+      gesehen: jetzt
+    });
+  }
+  /* Genau am Deckel heißt: das Fenster war voll, es fehlen Märkte. */
+  if (res.length >= 1000 && bisMs - vonMs > 2 * 60e3 && tiefe < 20) {
+    const mitte = Math.floor((vonMs + bisMs) / 2);
+    await katalog(et, vonMs, mitte, tiefe + 1);
+    await katalog(et, mitte, bisMs, tiefe + 1);
+  }
+}
+
+/* Alles Alte fliegt raus — hier hört das Wachsen auf. */
+function aufraeumen() {
+  const jetzt = Date.now();
+  let weg = 0;
+  for (const [, vorrat] of VORRAT) {
+    for (const [mid, m] of vorrat) {
+      const start = m.start ? Date.parse(m.start) : null;
+      const zuAlt = start && jetzt - start > NACH_ANPFIFF_STD * 3600e3;
+      const vergessen = jetzt - m.gesehen > VERFALL_MIN * 60e3;
+      if (zuAlt || vergessen) { vorrat.delete(mid); KURSE.delete(mid); weg++; }
+    }
+  }
+  return weg;
+}
+
+/* ---------- Kurse ---------- */
+const KURSE = new Map();   // marketId -> {status, inplay, laeufer[], stand}
+
+async function kurseHolen(ids) {
+  let gelesen = 0;
+  for (let i = 0; i < ids.length; i += PAKET) {
+    let buecher;
+    try {
+      buecher = await rpc('listMarketBook', {
+        marketIds: ids.slice(i, i + PAKET),
+        priceProjection: { priceData: ['EX_BEST_OFFERS'], virtualise: false }
+      });
+    } catch (e) {
+      if (/session|invalid|auth|expired/i.test(e.message)) throw e;
+      continue;
+    }
+    for (const b of buecher || []) {
+      KURSE.set(b.marketId, {
+        status: b.status, inplay: !!b.inplay, stand: Date.now(),
+        laeufer: (b.runners || []).map(r => {
+          const back = (r.ex && r.ex.availableToBack && r.ex.availableToBack[0]) || null;
+          const lay  = (r.ex && r.ex.availableToLay && r.ex.availableToLay[0]) || null;
+          return {
+            id: r.selectionId, st: r.status,
+            b: back ? back.price : 0, bs: back ? back.size : 0,
+            l: lay ? lay.price : 0,  ls: lay ? lay.size : 0
+          };
+        })
+      });
+      gelesen++;
+    }
+  }
+  return gelesen;
+}
+
+/* Welche Märkte brauchen jetzt Kurse? Die dringlichsten zuerst:
+ * laufende Partien, dann die mit dem nächsten Anpfiff. */
+function dringlichste(anzahl) {
+  const alle = [];
+  for (const [, vorrat] of VORRAT) {
+    for (const [mid, m] of vorrat) {
+      const start = m.start ? Date.parse(m.start) : Infinity;
+      const k = KURSE.get(mid);
+      alle.push({ mid, start, alter: k ? Date.now() - k.stand : Infinity });
+    }
+  }
+  alle.sort((a, b) => (a.start - b.start) || (b.alter - a.alter));
+  return alle.slice(0, anzahl).map(x => x.mid);
+}
+
+/* ---------- Hochladen — Format wie in 3.8, Feld für Feld ---------- */
+function bauen() {
+  const raus = [];
+  for (const [, vorrat] of VORRAT) {
+    for (const [mid, m] of vorrat) {
+      const k = KURSE.get(mid);
+      if (!k || k.status !== 'OPEN') continue;
+      const n = (m.laeufer || []).length;
+      if (n < 2 || n > 3) continue;
+      const namen = {};
+      m.laeufer.forEach(r => { namen[r.id] = r.name; });
+      const rs = [];
+      let ok = true;
+      for (const r of k.laeufer) {
+        if (r.st && r.st !== 'ACTIVE') { ok = false; break; }
+        if (!(r.b > 1)) { ok = false; break; }
+        rs.push({ n: namen[r.id] || String(r.id), b: r.b, bs: r.bs, l: r.l || 0, ls: r.ls || 0 });
+      }
+      if (!ok || rs.length !== n) continue;
+      raus.push({
+        k: rs.map(x => x.n).join(' vs '),
+        r: rs,
+        mt: m.mt || '',
+        ev: m.ev || '',
+        st: m.start || null,
+        ip: k.inplay ? 1 : 0,
+        sz: (typeof m.satz === 'number' && isFinite(m.satz)) ? m.satz : null,
+        et: m.et != null ? String(m.et) : null,
+        link: 'https://www.betfair.com/exchange/plus/market/' + mid
+      });
+    }
+  }
+  raus.sort((a, b) => {
+    if (a.ip !== b.ip) return b.ip - a.ip;
+    const ta = a.st ? Date.parse(a.st) : Infinity, tb = b.st ? Date.parse(b.st) : Infinity;
+    if (ta !== tb) return ta - tb;
+    return b.r.reduce((s, x) => s + x.bs, 0) - a.r.reduce((s, x) => s + x.bs, 0);
+  });
+  return raus.slice(0, O.uploadLimit);
+}
+
+async function hochladen(markets, stats) {
+  const data = markets.filter(m => m.r.length === 2)
+                      .map(m => ({ key: m.k, o1: m.r[0].b, o2: m.r[1].b, link: m.link }));
+  const r = await fetch(CFG.bridgeUrl, {
+    method: 'POST',
+    headers: { 'content-type': 'application/json', 'x-bridge-token': CFG.bridgeToken },
+    body: JSON.stringify({ data, v: 2, markets, arbs: [], opps: [], stats })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!j.ok) throw new Error('Upload fehlgeschlagen: ' + (j.error || r.status));
+  return j;
+}
+
+/* ---------- Der Durchlauf ---------- */
+let laeuft = false, runde = 0, fehlerInFolge = 0;
+
+/* Rotationsplan, VERSCHRÄNKT (nach dem Trockenlauf vom 16.8. geändert):
+ * ein glatter Plan hätte Fußball viermal hintereinander gebracht und die
+ * anderen Sportarten minutenlang blind gelassen. Jetzt wechseln sich
+ * Fußball und je eine andere Sportart ab:
+ *   Fußball, Tennis, Fußball, Basketball, Fußball, Baseball, …
+ * Fußball ist damit in JEDER zweiten Runde dran (dort liegen die meisten
+ * Partien), und jede andere Sportart spätestens alle 20 Runden. */
+const PLAN = [];
+(function planBauen() {
+  const fussball = SPORT[0];
+  const rest = SPORT.slice(1);
+  for (const s of rest) { PLAN.push(fussball); PLAN.push(s); }
+})();
+
+async function durchlauf() {
+  if (laeuft) return;
+  laeuft = true;
+  const t0 = Date.now();
+  try {
+    if (!sitzung) await anmelden();
+    else if (Date.now() - letzteAnmeldung > 15 * 60e3) await wachhalten();
+
+    /* EINE Sportart je Runde — getrennt, nicht alles auf einmal. */
+    const dran = PLAN[runde % PLAN.length];
+    runde++;
+    const von = Date.now(), bis = von + O.fensterStunden * 3600e3;
+    await katalog(dran.et, von, bis, 0);
+
+    const weg = aufraeumen();
+    const ids = dringlichste(O.kurseProDurchlauf);
+    const gelesen = await kurseHolen(ids);
+
+    const markets = bauen();
+    let vorratGesamt = 0;
+    for (const [, v] of VORRAT) vorratGesamt += v.size;
+
+    const stats = {
+      bridge: VERSION, build: BUILD, sportart: dran.name,
+      maerkte: markets.length, vorrat: vorratGesamt, gelesen, verfallen: weg,
+      dauer_ms: Date.now() - t0,
+      et_namen: Object.fromEntries(SPORT.map(s => [s.et, s.name]))
+    };
+    await hochladen(markets, stats);
+    fehlerInFolge = 0;
+
+    log(dran.name.padEnd(17) + 'Vorrat ' + String(vorratGesamt).padStart(4) +
+        ' · Kurse ' + String(gelesen).padStart(3) +
+        ' · hochgeladen ' + String(markets.length).padStart(4) +
+        ' · verfallen ' + String(weg).padStart(3) +
+        ' · ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
+  } catch (e) {
+    fehlerInFolge++;
+    const t = String(e.message || e);
+    log('FEHLER: ' + t);
+    if (/session|invalid|auth|expired|Anmeldung/i.test(t)) sitzung = null;
+    /* Nach mehreren Fehlern hintereinander eine Pause — sonst rennt die
+     * Bridge in eine Sperre. */
+    if (fehlerInFolge >= 3) {
+      log('Drei Fehler hintereinander — zwei Minuten Pause.');
+      await schlaf(120e3);
+      fehlerInFolge = 0;
+    }
+  } finally {
+    laeuft = false;
+  }
+}
+
+/* ---------- Start ---------- */
+console.log('');
+console.log('  ORION BRIDGE ' + VERSION + '  (Build ' + BUILD + ')');
+console.log('  ------------------------------------------------------------');
+console.log('  Holt NUR Betfair-Kurse und lädt sie zum Panel hoch.');
+console.log('  Gerechnet wird auf dem Server — hier läuft keine Arbitrage.');
+console.log('  Sportarten: ' + SPORT.length + ', eine je Durchlauf (Fußball öfter).');
+console.log('  Takt: alle ' + O.taktSekunden + ' s · Fenster: ' + O.fensterStunden + ' h');
+console.log('  Fenster schließen beendet die Bridge. Strg+C ebenso.');
+console.log('');
+
+durchlauf();
+setInterval(durchlauf, O.taktSekunden * 1000);
