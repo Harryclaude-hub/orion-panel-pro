@@ -1611,3 +1611,46 @@ getreten, beide vom Prüfstand gefangen:
 **Regex-lastigen Code direkt in die Datei schreiben, nie über die Shell.**
 
 **Was nicht gemessen wurde, wird als ungemessen gekennzeichnet.**
+
+## 8k. OFFEN (16.8.2026): Esport-Erweiterung wartet auf den Scanner-Deploy
+
+**Fertig, geprüft und committet** (Commit 9de40e7):
+- `zuordnung.ts` **und** `js/zuordnung.js`: neue Marktart-Regel für
+  Esport-Matches (Teilname exakt `match winner` **und** `(BOx)` in der
+  Frage) + `esportRein()` (Titel auf die reine Partie kürzen) +
+  PM_BEREICH um `league-of-legends`, `rocket-league`, `cs2`, `dota`.
+- Register `orion_bereiche` in der DB ist **bereits umgestellt**:
+  `lol → ['league-of-legends']`, `esport → ['rocket-league','cs2','dota']`.
+- Trockenlauf gegen echte Daten bestanden, Spiegel-Prüfstand grün.
+
+**Es fehlt genau ein Schritt: der Deploy von `orion-lauf`.**
+Ohne ihn erkennt der Server die Esport-Märkte weiter nicht (pm_maerkte 0).
+
+```bash
+npx supabase login --token <PERSONAL_ACCESS_TOKEN>
+npx supabase functions deploy orion-lauf --project-ref noexklrgtqveiclijdwp
+```
+
+Token erstellen: supabase.com/dashboard/account/tokens → „Generate new
+token". Der MCP-Weg (deploy_edge_function) verlangt alle drei Dateien
+(75 KB) inline im Chat — teuer und fehleranfällig; die CLI lädt sie
+direkt von der Platte.
+
+**Nach dem Deploy zuerst prüfen** (der Scanner hat einen Probelauf-Modus,
+der rechnet, aber nichts schreibt):
+```bash
+curl -s -X POST -H "content-type: application/json" \
+  -d '{"bereich":"valorant","probe":true}' \
+  https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-lauf
+```
+Erwartet: `pm_maerkte` > 0 (statt 0) und jede Zuordnung einzeln
+ausgewiesen. Danach Fußball gegenprüfen — `pm_maerkte` muss dort
+unverändert bei rund 1263 liegen.
+
+**Danach offen (Punkt 2 und 3 des Bauplans):** Kalshi-Sammler um
+Krypto/Wetter/Wirtschaft erweitern (`KXBTCD`, `KXETHD`, `KXHIGHNY`,
+`KXFED` sind offen und wurden am 16.8. direkt bei Kalshi nachgewiesen)
+und die Marktart „Schwelle". **Warnung, gemessen:** Polymarket fragt
+„erreicht BTC 78 000 **im Zeitraum**", Kalshi „Preis **am Stichtag**" —
+verschiedene Fragen. Nur bei gleichem Fragetyp, gleicher Schwelle und
+gleichem Stichzeitpunkt darf gepaart werden.
