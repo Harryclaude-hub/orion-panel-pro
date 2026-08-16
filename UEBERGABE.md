@@ -1654,3 +1654,12 @@ und die Marktart „Schwelle". **Warnung, gemessen:** Polymarket fragt
 „erreicht BTC 78 000 **im Zeitraum**", Kalshi „Preis **am Stichtag**" —
 verschiedene Fragen. Nur bei gleichem Fragetyp, gleicher Schwelle und
 gleichem Stichzeitpunkt darf gepaart werden.
+
+**Nachtrag 16.8., gemessen:** Der MCP-Weg `deploy_edge_function` kennt
+**keinen Teil-Deploy** — zweimal getestet, beide Male
+`Entrypoint path does not exist`, sobald `index.ts` fehlt. Er ersetzt die
+Funktion vollständig und verlangt alle drei Dateien (75.000 Zeichen)
+wörtlich im Aufruf. Genau dieser Weg hat heute schon einmal Regex-Zeichen
+zerlegt (`\s` → `s`), was erst durch den Trockenlauf auffiel. Bei einem
+Scanner, der im 20-Sekunden-Takt Geld-Entscheidungen vorbereitet, ist das
+kein vertretbares Risiko. **Deshalb: Deploy nur per CLI mit Token.**
