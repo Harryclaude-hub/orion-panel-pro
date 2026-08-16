@@ -71,8 +71,8 @@
         '<div class="fl-feld">' +
           '<svg class="fl-panzer" viewBox="0 0 64 28" aria-hidden="true">' +
             '<path fill="currentColor" d="M4 20 h56 l-5 6 h-46 z"/>' +
-            '<circle cx="14" cy="23" r="2.2" fill="#1D211B"/><circle cx="24" cy="23" r="2.2" fill="#1D211B"/>' +
-            '<circle cx="34" cy="23" r="2.2" fill="#1D211B"/><circle cx="44" cy="23" r="2.2" fill="#1D211B"/>' +
+            '<circle cx="14" cy="23" r="2.2" fill="#070D18"/><circle cx="24" cy="23" r="2.2" fill="#070D18"/>' +
+            '<circle cx="34" cy="23" r="2.2" fill="#070D18"/><circle cx="44" cy="23" r="2.2" fill="#070D18"/>' +
             '<path fill="currentColor" d="M16 12 h24 v8 h-28 z"/>' +
             '<path fill="currentColor" d="M24 6 h12 v6 h-12 z"/>' +
             '<rect fill="currentColor" x="36" y="8" width="24" height="2.6"/>' +

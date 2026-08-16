@@ -20,17 +20,21 @@
    ══════════════════════════════════════════════════════════════════════ */
 
 :root{
-  /* Grund wird tiefer. Haarlinien tragen auf dem hellen Oliv nicht. */
-  --grund:    #0C0F0B;
-  --karte:    #12160F;
-  --karte-2:  #171C13;
-  --rand:     #2A3123;
+  /* Grund wird tiefer. Haarlinien tragen auf hellem Grund nicht.
+   * FARBWECHSEL 15.8. abends: dieselben vier Rollen wie zuvor, nur im
+   * MARINEBLAU der neuen Palette (Vorlage: das Kommandopult-Bild).
+   * Diese Datei laedt NACH stil.css — stuenden hier noch die alten
+   * Oliv-Werte, kaempften zwei Paletten gegeneinander. */
+  --grund:    #050A12;
+  --karte:    #0A1320;
+  --karte-2:  #0F1B2C;
+  --rand:     #1C2F44;
 
-  /* Gold und Sonar bleiben unveraendert — das ist unsere Farbe. */
+  /* Bernstein und Cyan kommen unveraendert aus stil.css. */
 
-  /* Haarlinien in zwei Staerken. */
-  --hud-linie:  rgba(185,169,112,.24);
-  --hud-linie-2:rgba(185,169,112,.52);
+  /* Haarlinien in zwei Staerken — jetzt im Bernstein der neuen Palette. */
+  --hud-linie:  rgba(227,169,74,.24);
+  --hud-linie-2:rgba(227,169,74,.52);
   --hud-mono: ui-monospace, "JetBrains Mono", Consolas, "Courier New", monospace;
 
   /* Rundung raus. Ab hier wird gekappt statt gerundet. */
@@ -48,8 +52,8 @@
 body{
   background-color: var(--grund);
   background-image:
-    linear-gradient(rgba(185,169,112,.028) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(185,169,112,.028) 1px, transparent 1px);
+    linear-gradient(rgba(227,169,74,.028) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(227,169,74,.028) 1px, transparent 1px);
   background-size: 64px 64px, 64px 64px;
 }
 
@@ -105,7 +109,7 @@ body{
   border:1px solid var(--hud-linie-2);
   border-radius:0;
   font-size:10.5px; letter-spacing:.14em; text-transform:uppercase;
-  background: rgba(185,169,112,.07);
+  background: rgba(227,169,74,.07);
   padding:3px 11px;
 }
 
@@ -130,7 +134,7 @@ body{
 .knopf small{ font-size:11px; }
 
 /* Der Hauptknopf bleibt hervorgehoben. */
-.haupt{ background: rgba(185,169,112,.12); border-color: var(--hud-linie-2); }
+.haupt{ background: rgba(227,169,74,.12); border-color: var(--hud-linie-2); }
 .haupt::after{ background: var(--gold); }
 
 /* ─── Die Kacheln werden zu HUD-Feldern ─────────────────────────────
@@ -155,7 +159,7 @@ body{
   content: counter(hudfeld, decimal-leading-zero);
   position:absolute; top:6px; right:9px;
   font-family: var(--hud-mono); font-size:9px; letter-spacing:.12em;
-  color: rgba(185,169,112,.42); pointer-events:none;
+  color: rgba(227,169,74,.42); pointer-events:none;
 }
 /* Der dicke Unterstrich. */
 .kachel::after{
@@ -318,14 +322,14 @@ input[type=text], input[type=password], select, textarea{
   flex-wrap:wrap;
   padding:10px 15px;
   border-bottom:1px solid var(--hud-linie);
-  background:linear-gradient(90deg, rgba(185,169,112,.06), transparent);
+  background:linear-gradient(90deg, rgba(227,169,74,.06), transparent);
 }
 .zstat-titel{
   font-family:var(--hud-mono); font-size:11px; letter-spacing:.2em;
   text-transform:uppercase; color:var(--text);
   display:flex; align-items:center; gap:10px;
 }
-.zstat-kennung{ font-size:9px; color:rgba(185,169,112,.45); letter-spacing:.12em; }
+.zstat-kennung{ font-size:9px; color:rgba(227,169,74,.45); letter-spacing:.12em; }
 
 .zstat-filter{ display:flex; gap:6px; flex-wrap:wrap; }
 .zstat-knopf{
@@ -370,7 +374,7 @@ input[type=text], input[type=password], select, textarea{
   height:132px; padding-bottom:16px;
   border-bottom:1px solid var(--hud-linie);
   background:
-    repeating-linear-gradient(0deg, transparent 0 25%, rgba(185,169,112,.07) 25%, rgba(185,169,112,.07) calc(25% + 1px));
+    repeating-linear-gradient(0deg, transparent 0 25%, rgba(227,169,74,.07) 25%, rgba(227,169,74,.07) calc(25% + 1px));
 }
 .zstat-saeule{
   flex:1 1 0; min-width:0; height:100%;
@@ -379,8 +383,8 @@ input[type=text], input[type=password], select, textarea{
 }
 .zstat-stab{
   display:block; width:100%;
-  background:rgba(185,169,112,.22);
-  border-top:1px solid rgba(185,169,112,.45);
+  background:rgba(227,169,74,.22);
+  border-top:1px solid rgba(227,169,74,.45);
   position:relative;
   transform-origin:bottom;
 }
@@ -434,36 +438,36 @@ input[type=text], input[type=password], select, textarea{
 /* Die Laengenkreise: acht Ringe, jeder um die Hochachse weitergedreht. */
 .glo-kugel > i{
   position:absolute; inset:0;
-  border:1px solid rgba(143,185,150,.34);
+  border:1px solid rgba(60,201,245,.34);
   border-radius:50%;
   transform:rotateY(var(--w));
 }
-.glo-kugel > i:nth-child(1){ border-color:rgba(185,169,112,.55); }
-.glo-kugel > i:nth-child(5){ border-color:rgba(185,169,112,.42); }
+.glo-kugel > i:nth-child(1){ border-color:rgba(227,169,74,.55); }
+.glo-kugel > i:nth-child(5){ border-color:rgba(227,169,74,.42); }
 /* Die Breitenkreise: flach gelegt und nach oben/unten versetzt. */
 .glo-breite{
-  position:absolute; border:1px solid rgba(143,185,150,.26);
+  position:absolute; border:1px solid rgba(60,201,245,.26);
   border-radius:50%; transform-style:preserve-3d;
 }
-.glo-breite.b1{ inset:0;        transform:rotateX(90deg); border-color:rgba(185,169,112,.42); }
+.glo-breite.b1{ inset:0;        transform:rotateX(90deg); border-color:rgba(227,169,74,.42); }
 .glo-breite.b2{ inset:22px 12px; transform:rotateX(90deg) translateZ(42px); }
 .glo-breite.b3{ inset:22px 12px; transform:rotateX(90deg) translateZ(-42px); }
 
 /* Zwei Umlaufbahnen, groesser als die Kugel und gekippt. */
 .glo-bahn{
   position:absolute; border-radius:50%;
-  border:1px dashed rgba(185,169,112,.38);
+  border:1px dashed rgba(227,169,74,.38);
   transform-style:preserve-3d;
 }
 .glo-bahn.bahn1{ inset:-26px -8px; transform:rotateX(76deg) rotateZ(12deg); }
 .glo-bahn.bahn2{ inset:-14px -30px; transform:rotateX(66deg) rotateZ(-38deg);
-                 border-style:solid; border-color:rgba(143,185,150,.24); }
+                 border-style:solid; border-color:rgba(60,201,245,.24); }
 /* Der Laeufer auf der Bahn. */
 .glo-bahn.bahn1::after{
   content:""; position:absolute; top:-3px; left:50%;
   width:6px; height:6px; margin-left:-3px;
   background:var(--gold); border-radius:50%;
-  box-shadow:0 0 8px rgba(185,169,112,.9);
+  box-shadow:0 0 8px rgba(227,169,74,.9);
 }
 .glo-lineal{
   position:absolute; left:0; right:0; bottom:2px; height:8px;
@@ -498,7 +502,7 @@ input[type=text], input[type=password], select, textarea{
    reicht ein transform, statt eine Position zu verschieben. */
 .zstat-bild::after{
   content:""; position:absolute; top:0; bottom:16px; left:0; width:100%;
-  background:linear-gradient(90deg, transparent 47%, rgba(143,185,150,.45) 50%, transparent 53%);
+  background:linear-gradient(90deg, transparent 47%, rgba(60,201,245,.45) 50%, transparent 53%);
   animation:zstat-zug 9s linear infinite; pointer-events:none;
 }
 
@@ -727,7 +731,7 @@ html.seite-ruht #orion-puls *,
 .fund .unter .chip.pm, .fund .unter .chip.ka,
 .fund .unter .chip.sm, .fund .unter .chip.bf{
   border-color: var(--hud-linie-2); color: var(--text);
-  background: rgba(185,169,112,.05);
+  background: rgba(227,169,74,.05);
 }
 .fund .unter .chip.nr{ font-family: var(--hud-mono); opacity: .6; }
 .fund .unter .chip.gut{ border-color: rgba(143,180,121,.5); color: var(--gruen); }

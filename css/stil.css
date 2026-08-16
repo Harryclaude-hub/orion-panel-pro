@@ -16,28 +16,35 @@
  */
 
 :root {
-  /* Grundton: dunkles Oliv-Graphit, kein Schwarz. */
-  --grund:    #1D211B;
-  --karte:    #262B22;
-  --karte-2:  #2D332A;
-  --rand:     #3D4536;
-  --text:     #E4E6DE;
-  --text-leise: #A7AC9D;
+  /* FARBWECHSEL 15.8.2026 (Vorlage: das Kommandopult-Bild des
+   * Auftraggebers): von Oliv-Graphit auf TIEFES MARINEBLAU mit
+   * Cyan-Kontrast. Rollen und Namen bleiben unveraendert — getauscht
+   * wurden NUR die Werte, genau dafuer gibt es diese Schicht. */
 
-  /* Akzent: Khaki/Messing — ersetzt das alte Gold, gleiche Rolle. */
-  --gold:     #B9A970;
-  --akzent-rgb: 185, 169, 112;
+  /* Grundton: fast schwarzes Marineblau, Panels eine Spur heller. */
+  --grund:    #070D18;
+  --karte:    #0D1726;
+  --karte-2:  #132135;
+  --rand:     #22384F;
+  --text:     #E7F1FB;
+  --text-leise: #89A2BC;
 
-  /* Zustandsfarben, alle gedaempft. */
-  --gruen:    #8FB479;
-  --orange:   #C99B62;
-  --rot:      #C98A82;
+  /* Akzent: warmes Bernstein — der EINE warme Ton auf dem blauen Grund
+   * (Leuchtspur, Stempel, Rechnungsnummer, aktivstes Matrixfeld). */
+  --gold:     #E3A94A;
+  --akzent-rgb: 227, 169, 74;
 
-  /* Das Sonar: mattes Militaer-Phosphor, kein Neon. */
-  --sonar:      #8FB996;
-  --sonar-rgb:  143, 185, 150;
-  --sonar-tief: #0E1710;
-  --sonar-linie: rgba(143, 185, 150, .20);
+  /* Zustandsfarben, auf den blauen Grund abgestimmt. */
+  --gruen:    #2FD3A7;
+  --orange:   #F0A73C;
+  --rot:      #FF6B85;
+
+  /* Das Sonar: leuchtendes Cyan wie auf der Vorlage — der Leitton der
+   * ganzen Oberflaeche (Radar, Flanken, Raender, Titelglut). */
+  --sonar:      #3CC9F5;
+  --sonar-rgb:  60, 201, 245;
+  --sonar-tief: #04121F;
+  --sonar-linie: rgba(60, 201, 245, .20);
 
   /* DIE VIER BUECHER, in ihren Wiedererkennungsfarben (gedaempft genug
    * fuer den dunklen Grund). Die Farbe haengt am Buch, nie an der Position. */
@@ -112,9 +119,9 @@ button.gesperrt { opacity: .5; }
 }
 .chip.pm { color: var(--pm); border-color: color-mix(in srgb, var(--pm) 45%, transparent); }
 .chip.bf { color: var(--bf); border-color: color-mix(in srgb, var(--bf) 45%, transparent); }
-.chip.gut { color: var(--gruen);  border-color: #3F5238; }
-.chip.acht { color: var(--orange); border-color: #5A4634; }
-.chip.rot  { color: var(--rot);    border-color: #5C3E3E; }
+.chip.gut { color: var(--gruen);  border-color: #1C4A42; }
+.chip.acht { color: var(--orange); border-color: #5A4526; }
+.chip.rot  { color: var(--rot);    border-color: #5C2F3C; }
 
 /* ---------- Kartengitter ---------- */
 
@@ -154,8 +161,8 @@ button.gesperrt { opacity: .5; }
 .leise { color: var(--text-leise); font-size: 14px; }
 .warnung {
   padding: 12px 14px; margin-bottom: 14px;
-  border: 1px solid #5A4634; border-radius: var(--rund);
-  background: #322C24; color: var(--orange); font-size: 14px;
+  border: 1px solid #5A4526; border-radius: var(--rund);
+  background: #1B2436; color: var(--orange); font-size: 14px;
 }
 
 /* ---------- Sperrbildschirm ---------- */
@@ -336,7 +343,7 @@ h2 {
    jedem Reiter, wie viele Funde gerade versteckt sind. Ein Filter, der
    stillschweigend etwas verschluckt, ist eine Falle. */
 
-#filter-knopf.an { color: var(--gold); border-color: #5A5034; }
+#filter-knopf.an { color: var(--gold); border-color: #5A4526; }
 
 #filter-panel {
   position: fixed; top: 0; right: 0; bottom: 0; width: 300px; z-index: 40;
@@ -377,7 +384,7 @@ h2 {
   border: 1px solid var(--rand); border-radius: var(--rund-chip);
 }
 .f-knopf:hover { color: var(--text); }
-.f-knopf.offen { color: var(--gold); border-color: #5A5034; background: transparent; }
+.f-knopf.offen { color: var(--gold); border-color: #5A4526; background: transparent; }
 
 #filter-panel input[type=number] {
   width: 92px; padding: 5px 8px; font-size: 14px;
@@ -407,7 +414,7 @@ h2 {
 
 /* Der dritte Fall: weder noch. Optisch abgesetzt von der Gegenprobe der
    zwei Spielausgaenge, weil er eine andere Art von Risiko ist. */
-.gegenprobe.absage { border-color: #5A4634; background: #322C24; }
+.gegenprobe.absage { border-color: #5A4526; background: #1B2436; }
 .gegenprobe.absage .gp-wer { color: var(--text); }
 .gegenprobe.absage a { color: var(--gold); }
 
@@ -467,7 +474,7 @@ h2 {
 /* Der Ring dreht sich NUR, wenn der Scanner frisch gelaufen ist. */
 .puls.p-an  .p-bogen  { animation: p-dreh 2.4s linear infinite; }
 .puls.p-an  .p-bogen2 { animation: p-dreh 3.6s linear infinite reverse; }
-.puls.p-tot .p-bogen  { stroke: #ef4444; opacity: .5; }
+.puls.p-tot .p-bogen  { stroke: #FF6B85; opacity: .5; }
 .puls.p-tot .p-bogen2 { stroke: rgba(239,68,68,.35); }
 @keyframes p-dreh { to { transform: rotate(360deg); } }
 .p-bogen, .p-bogen2 { transform-origin: 60px 60px; }
@@ -489,7 +496,7 @@ h2 {
 .p-kopf { display: flex; align-items: center; gap: 9px; font-size: 15px; margin-bottom: 10px; }
 .p-led { width: 10px; height: 10px; border-radius: 50%; background: var(--tot); flex: 0 0 10px; }
 .p-led.p-gruen { background: var(--gut); box-shadow: 0 0 12px var(--gut); animation: p-blink 1.6s ease-in-out infinite; }
-.p-led.p-rot   { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
+.p-led.p-rot   { background: #FF6B85; box-shadow: 0 0 12px #FF6B85; }
 .p-led.p-grau  { background: var(--tot); }
 @keyframes p-blink { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
 
@@ -611,10 +618,10 @@ h2 {
 /* Tafel rechts */
 .s-tafel { flex: 1; min-width: 0; position: relative; z-index: 1; }
 .s-titel { display: flex; align-items: center; gap: 9px; letter-spacing: .16em; font-size: 13px; }
-.s-led { width: 9px; height: 9px; border-radius: 50%; background: #6b7280; flex: 0 0 9px; }
+.s-led { width: 9px; height: 9px; border-radius: 50%; background: #4C6480; flex: 0 0 9px; }
 .s-led.s-gruen { background: var(--sonar); box-shadow: 0 0 12px var(--sonar); animation: s-blink 1.8s ease-in-out infinite; }
-.s-led.s-rot   { background: #ef4444; box-shadow: 0 0 12px #ef4444; }
-.s-led.s-grau  { background: #6b7280; }
+.s-led.s-rot   { background: #FF6B85; box-shadow: 0 0 12px #FF6B85; }
+.s-led.s-grau  { background: #4C6480; }
 @keyframes s-blink { 0%,100% { opacity: 1; } 50% { opacity: .3; } }
 
 .s-gross { margin: 10px 0 8px; display: flex; align-items: baseline; gap: 9px; }
@@ -656,7 +663,7 @@ h2 {
 /* Goldene Kappe oben: der eindeutige Anfang einer Wette. */
 .karte::before, .fund::before {
   content: ""; position: absolute; left: -2px; right: -2px; top: -2px; height: 4px;
-  background: linear-gradient(90deg, #d4af37, #f7e07a 45%, #d4af37);
+  background: linear-gradient(90deg, #E3A94A, #FFDD9B 45%, #E3A94A);
   border-radius: 14px 14px 0 0;
 }
 /* Abschluss unten, damit auch das ENDE sichtbar ist. */
@@ -672,7 +679,7 @@ h2 {
   border-color: rgba(0,196,140,.65) !important;
 }
 #chancen .karte::before, #chancen .fund::before {
-  background: linear-gradient(90deg, #00c48c, #7dffd0 45%, #00c48c);
+  background: linear-gradient(90deg, #2FD3A7, #9BFFE4 45%, #2FD3A7);
 }
 
 /* Die Links deutlich als Links kennzeichnen, damit man sie nicht sucht. */
@@ -872,7 +879,7 @@ h2 {
 .puls .s-hz-gut b  { color: #8dffc4; text-shadow: 0 0 10px rgba(var(--sonar-rgb),.6);
                      animation: s-hz-glimmen 2.4s ease-in-out infinite; }
 .puls .s-hz-rot b  { color: #ff8d8d; text-shadow: 0 0 9px rgba(239,68,68,.45); }
-.puls .s-hz-warn b { color: #ffb054; }
+.puls .s-hz-warn b { color: #F0A73C; }
 @keyframes s-hz-glimmen { 50% { opacity: .72; } }
 
 /* Zielring hinter der Tafel, dreht wie ein Periskop-Fadenkreuz. */
@@ -942,9 +949,9 @@ h2 {
 
 /* ---------- "Bei Absage" in So-setzt-du (13.8.2026) ---------- */
 .fund .setz-absage { font-size: 13.5px; padding: 8px 12px; border-radius: 10px; }
-.fund .setz-absage.gut  { border: 1px solid #3F5238; background: rgba(96,160,96,.08); color: var(--gruen); }
-.fund .setz-absage.rot  { border: 1px solid #5C3E3E; background: rgba(200,80,80,.10); color: var(--rot); }
-.fund .setz-absage.acht { border: 1px solid #5A4634; background: rgba(200,140,60,.08); color: var(--orange); }
+.fund .setz-absage.gut  { border: 1px solid #1C4A42; background: rgba(96,160,96,.08); color: var(--gruen); }
+.fund .setz-absage.rot  { border: 1px solid #5C2F3C; background: rgba(200,80,80,.10); color: var(--rot); }
+.fund .setz-absage.acht { border: 1px solid #5A4526; background: rgba(200,140,60,.08); color: var(--orange); }
 .fund .setz-absage a { color: inherit; }
 
 /* ============================================================================
@@ -2433,3 +2440,15 @@ input[type=text], input[type=password], textarea { cursor: text; }
 }
 @keyframes mikro-puls { 0%, 100% { box-shadow: 0 0 0 0 rgba(201,138,130,.5); } 50% { box-shadow: 0 0 0 6px rgba(201,138,130,0); } }
 #funker-form .fu-mikro.geht-nicht { opacity: .4; cursor: not-allowed; }
+
+
+/* ---------- 15.8.: Grundflaeche wie auf der Vorlage ----------
+ * Tiefes Marineblau mit einem sehr leisen Cyan-Schimmer oben — das
+ * gibt der Seite die Tiefe des Kommandopults, ohne Inhalte zu stoeren. */
+html, body {
+  background:
+    radial-gradient(120% 80% at 50% -10%, rgba(var(--sonar-rgb), .10), transparent 60%),
+    radial-gradient(90% 60% at 90% 0%, rgba(var(--sonar-rgb), .05), transparent 55%),
+    var(--grund);
+  background-attachment: fixed;
+}
