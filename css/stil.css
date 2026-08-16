@@ -1982,10 +1982,9 @@ html.anim-2 .flanke .fl-feld { display: none; }
 .bau {
   opacity: 0;
   transform: translateY(16px) scale(.985);
-  filter: blur(5px);
 }
 .bau.bau-fertig {
-  opacity: 1; transform: none; filter: none;
+  opacity: 1; transform: none;
   transition: opacity .55s ease, transform .55s ease, filter .55s ease;
   transition-delay: calc(var(--bau-i, 0) * 0ms);
 }
@@ -2450,5 +2449,24 @@ html, body {
     radial-gradient(120% 80% at 50% -10%, rgba(var(--sonar-rgb), .10), transparent 60%),
     radial-gradient(90% 60% at 90% 0%, rgba(var(--sonar-rgb), .05), transparent 55%),
     var(--grund);
-  background-attachment: fixed;
+  /* KEIN background-attachment:fixed — das zwingt den Browser, die
+   * Flaeche in jedem Scrollbild neu zu zeichnen (am 15.8. in hud.css
+   * genau deswegen entfernt, am 15.8. abends hier versehentlich wieder
+   * eingebaut, am 16.8. endgueltig raus). Mitscrollend wird sie einmal
+   * gezeichnet und danach nur verschoben. */
 }
+
+
+/* ---------- 16.8.: sauber laden, ruhig scrollen ----------
+ * Karten ausserhalb des Sichtfelds werden nicht gezeichnet. Der Browser
+ * merkt sich ihre Hoehe (auto), also bleibt die Bildlaufleiste stabil
+ * und es springt nichts. Bei 250 Archivkarten spart das den Grossteil
+ * der Zeichenarbeit — die Seite laedt und scrollt spuerbar leichter. */
+.fund {
+  content-visibility: auto;
+  contain-intrinsic-size: auto 210px;
+}
+/* Die Scroll-Verankerung des Browsers ausdruecklich erlauben (Standard,
+ * aber hier steht es dokumentiert, damit es niemand versehentlich
+ * ausschaltet): waechst etwas oberhalb, haelt der Browser die Sicht. */
+#chancen, #knapp, #verlauf, #falsch, .huelle { overflow-anchor: auto; }

@@ -24,6 +24,59 @@
     return true;
   }
 
+  /* ---------- LISTEN RUHIG SCHREIBEN (16.8.) ----------
+   *
+   * Beschwerde des Auftraggebers: "wenn ich einen Vorschlag oeffne,
+   * teleportiert es mich beim Scrollen herum". Ursache: die Listen
+   * werden alle zwei Sekunden KOMPLETT neu geschrieben (innerHTML).
+   * Aendert sich dabei irgendwo oberhalb die Hoehe — und das tut sie
+   * staendig, weil Zeilen kommen, gehen und aufgeklappte Karten hoch
+   * sind —, rutscht der ganze Inhalt unter dem Finger weg.
+   *
+   * Zwei Regeln beheben das, ohne einen einzigen Wert zu aendern:
+   *
+   *   1. RUHE: waehrend der Nutzer scrollt oder gerade geklickt hat
+   *      (letzte 1,2 s), wird gar nicht geschrieben. Der naechste Takt
+   *      kommt in zwei Sekunden ohnehin mit frischen Daten.
+   *   2. ANKER: muss geschrieben werden, merkt sich die Anzeige die
+   *      oberste sichtbare Karte und ihren Abstand zum Fensterrand —
+   *      und rueckt danach die Seite so zurecht, dass genau diese Karte
+   *      wieder an derselben Stelle steht. Man bleibt an seiner Zeile
+   *      kleben, egal was oben passiert. */
+  var letzteUnruhe = 0;
+  ['scroll', 'wheel', 'touchmove', 'pointerdown', 'keydown'].forEach(function (art) {
+    window.addEventListener(art, function () { letzteUnruhe = Date.now(); },
+      { passive: true, capture: true });
+  });
+
+  function listeSetzen(el, html) {
+    if (!el) return false;
+    if (el.dataset.stand === html) return false;
+
+    /* Regel 1 — der Nutzer ist gerade dabei: nicht anfassen. */
+    if (Date.now() - letzteUnruhe < 1200) return false;
+
+    /* Regel 2 — Anker suchen: die oberste Karte, die im Fenster steht. */
+    var anker = null, ankerOben = 0;
+    var karten = el.querySelectorAll('.fund[data-schluessel]');
+    for (var i = 0; i < karten.length; i++) {
+      var r = karten[i].getBoundingClientRect();
+      if (r.bottom > 0) { anker = karten[i].getAttribute('data-schluessel'); ankerOben = r.top; break; }
+    }
+
+    el.dataset.stand = html;
+    el.innerHTML = html;
+
+    if (anker) {
+      var neu = el.querySelector('.fund[data-schluessel="' + anker.replace(/"/g, '\\"') + '"]');
+      if (neu) {
+        var abweichung = neu.getBoundingClientRect().top - ankerOben;
+        if (Math.abs(abweichung) > 1) window.scrollBy(0, abweichung);
+      }
+    }
+    return true;
+  }
+
   function txt(s) {
     return String(s == null ? '' : s)
       .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
@@ -1198,6 +1251,10 @@
     return '' +
       '<div class="fund' + (chance && !imVerlauf ? ' chance' : '') + (imVerlauf ? ' alt' : '') +
            (unplausibel ? ' rendite-verdacht' : '') + '"' +
+           /* Der Schluessel steht seit 16.8. auch an der KARTE: daran haelt
+            * sich die Scroll-Verankerung fest, wenn die Liste neu
+            * geschrieben wird (siehe listeSetzen ganz oben). */
+           ' data-schluessel="' + txt(f.schluessel) + '"' +
            ' data-rendite="' + rendWert.toFixed(2) + '">' +
         '<div class="kopfzeile">' +
           /* Die Rendite DIREKT neben dem Titel (Vorgabe 13.8.): man soll die
@@ -1942,7 +1999,7 @@
         (zChancen.length ? '<h2>Handelbar</h2>' : '') +
         chancenHtml;
     }
-    setzeWennAnders(document.getElementById('chancen'), chancenHtml);
+    listeSetzen(document.getElementById('chancen'), chancenHtml);
 
     /* ZWEI Bloecke (Vorgabe 14.8.): oben das, was GERADE knapp daneben
      * liegt (lebt und schwankt mit dem Spielplan — nachts 2, abends 160,
@@ -1972,7 +2029,7 @@
     } else {
       knappHtml += '<p class="leise">Noch nichts beendet, das hierher gehört.</p>';
     }
-    setzeWennAnders(document.getElementById('knapp'), knappHtml);
+    listeSetzen(document.getElementById('knapp'), knappHtml);
 
     var verlaufHtml = (s.vorbei_rauschen
         ? '<p class="leise">' + s.vorbei_rauschen + ' weitere beendete Zeilen waren nie eine ' +
@@ -2013,7 +2070,7 @@
     } else {
       verlaufHtml += zVerlauf.map(function (f) { return karte(f, true); }).join('');
     }
-    setzeWennAnders(document.getElementById('verlauf'), verlaufHtml);
+    listeSetzen(document.getElementById('verlauf'), verlaufHtml);
 
     /* ---------- Falsche Rechnungen (13.8., nachts) ----------
      * Alles, was als Chance angezeigt wurde und sich als falsch
@@ -2037,7 +2094,7 @@
     } else {
       falschHtml += '<p class="leise">Nichts — genau so soll es aussehen.</p>';
     }
-    setzeWennAnders(document.getElementById('falsch'), falschHtml);
+    listeSetzen(document.getElementById('falsch'), falschHtml);
 
     /* Der Knapp-Reiter zaehlt das ARCHIV (waechst nur); die Live-Zahl
      * steht heller daneben, wie "veraltet" bei den Chancen. */
