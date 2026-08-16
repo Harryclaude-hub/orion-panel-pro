@@ -59,6 +59,34 @@ for (const feld of ['betfairUsername', 'betfairPassword', 'betfairAppKey', 'brid
   if (!CFG[feld]) { console.error('\n  In bridge-config.json fehlt: ' + feld + '\n'); process.exit(1); }
 }
 
+/* ---------- NUR EINE BRIDGE GLEICHZEITIG ----------
+ * Sie startet ab dem 16.8. automatisch beim Anmelden (Aufgabenplanung).
+ * Klickt man zusätzlich von Hand auf Bridge-start.cmd, liefen sonst zwei
+ * Bridges nebeneinander: doppelte Betfair-Anfragen (Drosselung droht) und
+ * zwei Uploads, die sich gegenseitig überschreiben. Die Sperrdatei hält
+ * die Prozessnummer; lebt der Prozess nicht mehr, wird sie übernommen. */
+const SPERRE = pfad.join(__dirname, 'bridge.lock');
+(function einzeln() {
+  try {
+    const alt = Number(fs.readFileSync(SPERRE, 'utf8').trim());
+    if (alt && alt !== process.pid) {
+      try {
+        process.kill(alt, 0);          // wirft, wenn es den Prozess nicht gibt
+        console.error('');
+        console.error('  Es läuft bereits eine Bridge (Prozess ' + alt + ').');
+        console.error('  Dieses Fenster kann geschlossen werden.');
+        console.error('');
+        process.exit(0);
+      } catch (e) { /* Prozess ist tot — Sperre übernehmen */ }
+    }
+  } catch (e) { /* keine Sperrdatei — erster Start */ }
+  fs.writeFileSync(SPERRE, String(process.pid));
+  const weg = () => { try { fs.unlinkSync(SPERRE); } catch (e) {} };
+  process.on('exit', weg);
+  process.on('SIGINT', () => { weg(); process.exit(0); });
+  process.on('SIGTERM', () => { weg(); process.exit(0); });
+})();
+
 /* ---------- Adressen (nie ändern) ---------- */
 const BF_LOGIN = 'https://identitysso.betfair.com/api/login';
 const BF_KEEP  = 'https://identitysso.betfair.com/api/keepAlive';

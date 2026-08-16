@@ -8,14 +8,34 @@ Gerechnet wird auf dem Server: Der Scanner dort vergleicht die vier
 Börsen, prüft dreifach nach und entscheidet, was eine Chance ist.
 
 
-EINRICHTEN (einmal, zwei Minuten)
----------------------------------
-1. Diesen Ordner irgendwohin entpacken, z. B. auf den Desktop.
-2. Die Datei  bridge-config.json  aus dem ALTEN Bridge-Ordner
-   HIERHER kopieren. Sie enthält deine Zugangsdaten — bitte nicht
-   neu ausfüllen, die alte ist richtig.
-3. Doppelklick auf  Bridge-start.cmd
-4. Fenster offen lassen. Fertig.
+SCHON EINGERICHTET AUF DIESEM PC (16.08.2026)
+---------------------------------------------
+Die Bridge liegt fest in    C:\Users\Home\OrionBridge
+und läuft dort DAUERHAFT. Du musst nichts starten:
+
+  * Sie startet automatisch bei jeder Anmeldung (Aufgabenplanung,
+    Aufgabe "Orion Bridge", 30 Sekunden nach dem Anmelden, damit das
+    Netz steht).
+  * Stürzt sie ab, startet sie sich binnen einer Minute neu — doppelt
+    abgesichert: die Startdatei hat eine eigene Neustart-Schleife.
+  * Am Netzbetrieb geht der Rechner nicht mehr in den Ruhezustand,
+    und Deckel zuklappen beendet sie nicht mehr. Der Bildschirm darf
+    weiter ausgehen (spart Strom, stoppt nichts).
+  * Es kann immer nur EINE Bridge laufen. Startest du sie von Hand,
+    während die Aufgabe läuft, sagt sie das und beendet sich sofort.
+
+Prüfen, ob sie läuft:  Aufgabenplanung öffnen (Windows-Taste, dann
+"Aufgabenplanung" tippen) und nach "Orion Bridge" sehen. Oder im Panel:
+Die Betfair-Kachel muss ein Alter unter fünf Minuten zeigen.
+
+Anhalten (falls nötig): In der Aufgabenplanung Rechtsklick auf
+"Orion Bridge" -> Beenden. Zum dauerhaften Abschalten dort
+"Deaktivieren".
+
+AUF EINEM ANDEREN PC EINRICHTEN
+-------------------------------
+1. Ordner entpacken, 2. bridge-config.json hineinkopieren,
+3. Doppelklick auf Bridge-start.cmd, 4. Fenster offen lassen.
 
 Voraussetzung: Node muss auf dem Rechner sein (nodejs.org, LTS).
 Die Startdatei sagt es dir, falls es fehlt.
