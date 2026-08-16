@@ -131,7 +131,7 @@
           '<span class="s-led" id="s-led"></span>' +
           '<b id="s-status">SONAR AKTIV</b>' +
         '</div>' +
-        '<div class="s-gross"><span id="s-zahl">—</span><small>Märkte im Sektor</small></div>' +
+        '<div class="s-gross"><span id="s-zahl">—</span><small>Märkte beobachtet</small></div>' +
         '<div class="s-werte" id="s-werte"></div>' +
         '<div class="s-log" id="s-log"></div>' +
       '</div>';
@@ -216,9 +216,12 @@
 
     if (werte) {
       werte.innerHTML =
-        '<span>PING <b>' + (sAlter === null ? '—' : sAlter + ' s') + '</b></span>' +
-        '<span>LAUFZEIT <b>' + (isFinite(dauer) ? (dauer / 1000).toFixed(1) + ' s' : '—') + '</b></span>' +
-        '<span>KONTAKTE <b>' + (isFinite(paare) ? paare : '—') + '</b></span>';
+        '<span title="Wie lange der letzte Scanner-Lauf her ist. Fußball läuft alle 20 Sekunden.">' +
+          'letzter Scan <b>' + (sAlter === null ? '—' : 'vor ' + sAlter + ' s') + '</b></span>' +
+        '<span title="Paare = zwei Bücher, dieselbe Frage, gerade im Vergleich. Daraus entstehen die Chancen.">' +
+          'Paare im Vergleich <b>' + (isFinite(paare) ? paare : '—') + '</b></span>' +
+        '<span class="s-leise" title="Wie lange ein Durchlauf des Scanners dauert — reine Technik.">' +
+          'Durchlauf <b>' + (isFinite(dauer) ? (dauer / 1000).toFixed(1) + ' s' : '—') + '</b></span>';
     }
 
     /* ---------- GEFECHTSSTAND ----------
@@ -324,9 +327,9 @@
        * Protokoll, das im Sekundentakt dasselbe meldet, liest niemand. */
       if (!ersterLauf && isFinite(paare) && paare !== letztePaare) {
         if (letztePaare !== null && paare > letztePaare) {
-          zeile('KONTAKT — ' + (paare - letztePaare) + ' neu, ' + paare + ' im Sektor', 's-treffer-log');
+          zeile((paare - letztePaare) + ' neue Paare · ' + paare + ' im Vergleich', 's-treffer-log');
         } else if (letztePaare !== null) {
-          zeile('Kontakt verloren — ' + paare + ' im Sektor', 's-grau');
+          zeile((letztePaare - paare) + ' Paare beendet · ' + paare + ' im Vergleich', 's-grau');
         }
       }
       if (isFinite(paare)) letztePaare = paare;

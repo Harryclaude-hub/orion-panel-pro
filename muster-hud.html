@@ -1,0 +1,617 @@
+<!doctype html>
+<html lang="de" data-anim="2">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion Panel Pro — Muster HUD</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="schrift/schrift.css?v=52">
+<style>
+/* ══════════════════════════════════════════════════════════════════
+   MUSTER-SEITE — KEINE PRODUKTIONSSEITE.
+   Eigenes <style>, ruehrt css/stil.css NICHT an. Nichts hier liest
+   Daten, nichts rechnet. Alle Zahlen sind erfundene Platzhalter.
+   Zweck: die Formensprache vom Pinterest-Bild auf ECHTE Orion-
+   Bauteile anwenden, damit entschieden werden kann, bevor die
+   Produktionsseite angefasst wird.
+   ══════════════════════════════════════════════════════════════════ */
+
+:root{
+  /* Unsere Militaerfarben bleiben. Nur der Grund wird tiefer, damit
+     die Haarlinien so tragen wie auf dem Vorbild. */
+  --grund:     #0C0F0B;
+  --grund-2:   #11150E;
+  --karte:     #12160F;
+  --karte-2:   #171C13;
+
+  --gold:      #B9A970;
+  --gold-hell: #D8C88C;
+  --gold-rgb:  185, 169, 112;
+  --linie:     rgba(185,169,112,.26);
+  --linie-satt:rgba(185,169,112,.55);
+
+  --sonar:     #8FB996;
+  --sonar-rgb: 143, 185, 150;
+
+  --text:      #E4E6DE;
+  --leise:     #868C79;
+  --sehr-leise:#5B6152;
+
+  --pm: #6C93E8;  --ka: #3FB59A;  --sm: #5BBE7C;  --bf: #E8C15A;
+  --gut: #8FB479; --acht: #C99B62; --rot: #C98A82;
+
+  --schrift: "Rajdhani", "DIN Condensed", "Oswald", system-ui, sans-serif;
+  --mono: "JetBrains Mono", "Consolas", ui-monospace, monospace;
+
+  /* Der Anschnitt. Statt 12px Rundung: gekappte Ecken wie im Vorbild. */
+  --kappe: 14px;
+  --kappe-klein: 8px;
+}
+
+*{ box-sizing:border-box; }
+
+body{
+  margin:0; padding:0 0 60px;
+  background:var(--grund);
+  color:var(--text);
+  font-family:var(--schrift);
+  font-size:15px;
+  line-height:1.45;
+  -webkit-font-smoothing:antialiased;
+  background-image:
+    linear-gradient(rgba(var(--gold-rgb),.030) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--gold-rgb),.030) 1px, transparent 1px);
+  background-size:64px 64px, 64px 64px;
+}
+
+.huelle{ max-width:1180px; margin:0 auto; padding:0 18px; }
+
+/* ─── Bausteine ───────────────────────────────────────────────── */
+
+/* Der Anschnitt-Rahmen: gekappte Ecken statt Rundung. */
+.kappe{
+  clip-path:polygon(
+    var(--kappe) 0, 100% 0, 100% calc(100% - var(--kappe)),
+    calc(100% - var(--kappe)) 100%, 0 100%, 0 var(--kappe));
+}
+.kappe-klein{
+  clip-path:polygon(
+    var(--kappe-klein) 0, 100% 0, 100% calc(100% - var(--kappe-klein)),
+    calc(100% - var(--kappe-klein)) 100%, 0 100%, 0 var(--kappe-klein));
+}
+
+/* Mikroschrift: die kleinen Kennungen aus dem Vorbild. */
+.mikro{
+  font-family:var(--mono);
+  font-size:9.5px; letter-spacing:.16em; text-transform:uppercase;
+  color:var(--sehr-leise); font-weight:500;
+}
+
+/* Zahlenwerte laufen monospaced, damit sie beim Ticken nicht springen. */
+.zahl{ font-family:var(--mono); font-variant-numeric:tabular-nums; }
+
+/* ─── Randschiene oben und unten ──────────────────────────────── */
+.schiene{
+  position:relative; height:34px; margin:16px 0 22px;
+  border:1px solid var(--linie);
+  background:linear-gradient(180deg, rgba(var(--gold-rgb),.05), transparent);
+  display:flex; align-items:center; justify-content:space-between;
+  padding:0 16px;
+  clip-path:polygon(0 0, calc(100% - 22px) 0, 100% 100%, 22px 100%);
+}
+.schiene.unten{ clip-path:polygon(22px 0, 100% 0, calc(100% - 22px) 100%, 0 100%); margin:34px 0 0; }
+.schiene-lampen{ display:flex; gap:7px; align-items:center; }
+.lampe{ width:7px; height:7px; border-radius:50%; background:var(--sehr-leise); }
+.lampe.an{ background:var(--gold); box-shadow:0 0 7px rgba(var(--gold-rgb),.75); }
+.lampe.sonar{ background:var(--sonar); box-shadow:0 0 7px rgba(var(--sonar-rgb),.7); }
+
+/* ─── Kopf ────────────────────────────────────────────────────── */
+.kopf{
+  position:relative; border:1px solid var(--linie);
+  background:
+    radial-gradient(120% 150% at 50% -30%, rgba(var(--sonar-rgb),.07), transparent 60%),
+    var(--karte);
+  padding:26px 24px 20px; margin-bottom:20px;
+}
+.kopf::before{  /* Ticklineal oben, wie am Kartenrand im Vorbild */
+  content:""; position:absolute; left:0; right:0; top:0; height:9px;
+  background:repeating-linear-gradient(90deg,
+    var(--linie) 0 1px, transparent 1px 13px);
+  opacity:.8;
+}
+.kopf-eck{ position:absolute; width:16px; height:16px; border:1px solid var(--linie-satt); }
+.kopf-eck.e1{ top:8px; left:8px; border-right:0; border-bottom:0; }
+.kopf-eck.e2{ top:8px; right:8px; border-left:0; border-bottom:0; }
+.kopf-eck.e3{ bottom:8px; left:8px; border-right:0; border-top:0; }
+.kopf-eck.e4{ bottom:8px; right:8px; border-left:0; border-top:0; }
+
+.marke{ display:flex; flex-direction:column; align-items:center; gap:2px; }
+.marke h1{
+  margin:6px 0 0; font-size:34px; font-weight:600; letter-spacing:.10em;
+  text-transform:uppercase; color:var(--text);
+}
+.marke .unter{ letter-spacing:.30em; }
+.logo{ width:58px; height:58px; display:block; }
+
+.kopf-status{
+  display:flex; gap:10px; justify-content:center; align-items:center;
+  margin-top:14px; flex-wrap:wrap;
+}
+.chip{
+  border:1px solid var(--linie-satt); padding:3px 12px;
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.14em;
+  text-transform:uppercase; color:var(--gold-hell);
+  background:rgba(var(--gold-rgb),.07);
+}
+.chip.gut{ border-color:rgba(143,180,121,.55); color:var(--gut); background:rgba(143,180,121,.07); }
+
+/* ─── Knopfleiste ─────────────────────────────────────────────── */
+.leiste{
+  display:grid; grid-template-columns:repeat(5, 1fr); gap:9px; margin-top:18px;
+}
+.knopf{
+  position:relative; text-align:left; cursor:pointer;
+  border:1px solid var(--linie); background:var(--karte-2); color:var(--text);
+  padding:9px 11px 11px; font-family:var(--schrift); font-size:14px;
+  text-decoration:none; display:block;
+  transition:border-color .16s, background .16s, transform .16s;
+}
+.knopf::after{  /* der Unterstrich aus dem Vorbild */
+  content:""; position:absolute; left:0; right:0; bottom:0; height:2px;
+  background:var(--linie-satt); transition:background .16s, height .16s;
+}
+.knopf:hover{ border-color:var(--linie-satt); background:#1B2116; transform:translateY(-1px); }
+.knopf:hover::after{ background:var(--gold); height:3px; }
+.knopf b{ display:block; font-weight:600; letter-spacing:.05em; font-size:14.5px; }
+.knopf small{ display:block; color:var(--leise); font-size:11px; line-height:1.3; margin-top:1px; }
+.knopf .mil{ width:24px; height:15px; fill:var(--gold); display:block; margin-bottom:3px; }
+.knopf.haupt{ background:rgba(var(--gold-rgb),.12); border-color:var(--linie-satt); }
+.knopf.haupt::after{ background:var(--gold); }
+.knopf.haupt .mil{ fill:var(--gold-hell); }
+
+/* ─── Statustafel: vier Felder mit Kennung und Unterstrich ────── */
+.tafel{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0; }
+.feld{
+  position:relative; border:1px solid var(--linie); background:var(--karte);
+  padding:9px 11px 13px; min-height:96px;
+}
+.feld::after{
+  content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--gold);
+}
+.feld.warn::after{ background:var(--acht); }
+.feld.tot::after{ background:var(--sehr-leise); }
+.feld-kopf{ display:flex; justify-content:space-between; align-items:baseline; margin-bottom:7px; }
+.feld-name{ font-family:var(--mono); font-size:10px; letter-spacing:.17em; text-transform:uppercase; color:var(--leise); }
+.feld-kennung{ font-family:var(--mono); font-size:9px; color:var(--sehr-leise); letter-spacing:.1em; }
+.feld-wert{ font-family:var(--mono); font-size:23px; font-weight:600; color:var(--gold-hell); line-height:1.1; }
+.feld-zusatz{ font-size:12px; color:var(--leise); margin-top:2px; }
+
+/* Leerzustand: das durchgekreuzte Feld aus dem Vorbild. */
+.feld.leer{ display:flex; align-items:center; justify-content:center; }
+.feld.leer .kreuz{
+  position:absolute; inset:9px;
+  background:
+    linear-gradient(to top right, transparent calc(50% - .5px), var(--linie) 50%, transparent calc(50% + .5px)),
+    linear-gradient(to bottom right, transparent calc(50% - .5px), var(--linie) 50%, transparent calc(50% + .5px));
+}
+.feld.leer span{ position:relative; font-family:var(--mono); font-size:15px; color:var(--sehr-leise); letter-spacing:.2em; }
+
+/* ─── Instrumente: Ringe und Segmentbalken ────────────────────── */
+.instrumente{ display:grid; grid-template-columns:1fr 1fr; gap:10px; margin:20px 0; }
+.rahmen{
+  position:relative; border:1px solid var(--linie); background:var(--karte); padding:14px 16px 16px;
+}
+.rahmen-titel{
+  font-family:var(--mono); font-size:10px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--leise); margin-bottom:12px;
+  display:flex; justify-content:space-between;
+}
+.ringe{ display:flex; gap:18px; justify-content:center; align-items:center; }
+.ring{ position:relative; width:132px; height:132px; }
+.ring svg{ width:100%; height:100%; transform:rotate(-90deg); }
+.ring-mitte{
+  position:absolute; inset:0; display:flex; flex-direction:column;
+  align-items:center; justify-content:center; gap:1px;
+}
+.ring-wert{ font-family:var(--mono); font-size:21px; font-weight:600; color:var(--gold-hell); }
+
+/* Segmentbalken: diskrete Bloecke statt weicher Fuellung. */
+.balken-zeile{ display:flex; align-items:center; gap:11px; margin-bottom:11px; }
+.balken-name{
+  font-family:var(--mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase;
+  color:var(--leise); width:112px; flex:none;
+}
+.balken{ flex:1; display:flex; gap:2px; height:13px; }
+.balken i{ flex:1; background:rgba(var(--gold-rgb),.13); }
+.balken i.voll{ background:var(--gold); }
+.balken i.halb{ background:rgba(var(--gold-rgb),.45); }
+.balken.sonar i.voll{ background:var(--sonar); }
+.balken.warn i.voll{ background:var(--acht); }
+.balken-wert{ font-family:var(--mono); font-size:12px; color:var(--gold-hell); width:52px; text-align:right; flex:none; }
+
+/* ─── Bereichskarten ──────────────────────────────────────────── */
+.bereiche{ display:grid; grid-template-columns:repeat(4,1fr); gap:10px; margin:20px 0; }
+.bk{
+  position:relative; cursor:pointer; text-align:left;
+  border:1px solid var(--linie); background:var(--karte);
+  color:var(--text); padding:14px 14px 16px; font-family:var(--schrift);
+  transition:border-color .16s, background .16s;
+}
+.bk::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--linie-satt); }
+.bk:hover{ border-color:var(--linie-satt); background:var(--karte-2); }
+.bk:hover::after{ background:var(--gold); }
+.bk-sym{ width:24px; height:24px; fill:var(--gold); display:block; margin-bottom:8px; }
+.bk-zahl{ display:block; font-family:var(--mono); font-size:34px; font-weight:600; line-height:1; color:var(--text); }
+.bk-name{ display:block; font-size:14.5px; letter-spacing:.06em; margin-top:4px; text-transform:uppercase; }
+.bk-info{ display:block; font-size:11.5px; color:var(--leise); margin-top:2px; }
+.bk-abzeichen{
+  position:absolute; top:11px; right:11px; min-width:20px; text-align:center;
+  font-family:var(--mono); font-size:10.5px; padding:1px 5px;
+  background:var(--gold); color:#0C0F0B; font-weight:700;
+}
+
+/* ─── Chancenkarte ────────────────────────────────────────────── */
+.chance{
+  position:relative; border:1px solid var(--linie); background:var(--karte); margin:12px 0;
+}
+.chance::after{ content:""; position:absolute; left:0; right:0; bottom:0; height:3px; background:var(--gut); }
+.chance-kopf{
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  padding:11px 15px; border-bottom:1px solid var(--linie);
+  background:linear-gradient(90deg, rgba(var(--gold-rgb),.06), transparent);
+}
+.chance-titel{ font-size:17px; font-weight:600; letter-spacing:.03em; }
+.chance-rendite{
+  font-family:var(--mono); font-size:25px; font-weight:700; color:var(--gut);
+  display:flex; align-items:baseline; gap:5px;
+}
+.chance-rendite small{ font-size:11px; color:var(--leise); font-weight:400; letter-spacing:.1em; }
+.beine{ display:grid; grid-template-columns:1fr 1fr; }
+.bein{ padding:13px 15px 15px; }
+.bein + .bein{ border-left:1px solid var(--linie); }
+.buch{
+  display:inline-flex; align-items:center; gap:6px; font-family:var(--mono);
+  font-size:10px; letter-spacing:.16em; text-transform:uppercase; margin-bottom:7px;
+}
+.buch i{ width:8px; height:8px; display:block; }
+.buch.pm i{ background:var(--pm); } .buch.pm{ color:var(--pm); }
+.buch.bf i{ background:var(--bf); } .buch.bf{ color:var(--bf); }
+.bein-ausgang{ font-size:15px; margin-bottom:9px; }
+.bein-gitter{ display:grid; grid-template-columns:auto 1fr; gap:3px 12px; font-size:13px; }
+.bein-gitter dt{ font-family:var(--mono); font-size:9.5px; letter-spacing:.13em; text-transform:uppercase; color:var(--leise); align-self:center; }
+.bein-gitter dd{ margin:0; font-family:var(--mono); font-variant-numeric:tabular-nums; color:var(--text); }
+.chance-fuss{
+  display:flex; justify-content:space-between; align-items:center; gap:12px;
+  padding:9px 15px; border-top:1px solid var(--linie); background:var(--grund-2);
+}
+
+/* ─── Kartenfeld mit Bahnen (unteres Panel im Vorbild) ────────── */
+.bahnen{ position:relative; border:1px solid var(--linie); background:var(--karte); height:190px; overflow:hidden; margin:20px 0; }
+.bahnen::before{
+  content:""; position:absolute; inset:0;
+  background:
+    linear-gradient(rgba(var(--gold-rgb),.055) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(var(--gold-rgb),.055) 1px, transparent 1px);
+  background-size:42px 42px;
+}
+.bahnen-lineal{
+  position:absolute; top:0; left:0; right:0; height:11px;
+  background:repeating-linear-gradient(90deg, var(--linie) 0 1px, transparent 1px 11px);
+}
+.bahnen svg{ position:absolute; inset:0; width:100%; height:100%; }
+
+/* ─── Stufenschalter ──────────────────────────────────────────── */
+.stufen{
+  position:fixed; top:14px; right:14px; z-index:50;
+  border:1px solid var(--linie-satt); background:rgba(12,15,11,.94);
+  padding:8px 10px; backdrop-filter:blur(4px);
+}
+.stufen .mikro{ display:block; margin-bottom:6px; }
+.stufen button{
+  font-family:var(--mono); font-size:11px; padding:3px 9px; cursor:pointer;
+  background:transparent; color:var(--leise); border:1px solid var(--linie);
+}
+.stufen button[aria-pressed="true"]{ background:var(--gold); color:#0C0F0B; border-color:var(--gold); font-weight:700; }
+
+.hinweis{
+  border:1px solid var(--linie); border-left:3px solid var(--acht);
+  background:var(--karte); padding:12px 15px; margin:20px 0; font-size:13.5px; color:var(--leise);
+}
+.hinweis b{ color:var(--text); }
+h2.abschnitt{
+  font-family:var(--mono); font-size:10.5px; letter-spacing:.24em; text-transform:uppercase;
+  color:var(--sehr-leise); margin:30px 0 10px; font-weight:500;
+  display:flex; align-items:center; gap:12px;
+}
+h2.abschnitt::after{ content:""; flex:1; height:1px; background:var(--linie); }
+
+/* ══════════════════════════════════════════════════════════════
+   BEWEGUNG — vollstaendig ueber data-anim gesteuert.
+   Stufe 0 = alles still. 3 = wie das Vorbild.
+   Jede Regel steht NUR hier. Loeschbar, ohne dass ein Wert fehlt.
+   ══════════════════════════════════════════════════════════════ */
+@keyframes dreh   { to { transform:rotate(360deg); } }
+@keyframes pulsen { 0%,100%{ opacity:.35 } 50%{ opacity:1 } }
+@keyframes scan   { 0%{ transform:translateY(-100%) } 100%{ transform:translateY(1900%) } }
+@keyframes wandern{ to { stroke-dashoffset:-260; } }
+@keyframes flimmer{ 0%,96%,100%{ opacity:1 } 97%{ opacity:.55 } 98.5%{ opacity:.85 } }
+
+/* Stufe 1: nur was einen Zustand ANZEIGT. Kein Zierrat. */
+[data-anim="1"] .lampe.an,
+[data-anim="2"] .lampe.an,
+[data-anim="3"] .lampe.an{ animation:pulsen 2.4s ease-in-out infinite; }
+
+[data-anim="1"] .ring-lauf,
+[data-anim="2"] .ring-lauf,
+[data-anim="3"] .ring-lauf{ animation:dreh 9s linear infinite; transform-origin:50% 50%; }
+
+/* Stufe 2: dazu die Bahnen und der Suchstrahl. */
+[data-anim="2"] .bahn-strich,
+[data-anim="3"] .bahn-strich{ animation:wandern 11s linear infinite; }
+
+[data-anim="2"] .scanlinie,
+[data-anim="3"] .scanlinie{
+  position:absolute; left:0; right:0; top:0; height:2px; pointer-events:none;
+  background:linear-gradient(90deg, transparent, rgba(var(--sonar-rgb),.55), transparent);
+  animation:scan 7s linear infinite;
+}
+[data-anim="0"] .scanlinie, [data-anim="1"] .scanlinie{ display:none; }
+
+/* Stufe 3: das volle Vorbild — Flimmern und wanderndes Gitter. */
+[data-anim="3"] .feld-wert{ animation:flimmer 6s steps(1,end) infinite; }
+[data-anim="3"] body, [data-anim="3"] .bahnen::before{ animation:none; }
+
+/* Wer im System "weniger Bewegung" gewaehlt hat, bekommt Stufe 0. */
+@media (prefers-reduced-motion: reduce){
+  *, *::before, *::after{ animation:none !important; transition:none !important; }
+}
+
+@media (max-width: 900px){
+  .leiste{ grid-template-columns:repeat(2,1fr); }
+  .tafel, .bereiche{ grid-template-columns:repeat(2,1fr); }
+  .instrumente{ grid-template-columns:1fr; }
+  .beine{ grid-template-columns:1fr; }
+  .bein + .bein{ border-left:0; border-top:1px solid var(--linie); }
+}
+</style>
+</head>
+<body>
+
+<div class="stufen">
+  <span class="mikro">Animationsstufe</span>
+  <button data-stufe="0">0</button><button data-stufe="1">1</button
+  ><button data-stufe="2" aria-pressed="true">2</button><button data-stufe="3">3</button>
+</div>
+
+<div class="huelle">
+
+  <div class="schiene">
+    <span class="mikro">OP ORION · GEFECHTSSTAND · MUSTER</span>
+    <span class="schiene-lampen">
+      <i class="lampe an"></i><i class="lampe an"></i><i class="lampe sonar"></i>
+      <i class="lampe"></i><i class="lampe an"></i>
+    </span>
+  </div>
+
+  <!-- ─── KOPF ─── -->
+  <header class="kopf">
+    <b class="kopf-eck e1"></b><b class="kopf-eck e2"></b>
+    <b class="kopf-eck e3"></b><b class="kopf-eck e4"></b>
+    <div class="marke">
+      <svg class="logo" viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="44" fill="none" stroke="var(--gold)" stroke-width="2.5"/>
+        <circle class="ring-lauf" cx="48" cy="48" r="37" fill="none" stroke="var(--sonar)" stroke-width="1.2" stroke-dasharray="6 7" opacity=".7"/>
+        <circle cx="48" cy="48" r="28" fill="none" stroke="var(--sonar)" stroke-width="1" opacity=".45"/>
+        <path d="M48 2 v12 M48 82 v12 M2 48 h12 M82 48 h12" stroke="var(--gold)" stroke-width="2.5"/>
+        <path d="M48 24 L54.5 42 L73 42 L58.5 53 L64 71 L48 60 L32 71 L37.5 53 L23 42 L41.5 42 Z" fill="var(--sonar)"/>
+        <circle cx="66" cy="32" r="2.6" fill="var(--gold)"/>
+      </svg>
+      <h1>Orion Panel Pro</h1>
+      <div class="mikro unter">Gefechtsstand · Vier Börsen · Dauerbetrieb</div>
+    </div>
+    <div class="kopf-status">
+      <span class="chip gut">Betrieb läuft</span>
+      <span class="chip">Wien <b class="zahl">21:47:03</b></span>
+      <span class="chip">Takt 25</span>
+    </div>
+
+    <nav class="leiste">
+      <button class="knopf haupt"><svg class="mil" viewBox="0 0 26 16"><path d="M2 12 h20 l-2 3 h-16 z"/><path d="M7 8 h9 v4 h-11 z"/><path d="M10 5 h5 v3 h-5 z"/><path d="M15 6 h9 v1.6 h-9 z"/></svg><b>Sofort ablesen</b><small>liest eh alle 2 s</small></button>
+      <button class="knopf"><svg class="mil" viewBox="0 0 26 16"><path d="M2 11 q11 -5 22 0 l0 4 l-22 0 z"/><path d="M11 5 h2 v6 h-2 z"/><path d="M11 3 h6 v2 h-6 z"/></svg><b>Filter</b><small>blendet nur aus</small></button>
+      <button class="knopf"><svg class="mil" viewBox="0 0 26 16"><path d="M12 2 l4 13 h-2 l-2 -6 l-2 6 h-2 z"/><path d="M17 4 q3 3 0 6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M20 2 q5 5 0 10" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><b>Meldungen AN</b><small>Rechtsklick: E-Mail</small></button>
+      <button class="knopf"><svg class="mil" viewBox="0 0 26 16"><path d="M3 6 h4 l5 -4 v12 l-5 -4 h-4 z"/><path d="M15 5 q3 3 0 6" fill="none" stroke="currentColor" stroke-width="1.6"/></svg><b>Ton AUS</b><small>Rechtsklick: Ambiente</small></button>
+      <button class="knopf"><svg class="mil" viewBox="0 0 26 16"><circle cx="13" cy="8" r="2"/><path d="M13 6 q-1 -5 4 -5 q-1 3 -2 4 z"/><path d="M15 9 q5 1 3 5 q-3 -1 -4 -3 z"/><path d="M11 9 q-5 2 -8 -1 q2 -2 5 -2 z"/></svg><b>Animation 2</b><small>schont den Laptop</small></button>
+      <a class="knopf" href="#"><svg class="mil" viewBox="0 0 26 16"><rect x="2" y="5" width="9" height="7" rx="1"/><rect x="15" y="5" width="9" height="7" rx="1"/><path d="M11 7 h4 v2 h-4 z"/></svg><b>Angaben</b><small>jedes Wort erklärt</small></a>
+      <a class="knopf" href="#"><svg class="mil" viewBox="0 0 26 16"><path d="M4 13 a9 9 0 0 1 18 0 z" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M13 13 L19 5" stroke="currentColor" stroke-width="1.6"/></svg><b>Wie gesucht wird</b><small>jede Schwelle</small></a>
+      <a class="knopf" href="#"><svg class="mil" viewBox="0 0 26 16"><rect x="2" y="3" width="22" height="10" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="7" cy="8" r="1.6"/><circle cx="13" cy="8" r="1.6"/><circle cx="19" cy="8" r="1.6"/></svg><b>Knöpfe erklärt</b><small>was jeder Klick tut</small></a>
+      <a class="knopf" href="#"><svg class="mil" viewBox="0 0 26 16"><path d="M13 1 l8 3 v5 q0 4 -8 6 q-8 -2 -8 -6 v-5 z"/></svg><b>Regelwerk</b><small>wer zurückzahlt</small></a>
+      <a class="knopf" href="#"><svg class="mil" viewBox="0 0 26 16"><circle cx="13" cy="8" r="3.2" fill="none" stroke="currentColor" stroke-width="2"/><path d="M13 2 v3 M13 11 v3 M7.5 8 h-3 M21.5 8 h-3" stroke="currentColor" stroke-width="2"/></svg><b>Einstellungen</b><small>Bridge-Zugang</small></a>
+    </nav>
+  </header>
+
+  <!-- ─── STATUSTAFEL ─── -->
+  <h2 class="abschnitt">Betriebszustand</h2>
+  <div class="tafel">
+    <div class="feld">
+      <div class="feld-kopf"><span class="feld-name">Takt</span><span class="feld-kennung">01_TK</span></div>
+      <div class="feld-wert">25</div>
+      <div class="feld-zusatz">letzter Lauf vor 14 s</div>
+    </div>
+    <div class="feld">
+      <div class="feld-kopf"><span class="feld-name">Bridge</span><span class="feld-kennung">02_BF</span></div>
+      <div class="feld-wert">OK</div>
+      <div class="feld-zusatz">Build 19 · Key live</div>
+    </div>
+    <div class="feld warn">
+      <div class="feld-kopf"><span class="feld-name">Smarkets</span><span class="feld-kennung">03_SM</span></div>
+      <div class="feld-wert">2065</div>
+      <div class="feld-zusatz">nahe Speichergrenze</div>
+    </div>
+    <div class="feld leer">
+      <div class="kreuz"></div>
+      <span>N / A</span>
+    </div>
+  </div>
+
+  <!-- ─── INSTRUMENTE ─── -->
+  <div class="instrumente">
+    <div class="rahmen">
+      <div class="rahmen-titel"><span>Puls · Trefferquote</span><span>PL_07</span></div>
+      <div class="ringe">
+        <div class="ring">
+          <svg viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(185,169,112,.13)" stroke-width="7"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--gold)" stroke-width="7"
+                    stroke-dasharray="327" stroke-dashoffset="98" stroke-linecap="butt"/>
+            <circle class="ring-lauf" cx="60" cy="60" r="42" fill="none" stroke="var(--sonar)"
+                    stroke-width="1.2" stroke-dasharray="3 9" opacity=".75"/>
+          </svg>
+          <div class="ring-mitte"><span class="ring-wert">70%</span><span class="mikro">Puls</span></div>
+        </div>
+        <div class="ring">
+          <svg viewBox="0 0 120 120">
+            <circle cx="60" cy="60" r="52" fill="none" stroke="rgba(185,169,112,.13)" stroke-width="7"/>
+            <circle cx="60" cy="60" r="52" fill="none" stroke="var(--rot)" stroke-width="7"
+                    stroke-dasharray="327" stroke-dashoffset="207" stroke-linecap="butt"/>
+            <circle cx="60" cy="60" r="42" fill="none" stroke="rgba(185,169,112,.2)" stroke-width="1"/>
+          </svg>
+          <div class="ring-mitte"><span class="ring-wert">11/26</span><span class="mikro">geprüft ok</span></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="rahmen">
+      <div class="rahmen-titel"><span>Auslastung</span><span>AU_12</span></div>
+      <div class="balken-zeile">
+        <span class="balken-name">Speicher</span>
+        <span class="balken warn"><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="halb"></i><i></i><i></i><i></i></span>
+        <span class="balken-wert">78%</span>
+      </div>
+      <div class="balken-zeile">
+        <span class="balken-name">Verbindungen</span>
+        <span class="balken sonar"><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i><i></i></span>
+        <span class="balken-wert">37%</span>
+      </div>
+      <div class="balken-zeile">
+        <span class="balken-name">Kurse frisch</span>
+        <span class="balken"><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="halb"></i><i></i></span>
+        <span class="balken-wert">91%</span>
+      </div>
+      <div class="balken-zeile">
+        <span class="balken-name">Live-Zeilen</span>
+        <span class="balken sonar"><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="voll"></i><i class="halb"></i><i></i><i></i><i></i><i></i></span>
+        <span class="balken-wert">141</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ─── BEREICHE ─── -->
+  <h2 class="abschnitt">Bereiche</h2>
+  <div class="bereiche">
+    <button class="bk">
+      <span class="bk-abzeichen">3</span>
+      <svg class="bk-sym" viewBox="0 0 24 24"><path d="M12 1.5 l2.8 6.7 7.2 .6 -5.5 4.8 1.7 7.1 -6.2 -3.8 -6.2 3.8 1.7 -7.1 -5.5 -4.8 7.2 -.6 z"/></svg>
+      <b class="bk-zahl">7</b><span class="bk-name">Chancen</span><small class="bk-info">ab 2,0 % Rendite</small>
+    </button>
+    <button class="bk">
+      <svg class="bk-sym" viewBox="0 0 24 24"><circle cx="11" cy="13" r="8" fill="none" stroke="currentColor" stroke-width="1.8"/><circle cx="11" cy="13" r="4" fill="none" stroke="currentColor" stroke-width="1.4"/><circle cx="11" cy="13" r="1.2"/><circle cx="20.5" cy="3.5" r="2.2"/></svg>
+      <b class="bk-zahl">134</b><span class="bk-name">Knappste</span><small class="bk-info">unter der Schwelle</small>
+    </button>
+    <button class="bk">
+      <svg class="bk-sym" viewBox="0 0 24 24"><path d="M5 2 h13 a2 2 0 0 1 2 2 v16 a2 2 0 0 1 -2 2 h-13 a1.5 1.5 0 0 1 -1.5 -1.5 v-17 a1.5 1.5 0 0 1 1.5 -1.5 z" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M10 7 h7 M10 11 h7 M10 15 h5" stroke="currentColor" stroke-width="1.4"/></svg>
+      <b class="bk-zahl">26</b><span class="bk-name">Verlauf</span><small class="bk-info">11 richtig · 15 falsch</small>
+    </button>
+    <button class="bk">
+      <svg class="bk-sym" viewBox="0 0 24 24"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M7 7 L17 17 M17 7 L7 17" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"/></svg>
+      <b class="bk-zahl">15</b><span class="bk-name">Falsch</span><small class="bk-info">nachgewiesen</small>
+    </button>
+  </div>
+
+  <!-- ─── CHANCENKARTE ─── -->
+  <h2 class="abschnitt">Chance · Beispielkarte</h2>
+  <article class="chance">
+    <div class="chance-kopf">
+      <div>
+        <div class="chance-titel">Arsenal — Chelsea</div>
+        <div class="mikro">Fußball · Anpfiff in 3 h 12 min · beide Kurse unter 4 min alt</div>
+      </div>
+      <div class="chance-rendite">2,41&nbsp;%<small>Rendite</small></div>
+    </div>
+    <div class="beine">
+      <div class="bein">
+        <span class="buch pm"><i></i>Polymarket</span>
+        <div class="bein-ausgang">Arsenal gewinnt</div>
+        <dl class="bein-gitter">
+          <dt>Preis</dt><dd>0,532</dd>
+          <dt>Quote eff.</dt><dd>1,861</dd>
+          <dt>Gebühr</dt><dd>1,24 %</dd>
+          <dt>Einsatz</dt><dd>537,30 €</dd>
+        </dl>
+      </div>
+      <div class="bein">
+        <span class="buch bf"><i></i>Betfair · über Orbit</span>
+        <div class="bein-ausgang">Arsenal gewinnt nicht</div>
+        <dl class="bein-gitter">
+          <dt>Quote</dt><dd>2,28</dd>
+          <dt>Quote eff.</dt><dd>2,242</dd>
+          <dt>Gebühr</dt><dd>3,00 %</dd>
+          <dt>Einsatz</dt><dd>462,70 €</dd>
+        </dl>
+      </div>
+    </div>
+    <div class="chance-fuss">
+      <span class="mikro">Einsatz gesamt 1.000,00 € · Gewinn 24,10 € · beide Ausgänge geprüft</span>
+      <span class="chip gut">Wächter grün</span>
+    </div>
+  </article>
+
+  <!-- ─── BAHNEN ─── -->
+  <h2 class="abschnitt">Kursverlauf</h2>
+  <div class="bahnen">
+    <div class="bahnen-lineal"></div>
+    <div class="scanlinie"></div>
+    <svg viewBox="0 0 900 190" preserveAspectRatio="none">
+      <path class="bahn-strich" d="M0 140 C 150 132, 260 96, 390 104 S 640 62, 900 54"
+            fill="none" stroke="var(--gold)" stroke-width="1.6" stroke-dasharray="7 5"/>
+      <path d="M0 160 C 180 158, 300 140, 430 146 S 690 120, 900 112"
+            fill="none" stroke="var(--sonar)" stroke-width="1.4" opacity=".75"/>
+      <path class="bahn-strich" d="M0 96 C 200 100, 330 130, 470 120 S 720 148, 900 158"
+            fill="none" stroke="var(--rot)" stroke-width="1.3" stroke-dasharray="3 6" opacity=".8"/>
+      <g fill="var(--gold)">
+        <path d="M390 104 l6 3.5 v7 l-6 3.5 -6 -3.5 v-7 z" transform="translate(0,-7)"/>
+        <path d="M690 70 l6 3.5 v7 l-6 3.5 -6 -3.5 v-7 z" transform="translate(0,-7)"/>
+      </g>
+      <g class="mikro" fill="#868C79" font-size="9" font-family="monospace">
+        <text x="398" y="98">2,41 %</text>
+        <text x="698" y="64">3,27 %</text>
+      </g>
+    </svg>
+  </div>
+
+  <div class="hinweis">
+    <b>Diese Seite ist ein Muster, keine Produktionsseite.</b> Alle Zahlen sind
+    erfunden. Es wird nichts gelesen, nichts gerechnet, nichts geschrieben.
+    <code>css/stil.css</code> ist unberührt. Der Stufenschalter oben rechts
+    zeigt, wie viel Bewegung jede Stufe bedeutet.
+  </div>
+
+  <div class="schiene unten">
+    <span class="mikro">Muster · 15.08.2026 · Formensprache nach Vorlage</span>
+    <span class="mikro">STIL_HUD_01</span>
+  </div>
+
+</div>
+
+<script>
+/* Nur der Stufenschalter. Sonst kein Verhalten auf dieser Seite. */
+document.querySelectorAll('.stufen button').forEach(function (b) {
+  b.addEventListener('click', function () {
+    document.querySelectorAll('.stufen button').forEach(function (x) { x.removeAttribute('aria-pressed'); });
+    b.setAttribute('aria-pressed', 'true');
+    document.documentElement.setAttribute('data-anim', b.dataset.stufe);
+  });
+});
+</script>
+</body>
+</html>

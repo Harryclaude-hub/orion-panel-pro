@@ -77,8 +77,19 @@ das 81 insgesamt — nicht 81 pro Buch. Begrenzt wird er immer von der
 Das ist die Zahl, die zählt.</td></tr>
 
 <tr><td><b>Effektivquote</b></td>
-<td>Was ein Einsatz nach Gebühr zurückzahlt. Aus 1 wird bei Quote 2,00 und
-2 % Kommission nicht 2,00, sondern 1,98. Beide Effektivquoten zusammen
+<td><b>Was ein Euro Einsatz wirklich zurückbringt — nach Abzug der
+Gebühr.</b> Die angezeigte Quote des Buches ist immer die Zahl
+<i>vor</i> Kommission; erst die Effektivquote ist die ehrliche.
+<br><br>
+<b>Beispiel von der Karte:</b> Betfair „Lay 2,30 · Effektivquote 1,746".
+Bei einer Lay-Wette hältst du dagegen — du gewinnst den Einsatz des
+anderen, wenn sein Tipp <b>nicht</b> eintrifft. Aus der Lay-Quote 2,30
+wird nach Orbits 3 % Kommission eine Effektivquote von 1,746: aus 1 €
+werden also 1,75 €, nicht 2,30 €. <b>Nur mit dieser Zahl wird gerechnet</b>
+— sonst sähe jede Zeile besser aus, als sie ist.
+<br><br>
+Gebühren je Buch: Polymarket und Kalshi rechnen je Anteil, Smarkets 2 %
+und Orbit/Betfair 3 % auf den Nettogewinn. Beide Effektivquoten zusammen
 ergeben die Kehrwertsumme.</td></tr>
 
 <tr><td><b>Kehrwertsumme</b></td>
@@ -158,6 +169,26 @@ echte Chance — der Kurs, aus dem sie entstand, war so nicht zu
 bekommen.</td></tr>
 </table>
 
+<h2>Rote Warnzeile: „BÜCHER WIDERSPRECHEN SICH, EINES KLEBT"</h2>
+
+<p>
+Diese Zeile steht auf einer Karte, wenn die <b>Buchprobe</b> (gleich
+darunter erklärt) durchgefallen ist. Im Klartext: Die beiden Bücher
+zeigen für dieselbe Frage Kurse, die zusammen <b>nicht sein können</b> —
+eines der beiden hat seinen Kurs nicht nachgeführt und <b>klebt</b> auf
+einem alten Stand.
+</p>
+
+<p>
+<b>Warum das die wichtigste Warnung überhaupt ist:</b> Ein klebender Kurs
+erzeugt eine Rendite, die es nur auf dem Bildschirm gibt. Setzt man
+darauf, ist die eine Seite längst weg, wenn man die zweite platziert —
+und aus der sicheren Wette wird eine offene. Gemessen am 13.8.: Solche
+Zeilen lagen <b>fünfmal häufiger</b> falsch als stimmige. Deshalb wandern
+sie automatisch in <b>Falsche Rechnungen</b> und werden nie als Chance
+gezeigt.
+</p>
+
 <h2>Die Buchprobe — „Buch stimmig / unstimmig"</h2>
 
 <p>Jede Wette wird gegen ihr eigenes Buch geprüft: die Summe der
@@ -171,6 +202,38 @@ fünfmal so oft über 2&nbsp;% wie Zeilen auf stimmigem. Seitdem trägt jede
 Karte das Ergebnis in der Prüfzeile: <b>stimmig</b>, <b>unstimmig</b> oder
 <b>nicht messbar</b> — das dritte heißt „keine Seite ist Smarkets oder
 Betfair", nicht „in Ordnung".</p>
+
+<h2>Die Sonar-Anzeige — jede Zahl erklärt</h2>
+
+<p class="leise">
+Diese Kachel beantwortet genau eine Frage: <b>läuft die Maschine, und was
+sieht sie gerade?</b> Mehr steht dort nicht — bewusst.
+</p>
+
+<table>
+<tr><th style="width:30%">Angabe</th><th>Was sie bedeutet</th></tr>
+<tr><td><b>SONAR AKTIV</b></td><td>Der Scanner hat sich innerhalb der
+erwarteten Zeit gemeldet. Steht dort etwas anderes, ist er stehengeblieben
+— dann sind alle Zahlen darunter alt.</td></tr>
+<tr><td><b>Märkte beobachtet</b></td><td>Wie viele einzelne Märkte gerade
+im Raster liegen — also von den Börsen geladen und geprüft werden.
+<b>Nicht</b> die Zahl der Chancen: aus 982 Märkten können null Chancen
+werden, das ist der Normalfall. (Hieß bis zum 16.8. „Märkte im Sektor";
+„Sektor" war unser Wort für den Bereich, also Fußball, Tennis, Krypto …
+— jetzt steht der Bereichsname direkt dran.)</td></tr>
+<tr><td><b>letzter Scan</b></td><td>Wie lange der letzte Durchlauf her
+ist. Fußball läuft alle 20 Sekunden, die anderen Bereiche seltener.
+(Hieß vorher „PING".)</td></tr>
+<tr><td><b>Paare im Vergleich</b></td><td>Ein <b>Paar</b> ist dieselbe
+Frage auf <b>zwei</b> Büchern, gerade nebeneinandergehalten. Nur daraus
+kann eine Chance entstehen. (Hieß vorher „KONTAKTE".)</td></tr>
+<tr><td><b>Durchlauf</b></td><td>Wie lange ein Scanner-Lauf dauert. Reine
+Technik — interessant nur, wenn er plötzlich viel länger braucht.</td></tr>
+<tr><td><b>Protokollzeilen</b></td><td>„3 neue Paare · 114 im Vergleich"
+heißt: drei Partien sind dazugekommen. „2 Paare beendet" heißt: zwei
+Partien sind ausgelaufen (angepfiffen oder vom Buch genommen). Das ist
+normaler Betrieb, kein Fehler.</td></tr>
+</table>
 
 <h2>Der Gefechtsstand am Sonar</h2>
 

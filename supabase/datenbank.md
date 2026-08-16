@@ -427,3 +427,31 @@ geprüft. Deshalb:
   sie ehrlich `RESEND_API_KEY fehlt`. Absender `onboarding@resend.dev`
   darf beim Gratis-Resend nur an die eigene Konto-Adresse senden —
   Empfänger-Mail = Resend-Konto-Mail.
+
+## Nur-ein-Anbieter-Regel (16.8.2026)
+
+Vorgabe des Auftraggebers: *„Wenn ein Markt nur bei einem der Anbieter da
+ist, soll er nicht gescannt werden."* Eine Arbitrage braucht immer **zwei**
+Bücher — ein Bereich mit nur einer Quelle kann per Definition nie eine
+ergeben und kostet trotzdem Rechenzeit.
+
+Gemessen, wer welche Bereiche führt:
+
+| Quelle | Bereiche |
+|---|---|
+| Betfair (Bridge, `orion_bf_sport`) | fussball, baseball, basketball, cricket, eishockey, esport, football, golf, mma, motorsport, tennis |
+| Kalshi (`KALSHI_BEREICH`) | dieselben Sportarten + lol, valorant, esport |
+| Smarkets | nur fussball |
+| Polymarket | alle |
+
+**Abgeschaltet** (`aktiv = false`) und Cron-Takt entfernt:
+`politik, krypto, wirtschaft, tech, welt, wetter, kultur, golf`.
+Golf ist dabei, weil Betfair zwar Golf führt, `orion_bf_maerkte` aber nur
+MATCH_ODDS und OVER_UNDER lädt — Turniersieger-Märkte kommen nie an, also
+standen dort 791 Polymarket-Märkte ohne jedes Gegenstück.
+
+**Aktiv bleiben 12 Bereiche.** Scanner-Takte: 20 → 12.
+
+**Umkehrbar:** `UPDATE orion_bereiche SET aktiv = true WHERE bereich = '…'`
+plus `cron.schedule('orion-lauf-<bereich>', …)`. Genau das ist der letzte
+Schritt, sobald der Kalshi-Sammler Krypto/Wetter/Wirtschaft mitholt.
