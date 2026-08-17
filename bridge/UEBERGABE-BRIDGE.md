@@ -174,9 +174,28 @@ bevor sie baut. Kontext dazu:
    gemessen: Betfair trägt außerhalb der 11 Bridge-Sportarten fast
    nichts Paarbares (Darts 4, Rugby 1, Golf 0, Politik 0) — die Bridge
    scannt bereits alles, was Paare tragen kann.
-3. Neue Marktart „Schwelle" mit strikter Paarung (gleiche Basis + gleiche
-   Zahl + gleicher Stichzeitpunkt); Regel Karam VORHER zeigen. Warnung:
-   Polymarket „erreicht X im Zeitraum" ≠ Kalshi „Preis am Stichtag".
+3. Marktart „Schwelle": **Regel am 17.08. abends von Karam GENEHMIGT**
+   (nur Stichtag-gegen-Stichtag; Weißliste statt Wortähnlichkeit; exakt
+   gleiche Zahl; exakt gleiche Minute; alle bestehenden Prüfungen;
+   Start klein mit BTC). **Erste Anwendung der Regel, gemessen:**
+   Polymarkets Tagesschwellen (Bitcoin/Ethereum above ___ on <Tag>)
+   stechen um 16:00Z = 12:00 New York; Kalshis KXBTCD/KXETHD schließen
+   13:00Z und 21:00Z (9:00/17:00 New York). **Kein gemeinsamer
+   Stichzeitpunkt → regelkonforme BTC/ETH-Paare heute: NULL.** Das ist
+   die Regel bei der Arbeit — eine 12:00-gegen-17:00-Paarung sähe wie
+   Geld aus und wäre reines Risiko. Zweites, grundsätzlicheres
+   Hindernis (bei der Regelvorlage noch übersehen, Karam noch NICHT
+   vorgelegt): die REFERENZQUELLEN differieren (Polymarket löst über
+   Binance auf, Kalshi über CF Benchmarks) — nahe der Schwelle können
+   beide Bücher GEGENSÄTZLICH abrechnen; selbst zeitgleiche Märkte
+   wären nicht streng dieselbe Frage. **Nächster Schritt vor jedem
+   Bau:** Stichzeit-Matrix über ALLE Basisgrößen (PM-Tagesereignisse ×
+   Kalshi-Serien: Indizes 15/16 Uhr ET?, Metalle, Öl) messen, wo
+   Minuten UND Quellen zusammenpassen; erst dort lohnt orion-schwelle
+   (als EIGENE kleine Funktion, orion-lauf bleibt unberührt). Der
+   Kalshi-Welt-Vorrat (id=2) liegt dafür bereit; Schwellenzahl steht
+   in jaName („$63,200 or above"), notfalls floor_strike im Sammler
+   nachrüsten.
 4. **Nur-ein-Anbieter-Regel am 17.8. auf Karams Befehl UMGEKEHRT**
    („alles muss gescannt werden"): alle 8 Welt-Bereiche wieder aktiv,
    Stunden-Takte versetzt (:30–:51), 20 Scanner laufen. Politik-Lauf
