@@ -111,9 +111,8 @@ Meldeweg klären — die Bridge weiß nicht, was meldenswert ist).
 5. **Desktop\Orion-Bridge-3.8 löschen** (macht Karam selbst; enthält
    die ALTE Zugangsdatei — die aktuelle liegt in
    C:\Users\Home\OrionBridge und darf NIEMALS gelöscht werden).
-6. **Commit/Push steht aus:** der komplette 4.0-Stand (Build 22, neue
-   README, ausgemusterte 3.8-Dateien) ist lokal fertig, aber noch nicht
-   committet — Karams Freigabe abwarten.
+6. ~~Commit/Push~~ **erledigt am 17.08.** (Commit f9a5840 auf main,
+   gepusht): kompletter 4.0-Stand ist in der Git-Historie verankert.
 
 ## 3. DER AUFTRAG VOM 16.08. (Karams Worte — erledigt, siehe 3a)
 
