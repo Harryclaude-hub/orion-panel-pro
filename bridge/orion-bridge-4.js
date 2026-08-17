@@ -43,7 +43,7 @@ const fs = require('fs');
 const pfad = require('path');
 
 const VERSION = '4.0';
-const BUILD = 22;   // Build 21: Sportarten-Schalter ("sportarten") · Build 22: stats.speicher_mb
+const BUILD = 23;   // 21: Sportarten-Schalter · 22: stats.speicher_mb · 23: et_namen wieder aus listEventTypes
 
 /* ---------- Zugangsdatei ---------- */
 const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
@@ -272,6 +272,31 @@ function vorratVon(et) {
   return m;
 }
 
+/* ---------- Betfairs eigene Sportkarte (Build 23) ----------
+ * Der Wächter prüft die Zuordnung et → Bereich gegen Betfairs EIGENE
+ * Bezeichnungen (orion_bf_sport.name_erwartet: "Soccer", "Boxing", …).
+ * Build 20-22 schickten stattdessen unsere deutschen Anzeigenamen —
+ * Folge: Dauer-Fehlalarm im Wächter, jede Minute seit dem 16.8., der
+ * echte Vermischungs-Alarme im Rauschen ersäufte. Build 23 holt die
+ * Namen wieder aus listEventTypes (wie Build 19): geprüft wird gegen
+ * die Quelle, statt ihr zu glauben — nur so fällt eine falsche
+ * eventTypeId auf (die MMA-Fehlzuordnung wurde genau so gefunden).
+ * Solange die Karte noch nicht geholt ist, wird et_namen WEGGELASSEN;
+ * der Wächter überspringt die Prüfung dann, statt Unsinn zu melden. */
+let ET_NAMEN = null;
+
+async function sportkarteHolen() {
+  const res = await rpc('listEventTypes', { filter: {} });
+  const karte = {};
+  for (const r of res || []) {
+    const et = r.eventType ? String(r.eventType.id) : null;
+    if (et && SPORT.some(s => s.et === et)) karte[et] = r.eventType.name;
+  }
+  if (Object.keys(karte).length === 0) throw new Error('Sportkarte kam leer zurück');
+  ET_NAMEN = karte;
+  log('Sportkarte von Betfair geholt (' + Object.keys(karte).length + ' von ' + SPORT.length + ' Sportarten).');
+}
+
 /* Fenster halbieren, wenn Betfair „zu viel verlangt" meldet — das ist
  * kein Fehler, sondern der normale Weg bei großen Sportarten. */
 async function katalog(et, vonMs, bisMs, tiefe) {
@@ -472,6 +497,14 @@ async function durchlauf() {
     if (!sitzung) await anmelden();
     else if (Date.now() - letzteAnmeldung > 15 * 60e3) await wachhalten();
 
+    /* Betfairs Sportkarte einmal holen; klappt es nicht, nächste Runde
+     * wieder — bis dahin bleibt et_namen weg (Prüfung pausiert, LAUT
+     * gemeldet wird der Fehlversuch trotzdem). */
+    if (!ET_NAMEN) {
+      try { await sportkarteHolen(); }
+      catch (e) { log('Sportkarte nicht geholt: ' + (e.message || e)); }
+    }
+
     /* EINE Sportart je Runde — getrennt, nicht alles auf einmal.
      * Das Fenster ist seit Build 21 je Sportart einstellbar. */
     const dran = PLAN[runde % PLAN.length];
@@ -494,9 +527,11 @@ async function durchlauf() {
       /* Eigener Speicherverbrauch, damit „wächst nicht" MESSBAR bleibt
        * (die 3.8 wurde still immer größer — das soll nie wieder unsichtbar
        * passieren). Soll dauerhaft um ~70-90 MB pendeln. */
-      speicher_mb: Math.round(process.memoryUsage().rss / 1048576),
-      et_namen: Object.fromEntries(SPORT.map(s => [s.et, s.name]))
+      speicher_mb: Math.round(process.memoryUsage().rss / 1048576)
     };
+    /* Nur Betfairs ECHTE Namen hochladen — unsere deutschen Anzeigenamen
+     * haben hier nichts verloren (Dauer-Fehlalarm, siehe Sportkarte). */
+    if (ET_NAMEN) stats.et_namen = ET_NAMEN;
     await hochladen(markets, stats);
     fehlerInFolge = 0;
 

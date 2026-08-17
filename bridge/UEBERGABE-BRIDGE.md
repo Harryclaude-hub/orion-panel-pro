@@ -6,7 +6,16 @@
 
 ## 1. Stand (17.08.2026, Ende der Sitzung)
 
-**Build 22 ist gebaut, getestet, installiert und läuft** — neu in 22:
+**Build 23 ist gebaut, getestet, installiert und läuft.** Neu in 23:
+`stats.et_namen` kommt wieder aus Betfairs `listEventTypes` (wie Build
+19) statt aus unseren deutschen Anzeigenamen. Hintergrund: Der Wächter
+prüft die et→Bereich-Zuordnung gegen `orion_bf_sport.name_erwartet`
+(„Soccer", „Boxing" …) — die 4.0 schickte seit dem 16.8. deutsche Namen,
+dadurch schlug der Wächter **1.262-mal in 24 h Dauer-Fehlalarm** und
+ersäufte echte Vermischungs-Alarme im Rauschen. Gefunden bei Karams
+Prüfauftrag am 17.08. („keine Vermischungen wie damals"). Solange die
+Sportkarte noch nicht geholt ist, lässt die Bridge `et_namen` weg — die
+Prüfung pausiert dann sichtbar, statt Unsinn zu melden. Neu in 22:
 `stats.speicher_mb`, der eigene Speicherverbrauch bei jedem Upload
 (Karams Sorge nach der stets wachsenden 3.8; gemessen: 80 MB, Ordner
 enthält nur 5 Programmdateien ohne Protokolle — es wächst nichts, und
