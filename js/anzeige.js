@@ -56,22 +56,31 @@
     /* Regel 1 — der Nutzer ist gerade dabei: nicht anfassen. */
     if (Date.now() - letzteUnruhe < 1200) return false;
 
-    /* Regel 2 — Anker suchen: die oberste Karte, die im Fenster steht. */
-    var anker = null, ankerOben = 0;
+    /* Regel 2 — Anker suchen: ALLE Karten im Fenster merken, nicht nur
+     * die oberste. Verschwindet ausgerechnet die oberste im neuen Stand
+     * (Chance läuft aus, Zeile wandert in den Verlauf — der Normalfall,
+     * nicht die Ausnahme!), gab es bisher KEINEN Halt mehr, und genau
+     * dann sprang die Seite (Restbeschwerde vom 17.8.). Jetzt hält die
+     * nächste überlebende Karte die Seite fest. */
+    var anker = [];
     var karten = el.querySelectorAll('.fund[data-schluessel]');
     for (var i = 0; i < karten.length; i++) {
       var r = karten[i].getBoundingClientRect();
-      if (r.bottom > 0) { anker = karten[i].getAttribute('data-schluessel'); ankerOben = r.top; break; }
+      if (r.top >= window.innerHeight || anker.length >= 12) break;
+      if (r.bottom > 0) {
+        anker.push({ s: karten[i].getAttribute('data-schluessel'), oben: r.top });
+      }
     }
 
     el.dataset.stand = html;
     el.innerHTML = html;
 
-    if (anker) {
-      var neu = el.querySelector('.fund[data-schluessel="' + anker.replace(/"/g, '\\"') + '"]');
+    for (var a = 0; a < anker.length; a++) {
+      var neu = el.querySelector('.fund[data-schluessel="' + anker[a].s.replace(/"/g, '\\"') + '"]');
       if (neu) {
-        var abweichung = neu.getBoundingClientRect().top - ankerOben;
+        var abweichung = neu.getBoundingClientRect().top - anker[a].oben;
         if (Math.abs(abweichung) > 1) window.scrollBy(0, abweichung);
+        break;
       }
     }
     return true;
@@ -138,6 +147,17 @@
     var t = Date.parse(iso);
     if (isNaN(t)) return '?';
     return dauer((Date.now() - t) / 1000);
+  }
+
+  /* Seit wann ein Kurs unverändert so steht (Vorgabe 17.8.). Ein Kurs,
+   * der sehr lange starr steht, während drumherum gehandelt wird, ist
+   * ein Warnzeichen: stehengebliebene Kurse waren die häufigste Quelle
+   * von Scheinchancen (Messungen vom 13.8.). Fehlt der Zeitpunkt, wird
+   * NICHTS angezeigt statt etwas Erfundenem. */
+  function kursStehtZeile(iso) {
+    if (!iso || isNaN(Date.parse(iso))) return '';
+    return '<div class="leise" title="Seit wann dieser Kurs unverändert so steht. Je frischer, desto lebendiger der Markt. Ein Kurs, der seit langem starr steht, ist eher ein stehengebliebener Kurs als ein Geschenk.">' +
+           'Kurs unverändert seit ' + seit(iso) + '</div>';
   }
 
   /* ---------- Wer ist Seite 1, wer Seite 2? ----------
@@ -1119,6 +1139,13 @@
     var z = '';
     z += zeitZeile('Gefunden', zeitpunkt(f.zuerst_gesehen), 'vor ' + seit(f.zuerst_gesehen), '');
 
+    /* Die Zahl, die vor dem Setzen zählt (Vorgabe 17.8.): wann hat der
+     * Scanner BEIDE Seiten zuletzt genau so gesehen. */
+    if (f.zuletzt_gesehen) {
+      z += zeitZeile('Zuletzt bestätigt', zeitpunkt(f.zuletzt_gesehen), 'vor ' + seit(f.zuletzt_gesehen),
+                     'der Scanner hat beide Seiten zuletzt so gesehen');
+    }
+
     var anpfiff = Date.parse(f.beginnt_am || '');
     if (isFinite(anpfiff)) {
       var laeuft = anpfiff <= Date.now();
@@ -1269,10 +1296,16 @@
           /* Uhrzeit oben rechts: WANN dieser Eintrag entstanden ist.
            * Nicht die letzte Sichtung, sondern die erste — das ist die Frage
            * "seit wann gibt es das", nicht "wann habe ich zuletzt hingesehen". */
-          '<div class="stempel" title="Zuerst gesehen am ' + txt(zeitpunkt(f.zuerst_gesehen)) + '">' +
+          /* Zwei Zeiten, zwei Fragen (Vorgabe 17.8.): "vor X" = seit wann
+           * es diese Chance gibt; "bestätigt vor Y" = wann der Scanner
+           * BEIDE Seiten zuletzt genau so gesehen hat. Die zweite Zahl
+           * ist die, die vor dem Setzen zählt. */
+          '<div class="stempel" title="Zuerst gesehen am ' + txt(zeitpunkt(f.zuerst_gesehen)) +
+               (imVerlauf ? '' : ' · zuletzt bestätigt am ' + txt(zeitpunkt(f.zuletzt_gesehen))) + '">' +
             uhrzeit(f.zuerst_gesehen) +
             (imVerlauf ? '<span class="stempel-zwei">beendet ' + uhrzeit(f.vorbei_seit) + '</span>'
-                       : '<span class="stempel-zwei">vor ' + seit(f.zuerst_gesehen) + '</span>') +
+                       : '<span class="stempel-zwei">vor ' + seit(f.zuerst_gesehen) +
+                         ' · bestätigt vor ' + seit(f.zuletzt_gesehen) + '</span>') +
           '</div>' +
         '</div>' +
 
@@ -1328,6 +1361,7 @@
             '<div class="zahl">' + txt(f.pm_seite) + ' ' + wertText(buch1(f), f.pm_preis) + '</div>' +
             '<div class="leise">' + txt(f.mannschaft) + '</div>' +
             '<div class="leise">' + wertName(buch1(f)) + ' &middot; Effektivquote <b>' + qeEins(f) + '</b></div>' +
+            kursStehtZeile(f.pm_preis_seit) +
           '</div>' +
           '<div class="seite ' + txt(buch2(f).chip) + '">' +
             '<div class="quelle">' + txt(buch2(f).name) + '</div>' +
@@ -1335,6 +1369,7 @@
             '<div class="leise">' + txt(f.bf_name) + '</div>' +
             '<div class="leise">' + wertName(buch2(f)) +
               ' &middot; Effektivquote <b>' + qeZwei(f) + '</b></div>' +
+            kursStehtZeile(f.bf_quote_seit) +
           '</div>' +
         '</div></div>' +
         abschnitt('Was dabei herauskommt', renditeText(f) + analyse(f, imVerlauf), 'ab-geld') +
