@@ -1253,17 +1253,49 @@
    * denselben Helfern wie die übrige Anzeige. Angezeigt wird gerundet —
    * wer nachtippt und in der letzten Stelle abweicht, sieht Rundung,
    * keinen Fehler. */
+  /* Die Formel je Seite, mit den ECHTEN Zahlen eingesetzt — Karams
+   * Stichrechnung (17.8. abends). Beim Dagegenhalten (Lay) in seiner
+   * Schreibweise mit dem Risikofaktor:
+   *   Risikofaktor = Quote − 1 · Effektivquote = 1 + (1 − Gebühr) ÷ Risikofaktor
+   * Ohne Gebühr ist das exakt seine Form „1/Risikofaktor + 1". Die
+   * Effektivquote selbst kommt weiter aus rechnung.js — hier wird nur
+   * ihr Weg gezeigt, nichts Neues entschieden. */
+  function formelSeite(info, seiteText, roh, satz, qeText) {
+    var s = Number(satz); if (!isFinite(s) || s < 0) s = 0;
+    var st = String(seiteText || '').toUpperCase();
+    var n = Number(roh);
+    if (info.art === 'preis') {
+      if (!(n > 0 && n < 1)) return '';
+      var anteil = s * n * (1 - n);
+      return 'Gebührenanteil = Satz × Preis × (1 − Preis) = ' + (s * 100).toFixed(1) + ' % × ' +
+             n.toFixed(3) + ' × ' + (1 - n).toFixed(3) + ' = ' + anteil.toFixed(4) +
+             ' → Effektivquote = (1 − ' + anteil.toFixed(4) + ') ÷ ' + n.toFixed(3) + ' = ' + qeText;
+    }
+    if (!(n > 1)) return '';
+    if (st === 'LAY') {
+      return 'Risikofaktor = Quote − 1 = ' + (n - 1).toFixed(2) +
+             ' → Effektivquote = 1 + (1 − Gebühr) ÷ Risikofaktor = 1 + ' + (1 - s).toFixed(2) +
+             ' ÷ ' + (n - 1).toFixed(2) + ' = ' + qeText;
+    }
+    return 'Effektivquote = 1 + (Quote − 1) × (1 − Gebühr) = 1 + ' + (n - 1).toFixed(2) +
+           ' × ' + (1 - s).toFixed(2) + ' = ' + qeText;
+  }
+
   function rechenweg(f) {
     var b1 = buch1(f), b2 = buch2(f);
     var qe1 = qeEins(f), qe2 = qeZwei(f);
     var inv = Number(f.inv), r = Number(f.rendite);
     var g1 = Number(f.pm_gebuehr) * 100, g2 = Number(f.bf_gebuehr) * 100;
     var K2 = welt.KONFIG || {};
+    var f1 = formelSeite(b1, f.pm_seite, f.pm_preis, f.pm_gebuehr, qe1);
+    var f2 = formelSeite(b2, f.bf_seite, f.bf_quote, f.bf_gebuehr, qe2);
     var z = '<ol class="leise rechenweg">';
     z += '<li>' + txt(b1.name) + ' — ' + wertName(b1) + ' <b>' + wertText(b1, f.pm_preis) + '</b>' +
-         ', Gebühr <b>' + (isFinite(g1) ? g1.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe1 + '</b></li>';
+         ', Gebühr <b>' + (isFinite(g1) ? g1.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe1 + '</b>' +
+         (f1 ? '<br><span class="formel">' + f1 + '</span>' : '') + '</li>';
     z += '<li>' + txt(b2.name) + ' — ' + wertName(b2) + ' <b>' + wertText(b2, f.bf_quote) + '</b>' +
-         ', Gebühr <b>' + (isFinite(g2) ? g2.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe2 + '</b></li>';
+         ', Gebühr <b>' + (isFinite(g2) ? g2.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe2 + '</b>' +
+         (f2 ? '<br><span class="formel">' + f2 + '</span>' : '') + '</li>';
     z += '<li>Kehrwertsumme: 1/' + qe1 + ' + 1/' + qe2 + ' = <b>' +
          (isFinite(inv) ? inv.toFixed(4) : '?') + '</b></li>';
     z += '<li>Rendite: (1 / ' + (isFinite(inv) ? inv.toFixed(4) : '?') + ' − 1) × 100 = <b>' +

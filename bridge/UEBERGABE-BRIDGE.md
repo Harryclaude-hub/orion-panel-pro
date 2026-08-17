@@ -92,6 +92,13 @@ der Server (`orion-lauf`).
 4. Prüfung, ob sie läuft: SQL
    `SELECT now()-updated_at, stats FROM bridge_odds WHERE id=1;`
    (Alter muss < ~1 min sein; `stats.bridge` = "4.0").
+5. **Die Bridge nie hinter uns lassen (Karams Ansage, 17.08. abends):**
+   Bei JEDER neuen Logik (neue Marktarten, neue Bereiche, neue
+   Prüfungen) gehört die Frage in den Bauplan: „Muss die Bridge das
+   mittragen — neue Markttypen, neue Sportarten, neue Felder?" Die
+   Antwort wird GEMESSEN (wie am 17.08.: außerhalb der 11 Sportarten
+   trägt Betfair fast nichts Paarbares), nie angenommen. Die Bridge
+   darf bei der Arbeit am Server nie stillschweigend veralten.
 
 ## 3a. ERLEDIGT AM 17.08.: Sportarten-Schalter (21), speicher_mb (22), 3.8 ausgemustert
 
