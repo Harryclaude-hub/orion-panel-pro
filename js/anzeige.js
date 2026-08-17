@@ -843,6 +843,72 @@
     return b;
   }
 
+  /* ---------- KARTEN NACH BEREICH GEBÜNDELT (Vorgabe 17.8. spät, "c") ----
+   * Innerhalb der Gruppe bleibt die Rendite-Reihenfolge; die Gruppen selbst
+   * stehen nach ihrer besten Zeile (die Liste kommt rendite-sortiert an,
+   * also gewinnt die Gruppe der ersten Karte). Nur für die LIVE-Listen —
+   * Verlauf und Falsch bleiben chronologisch, dort erzählt die Reihenfolge
+   * die Geschichte. Bei nur EINER Gruppe entfällt die Überschrift: eine
+   * Gliederung mit einem einzigen Fach ist keine. */
+  function kartenGruppiert(liste, imVerlauf) {
+    var reihen = [], je = {};
+    liste.forEach(function (f) {
+      var schl = (welt.Filter && welt.Filter.bereichVon)
+        ? (welt.Filter.bereichVon(f) || String(f.sportart || '?'))
+        : String(f.sportart || '?');
+      if (!je[schl]) { je[schl] = { name: bereichText(f), karten: [] }; reihen.push(schl); }
+      je[schl].karten.push(f);
+    });
+    if (reihen.length < 2) {
+      return liste.map(function (f) { return karte(f, imVerlauf); }).join('');
+    }
+    var z = '';
+    reihen.forEach(function (schl) {
+      var g = je[schl];
+      z += '<h2 class="gruppe-kopf">' + txt(g.name) +
+           ' <span class="leise">(' + g.karten.length + ')</span></h2>' +
+           g.karten.map(function (f) { return karte(f, imVerlauf); }).join('');
+    });
+    return z;
+  }
+
+  /* ---------- SCANSTAND: alle Bereiche mit ehrlichem Zustand (17.8., "c") --
+   * Je Bereich eine Zeile: läuft (grün, mit Alter), STEHT (rot, Wächter-
+   * Maßstab Takt × 3), aus (grau, mit Grund). Die Daten kommen alle 30 s
+   * aus orion_scanstand(); gezeichnet wird nur bei Änderung. */
+  function scanstandBlock(liste) {
+    if (!liste || !liste.length) return '';
+    var GRUPPEN = { sport: 'Sport', esport: 'E-Sport', welt: 'Welt' };
+    var je = {}, reihen = [];
+    liste.forEach(function (b) {
+      var g = b.gruppe || '?';
+      if (!je[g]) { je[g] = []; reihen.push(g); }
+      je[g].push(b);
+    });
+    var z = '<div class="scan-kopf">Scanstand — alle ' + liste.length +
+            ' Bereiche <span class="leise">(alle 30 s frisch)</span></div>';
+    reihen.forEach(function (g) {
+      z += '<div class="scan-gruppe">' + txt(GRUPPEN[g] || g) + '</div><div class="scan-zeilen">';
+      je[g].forEach(function (b) {
+        var zustand, klasse;
+        if (!b.aktiv) { zustand = 'aus'; klasse = 'aus'; }
+        else if (b.lauf_alter_s == null) { zustand = 'noch kein Lauf'; klasse = 'acht'; }
+        else if (b.lauf_alter_s > b.takt_sek * 3) { zustand = 'STEHT seit ' + dauer(b.lauf_alter_s); klasse = 'rot'; }
+        else { zustand = 'vor ' + dauer(b.lauf_alter_s); klasse = 'gut'; }
+        var titel = !b.aktiv
+          ? 'Bewusst abgeschaltet — keine zweite Quelle mit derselben Frage. Kein Fehler, eine Entscheidung.'
+          : 'Takt: alle ' + dauer(b.takt_sek) + ' · letzter Lauf: ' +
+            (b.lauf_alter_s == null ? 'nie' : 'vor ' + dauer(b.lauf_alter_s)) +
+            (b.fehler ? ' · letzter Fehler: ' + String(b.fehler).slice(0, 80) : '');
+        z += '<span class="scan-zeile ' + klasse + '" title="' + txt(titel) + '">' +
+             txt(b.name) + ' <b>' + txt(zustand) + '</b>' +
+             (Number(b.live) ? ' · ' + b.live + ' live' : '') + '</span>';
+      });
+      z += '</div>';
+    });
+    return z;
+  }
+
   /* ---------- ABSCHNITTE ----------
    *
    * Eine Karte trug bis zum 13.8.2026 alles in einer Reihe: Chips, Seiten,
@@ -2047,6 +2113,7 @@
               (s.wache_eingriff ? ' Eingegriffen: ' + txt(s.wache_eingriff) : '') + '</div>';
     }
     setzeWennAnders(document.getElementById('warnungen'), warn);
+    setzeWennAnders(document.getElementById('scanstand'), scanstandBlock(e.scanstand));
 
     /* Drei getrennte Bereiche statt einer langen Rolle. Der Verlauf stand
      * vorher unter 187 knappen Paaren und war damit unauffindbar. */
@@ -2077,7 +2144,7 @@
 
     var chancenHtml = versteckt(gChancen.weg);
     if (zChancen.length) {
-      chancenHtml += zChancen.map(function (f) { return karte(f, false); }).join('');
+      chancenHtml += kartenGruppiert(zChancen, false);
     } else if (gChancen.weg) {
       chancenHtml += '<div class="warnung">Alle Chancen sind gerade ausgefiltert. ' +
         'Setz den Filter zurück, wenn du alles sehen willst.</div>';
@@ -2115,9 +2182,10 @@
       knappHtml += '<p class="leise">Richtig zugeordnet, nachgerechnet, aber unter ' +
         K.mindestRendite.toFixed(2) + ' % Rendite. Die Kehrwertsumme sagt alles: ' +
         '<b>unter 1</b> heißt Gewinn unabhängig vom Ausgang, <b>über 1</b> heißt Verlust. ' +
-        'Alle ' + zKnapp.length + ', beste zuerst. Diese Zahl hängt am Spielplan und darf ' +
+        'Alle ' + zKnapp.length + ', nach Bereichen gebündelt, in der Gruppe beste zuerst. ' +
+        'Diese Zahl hängt am Spielplan und darf ' +
         'springen — das Archiv darunter nicht.</p>' +
-        zKnapp.map(function (f) { return karte(f, false); }).join('');
+        kartenGruppiert(zKnapp, false);
     } else {
       knappHtml += '<p class="leise">Gerade nichts. Entweder liegen keine gemeinsamen ' +
         'Partien an, eine Quelle ist stehengeblieben, oder der Filter lässt nichts durch.</p>';

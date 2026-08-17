@@ -2470,3 +2470,36 @@ html, body {
  * aber hier steht es dokumentiert, damit es niemand versehentlich
  * ausschaltet): waechst etwas oberhalb, haelt der Browser die Sicht. */
 #chancen, #knapp, #verlauf, #falsch, .huelle { overflow-anchor: auto; }
+
+/* ============================================================================
+ * SCANSTAND + BEREICHS-GRUPPEN (17.8.2026 spaet, Auswahl "c")
+ * ============================================================================
+ * Der Scanstand zeigt alle 21 Bereiche mit ehrlichem Zustand; die Listen
+ * buendeln Karten je Bereich unter einer Zwischenueberschrift. Nur Kleid,
+ * keine Logik — Werte und Texte kommen aus anzeige.js. */
+
+#scanstand { margin: 10px 0 14px; }
+#scanstand .scan-kopf {
+  color: var(--text); font-weight: 600; margin-bottom: 6px;
+}
+#scanstand .scan-gruppe {
+  color: var(--text-leise); font-size: .8em; letter-spacing: .08em;
+  text-transform: uppercase; margin: 8px 0 4px;
+}
+#scanstand .scan-zeilen { display: flex; flex-wrap: wrap; gap: 6px; }
+#scanstand .scan-zeile {
+  background: var(--karte); border: 1px solid var(--rand);
+  border-radius: 6px; padding: 3px 9px; font-size: .85em;
+  color: var(--text-leise); white-space: nowrap;
+}
+#scanstand .scan-zeile b { font-weight: 600; }
+#scanstand .scan-zeile.gut  b { color: var(--gruen); }
+#scanstand .scan-zeile.acht b { color: var(--orange); }
+#scanstand .scan-zeile.rot  b { color: var(--rot); }
+#scanstand .scan-zeile.aus    { opacity: .55; }
+
+.gruppe-kopf {
+  margin: 18px 0 6px; padding-bottom: 4px;
+  border-bottom: 1px solid var(--rand);
+  color: var(--text); font-size: 1.05em;
+}

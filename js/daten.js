@@ -70,6 +70,26 @@
     return db('orion_wache?order=geprueft_am.desc&limit=1').then(function (z) { return z[0] || null; });
   }
 
+  /* ---------- Scanstand: ALLE Bereiche mit Zustand (Vorgabe 17.8., "c") ----
+   * Eine Server-Funktion liefert je Bereich: aktiv, Takt, letzter Lauf,
+   * Paare, Live-Zaehler. Aendert sich im Minuten-, nicht im Sekundenrhythmus
+   * — deshalb nur alle 30 s frisch geholt, dazwischen aus dem Puffer: die
+   * 2-Sekunden-Schleife bleibt schlank. Schlaegt das Holen fehl, bleibt der
+   * ALTE Stand stehen (besser als ein leerer Block), und der naechste
+   * Versuch kommt nach Ablauf des Puffers ohnehin. */
+  var scanstandPuffer = { stand: 0, wert: null };
+  function holeScanstandG() {
+    if (Date.now() - scanstandPuffer.stand < 30000) return Promise.resolve(scanstandPuffer.wert);
+    return fetch(K.supabase + '/rest/v1/rpc/orion_scanstand', {
+      method: 'POST',
+      headers: { apikey: K.key, authorization: 'Bearer ' + K.key,
+                 'content-type': 'application/json', accept: 'application/json' },
+      body: '{}'
+    }).then(function (r) { if (!r.ok) throw new Error('Scanstand HTTP ' + r.status); return r.json(); })
+      .then(function (d) { scanstandPuffer = { stand: Date.now(), wert: d }; return d; })
+      .catch(function () { return scanstandPuffer.wert; });
+  }
+
   /* Laeuft der Scanner ueberhaupt? (Juengster Lauf, egal welcher Bereich.) */
   function holeLauf() {
     return db('orion_laeufe?order=gelaufen_am.desc&limit=1').then(function (z) { return z[0] || null; });
@@ -151,7 +171,7 @@
 
   function ladeAlles() {
     return Promise.all([holeLive(), holeVerlaufG(), holeLaeufeG(), holeKalshiG(), holeWacheG(),
-                        holeUebersichtG(), holeSmarketsG(), kursG()])
+                        holeUebersichtG(), holeSmarketsG(), kursG(), holeScanstandG()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
         var fx = teile[7];
@@ -636,6 +656,7 @@
           verlauf: verlauf,
           lauf: lauf,
           uebersicht: uebersicht,
+          scanstand: teile[8] || null,
           /* null heisst: kein Kurs bekannt. Dann zeigt die Anzeige USD und
            * sagt es dazu, statt einen Kurs zu erfinden. */
           kurs: fx,
