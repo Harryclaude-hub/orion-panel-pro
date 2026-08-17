@@ -43,7 +43,7 @@ const fs = require('fs');
 const pfad = require('path');
 
 const VERSION = '4.0';
-const BUILD = 20;
+const BUILD = 22;   // Build 21: Sportarten-Schalter ("sportarten") · Build 22: stats.speicher_mb
 
 /* ---------- Zugangsdatei ---------- */
 const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
@@ -117,20 +117,74 @@ const NACH_ANPFIFF_STD = 3;      // so lange nach Anpfiff bleibt ein Markt
 
 /* Sportarten, die der Server überhaupt zuordnen kann (orion_bf_sport).
  * Alles andere zu laden wäre Arbeit für nichts — der Server verwirft es.
- * Fußball steht vorn und kommt öfter dran. */
+ * Fußball steht vorn und kommt öfter dran.
+ *
+ * SCHALTER (seit Build 21): In bridge-config.json darf ein Feld
+ * "sportarten" stehen. Je Schlüssel sind drei Einstellungen erlaubt:
+ *   aktiv           false nimmt die Sportart ganz aus der Rotation
+ *   fensterStunden  wie weit DIESE Sportart vorausschaut (höchstens das
+ *                   globale Fenster — der Server nimmt ohnehin nur 72 h)
+ *   anteil          wie oft je Rotationszyklus (ganze Zahl, Standard 1)
+ * Beispiel:
+ *   "sportarten": { "tennis": { "aktiv": false },
+ *                   "esport": { "anteil": 2, "fensterStunden": 24 } }
+ * Fehlt das Feld, läuft alles exakt wie bisher. Die erste AKTIVE Sportart
+ * der Liste (normal: Fußball) kommt in jeder zweiten Runde dran; "anteil"
+ * steuert die übrigen. */
 const SPORT = [
-  { et: '1',        name: 'Fußball',           anteil: 4 },
-  { et: '2',        name: 'Tennis',            anteil: 1 },
-  { et: '7522',     name: 'Basketball',        anteil: 1 },
-  { et: '7511',     name: 'Baseball',          anteil: 1 },
-  { et: '6423',     name: 'American Football', anteil: 1 },
-  { et: '7524',     name: 'Eishockey',         anteil: 1 },
-  { et: '4',        name: 'Cricket',           anteil: 1 },
-  { et: '6',        name: 'Boxen',             anteil: 1 },
-  { et: '26420387', name: 'MMA',               anteil: 1 },
-  { et: '8',        name: 'Motorsport',        anteil: 1 },
-  { et: '27454571', name: 'E-Sport',           anteil: 1 }
+  { key: 'fussball',   et: '1',        name: 'Fußball' },
+  { key: 'tennis',     et: '2',        name: 'Tennis' },
+  { key: 'basketball', et: '7522',     name: 'Basketball' },
+  { key: 'baseball',   et: '7511',     name: 'Baseball' },
+  { key: 'football',   et: '6423',     name: 'American Football' },
+  { key: 'eishockey',  et: '7524',     name: 'Eishockey' },
+  { key: 'cricket',    et: '4',        name: 'Cricket' },
+  { key: 'boxen',      et: '6',        name: 'Boxen' },
+  { key: 'mma',        et: '26420387', name: 'MMA' },
+  { key: 'motorsport', et: '8',        name: 'Motorsport' },
+  { key: 'esport',     et: '27454571', name: 'E-Sport' }
 ];
+
+/* ---------- Sportarten-Schalter auswerten ----------
+ * Stille Fehlschläge sind in diesem Projekt eine bekannte Fehlerklasse.
+ * Darum wird jeder vertippte Schlüssel und jedes unbekannte Feld beim
+ * Start LAUT gemeldet — nichts wird stumm verschluckt. */
+const AKTIV = (function schalter() {
+  const cfg = CFG.sportarten || {};
+  const gueltig = SPORT.map(s => s.key);
+  for (const k of Object.keys(cfg)) {
+    if (gueltig.indexOf(k) < 0) {
+      console.error('  WARNUNG: "sportarten.' + k + '" kennt die Bridge nicht — wird ignoriert.');
+      console.error('           Gültige Schlüssel: ' + gueltig.join(', '));
+    }
+  }
+  const liste = [];
+  for (const s of SPORT) {
+    const c = cfg[s.key] || {};
+    for (const feld of Object.keys(c)) {
+      if (feld !== 'aktiv' && feld !== 'fensterStunden' && feld !== 'anteil') {
+        console.error('  WARNUNG: "sportarten.' + s.key + '.' + feld + '" kennt die Bridge nicht' +
+                      ' (gültig: aktiv, fensterStunden, anteil).');
+      }
+    }
+    if (c.aktiv === false) continue;
+    let fenster = zahl(c.fensterStunden, O.fensterStunden);
+    if (fenster > O.fensterStunden) {
+      console.error('  WARNUNG: sportarten.' + s.key + '.fensterStunden (' + fenster + ') liegt über dem' +
+                    ' globalen Fenster — gekappt auf ' + O.fensterStunden + ' h (mehr nimmt der Server nicht).');
+      fenster = O.fensterStunden;
+    }
+    if (!(fenster > 0)) fenster = O.fensterStunden;
+    const anteil = Math.max(1, Math.round(zahl(c.anteil, 1)));
+    liste.push({ key: s.key, et: s.et, name: s.name, fenster, anteil });
+  }
+  if (liste.length === 0) {
+    console.error('\n  In bridge-config.json sind ALLE Sportarten abgeschaltet — dann gibt es nichts zu tun.');
+    console.error('  Mindestens eine Sportart in "sportarten" wieder auf aktiv stellen.\n');
+    process.exit(1);
+  }
+  return liste;
+})();
 
 /* Nur diese Markttypen kann der Server paaren. Alles andere ist Ballast. */
 const TYPEN = /^(MATCH_ODDS|OVER_UNDER_\d+)$/;
@@ -395,15 +449,19 @@ let laeuft = false, runde = 0, fehlerInFolge = 0;
 /* Rotationsplan, VERSCHRÄNKT (nach dem Trockenlauf vom 16.8. geändert):
  * ein glatter Plan hätte Fußball viermal hintereinander gebracht und die
  * anderen Sportarten minutenlang blind gelassen. Jetzt wechseln sich
- * Fußball und je eine andere Sportart ab:
+ * die erste aktive Sportart (normal: Fußball) und je eine andere ab:
  *   Fußball, Tennis, Fußball, Basketball, Fußball, Baseball, …
  * Fußball ist damit in JEDER zweiten Runde dran (dort liegen die meisten
- * Partien), und jede andere Sportart spätestens alle 20 Runden. */
+ * Partien). Seit Build 21 zählt dabei nur, was in "sportarten" aktiv ist,
+ * und "anteil" wiederholt eine Sportart entsprechend oft je Zyklus. */
 const PLAN = [];
 (function planBauen() {
-  const fussball = SPORT[0];
-  const rest = SPORT.slice(1);
-  for (const s of rest) { PLAN.push(fussball); PLAN.push(s); }
+  const erst = AKTIV[0];
+  const rest = AKTIV.slice(1);
+  if (rest.length === 0) { PLAN.push(erst); return; }
+  for (const s of rest) {
+    for (let i = 0; i < s.anteil; i++) { PLAN.push(erst); PLAN.push(s); }
+  }
 })();
 
 async function durchlauf() {
@@ -414,10 +472,11 @@ async function durchlauf() {
     if (!sitzung) await anmelden();
     else if (Date.now() - letzteAnmeldung > 15 * 60e3) await wachhalten();
 
-    /* EINE Sportart je Runde — getrennt, nicht alles auf einmal. */
+    /* EINE Sportart je Runde — getrennt, nicht alles auf einmal.
+     * Das Fenster ist seit Build 21 je Sportart einstellbar. */
     const dran = PLAN[runde % PLAN.length];
     runde++;
-    const von = Date.now(), bis = von + O.fensterStunden * 3600e3;
+    const von = Date.now(), bis = von + dran.fenster * 3600e3;
     await katalog(dran.et, von, bis, 0);
 
     const weg = aufraeumen();
@@ -432,6 +491,10 @@ async function durchlauf() {
       bridge: VERSION, build: BUILD, sportart: dran.name,
       maerkte: markets.length, vorrat: vorratGesamt, gelesen, verfallen: weg,
       dauer_ms: Date.now() - t0,
+      /* Eigener Speicherverbrauch, damit „wächst nicht" MESSBAR bleibt
+       * (die 3.8 wurde still immer größer — das soll nie wieder unsichtbar
+       * passieren). Soll dauerhaft um ~70-90 MB pendeln. */
+      speicher_mb: Math.round(process.memoryUsage().rss / 1048576),
       et_namen: Object.fromEntries(SPORT.map(s => [s.et, s.name]))
     };
     await hochladen(markets, stats);
@@ -465,8 +528,19 @@ console.log('  ORION BRIDGE ' + VERSION + '  (Build ' + BUILD + ')');
 console.log('  ------------------------------------------------------------');
 console.log('  Holt NUR Betfair-Kurse und lädt sie zum Panel hoch.');
 console.log('  Gerechnet wird auf dem Server — hier läuft keine Arbitrage.');
-console.log('  Sportarten: ' + SPORT.length + ', eine je Durchlauf (Fußball öfter).');
+console.log('  Sportarten: ' + AKTIV.length + ' von ' + SPORT.length + ' aktiv, eine je Durchlauf (' +
+            AKTIV[0].name + ' öfter).');
 console.log('  Takt: alle ' + O.taktSekunden + ' s · Fenster: ' + O.fensterStunden + ' h');
+/* Steht ein "sportarten"-Feld in der Zugangsdatei, wird die wirksame
+ * Einstellung beim Start VOLLSTÄNDIG gezeigt — gegen stille Drift. */
+if (CFG.sportarten) {
+  for (const s of AKTIV) {
+    console.log('    ' + s.name.padEnd(18) + ' Fenster ' + String(s.fenster).padStart(3) +
+                ' h · Anteil ' + s.anteil);
+  }
+  const aus = SPORT.filter(s => !AKTIV.some(a => a.et === s.et)).map(s => s.name);
+  if (aus.length) console.log('    ABGESCHALTET: ' + aus.join(', '));
+}
 console.log('  Fenster schließen beendet die Bridge. Strg+C ebenso.');
 console.log('');
 

@@ -1,103 +1,94 @@
-# Scanner-Bridge — läuft auf deinem PC
+# Orion Bridge 4.0 — läuft auf deinem PC
+
+**Hauptversion seit 17.08.2026.** Die alte 3.8 (92-MB-exe mit eigener
+Arbitrage-Rechnung) ist ausgemustert; ihre Quellen liegen nur noch in der
+Git-Historie.
 
 ## Was macht das Programm?
 
-Es liest **beide Seiten** und rechnet die Arbitrage selbst aus:
+Es holt **nur Betfair-Kurse** und lädt sie alle 30 Sekunden zum Panel hoch.
+Sonst nichts. Gerechnet wird auf dem **Server** (`orion-lauf`): der vergleicht
+die vier Börsen, prüft dreifach nach und entscheidet, was eine Chance ist.
+Zwei Rechenwege für dieselbe Sache wären die Drift-Falle, die dieses Projekt
+schon zweimal getroffen hat — deshalb rechnet die Bridge absichtlich nicht.
 
-| Quelle | Zugang |
+**Warum lokal?** Betfair beantwortet Anfragen aus Rechenzentren mit 403.
+Nur dieses eine Stück muss deshalb auf einem Rechner zu Hause laufen.
+
+## Die Dateien — mehr ist es nicht
+
+| Datei | Zweck |
 |---|---|
-| **Betfair / 96ex Exchange** | dein App-Key, lokal (Cloud wird von Betfair geblockt) |
-| **Polymarket** | offene API, kein Konto nötig |
+| `orion-bridge-4.js` | das ganze Programm, eine Node-Datei (~500 Zeilen) |
+| `bridge-config.json` | dein Zugang — bleibt lokal, steht in `.gitignore`, **nie committen** |
+| `Bridge-start.cmd` | Starter mit Neustart-Schleife |
+| `bridge-config.example.json` | Vorlage zum Ausfüllen |
+| `LIESMICH.txt` | Betrieb auf dem eingerichteten PC (Aufgabenplanung, Anhalten, Fehlerbilder) |
 
-Gefundene Chancen werden hochgeladen **und dauerhaft protokolliert**. Dadurch füllt sich die Historie auch dann, wenn niemand die Website offen hat. Am nächsten Tag siehst du unter „Mein Bereich", wie viel in der Nacht durchgelaufen ist.
+Die Bridge speichert **nichts auf der Festplatte** — kein Protokoll, keine
+Datendateien. Alles lebt im Arbeitsspeicher (~70–90 MB, konstant), Altes
+verfällt laufend (Anpfiff über 3 h her oder 30 min nicht gesehen → raus).
 
-## Nur Börse, niemals Buchmacher
+## Einrichtung auf einem neuen PC
 
-Angesprochen wird ausschliesslich die **Exchange** (`SportsAPING`, `availableToBack` / `availableToLay`). Das ist der Marktplatz zwischen Nutzern: gewettet wird **gegen andere Leute**, nie gegen Betfair selbst. Betfair Sportsbook wird an keiner Stelle aufgerufen. Deshalb droht hier auch keine Gewinnersperre.
-
-## Die Rechnung
-
-Zwei sich ausschliessende Ausgänge, je einer auf einem anderen Buch:
-
-```
-Effektivquote nach Kommission   qE  = 1 + (q - 1) * (1 - Gebühr)
-Summe der Kehrwerte             inv = 1/qE1 + 1/qE2
-Arbitrage liegt vor, wenn       inv < 1
-Aufteilung von Einsatz S        S1  = S * (1/qE1)/inv       S2 = S - S1
-Auszahlung, egal wie es ausgeht      S/inv     (bei BEIDEN Ausgängen gleich)
-Rendite                              (1/inv - 1) * 100 %
-```
-
-Ausdrücklich **nicht** 50/50, sondern so aufgeteilt, dass beide Ausgänge denselben Betrag zurückgeben. Nur dann ist der Gewinn unabhängig vom Ergebnis.
-
-**Dagegenhalten (Lay)** wird mitgerechnet — das ist der Schlüssel für Märkte mit vielen Teilnehmern (Ballon d'Or, Meister, Wahlen), wo Polymarket binär fragt „Gewinnt X?":
-
-```
-qE = 1 + (1 - Gebühr) / (L - 1)          L = Lay-Quote
-Eingesetzt wird die Haftung: stake * (L - 1)
-```
-
-### Selbst nachrechnen
-
-```bash
-node pruefung.js
-```
-
-Rechnet die komplette Logik mit Zahlen durch, gegengerechnet über beide Ausgänge. Meldet sich **nicht** bei Betfair an und lädt nichts hoch.
-
-## Einrichtung
-
-Die bebilderte Anleitung steht auf der Website unter **„Betfair/96ex verbinden"**. Kurzfassung:
-
-1. Betfair-Konto anlegen und **verifizieren**
-2. App-Key erzeugen: https://apps.betfair.com/visualisers/api-ng-account-operations/ → `createDeveloperAppKeys` → **Delayed App Key** (gratis, 16 Zeichen)
-3. `betfair-bridge.exe` herunterladen und in einen eigenen Ordner legen
-4. Doppelklick — das Programm legt `bridge-config.json` an und öffnet sie
-5. Vier Felder ausfüllen, speichern, nochmal starten
-
-Das `bridgeToken` **denkst du dir nicht aus** — es steht fertig auf der Website unter „Betfair/96ex verbinden" und beginnt mit `brg_`.
+1. Node installieren (nodejs.org, LTS)
+2. Ordner anlegen, `orion-bridge-4.js`, `Bridge-start.cmd` und
+   `bridge-config.example.json` hineinkopieren
+3. Vorlage zu `bridge-config.json` umbenennen und die vier
+   `HIER_…`-Felder ausfüllen (das `bridgeToken` steht auf der Website
+   unter „Betfair/96ex verbinden", beginnt mit `brg_`)
+4. Doppelklick auf `Bridge-start.cmd`, Fenster offen lassen
 
 ## Einstellungen in `bridge-config.json`
 
+Alles freiwillig — fehlt ein Feld, gilt der Standard:
+
 | Feld | Vorgabe | Bedeutung |
 |---|---|---|
-| `intervalSeconds` | 20 | Takt für laufende und bald startende Märkte |
-| `warmIntervalSeconds` | 150 | Takt für den gesamten Bestand |
-| `coldIntervalSeconds` | 900 | wie oft der Bestand neu erfasst wird |
-| `excludeEventTypeIds` | `["7","4339"]` | Pferde- und Windhundrennen aus. Auf `[]` setzen für wirklich alles |
-| `feeBetfairPercent` | 5 | deine Betfair-Kommission |
-| `feePolymarketPercent` | 0 | Polymarket-Gebühr |
-| `minRoiPercent` | 0.5 | ab welcher Rendite gemeldet wird |
-| `minStake` | 20 | Chancen mit weniger möglichem Einsatz werden verschwiegen |
-| `minSize` | 10 | Mindestgeld hinter einer Quote — ohne Gegenspieler keine Wette |
-| `maxRequestsPerSecond` | 4 | Betfair-Schonung, senkt sich bei Drosselung selbst |
+| `windowHours` | 72 | wie weit vorausgeschaut wird (mehr nimmt der Server nicht) |
+| `intervalSeconds` | 30 | Takt zwischen zwei Durchläufen |
+| `marketsPerRun` | 400 | wie viele Märkte je Durchlauf frische Kurse bekommen |
+| `uploadLimit` | 1200 | Obergrenze je Upload |
+| `feeBetfairPercent` | 3 | Rückfall-Kommission, falls Betfair keine meldet |
+| `excludeEventTypeIds` | `["7","4339"]` | Pferde- und Windhundrennen aus |
+| `sportarten` | – | je Sportart: `aktiv`, `fensterStunden`, `anteil` (seit Build 21) |
+
+Gültige `sportarten`-Schlüssel: `fussball, tennis, basketball, baseball,
+football, eishockey, cricket, boxen, mma, motorsport, esport`. Beispiel:
+
+```json
+"sportarten": {
+  "tennis": { "aktiv": false },
+  "esport": { "anteil": 2, "fensterStunden": 24 }
+}
+```
+
+Vertippte Schlüssel und unbekannte Felder meldet die Bridge beim Start
+**laut** als WARNUNG; die wirksame Einstellung steht vollständig im
+Startbild. Nach jeder Änderung die Bridge neu starten.
+
+## Prüfen, ob sie läuft
+
+```sql
+SELECT now()-updated_at AS alter, stats FROM bridge_odds WHERE id=1;
+```
+
+Alter unter ~1 Minute, `stats.bridge` = "4.0". In `stats` stehen außerdem
+`build`, `sportart` (der letzten Runde), `vorrat`, `maerkte` und
+`speicher_mb` (seit Build 22 — soll dauerhaft um 70–90 pendeln).
 
 ## Sicherheit
 
-- Zugangsdaten bleiben **ausschliesslich auf deinem PC** (`bridge-config.json`)
-- Hochgeladen werden **nur Quoten und Ergebnisse** — nie Benutzername, Passwort oder App-Key
-- `bridge-config.json` steht in `.gitignore` und darf niemals weitergegeben werden
+- Zugangsdaten bleiben **ausschließlich auf deinem PC** (`bridge-config.json`)
+- Hochgeladen werden **nur Quoten** — nie Benutzername, Passwort oder App-Key
+- Angesprochen wird nur die **Exchange** (`SportsAPING`), nie das Sportsbook
 
-## Dauerbetrieb
-
-Das Fenster muss offen bleiben. Für Dauerbetrieb: PC durchlaufen lassen, Energiesparen und Ruhezustand aus.
-
-## Wenn etwas nicht klappt
+## Wenn etwas nicht geht
 
 | Meldung | Ursache / Lösung |
 |---|---|
-| `Das bridgeToken wird nicht akzeptiert` | Token frisch von der Website holen (beginnt mit `brg_`) |
-| `INVALID_USERNAME_OR_PASSWORD` | Betfair-Login falsch. **Nicht** wiederholt probieren — das Programm pausiert nach 3 Fehlversuchen selbst, damit Betfair das Konto nicht zusätzlich sperrt |
-| `Login fehlgeschlagen: SUSPENDED` | Konto eingeschränkt. Kurse lesen geht trotzdem, wetten nicht |
-| `Blockiert (HTML/Cloudflare)` | VPN oder Proxy aus — die Bridge muss über den normalen Anschluss laufen |
-| `Felder noch offen` | In der Datei stehen noch Platzhalter |
-| `Betfair drosselt` | Kein Fehler, das Programm entschärft den Takt selbst |
-| gerade keine Chance | Kein Fehler. Wie oft etwas auftaucht, bestimmt der Markt, nicht das Programm |
-
-## Neu bauen (nur für Entwickler)
-
-```bash
-node --experimental-sea-config sea-config.json
-node -e "require('fs').copyFileSync(process.execPath,'betfair-bridge.exe')"
-npx postject betfair-bridge.exe NODE_SEA_BLOB sea-prep.blob --sentinel-fuse NODE_SEA_FUSE_fce680ab2cc467b6e072b8b5df1996b2
-```
+| `Anmeldung fehlgeschlagen` | zuerst den **Benutzernamen** prüfen — Betfair meldet falschen Namen und falsches Passwort gleich |
+| `Angemeldet — Konto eingeschränkt (SUSPENDED)` | **kein Fehler**: Wetten gesperrt, Kurse lesen geht — genau das brauchen wir |
+| `Blockiert (HTML statt Daten)` | VPN/Proxy aus — Betfair sperrt Rechenzentren |
+| Fenster schließt sofort | Node fehlt (nodejs.org, LTS) |
+| Panel: „Betfair-Daten sind X alt" | Bridge läuft nicht oder der Rechner schläft — siehe LIESMICH.txt |

@@ -1,4 +1,4 @@
-ORION BRIDGE 4.0  (Build 20, 16.08.2026)
+ORION BRIDGE 4.0  (Build 22, 17.08.2026)
 ==============================================================
 
 WAS SIE TUT
@@ -23,14 +23,22 @@ und läuft dort DAUERHAFT. Du musst nichts starten:
     weiter ausgehen (spart Strom, stoppt nichts).
   * Es kann immer nur EINE Bridge laufen. Startest du sie von Hand,
     während die Aufgabe läuft, sagt sie das und beendet sich sofort.
+  * Auf dem Desktop liegt die Verknüpfung "Orion Bridge 4.0" (grünes
+    Node-Symbol, seit 17.08.) — zum Starten von Hand, falls sie mal
+    nicht läuft. Normal brauchst du sie nicht: die Aufgabenplanung
+    schaltet die Bridge bei jeder Anmeldung von selbst ein.
 
 Prüfen, ob sie läuft:  Aufgabenplanung öffnen (Windows-Taste, dann
 "Aufgabenplanung" tippen) und nach "Orion Bridge" sehen. Oder im Panel:
 Die Betfair-Kachel muss ein Alter unter fünf Minuten zeigen.
 
 Anhalten (falls nötig): In der Aufgabenplanung Rechtsklick auf
-"Orion Bridge" -> Beenden. Zum dauerhaften Abschalten dort
-"Deaktivieren".
+"Orion Bridge" -> Beenden. ABER: Das trifft nicht immer (die Aufgabe
+koppelt das Bridge-Fenster ab; am 17.08. lief sie nach "Beenden"
+einfach weiter). Deshalb IMMER nachprüfen: Das minimierte Fenster
+"Orion Bridge 4.0 - Betfair" in der Taskleiste schließen — das beendet
+sie sicher. Zum dauerhaften Abschalten in der Aufgabenplanung
+"Deaktivieren" UND das Fenster schließen.
 
 AUF EINEM ANDEREN PC EINRICHTEN
 -------------------------------
@@ -59,7 +67,13 @@ Beides ist behoben, und zwar an der Wurzel:
    Ein Markt verschwindet aus dem Vorrat, wenn sein Anpfiff über
    3 Stunden zurückliegt oder er 30 Minuten nicht mehr gesehen wurde.
    Das war der Grund fürs Anwachsen: 3.8 sammelte, ohne je zu
-   vergessen.
+   vergessen. Wichtig dazu: Die Bridge speichert NICHTS auf der
+   Festplatte — alles lebt im Arbeitsspeicher und geht alle 30
+   Sekunden komplett an Supabase. Im Bridge-Ordner liegen nur die
+   fünf Programmdateien (~31 KB), kein Protokoll, keine Daten.
+   Seit Build 22 meldet die Bridge ihren eigenen Speicherverbrauch
+   bei jedem Upload mit (stats.speicher_mb, normal ~70-90 MB) —
+   ob nichts wächst, ist damit jederzeit MESSBAR, nicht behauptet.
 
 3. NUR NOCH BETFAIR.
    Der Polymarket-Scan, die eigene Arbitrage-Rechnung und die
@@ -94,6 +108,34 @@ Wetten über die Schnittstelle sind gesperrt, Kurse lesen ist erlaubt.
 Genau das brauchen wir.
 
 
+SPORTARTEN-SCHALTER (seit Build 21)
+-----------------------------------
+In bridge-config.json darf ein Feld "sportarten" stehen. Damit kannst
+du je Sportart drei Dinge einstellen — alles freiwillig, fehlt das
+Feld, läuft alles wie bisher:
+
+  aktiv           false nimmt die Sportart ganz aus der Rotation
+  fensterStunden  wie weit DIESE Sportart vorausschaut (höchstens das
+                  globale Fenster; der Server nimmt ohnehin nur 72 h)
+  anteil          wie oft sie je Rotationszyklus drankommt (Standard 1)
+
+Beispiel (in bridge-config.json, auf gleicher Ebene wie bridgeUrl):
+
+  "sportarten": {
+    "tennis": { "aktiv": false },
+    "esport": { "anteil": 2, "fensterStunden": 24 }
+  }
+
+Gültige Schlüssel: fussball, tennis, basketball, baseball, football,
+eishockey, cricket, boxen, mma, motorsport, esport.
+
+Beim Start zeigt die Bridge die wirksame Einstellung vollständig an,
+samt Zeile "ABGESCHALTET: …". Ein vertippter Schlüssel oder ein
+unbekanntes Feld wird LAUT als WARNUNG gemeldet, nie still verschluckt.
+Nach jeder Änderung an der Zugangsdatei: Aufgabe neu starten
+(Aufgabenplanung -> "Orion Bridge" -> Beenden, dann Ausführen).
+
+
 WENN ETWAS NICHT GEHT
 ---------------------
 „Anmeldung fehlgeschlagen"   → zuerst den Benutzernamen in
@@ -107,3 +149,13 @@ Panel zeigt „Betfair-Daten sind X alt" → die Bridge läuft nicht oder
 Getestet am 16.08.2026 gegen das echte Betfair-Konto: Anmeldung,
 Katalog, Kurse und Upload liefen; das Panel bestätigte 259 Märkte,
 alle mit Sportart und echtem Gebührensatz.
+
+Build 21 getestet am 17.08.2026: ohne "sportarten"-Feld exakt gleiches
+Verhalten wie Build 20; mit Schaltern flog Tennis aus der Rotation,
+E-Sport bekam Fenster 24 h und Anteil 2, und alle drei absichtlich
+eingebauten Fehler (falscher Schlüssel, unbekanntes Feld, Fenster über
+72 h) wurden beim Start laut gemeldet. Nach der Installation per SQL
+nachgemessen: Daten 15 s alt, build 21, 400 Märkte hochgeladen.
+
+Build 22 getestet und installiert am 17.08.2026: speicher_mb kam mit
+80 MB in der Datenbank an, Daten 17 s alt, exakt eine Bridge-Instanz.

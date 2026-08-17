@@ -1,5 +1,0 @@
-{
-  "main": "betfair-bridge.js",
-  "output": "sea-prep.blob",
-  "disableExperimentalSEAWarning": true
-}

@@ -4,9 +4,34 @@
 > Abschnitt 8j (Gesamtprojekt) und `supabase/datenbank.md`. Karam ist der
 > Offizier, die Anrede ist militärisch, alles auf Deutsch.
 
-## 1. Stand (16.08.2026, Ende der Sitzung)
+## 1. Stand (17.08.2026, Ende der Sitzung)
 
-Die Bridge 4.0 (Build 20) ist **fertig, getestet und läuft dauerhaft**:
+**Build 22 ist gebaut, getestet, installiert und läuft** — neu in 22:
+`stats.speicher_mb`, der eigene Speicherverbrauch bei jedem Upload
+(Karams Sorge nach der stets wachsenden 3.8; gemessen: 80 MB, Ordner
+enthält nur 5 Programmdateien ohne Protokolle — es wächst nichts, und
+das ist jetzt jederzeit per SQL ablesbar). Neu in 21: die
+Sportarten-Schalter. In `bridge-config.json` darf ein Feld
+`sportarten` stehen (je Schlüssel: `aktiv`, `fensterStunden`, `anteil`;
+gültige Schlüssel: fussball, tennis, basketball, baseball, football,
+eishockey, cricket, boxen, mma, motorsport, esport). Fehlt das Feld,
+läuft alles exakt wie Build 20 — im Trockenlauf mit Karams unveränderter
+Config nachgemessen. Vertippte Schlüssel/Felder und ein Fenster über dem
+globalen werden beim Start LAUT gemeldet (gegen stille Fehlschläge); die
+wirksame Einstellung steht vollständig im Startbild samt Zeile
+„ABGESCHALTET: …". Kontrollmessung nach Installation: Daten 15 s alt,
+`stats.build` = 21, 400 Märkte hochgeladen; Build 22 danach: 17 s,
+`speicher_mb` 80. Doku nachgezogen: `LIESMICH.txt` (Repo +
+Installationsordner), `bridge-config.example.json` und `README.md`
+(beide waren noch 3.8-Stand — jetzt 4.0). Auf dem Desktop liegt seit
+17.08. die Verknüpfung „Orion Bridge 4.0" (Node-Symbol) für den
+Handstart; der alte 3.8-Autostart wurde entschärft (Verknüpfung in den
+3.8-Ordner verschoben — sonst wären bei jeder Anmeldung ZWEI Bridges
+gestartet). ACHTUNG: Am 17.08. hat Karam versehentlich den kompletten
+Repo-Ordner `bridge/` von der Platte gelöscht (statt Desktop-3.8);
+alles wiederhergestellt aus Git-Historie + Installationskopien.
+
+Die Bridge 4.0 ist **fertig, getestet und läuft dauerhaft**:
 
 - **Quelle der Wahrheit:** `bridge/orion-bridge-4.js` in diesem Repo
   (~460 Zeilen Node, KEINE exe mehr; die 92-MB-exe 3.8 ist Geschichte).
@@ -44,7 +69,14 @@ der Server (`orion-lauf`).
    einem Scratch-Ordner (Config dazukopieren, `timeout 100 node …`) →
    nach `C:\Users\Home\OrionBridge` kopieren → Aufgabe neu starten
    (`schtasks /end /tn "Orion Bridge"` + `schtasks /run /tn "Orion Bridge"`
-   oder der Watchdog übernimmt). **NIE per Bash-Heredoc mit Backslashes/
+   oder der Watchdog übernimmt). **ACHTUNG (Lehre vom 17.08.): `/end`
+   beendet die Bridge NICHT zuverlässig** — die Aufgabe startet sie über
+   `cmd /c start` abgekoppelt, und am 17.08. lief sie nach `/end` einfach
+   weiter (Folge: zwei Bridges parallel während eines Tests). Nach jedem
+   `/end` deshalb NACHMESSEN: PID aus `bridge.lock` lesen und prüfen, ob
+   der Prozess wirklich tot ist; sonst ZUERST die cmd-Schleife
+   (Bridge-start) beenden, DANN den node-Prozess — in dieser Reihenfolge,
+   sonst startet die Schleife nach 15 s neu. **NIE per Bash-Heredoc mit Backslashes/
    Regexen in die Datei schreiben** — das hat in dieser Sitzung zweimal
    Escapes zerlegt (`\s`→`s`). Edit-Tool oder node-Skript mit
    `String.fromCharCode(92)` benutzen.
@@ -52,7 +84,38 @@ der Server (`orion-lauf`).
    `SELECT now()-updated_at, stats FROM bridge_odds WHERE id=1;`
    (Alter muss < ~1 min sein; `stats.bridge` = "4.0").
 
-## 3. DER NÄCHSTE AUFTRAG (Karams Worte, 16.08. spät)
+## 3a. ERLEDIGT AM 17.08.: Sportarten-Schalter (21), speicher_mb (22), 3.8 ausgemustert
+
+Der Auftrag aus Abschnitt 3 ist besprochen und der Bridge-Teil gebaut
+(siehe Abschnitt 1). `minRoiPercent`/`minStake` wurden bewusst NICHT
+zurückgebaut (gehören dem Server), Telegram bewusst NICHT (erst den
+Meldeweg klären — die Bridge weiß nicht, was meldenswert ist).
+**3.8 ist offiziell ausgemustert:** `bridge/betfair-bridge.js`,
+`bridge/sea-config.json` und `bridge/pruefung.js` per `git rm` entfernt
+(Git-Historie hat sie weiter), `README.md` von Grund auf neu.
+
+**Noch offen:**
+
+1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
+   (Netz UND Akku). Deckel-Aktion ließ sich per Abfrage nicht
+   bestätigen — Beweis: Deckel 5 min zu, dann Kontroll-SQL. Karam muss
+   den Deckel selbst zuklappen.
+2. **Überschneidungs-Matrix** (Kategorie × Anbieter, gemessen) — welche
+   Bereiche tragen wirklich zwei Quellen. Stand 13.8.: 3 von 21.
+3. **Geschwindigkeitsmessung** vor jedem Drehen am Takt — wo geht Zeit
+   verloren (Bridge-Takt / Rotation / Server-Takt)? Fallen: Betfair
+   drosselt, Supabase 546/Verbindungspool.
+4. **Zwei-Quellen-Wächter, meldend statt selbstschaltend:** prüft, ob
+   ein ruhender Bereich (Nur-ein-Anbieter-Regel) eine zweite Quelle
+   bekommen hat, und meldet — Karam gibt das Einschalten frei.
+5. **Desktop\Orion-Bridge-3.8 löschen** (macht Karam selbst; enthält
+   die ALTE Zugangsdatei — die aktuelle liegt in
+   C:\Users\Home\OrionBridge und darf NIEMALS gelöscht werden).
+6. **Commit/Push steht aus:** der komplette 4.0-Stand (Build 22, neue
+   README, ausgemusterte 3.8-Dateien) ist lokal fertig, aber noch nicht
+   committet — Karams Freigabe abwarten.
+
+## 3. DER AUFTRAG VOM 16.08. (Karams Worte — erledigt, siehe 3a)
 
 > „Ich möchte die lokale Bridge weiterbearbeiten … ich hab da mehrere
 > Konfigurationen, die ich auch direkt in die Bridge integrieren möchte."
