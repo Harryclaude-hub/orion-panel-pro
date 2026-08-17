@@ -469,8 +469,26 @@ Takten. **Scanner-Takte: 12 → 20.** Nur `spielerwetten` bleibt aus
 **Ehrliche Erwartung:** Diese 8 Bereiche SCANNEN jetzt wieder (sichtbar
 in `orion_laeufe`), aber PAARE entstehen erst, wenn eine zweite Quelle
 dieselben Fragen führt: Polymarket hat dort keine „A gegen B"-Titel.
-Der Weg zu echten Chancen bleibt: Kalshi-Sammler um Politik/Krypto/
-Wetter/Wirtschaft-Serien erweitern (vorher Last messen — der Sammler
-braucht heute schon 61 s je Lauf) und die Marktart „Schwelle" mit
-strikter Paarung bauen (Regel VORHER Karam zeigen; Polymarket „erreicht
-X im Zeitraum" ist NICHT Kalshi „Preis am Stichtag").
+Der Weg zu echten Chancen bleibt: Kalshi-Welt-Vorrat (seit 17.8. da,
+siehe unten) mit der Marktart „Schwelle" und strikter Paarung verbinden
+(Regel VORHER Karam zeigen; Polymarket „erreicht X im Zeitraum" ist
+NICHT Kalshi „Preis am Stichtag").
+
+### orion-kalshi v3 (17.8.2026) — alle Kategorien, zwei Ablagen
+
+Der Sammler holt seit v3 ALLE offenen Kalshi-Märkte im 72-h-Fenster
+**seitenweise mit Server-Zeitfilter** (`max_close_ts`) statt einer
+Anfrage je Serie. Gemessen: der alte Serienweg brauchte 61 s für nur
+Sport (258 Serien); Politik allein hätte 2.150 Serien gehabt.
+
+Zwei Ablagen in `kalshi_snapshot`, damit der laufende Scanner
+unberührt bleibt (er lädt Zeile 1 bei JEDEM Lauf komplett und kippte
+gemessen bei ~2.700 Fremdmärkten):
+
+| Zeile | Inhalt |
+|---|---|
+| `id=1` | nur Sport-GAME-Serien — Format und Größenordnung wie v2, `orion-lauf` liest sie unverändert |
+| `id=2` | alle übrigen Kategorien (Politik, Krypto, Wirtschaft, Wetter, …), gedeckelt auf die 3.000 mit größtem Open Interest; Verworfenes steht gezählt in den stats |
+
+Zeile 2 ist der Vorrat für die Marktart „Schwelle" — noch liest ihn
+NIEMAND. Quelle im Repo: `supabase/functions/orion-kalshi/index.ts`.

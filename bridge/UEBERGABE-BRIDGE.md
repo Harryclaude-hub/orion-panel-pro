@@ -156,8 +156,17 @@ bevor sie baut. Kontext dazu:
    liegt geprüft im Repo. Details: `UEBERGABE.md` Abschnitt 8k. Der
    MCP-Weg kann NUR alle drei Dateien (75 KB) inline — zweimal gemessen,
    kein Teil-Deploy; wegen der Escaping-Falle bewusst nicht gemacht.
-2. Kalshi-Sammler um Krypto/Wetter/Wirtschaft erweitern (KXBTCD, KXETHD,
-   KXHIGHNY, KXFED offen) — erst Last messen (61 s / HTTP-546-Gefahr).
+2. ~~Kalshi-Sammler erweitern~~ **ERLEDIGT 17.08.: orion-kalshi v3**
+   (per MCP deployt, verify_jwt blieb aus): EIN seitenweiser Durchlauf
+   mit Server-Zeitfilter statt Anfrage-je-Serie — 8,8 s für ALLE
+   Kategorien (vorher 61 s nur Sport). Sport → `kalshi_snapshot id=1`
+   (Format wie v2, Scanner unberührt, Paare stiegen 44 → 74), Welt →
+   `id=2` (3.000 liquideste Märkte, 278 Serien: Indizes, Rohstoffe,
+   Krypto, E-Sport-Maps — der Schwellen-Vorrat, liest noch niemand).
+   Quelle: `supabase/functions/orion-kalshi/index.ts`. Außerdem
+   gemessen: Betfair trägt außerhalb der 11 Bridge-Sportarten fast
+   nichts Paarbares (Darts 4, Rugby 1, Golf 0, Politik 0) — die Bridge
+   scannt bereits alles, was Paare tragen kann.
 3. Neue Marktart „Schwelle" mit strikter Paarung (gleiche Basis + gleiche
    Zahl + gleicher Stichzeitpunkt); Regel Karam VORHER zeigen. Warnung:
    Polymarket „erreicht X im Zeitraum" ≠ Kalshi „Preis am Stichtag".
