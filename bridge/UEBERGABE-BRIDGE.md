@@ -188,14 +188,27 @@ bevor sie baut. Kontext dazu:
    vorgelegt): die REFERENZQUELLEN differieren (Polymarket löst über
    Binance auf, Kalshi über CF Benchmarks) — nahe der Schwelle können
    beide Bücher GEGENSÄTZLICH abrechnen; selbst zeitgleiche Märkte
-   wären nicht streng dieselbe Frage. **Nächster Schritt vor jedem
-   Bau:** Stichzeit-Matrix über ALLE Basisgrößen (PM-Tagesereignisse ×
-   Kalshi-Serien: Indizes 15/16 Uhr ET?, Metalle, Öl) messen, wo
-   Minuten UND Quellen zusammenpassen; erst dort lohnt orion-schwelle
-   (als EIGENE kleine Funktion, orion-lauf bleibt unberührt). Der
-   Kalshi-Welt-Vorrat (id=2) liegt dafür bereit; Schwellenzahl steht
-   in jaName („$63,200 or above"), notfalls floor_strike im Sammler
-   nachrüsten.
+   wären nicht streng dieselbe Frage. **Karam hat 17.08. spät
+   „STRENG" entschieden:** gepaart wird nur bei gleicher
+   Referenzquelle; die Weißliste führt sie mit.
+   **Stichzeit-Matrix KOMPLETT gemessen (17.08. spät) — Ergebnis:
+   NULL streng-konforme Paarungen im heutigen Angebot.** Jeder
+   Kandidat scheitert an genau einer Achse: Krypto → Minute (PM
+   12:00 New York, Kalshi 9/17 Uhr) UND Quelle (Binance vs CF
+   Benchmarks); S&P → Basisgröße (PM fragt den SPY-ETF ~640, Kalshi
+   den Index ~7700) trotz identischer Minute 16:00 NY; Nasdaq/Dow →
+   PM führt KEINE Schwellenfrage; Einzelaktien (PM „closes above"
+   16:00 NY, elf Titel!) → Kalshi führt im Fenster keine
+   Einzelaktien-Serien; WTI → Minute (Kalshi 14:30 = NYMEX-
+   Settlement, PM 17:00); Gold/Silber/Gas → PM nur „Up or Down"
+   ohne feste Schwelle. **Konsequenz und nächster Bau: der
+   SCHWELLEN-WÄCHTER statt des Scanners** — eine kleine eigene
+   Funktion, die die Matrix periodisch neu misst (beide Börsen
+   ändern ihr Angebot laufend); sobald irgendwo Minute + Zahl +
+   Quelle zusammenlaufen, MELDET er — erst dann wird der
+   Paarungs-Scanner gebaut. orion-lauf bleibt unberührt. Vorrat
+   liegt bereit (id=2, Schwellenzahl in jaName, notfalls
+   floor_strike im Sammler nachrüsten).
 4. **Nur-ein-Anbieter-Regel am 17.8. auf Karams Befehl UMGEKEHRT**
    („alles muss gescannt werden"): alle 8 Welt-Bereiche wieder aktiv,
    Stunden-Takte versetzt (:30–:51), 20 Scanner laufen. Politik-Lauf
