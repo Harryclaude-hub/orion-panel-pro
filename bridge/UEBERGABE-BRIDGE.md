@@ -167,13 +167,17 @@ die Zeile ändert sich ja weiter!), der EIGENE eingesetzte Betrag,
 später das Urteil „war die Rechnung des Programms richtig?"
 (ja/nein/offen) und freie Notizen. Dazu eine eigene Ansicht aller
 Gespeicherten, und an gespeicherten Karten ein sichtbares
-„gesetzt"-Zeichen. VOR dem Bau eine Entscheidung von Karam einholen:
-**Speicherort** — (a) localStorage: nur dieses Gerät, dafür privat
-und null Serverrisiko; (b) Supabase-Tabelle orion_einsaetze: auf
-jedem Gerät verfügbar, ABER der Panel-Schlüssel im Repo ist
-öffentlich — schreibbare Tabelle bräuchte einen Schutz (z. B. nur
-über eine Edge Function mit dem bridge_token als Ausweis).
-Empfehlung: mit (a) starten, Weg zu (b) offenhalten.
+„gesetzt"-Zeichen. **Karam hat entschieden (17.08. tief nachts): Variante (b) —
+Datenbank, auf jedem Gerät verfügbar.** Bauskizze: Tabelle
+`orion_einsaetze` (schluessel, nr, schnappschuss jsonb, einsatz_eur,
+urteil offen/richtig/falsch, notiz, erstellt_am, geaendert_am), RLS
+komplett dicht für anon; Lesen UND Schreiben ausschließlich über
+eine kleine Edge Function `orion-einsaetze` mit `x-bridge-token` als
+Ausweis (dasselbe Muster wie bf-bridge: Vergleich gegen
+`profiles.bridge_token`); das Panel erfährt den Token einmalig über
+die Einstellungen-Seite und behält ihn lokal. So bleibt die Tabelle
+trotz öffentlichem Panel-Schlüssel geschützt, und die Einsätze
+gehören nachweislich Karam.
 
 **Noch offen:**
 
