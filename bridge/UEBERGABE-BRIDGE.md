@@ -192,6 +192,24 @@ sortiert wird erst beim Reiterwechsel, beim Neuladen oder nach
 längerer Ruhe. Muss mit der Bereichs-Gruppierung (17.08., „c")
 zusammenspielen. Danach erst Archiv und Gesetzt-Fach.
 
+**ERLEDIGT 17.08. tief nachts (Karams Planänderung, „erste
+Priorität"):** Funker-Chat STILLGELEGT — der Knopf bleibt als
+Platzhalter und tut nichts; `antwort()` bleibt im Code für später.
+Seine Nachprüfung läuft jetzt als DEFAULT bei jedem Takt für jede
+Zeile (grüner Chip „nachgerechnet" / rote Warnung „RECHNUNG WEICHT
+AB"). Statt der Rechnungsnummer trägt jede Karte den
+KOPIEREN-Knopf: vollständiger Prüfbericht als Text in die
+Zwischenablage (Spiel, beide Seiten mit Kurs/Gebühr/Effektivquote/
+Formel/Menge/Link, Kehrwertsumme, Rendite, Einsätze, Zeiten,
+Absage-Bilanz, Buchprobe, Währungskurs, Nachprüfung). Skript-Version
+auf v=57. Browser-verifiziert, Commit 3c48f13.
+
+**Künftiges Kapitel (Karams Ansage vor der Planänderung): der FUNKER
+als EIGENES Projekt** — eigenes Repo auf GitHub, eigener Link, mit
+dem Panel verbunden/synchronisiert („eine komplett größere Aufgabe,
+die separat ist"). Der stillgelegte Knopf im Panel ist der spätere
+Einstiegspunkt; `funker.js` hält antwort() als Ausgangsmaterial.
+
 **Noch offen:**
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
