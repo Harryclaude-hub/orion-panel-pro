@@ -428,6 +428,29 @@ geprüft. Deshalb:
   darf beim Gratis-Resend nur an die eigene Konto-Adresse senden —
   Empfänger-Mail = Resend-Konto-Mail.
 
+## Sicherheitslücke geschlossen (17.8.2026 spät)
+
+`orion_bf_sport` und `orion_kurs_anfrage` liefen **ohne RLS** und mit
+vollen Rechten (SELECT/INSERT/UPDATE/DELETE/TRUNCATE) für `anon`. Da der
+Panel-Schlüssel öffentlich im Repo steht, hätte **jeder** die
+Betfair-Sportkarte lesen, ändern oder leeren können — und das hätte
+keinen lauten Fehler gegeben, sondern lautlos alle Betfair-Paarungen
+beendet (unbekannter Bereich = wird nicht gepaart, dieselbe Klasse wie
+der MMA-Fall).
+
+Migration `rls_fuer_bf_sport_und_kurs_anfrage`: RLS an, **keine**
+Policy für anon, Schreibrechte entzogen. Unbedenklich, weil vorher
+geprüft: Der Browser liest beide Tabellen nie (er ruft nur
+`orion_uebersicht`, `orion_scanstand`, `orion_zeitstatistik` — alle
+SECURITY DEFINER), Edge Functions nutzen den Dienstschlüssel und
+`pg_cron` läuft als `postgres`; alle drei umgehen RLS.
+
+Nachgemessen: von außen 0 Zeilen und DELETE → 401; Panel unverändert
+(Betfair 184 Märkte im Fenster), Wächter „alles gut".
+
+> **Regel:** Neue Tabelle = RLS an, bevor sie Daten sieht. Der
+> öffentliche Schlüssel ist kein Schutz, RLS ist der Schutz.
+
 ## Nur-ein-Anbieter-Regel (16.8.2026)
 
 Vorgabe des Auftraggebers: *„Wenn ein Markt nur bei einem der Anbieter da
