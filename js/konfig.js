@@ -16,6 +16,13 @@
      * billig, waehrend ein voller Scan alle 2 Sekunden unmoeglich waere. */
     taktMs: 2000,
 
+    /* Externer Kontroll-Rechner (Vorgabe 17.8.): der kostenlose
+     * Surebet-Rechner von BetBurger. Karte und Funker verlinken ihn,
+     * damit sich jede Zeile AUSSERHALB unseres eigenen Codes nachrechnen
+     * laesst. Wichtig beim Eintragen: unsere Effektivquoten enthalten
+     * die Gebuehren bereits — dort also Gebuehr 0 einstellen. */
+    externerRechner: 'https://www.betburger.com/de/surebet-calculator',
+
     /* BETFAIR-SEITE = ORBIT-SATZ, belegt am 11.8.2026 spät abends.
      *
      * betfair.com ist aus Österreich gesperrt; jeder Betfair-Link dieser

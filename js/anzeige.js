@@ -1247,6 +1247,42 @@
     if (aufgeklappt[k]) delete aufgeklappt[k]; else aufgeklappt[k] = true;
   });
 
+  /* ---------- Der Rechenweg — zum Selbst-Nachrechnen (Vorgabe 17.8.) ----------
+   * Karams Ansage: „dass wir das auch nachrechnen können." Hier wird
+   * NICHTS neu gerechnet: jede Zahl steht in der Zeile oder kommt aus
+   * denselben Helfern wie die übrige Anzeige. Angezeigt wird gerundet —
+   * wer nachtippt und in der letzten Stelle abweicht, sieht Rundung,
+   * keinen Fehler. */
+  function rechenweg(f) {
+    var b1 = buch1(f), b2 = buch2(f);
+    var qe1 = qeEins(f), qe2 = qeZwei(f);
+    var inv = Number(f.inv), r = Number(f.rendite);
+    var g1 = Number(f.pm_gebuehr) * 100, g2 = Number(f.bf_gebuehr) * 100;
+    var K2 = welt.KONFIG || {};
+    var z = '<ol class="leise rechenweg">';
+    z += '<li>' + txt(b1.name) + ' — ' + wertName(b1) + ' <b>' + wertText(b1, f.pm_preis) + '</b>' +
+         ', Gebühr <b>' + (isFinite(g1) ? g1.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe1 + '</b></li>';
+    z += '<li>' + txt(b2.name) + ' — ' + wertName(b2) + ' <b>' + wertText(b2, f.bf_quote) + '</b>' +
+         ', Gebühr <b>' + (isFinite(g2) ? g2.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe2 + '</b></li>';
+    z += '<li>Kehrwertsumme: 1/' + qe1 + ' + 1/' + qe2 + ' = <b>' +
+         (isFinite(inv) ? inv.toFixed(4) : '?') + '</b></li>';
+    z += '<li>Rendite: (1 / ' + (isFinite(inv) ? inv.toFixed(4) : '?') + ' − 1) × 100 = <b>' +
+         (isFinite(r) ? ((r >= 0 ? '+' : '') + r.toFixed(2)) : '?') + ' %</b> — nach allen Gebühren</li>';
+    if (fxKurs) {
+      z += '<li>Geldbeträge: aus Dollar mit EZB-Kurs <b>' + Number(fxKurs.kurs).toFixed(4) +
+           '</b> (Stand ' + txt(fxKurs.stand) + ') in Euro umgerechnet</li>';
+    } else {
+      z += '<li>Kein Wechselkurs verfügbar — alle Geldbeträge stehen ehrlich in $.</li>';
+    }
+    z += '</ol>';
+    if (K2.externerRechner) {
+      z += '<div class="unter leise">Extern gegenprüfen: <a href="' + txt(K2.externerRechner) +
+           '" target="_blank" rel="noopener">Surebet-Rechner (BetBurger)</a> — dort die beiden Effektivquoten ' +
+           qe1 + ' und ' + qe2 + ' als Quoten eintragen und die Gebühr auf 0 stellen (sie steckt hier schon drin).</div>';
+    }
+    return z;
+  }
+
   function karte(f, imVerlauf) {
     /* Eine Chance ist eine Zeile, die GELD bringt — nicht eine mit guter
      * Prozentzahl. Dieselben Bedingungen wie in daten.js, seit dem 13.8.
@@ -1373,6 +1409,7 @@
           '</div>' +
         '</div></div>' +
         abschnitt('Was dabei herauskommt', renditeText(f) + analyse(f, imVerlauf), 'ab-geld') +
+        abschnitt('So wurde gerechnet — zum Nachprüfen', rechenweg(f), 'ab-rechnen') +
         abschnitt('Beide Ausgänge', gegenprobe(f), 'ab-probe') +
         /* Alles, was man erst UNMITTELBAR VOR dem Handeln braucht: Gebuehren,
          * Absageregeln, der Smarkets-Marktwechsel, die Nachkontrolle und die

@@ -113,8 +113,15 @@
     z += STRICH + '\nURTEIL: ' +
          (n.abweichungen.length
            ? 'RECHNUNG WEICHT AB — Meldung geht an den Auftraggeber.'
-           : 'RECHNUNG BESTÄTIGT, Kamerad. Gilt für den gespeicherten Zeitpunkt — ob die Kurse JETZT noch stehen, entscheidet das Buch.') +
-         '\nEnde der Meldung.';
+           : 'RECHNUNG BESTÄTIGT, Kamerad. Gilt für den gespeicherten Zeitpunkt — ob die Kurse JETZT noch stehen, entscheidet das Buch.') + '\n';
+    /* Externer Kontrollweg (Vorgabe 17.8.): dieselbe Rechnung in einem
+     * FREMDEN Rechner — wer uns misstraut, soll uns pruefen koennen. */
+    if (welt.KONFIG && welt.KONFIG.externerRechner) {
+      z += 'Extern gegenprüfen: ' + welt.KONFIG.externerRechner + '\n' +
+           '  → Effektivquoten ' + n.s1.qe.toFixed(4) + ' und ' + n.s2.qe.toFixed(4) +
+           ' dort als Quoten eintragen, Gebühr auf 0 (steckt schon drin).\n';
+    }
+    z += 'Ende der Meldung.';
     return z;
   }
 
@@ -126,6 +133,7 @@
     kehrwertsumme: 'KEHRWERTSUMME = 1/Effektivquote1 + 1/Effektivquote2. Unter 1,0000 ist es eine Arbitrage: beide Seiten zusammen kosten weniger, als jeder Ausgang zurückzahlt.',
     zuordnung: 'ZUORDNUNG = wie sicher beide Bücher dieselbe Partie und denselben Ausgang meinen (1,00 = wortgleich belegt). Achtung: alle bekannten FEHLpaarungen trugen ebenfalls 1,00 — deshalb prüft der Wächter unabhängig nach.',
     buchprobe: 'BUCHPROBE = Summe der Gegenwahrscheinlichkeiten aller Ausgänge EINES Marktes. Unter 1,00 könnte man bei diesem einen Buch alle Ausgänge kaufen und sicher gewinnen — gibt es nicht, also klebt dort ein Kurs. Solche Zeilen werden automatisch aussortiert.',
+    rechner: 'EXTERNER RECHNER = der kostenlose Surebet-Rechner von BetBurger: https://www.betburger.com/de/surebet-calculator — beide Effektivquoten als Quoten eintragen, Gebühr dort auf 0 (unsere Effektivquoten enthalten sie schon). Sag „prüfe #<Nummer>“, dann liefere ich dir die zwei Zahlen zum Eintragen gleich mit.',
     absage: 'ABSAGE = der dritte Ausgang, der in keiner Rendite steht. Jede Karte rechnet ihn in Geld aus: Smarkets zahlt zurück (belegt), Polymarket löst oft 50/50 auf (hängt vom Kaufpreis ab!), Kalshi wertet zum letzten Kurs, Betfair unbelegt. Kostet die Absage rechnerisch Geld, zählt die Zeile nicht als Chance.',
     plausibel: 'PLAUSIBILITÄT = Bedingung 6: über ' + ((welt.KONFIG || {}).maxPlausibel || 5) + ' % Rendite ist keine Chance. Gemessen: richtig war 2,07 bis 3,27 %, falsch alles über 4,48 — über 5 % war es IMMER ein klebender Kurs oder eine Fehlpaarung.',
     gedeckt: 'GEDECKT = beide Seiten decken nachweislich GEGENSÄTZLICHE Ausgänge derselben Frage. Ein Unentschieden ist kein dritter Verlustfall: „X gewinnt nicht“ schließt es mit ein.',
