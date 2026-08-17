@@ -158,6 +158,23 @@ flackern weg" — das ist eine MESSAUFGABE (Bewährungszeit 25 s,
 Mindestrendite 2 %, Lebensdauer der Chancen auswerten), bevor an
 Schwellen gedreht wird.
 
+**Karams Feature-Auftrag 2 (17.08. tief nachts, „letzte Sache") —
+BAU 2 DER NÄCHSTEN SITZUNG: das GESETZT-Fach.** Seine Worte
+sinngemäß: an jedem Eintrag ein kleiner, dezenter Speichern-Knopf
+(„darauf habe ich gesetzt"). Gespeichert wird: der Fund samt seiner
+Rechnung zum Zeitpunkt des Setzens (Schnappschuss, nicht Verweis —
+die Zeile ändert sich ja weiter!), der EIGENE eingesetzte Betrag,
+später das Urteil „war die Rechnung des Programms richtig?"
+(ja/nein/offen) und freie Notizen. Dazu eine eigene Ansicht aller
+Gespeicherten, und an gespeicherten Karten ein sichtbares
+„gesetzt"-Zeichen. VOR dem Bau eine Entscheidung von Karam einholen:
+**Speicherort** — (a) localStorage: nur dieses Gerät, dafür privat
+und null Serverrisiko; (b) Supabase-Tabelle orion_einsaetze: auf
+jedem Gerät verfügbar, ABER der Panel-Schlüssel im Repo ist
+öffentlich — schreibbare Tabelle bräuchte einen Schutz (z. B. nur
+über eine Edge Function mit dem bridge_token als Ausweis).
+Empfehlung: mit (a) starten, Weg zu (b) offenhalten.
+
 **Noch offen:**
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
