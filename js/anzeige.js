@@ -1244,6 +1244,13 @@
       w.push('<span class="chip rot" title="Die Titel beider Seiten teilen kein einziges unterscheidendes Wort. Das ist die Fehlerklasse der Faelle vom 10. und 11.08. — dort stand die Zuordnung ebenfalls auf 1,00.">FEHLPAARUNG? kein gemeinsames Wort</span>');
     }
     if (f.veraltet) w.push('<span class="chip rot">Kurse veraltet</span>');
+    /* Die Default-Nachprüfung (früher Funker) schlägt Alarm, wenn die
+     * unabhängige Zweitrechnung der gespeicherten Zeile widerspricht. */
+    if (f.nachpruefung && f.nachpruefung.pruefbar &&
+        f.nachpruefung.abweichungen && f.nachpruefung.abweichungen.length) {
+      w.push('<span class="chip rot" title="' + txt(f.nachpruefung.abweichungen.join(' · ')) +
+             '">RECHNUNG WEICHT AB — unabhängige Nachrechnung widerspricht</span>');
+    }
     /* Bedingung 6: unplausibel hoch. Gemessen an 26 geprueften Zeilen —
      * richtig 2,07 bis 3,27 Prozent, falsch ueber 4,48, JEDE Zeile ueber 5
      * war ein Kleber oder eine Fehlpaarung. */
@@ -1381,6 +1388,142 @@
     return z;
   }
 
+  /* ---------- KOPIEREN STATT RECHNUNGSNUMMER (Karams Befehl 17.08. nachts) --
+   * Ein Knopf je Karte kopiert den KOMPLETTEN Gedankengang als Text in die
+   * Zwischenablage: Spiel, Anbieter, Links, Kurse, Gebühren, Effektivquoten
+   * samt Formeln, Kehrwertsumme, Rendite, Einsätze, Zeiten, Absage-Bilanz,
+   * Nachprüfung — alles, womit das Ergebnis zustande kam, prüfbar in jedem
+   * fremden Programm. Reine Wiedergabe vorhandener Werte, nichts Neues. */
+  function kopierText(f) {
+    var b1 = buch1(f), b2 = buch2(f);
+    var T = '----------------------------------------';
+    var z = [];
+    function zeile(s) { z.push(s); }
+    zeile('ORION PANEL PRO — vollständiger Prüfbericht einer Zeile');
+    zeile('Kopiert am ' + zeitpunkt(new Date().toISOString()));
+    zeile(T);
+    zeile('SPIEL/FRAGE: ' + (f.titel || '?'));
+    zeile('Bereich: ' + bereichText(f) + (f.sportart ? ' (Tag: ' + f.sportart + ')' : ''));
+    if (f.bf_partie) zeile('Partie beim zweiten Buch: ' + f.bf_partie);
+    zeile('Zuordnung (wie sicher dieselbe Partie gemeint ist): ' + Number(f.zuordnung).toFixed(2));
+    zeile(T);
+    function seite(nr, info, seiteText, roh, satz, satzEcht, menge, kursSeit, link, laeuferName, qeText) {
+      zeile('SEITE ' + nr + ' — ' + info.name + ': ' + (seiteText || '') + ' · ' +
+            wertName(info) + ' ' + wertText(info, roh));
+      if (laeuferName) zeile('  Ausgang: ' + laeuferName);
+      zeile('  Gebühr: ' + (Number(satz) * 100).toFixed(1) + ' % ' +
+            (satzEcht === true ? '(vom Buch gemessen)' : '(dokumentierter Standardtarif, nicht am Konto gemessen)'));
+      zeile('  Effektivquote (nach Gebühr): ' + qeText);
+      var fo = formelSeite(info, seiteText, roh, satz, qeText);
+      if (fo) zeile('  Formel: ' + fo);
+      zeile('  Kurs unverändert seit: ' + (kursSeit ? seit(kursSeit) : 'nicht hinterlegt'));
+      zeile('  Handelbare Menge (beste Preisstufe): ' + (menge == null ? 'unbekannt — nicht null!' : geld(menge)));
+      zeile('  Link: ' + (link || 'fehlt'));
+    }
+    seite(1, b1, f.pm_seite, f.pm_preis, f.pm_gebuehr, f.pm_gebuehr_echt, f.pm_menge, f.pm_preis_seit, f.pm_link, f.mannschaft, qeEins(f));
+    seite(2, b2, f.bf_seite, f.bf_quote, f.bf_gebuehr, f.bf_gebuehr_echt, f.gegen_menge, f.bf_quote_seit, f.bf_link, f.bf_name, qeZwei(f));
+    zeile(T);
+    zeile('DIE RECHNUNG (so kam das Ergebnis zustande):');
+    zeile('  Kehrwertsumme = 1/' + qeEins(f) + ' + 1/' + qeZwei(f) + ' = ' + Number(f.inv).toFixed(4));
+    zeile('  Rendite = (1 / ' + Number(f.inv).toFixed(4) + ' - 1) x 100 = ' +
+          (Number(f.rendite) >= 0 ? '+' : '') + Number(f.rendite).toFixed(2) + ' % — nach allen Gebühren');
+    zeile('  Aufteilung bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' + b1.name +
+          ', ' + geld(f.einsatz_2) + ' auf ' + b2.name);
+    zeile('  Auszahlung bei BEIDEN Ausgängen: ' + geld(f.auszahlung));
+    zeile('  Max. Einsatz (beide Seiten zusammen): ' + (f.max_einsatz == null ? 'unbekannt' : geld(f.max_einsatz)) +
+          ' · tatsächlicher Gewinn: ' + (f.echter_gewinn == null ? 'unbekannt' : geld(f.echter_gewinn)));
+    if (f.beste_rendite != null) zeile('  Beste je gesehene Rendite: ' + Number(f.beste_rendite).toFixed(2) + ' %');
+    if (f.buch_summe != null) zeile('  Buchprobe Gegenbuch: ' + Number(f.buch_summe).toFixed(4) +
+          (Number(f.buch_summe) < 1 ? ' — UNSTIMMIG, ein Kurs klebt vermutlich' : ' — stimmig'));
+    if (fxKurs) zeile('  Währung: Dollar-Beträge mit EZB-Kurs ' + Number(fxKurs.kurs).toFixed(4) +
+          ' (Stand ' + fxKurs.stand + ') in Euro umgerechnet');
+    else zeile('  Währung: kein Wechselkurs verfügbar — Beträge in $');
+    zeile(T);
+    zeile('ZEITEN:');
+    zeile('  Gefunden: ' + zeitpunkt(f.zuerst_gesehen) + ' (vor ' + seit(f.zuerst_gesehen) + ')');
+    zeile('  Zuletzt bestätigt (beide Seiten so gesehen): ' + zeitpunkt(f.zuletzt_gesehen) +
+          ' (vor ' + seit(f.zuletzt_gesehen) + ')');
+    zeile('  Anpfiff: ' + (f.beginnt_am ? zeitpunkt(f.beginnt_am) +
+          (f.beginnt_quelle ? ' (laut ' + f.beginnt_quelle + ')' : '') : 'kein Buch nennt ihn'));
+    zeile('  Wette endet: ' + (f.endet_am ? zeitpunkt(f.endet_am) : 'nicht hinterlegt') +
+          ' — Achtung: das ist meist der Anpfiff, nicht das Spielende');
+    if (f.vorbei_seit) zeile('  Beendet: ' + zeitpunkt(f.vorbei_seit) +
+          (f.vorbei_grund ? ' (' + f.vorbei_grund + ')' : ''));
+    zeile(T);
+    if (f.absage === undefined) f.absage = absageBilanz(f);
+    zeile('ABSAGE-BILANZ (der dritte Ausgang): ' + (!f.absage ? 'nicht berechenbar' :
+          f.absage.art === 'sicher' ? 'kostet nichts — Rückzahlungsregeln belegt' :
+          f.absage.art === 'verlust' ? 'KOSTET GELD — die Rückzahlungsregeln der Bücher passen nicht zusammen' :
+          'nicht voll belegt — die Regel des Marktes VOR dem Setzen lesen'));
+    var n = f.nachpruefung;
+    if (n && n.pruefbar) {
+      zeile('UNABHÄNGIGE NACHRECHNUNG (dieselben Formeln, zweiter Weg): ' +
+            (n.abweichungen && n.abweichungen.length
+              ? 'WEICHT AB — ' + n.abweichungen.join(' · ')
+              : 'deckt sich — Rendite, Kehrwertsumme, beide Einsätze, Auszahlung (Toleranz 0,005)'));
+    }
+    zeile('Extern nachrechnen: ' + ((welt.KONFIG && welt.KONFIG.externerRechner) || '') +
+          ' — beide Effektivquoten als Quoten eintragen, Gebühr dort 0 (steckt schon drin).');
+    if (f.nr) zeile('Interne Nummer der Zeile: #' + f.nr);
+    return z.join('\n');
+  }
+
+  function fundFinden(schluessel) {
+    var e = welt.letztesErgebnis;
+    if (!e) return null;
+    var listen = [e.chancen, e.veraltetHoch, e.knapp, e.knappArchiv, e.verlauf, e.falsch];
+    for (var i = 0; i < listen.length; i++) {
+      var L = listen[i] || [];
+      for (var j = 0; j < L.length; j++) {
+        if (L[j] && L[j].schluessel === schluessel) return L[j];
+      }
+    }
+    return null;
+  }
+
+  document.addEventListener('click', function (ev) {
+    var kn = ev.target && ev.target.closest ? ev.target.closest('button.kopier') : null;
+    if (!kn) return;
+    ev.preventDefault();
+    ev.stopPropagation();
+    var f = fundFinden(kn.getAttribute('data-schluessel'));
+    if (!f) { kn.textContent = 'Zeile nicht mehr da'; return; }
+    var text = kopierText(f);
+    /* Zweiter Weg, falls die Clipboard-Schnittstelle gesperrt ist
+     * (eingebettete Browser, http statt https): unsichtbares Textfeld
+     * plus execCommand — funktioniert auf Nutzergeste praktisch überall.
+     * KEIN prompt/alert: die gibt es nicht in jeder Umgebung. */
+    function vonHand() {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        var ok = document.execCommand('copy');
+        document.body.removeChild(ta);
+        return ok;
+      } catch (e) { return false; }
+    }
+    function meldung(t) {
+      kn.textContent = t;
+      setTimeout(function () { kn.textContent = 'Kopieren'; }, 1800);
+    }
+    var ablage = (navigator.clipboard && navigator.clipboard.writeText)
+      ? navigator.clipboard.writeText(text) : Promise.reject(new Error('keine Zwischenablage'));
+    ablage.then(function () { meldung('Kopiert ✓'); })
+      .catch(function () { meldung(vonHand() ? 'Kopiert ✓' : 'Blockiert — nochmal versuchen'); });
+  });
+
+  /* Der grüne Haken der Default-Nachprüfung. Eine ABWEICHUNG steht nicht
+   * hier, sondern ROT in den Warnungen — Gutes leise, Schlechtes laut. */
+  function nachChip(f) {
+    var n = f.nachpruefung;
+    if (!n || !n.pruefbar || (n.abweichungen && n.abweichungen.length)) return '';
+    return '<span class="chip gut" title="Automatisch unabhängig nachgerechnet (früher der Funker auf Befehl, seit 17.08. Standard bei jedem Takt): Rendite, Kehrwertsumme, beide Einsätze und Auszahlung decken sich mit der gespeicherten Zeile (Toleranz 0,005).">✓ nachgerechnet</span> ';
+  }
+
   function karte(f, imVerlauf) {
     /* Eine Chance ist eine Zeile, die GELD bringt — nicht eine mit guter
      * Prozentzahl. Dieselben Bedingungen wie in daten.js, seit dem 13.8.
@@ -1452,7 +1595,11 @@
         /* Kurzzeile: nur, was man zum EINORDNEN braucht. Alles Weitere hat
          * jetzt einen eigenen Abschnitt. */
         '<div class="unter">' +
-          (f.nr ? '<span class="chip nr" title="Rechnungsnummer — sag dem Funker: prüfe #' + f.nr + '">#' + f.nr + '</span> ' : '') +
+          /* Statt der Rechnungsnummer (17.8. nachts): der Kopieren-Knopf.
+           * Die Nummer lebt nur noch IM kopierten Bericht weiter. */
+          '<button type="button" class="chip kopier" data-schluessel="' + txt(f.schluessel) +
+            '" title="Kopiert den kompletten Gedankengang dieser Zeile als Text: Spiel, Anbieter, Links, Kurse, Gebühren, Effektivquoten samt Formeln, Rendite, Einsätze, Zeiten, Absage-Bilanz — zum Prüfen in jedem anderen Programm.">Kopieren</button> ' +
+          nachChip(f) +
           '<span class="chip ' + txt(buch1(f).chip) + '">' + txt(buch1(f).name) + '</span> ' +
           '<span class="chip leise">gegen</span> ' +
           '<span class="chip ' + txt(buch2(f).chip) + '">' + txt(buch2(f).name) +

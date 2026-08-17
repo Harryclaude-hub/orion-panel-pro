@@ -2503,3 +2503,12 @@ html, body {
   border-bottom: 1px solid var(--rand);
   color: var(--text); font-size: 1.05em;
 }
+
+/* Kopieren-Knopf (17.8. nachts, ersetzt die Rechnungsnummer): sieht aus
+ * wie ein Chip, ist aber ein echter Knopf. */
+button.chip.kopier {
+  cursor: pointer; font: inherit; line-height: inherit;
+  background: var(--karte-2); color: var(--sonar);
+  border: 1px solid var(--rand);
+}
+button.chip.kopier:hover { border-color: var(--sonar); }

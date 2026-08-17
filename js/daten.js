@@ -288,6 +288,25 @@
         live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); smarketsLinkRichten(f); });
         verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); smarketsLinkRichten(f); });
 
+        /* FUNKER-NACHPRUEFUNG ALS DEFAULT (Karams Befehl 17.08. nachts):
+         * die unabhaengige Nachrechnung, die frueher nur auf Chat-Befehl
+         * lief („pruefe #…"), laeuft jetzt IMMER — jede Zeile, jeder Takt.
+         * Reine Arithmetik mit denselben Spiegel-Formeln, billig. Das
+         * Ergebnis haengt als f.nachpruefung an der Zeile; die Karte
+         * zeigt den Abgleich (gruener Haken) oder die Abweichung (rot
+         * in den Warnungen). Ein Fehler hier darf NIE das Laden reissen. */
+        function nachpruefen(f) {
+          try {
+            var F = welt.Funker;
+            if (!F || !F.nachrechnen) return null;
+            return F.nachrechnen(f);
+          } catch (e) {
+            return { pruefbar: false, text: 'Nachprüfung selbst gescheitert: ' + String((e && e.message) || e) };
+          }
+        }
+        live.forEach(function (f) { f.nachpruefung = nachpruefen(f); });
+        verlauf.forEach(function (f) { f.nachpruefung = nachpruefen(f); });
+
         /* RECHNUNGSNUMMER: vergibt seit dem 14.8. die DATENBANK selbst
          * (Spalte nr, fortlaufend ab #10000, Minutentakt, nie doppelt,
          * nie wiederverwendet — ein wiederbelebter Fund behaelt seine).

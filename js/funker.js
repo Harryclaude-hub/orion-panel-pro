@@ -217,56 +217,24 @@
            'Ich rate nie: jede Zahl ist nachgerechnet, jede Aussage gemessen. Ende.';
   }
 
-  /* ---------- Oberflaeche ---------- */
+  /* ---------- Oberflaeche: STILLGELEGT (Karams Befehl, 17.08. nachts) ----
+   * Der Funker-Chat wird ein EIGENES Projekt (eigenes Repo, eigener Link,
+   * mit dem Panel verbunden). Bis dahin bleibt der Knopf als Platzhalter
+   * stehen und tut NICHTS — kein Fenster, keine Eingabe, keine Antworten.
+   * NICHT verloren geht die Substanz: nachrechnen() laeuft seit 17.08.
+   * als DEFAULT-AUTOMATIK bei jedem Takt (daten.js setzt f.nachpruefung,
+   * die Karte zeigt Abgleich oder Abweichung), und statt der Rechnungs-
+   * nummer traegt jede Karte den Kopieren-Knopf mit dem vollstaendigen
+   * Pruefbericht. antwort() bleibt fuer das kuenftige eigene Projekt
+   * erhalten, wird aber nirgends mehr aufgerufen. */
   function baue() {
-    if (document.getElementById('funker')) return;
+    if (document.getElementById('funker-knopf')) return;
     var k = document.createElement('button');
     k.id = 'funker-knopf';
     k.type = 'button';
-    k.title = 'Der Funker: prüft Rechnungen nach und erklärt Begriffe — im Ton der Truppe';
+    k.title = 'Der Funker zieht in ein eigenes Programm um. Seine Nachprüfung läuft weiter — automatisch, an jeder Karte.';
     k.textContent = '🎙 FUNKER';
-    var p = document.createElement('div');
-    p.id = 'funker';
-    p.innerHTML =
-      '<div class="fu-kopf">FUNKER <span>prüft nach — rät nie</span>' +
-        '<button type="button" class="fu-zu" title="Schließen">×</button></div>' +
-      '<div class="fu-log" id="funker-log"></div>' +
-      '<form class="fu-eingabe" id="funker-form">' +
-        '<input id="funker-frage" type="text" placeholder="z. B. prüfe #48213" autocomplete="off">' +
-        '<button type="submit">Senden</button>' +
-      '</form>';
     document.body.appendChild(k);
-    document.body.appendChild(p);
-
-    function schreib(text, wer) {
-      var log = document.getElementById('funker-log');
-      var d = document.createElement('div');
-      d.className = 'fu-zeile ' + wer;
-      d.textContent = text;
-      log.appendChild(d);
-      log.scrollTop = log.scrollHeight;
-    }
-
-    k.addEventListener('click', function () {
-      p.classList.toggle('offen');
-      if (p.classList.contains('offen') && !p.dataset.begruesst) {
-        p.dataset.begruesst = '1';
-        schreib('Funker auf Empfang, Kamerad — dein Befehl ist mir Auftrag. ' +
-                '„prüfe #<Nummer>“ für die Tiefenprüfung; die Nummer steht vorn auf jeder Karte. ' +
-                'Ich rechne mit denselben Formeln wie der Scanner und rate nie.', 'funker');
-      }
-    });
-    p.querySelector('.fu-zu').addEventListener('click', function () { p.classList.remove('offen'); });
-
-    document.getElementById('funker-form').addEventListener('submit', function (ev) {
-      ev.preventDefault();
-      var inp = document.getElementById('funker-frage');
-      var frage = inp.value.trim();
-      if (!frage) return;
-      inp.value = '';
-      schreib(frage, 'ich');
-      schreib(antwort(frage), 'funker');
-    });
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', baue);
