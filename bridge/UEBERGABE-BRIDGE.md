@@ -179,6 +179,19 @@ die Einstellungen-Seite und behält ihn lokal. So bleibt die Tabelle
 trotz öffentlichem Panel-Schlüssel geschützt, und die Einsätze
 gehören nachweislich Karam.
 
+**VORRANG vor allem anderen (Karams Schlussansage 17.08. nachts):
+das WANDERN der Karten beim Lesen.** Diagnose (nicht raten — sie
+steht hier fest): Der Scroll-Anker von heute hält die SEITE fest,
+aber die Live-Listen werden bei jedem Takt neu nach Rendite
+SORTIERT — ändert sich eine Rendite, tauschen Karten die Plätze,
+und die gelesene Karte rutscht relativ zum Anker weg. Der Bauplan:
+**ORDNUNGS-RUHE** — solange der Nutzer auf der Liste steht, behält
+jede vorhandene Karte ihren Platz (nur ihre WERTE ändern sich);
+Neuzugänge werden an ihrer Sortierstelle eingefügt; komplett neu
+sortiert wird erst beim Reiterwechsel, beim Neuladen oder nach
+längerer Ruhe. Muss mit der Bereichs-Gruppierung (17.08., „c")
+zusammenspielen. Danach erst Archiv und Gesetzt-Fach.
+
 **Noch offen:**
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
