@@ -455,3 +455,22 @@ standen dort 791 Polymarket-Märkte ohne jedes Gegenstück.
 **Umkehrbar:** `UPDATE orion_bereiche SET aktiv = true WHERE bereich = '…'`
 plus `cron.schedule('orion-lauf-<bereich>', …)`. Genau das ist der letzte
 Schritt, sobald der Kalshi-Sammler Krypto/Wetter/Wirtschaft mitholt.
+
+### UMGEKEHRT am 17.8.2026 — Karams Befehl: „alles muss gescannt werden"
+
+Alle 8 Bereiche wieder `aktiv = true`, `takt_sek = 3600`, Stunden-Takte
+versetzt neu angelegt (golf :30, politik :33, krypto :36, wirtschaft :39,
+welt :42, wetter :45, tech :48, kultur :51 — freie Minuten, nichts
+stapelt sich). Das sind dieselben entschärften Takte, die vom 13.–16.8.
+ohne Zwischenfall liefen; die 45-Minuten-Panne kam damals von 1–2-min-
+Takten. **Scanner-Takte: 12 → 20.** Nur `spielerwetten` bleibt aus
+(keine gemessene Quelle).
+
+**Ehrliche Erwartung:** Diese 8 Bereiche SCANNEN jetzt wieder (sichtbar
+in `orion_laeufe`), aber PAARE entstehen erst, wenn eine zweite Quelle
+dieselben Fragen führt: Polymarket hat dort keine „A gegen B"-Titel.
+Der Weg zu echten Chancen bleibt: Kalshi-Sammler um Politik/Krypto/
+Wetter/Wirtschaft-Serien erweitern (vorher Last messen — der Sammler
+braucht heute schon 61 s je Lauf) und die Marktart „Schwelle" mit
+strikter Paarung bauen (Regel VORHER Karam zeigen; Polymarket „erreicht
+X im Zeitraum" ist NICHT Kalshi „Preis am Stichtag").

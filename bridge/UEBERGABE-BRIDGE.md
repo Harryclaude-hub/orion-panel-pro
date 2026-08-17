@@ -161,10 +161,13 @@ bevor sie baut. Kontext dazu:
 3. Neue Marktart „Schwelle" mit strikter Paarung (gleiche Basis + gleiche
    Zahl + gleicher Stichzeitpunkt); Regel Karam VORHER zeigen. Warnung:
    Polymarket „erreicht X im Zeitraum" ≠ Kalshi „Preis am Stichtag".
-4. **Nur-ein-Anbieter-Regel aktiv:** politik, krypto, wirtschaft, tech,
-   welt, wetter, kultur, golf sind `aktiv=false` + Takte entfernt
-   (12 Scanner laufen). Wieder einschalten, sobald zweite Quelle da ist.
-   Doku: `supabase/datenbank.md`, Abschnitt „Nur-ein-Anbieter-Regel".
+4. **Nur-ein-Anbieter-Regel am 17.8. auf Karams Befehl UMGEKEHRT**
+   („alles muss gescannt werden"): alle 8 Welt-Bereiche wieder aktiv,
+   Stunden-Takte versetzt (:30–:51), 20 Scanner laufen. Politik-Lauf
+   von Hand gezündet und im Protokoll bestätigt (10,3 s, fehlerfrei).
+   Ehrliche Erwartung: sie SCANNEN, aber Paare kommen erst mit zweiter
+   Quelle (Kalshi-Erweiterung + Marktart „Schwelle"). Doku:
+   `supabase/datenbank.md`, Abschnitt „Nur-ein-Anbieter-Regel".
 5. Secrets offen: `RESEND_API_KEY` (E-Mail), `ELEVENLABS_API_KEY`
    (Vorlese-Funktion) — beides Karam.
 
