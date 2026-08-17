@@ -110,6 +110,15 @@ Meldeweg klären — die Bridge weiß nicht, was meldenswert ist).
 `bridge/sea-config.json` und `bridge/pruefung.js` per `git rm` entfernt
 (Git-Historie hat sie weiter), `README.md` von Grund auf neu.
 
+**Erledigt 17.08. spät (Auswahl „c"):** Scanstand-Kopf im Panel (alle
+21 Bereiche mit Zustand, Daten aus neuer Lesefunktion
+`orion_scanstand()`, 30-s-Puffer) und Karten in Chancen/Knapp nach
+Bereichen gebündelt. Im echten Browser gegen die Live-Daten
+verifiziert, null Konsolenfehler. Nebenbefund für später: die
+Anbietertafel zeigt bei Betfair „? von ? hochgeladen" — die
+Übersichts-Funktion liest noch die 3.8-stats-Schlüssel (`bf_katalog`,
+`hochgeladen`), die Bridge 4.0 sendet stattdessen `maerkte`/`vorrat`.
+
 **Noch offen:**
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
