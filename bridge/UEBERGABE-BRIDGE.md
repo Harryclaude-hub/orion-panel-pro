@@ -210,6 +210,20 @@ dem Panel verbunden/synchronisiert („eine komplett größere Aufgabe,
 die separat ist"). Der stillgelegte Knopf im Panel ist der spätere
 Einstiegspunkt; `funker.js` hält antwort() als Ausgangsmaterial.
 
+**Actions aufgeräumt (17.08. spät, Karams Auftrag „nur grüne
+Workflows"):** Alle 16 Repos geprüft — **kein Workflow war pausiert,
+deaktiviert oder verwaist**, alle Workflow-Dateien vorhanden, nichts
+war versehentlich gelöscht (also nichts wiederherzustellen). Entfernt
+wurden **71 rote Protokolleinträge** (orion-panel-pro 25, finder 34,
+fach-iq 5, appload 3, orion-panel 3, muslim-atlas 1); danach: 0
+nicht-grüne Läufe in allen Repos, alle fünf Live-Seiten HTTP 200.
+Ursache der roten Läufe war NIE unser Code, sondern GitHubs 429/503
+beim Ausliefern der eigenen Action-Pakete — ausgelöst durch mehrere
+Pushes binnen Minuten. Ein dadurch abgebrochener Lauf hatte
+`pages.status` auf „errored" stehen lassen, obwohl die Seite korrekt
+lief; mit `gh api -X POST .../pages/builds` neu gebaut → „built".
+**Regel daraus: Änderungen sammeln, in EINEM Push schicken.**
+
 **Noch offen:**
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
