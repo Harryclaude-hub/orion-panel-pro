@@ -245,6 +245,15 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
     Link hinführt: bei Orbit, für 3 %. Der Abstand zwischen den Büchern hat sich dadurch
     nicht geändert, nur die Rechnung stimmt jetzt.
   </p>
+  <p class="leise">
+    <b>Nachtrag 17.08.2026:</b> Die Korrektur galt bis dahin nur für die <i>Suche</i>. Die
+    <i>Anzeige</i> rechnete die Effektivquote der Polymarket-Seite weiter mit
+    <code>Satz × min(p, 1−p)</code> — sie widersprach damit der Formel-Zeile auf ihrer
+    eigenen Karte und zeigte Polymarket schlechter, als es ist (Beispiel: 7,642 statt
+    7,649). Reiner Anzeige-Drift, gefunden vom Auftraggeber; der Server hat immer richtig
+    gerechnet, weshalb keine Chance falsch bewertet wurde. Beide Wege rechnen jetzt
+    <code>Satz × p × (1−p)</code>.
+  </p>
 
   <h3>Warum „maximaler Einsatz" oft nur dreistellig ist</h3>
   <p>

@@ -280,16 +280,27 @@
   /* Effektivquote EINER Seite, nach Gebuehr. Welche Formel gilt, haengt am
    * Buch und an der Seite — nicht mehr an der Annahme, Seite 1 sei
    * Polymarket:
-   *   Polymarket   Gebuehr = s * min(p, 1-p)
-   *   Kalshi       Gebuehr = s * p * (1-p)
+   *   Anteilspreis (Polymarket UND Kalshi)   Gebuehr = s * p * (1-p)
    *   Boerse Back  qE = 1 + (q-1) * (1-s)
-   *   Boerse Lay   qE = 1 + (1-s) / (q-1) */
+   *   Boerse Lay   qE = 1 + (1-s) / (q-1)
+   *
+   * KORRIGIERT 17.8.2026 (Fund des Auftraggebers): hier stand fuer
+   * Polymarket noch `s * min(p, 1-p)` — die alte, DOPPELTE Gebuehr. Nur
+   * Kalshi war seinerzeit umgestellt worden. Belegt richtig ist fuer
+   * BEIDE Preis-Buecher `s * p * (1-p)`: Anbieterdoku
+   * (docs.polymarket.com/Fees) `fee = C x feeRate x p x (1-p)`, so
+   * rechnen auch js/rechnung.js (gebuehrPm) und der Server
+   * (orion-lauf/rechnung.ts), siehe UEBERGABE Abschnitt 8f.
+   * Es war reiner ANZEIGE-Drift: der Server rechnete immer richtig, aber
+   * die Karte zeigte fuer Polymarket-Seiten eine zu niedrige
+   * Effektivquote — und widersprach damit der Formel-Zeile im selben
+   * Bericht, die (in formelSeite) schon mit p*(1-p) rechnet. */
   function qeSeiteWert(buchName, info, wert, satz, seiteText) {
     var x = Number(wert), s = Number(satz);
     if (!isFinite(x) || !isFinite(s)) return null;
     if (info.art === 'preis') {
       if (!(x > 0 && x < 1)) return null;
-      var g = buchName === 'kalshi' ? s * x * (1 - x) : s * Math.min(x, 1 - x);
+      var g = s * x * (1 - x);
       var qe = (1 - g) / x;
       return qe > 1 ? qe : null;
     }
