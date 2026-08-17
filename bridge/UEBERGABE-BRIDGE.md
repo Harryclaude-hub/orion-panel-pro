@@ -119,6 +119,45 @@ Anbietertafel zeigt bei Betfair „? von ? hochgeladen" — die
 Übersichts-Funktion liest noch die 3.8-stats-Schlüssel (`bf_katalog`,
 `hochgeladen`), die Bridge 4.0 sendet stattdessen `maerkte`/`vorrat`.
 
+**Neue definierte Bauaufgabe (Karams Nachfrage 17.08. nachts):
+Marktart „WAHL" — Betfair-Politik gegen Polymarket-Binärfragen.**
+Gemessen 17.08. nachts: Betfair et 2378961 führt **117 Märkte**, alle
+Art NONSPORT, Stichtage = Wahltermine (Nov. 2026–2029, weit außerhalb
+jedes 72-h-Fensters), darunter Zwei-/Drei-Läufer-Klassiker (US-Senat 2,
+Repräsentantenhaus 3, Winning Party 3, Trump-Specials 2 Läufer) mit
+hoher Liquidität. Warum sie heute NIRGENDS ankommen: (a) Bridge lädt
+nur MATCH_ODDS/OVER_UNDER, (b) das gesamte System denkt in 72 h —
+Bridge, Kalshi-Sammler, PM-Abruf, (c) die Paarung kennt nur „A gegen
+B"-Partien. Der Bauplan: Bridge lädt NONSPORT-Politik mit eigenem
+langem Fenster (sportarten-Schalter existiert; die 72-h-Kappung
+braucht eine Politik-Ausnahme), Server paart Kandidaten-/Parteinamen
+NUR über Weißliste (Kandidatennamen = schärfste Namensgleichheits-
+Falle; „Trump" steht in dutzenden Fragen), PM-Seite: Binärfrage gegen
+Back/Lay auf den Läufer (der Lay-Fall war im 3.8-Regelwerk vorgedacht).
+**Regel Karam VORHER vorlegen, wie bei der Schwelle.** Messskript:
+Scratchpad bf-politik-messung.js (Muster im UEBERGABE-Verlauf).
+
+**Karams Feature-Auftrag (17.08. tief nachts) — ERSTER BAU DER
+NÄCHSTEN SITZUNG: das Drei-Tage-Archiv.** Seine Worte sinngemäß:
+Hauptanzeige schlank halten; alles, was älter als 3 Tage in Verlauf,
+Knapp-Archiv oder Falschen Rechnungen steht, wandert in ein ARCHIV —
+ein eigenes Fach, in dem man jede Rechnung nachschlagen kann, das
+aber NICHT im 2-Sekunden-Takt mitläuft („das Live-Mitziehen von allem
+ist anstrengend fürs Programm"). Bauplan: (a) holeVerlauf bekommt
+den Schnitt `vorbei_seit >= now()-3 Tage` — das verkleinert zugleich
+die teuerste Abfrage (gemessen 1,4 s bei 450+ Zeilen); (b) fünfter
+Reiter „Archiv", der NUR BEIM ÖFFNEN einmal lädt (kein Auto-Takt,
+einmal gezeichnet, chronologisch); (c) WICHTIG: Schnitt und
+Archiv-Reiter nur ZUSAMMEN ausrollen — der Schnitt allein würde
+Zeilen unsichtbar machen (verschweigen ist schlimmer). Dazu seine
+zwei Beobachtungen prüfen: Veraltetes soll nicht mitgeschleppt
+werden (Stand: Knapp schließt Veraltete schon aus; der
+Veraltet-über-Schwelle-Block über den Chancen bleibt als ehrliche
+Warnung) und „vieles rutscht in die Knappsten Paare und Chancen
+flackern weg" — das ist eine MESSAUFGABE (Bewährungszeit 25 s,
+Mindestrendite 2 %, Lebensdauer der Chancen auswerten), bevor an
+Schwellen gedreht wird.
+
 **Noch offen:**
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
