@@ -9,7 +9,26 @@
     supabase: 'https://noexklrgtqveiclijdwp.supabase.co',
     key: 'sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M',
 
-    sperrwort: 'ARBRADAR2026',
+    /* SPERRWORT ALS ABDRUCK statt im Klartext (19.8.2026).
+     *
+     * Vorher stand es hier wortwoertlich — in einem OEFFENTLICHEN Repo.
+     * Jeder, der das Repo oeffnet oder danach sucht, konnte es lesen, ohne
+     * die Seite je besucht zu haben. Der Auftraggeber hat es selbst bemerkt.
+     *
+     * Jetzt liegt nur der SHA-256-Abdruck hier; beim Eintippen wird derselbe
+     * Abdruck gerechnet und verglichen.
+     *
+     * EHRLICH DAZU, damit sich niemand in Sicherheit wiegt: Das bleibt ein
+     * VORHANG, kein Schloss. Bei einer statischen Seite laeuft die Pruefung
+     * zwangslaeufig im Browser des Besuchers — wer will, umgeht sie mit der
+     * Entwicklerkonsole in Sekunden. Sie haelt Zufallsbesucher ab, mehr
+     * nicht. Die echte Mauer ist RLS in Supabase: dort entscheidet der
+     * Server, was jemand sehen darf, und daran aendert kein Browser etwas.
+     *
+     * Neues Wort setzen -> neuen Abdruck erzeugen:
+     *   node -e "console.log(require('crypto').createHash('sha256').update('NEUESWORT','utf8').digest('hex'))"
+     */
+    sperrwortHash: '8e47f677fabf75efdcf55f72f33f282618079d77b3ec76180ffc53b91ec3c4d7',
 
     /* Wie oft die Seite die Funde abliest. Das ist NUR Ablesen: gesucht
      * wird auf dem Server im Minutentakt. Deshalb sind 2 Sekunden hier

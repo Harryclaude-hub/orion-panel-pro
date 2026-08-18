@@ -61,13 +61,37 @@
     var knopf = document.getElementById('entsperren');
     var fehler = document.getElementById('sperrfehler');
 
+    /* Abdruck des eingetippten Wortes rechnen (19.8.2026). Vorher wurde
+     * gegen das Wort im Klartext verglichen — das musste dafuer im
+     * oeffentlichen Repo stehen. Jetzt liegt dort nur der Abdruck.
+     * crypto.subtle gibt es in jedem Browser, der diese Seite ohnehin
+     * darstellt; es arbeitet asynchron, deshalb der Umweg ueber then(). */
+    function abdruck(wort) {
+      var daten = new TextEncoder().encode(wort);
+      return crypto.subtle.digest('SHA-256', daten).then(function (puffer) {
+        return Array.prototype.map.call(new Uint8Array(puffer), function (b) {
+          return ('0' + b.toString(16)).slice(-2);
+        }).join('');
+      });
+    }
+
     function versuch() {
       if (!feld.value) { fehler.textContent = 'Bitte das Wort eingeben.'; return; }
-      if (feld.value !== welt.KONFIG.sperrwort) {
-        fehler.textContent = 'Falsch.';
-        feld.value = '';
-        return;
-      }
+      abdruck(feld.value).then(function (h) {
+        if (h !== welt.KONFIG.sperrwortHash) {
+          fehler.textContent = 'Falsch.';
+          feld.value = '';
+          return;
+        }
+        weiter();
+      }).catch(function () {
+        /* Kein crypto.subtle (nur bei unverschluesselten Verbindungen):
+         * ehrlich sagen statt still durchlassen. */
+        fehler.textContent = 'Pruefung nicht moeglich — bitte die Seite ueber https aufrufen.';
+      });
+    }
+
+    function weiter() {
       var wo = schreibe('ok');
       if (wo === 'arbeitsspeicher') {
         fehler.textContent = 'Speicher gesperrt, der Zugang gilt nur bis zum Neuladen.';
