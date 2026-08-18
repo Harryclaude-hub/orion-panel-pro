@@ -217,24 +217,49 @@
            'Ich rate nie: jede Zahl ist nachgerechnet, jede Aussage gemessen. Ende.';
   }
 
-  /* ---------- Oberflaeche: STILLGELEGT (Karams Befehl, 17.08. nachts) ----
-   * Der Funker-Chat wird ein EIGENES Projekt (eigenes Repo, eigener Link,
-   * mit dem Panel verbunden). Bis dahin bleibt der Knopf als Platzhalter
-   * stehen und tut NICHTS — kein Fenster, keine Eingabe, keine Antworten.
-   * NICHT verloren geht die Substanz: nachrechnen() laeuft seit 17.08.
-   * als DEFAULT-AUTOMATIK bei jedem Takt (daten.js setzt f.nachpruefung,
-   * die Karte zeigt Abgleich oder Abweichung), und statt der Rechnungs-
-   * nummer traegt jede Karte den Kopieren-Knopf mit dem vollstaendigen
-   * Pruefbericht. antwort() bleibt fuer das kuenftige eigene Projekt
-   * erhalten, wird aber nirgends mehr aufgerufen. */
+  /* ---------- EINE TÜR ZUM PRÜFSTAND (Karams Befehl, 18.08.) ----------
+   *
+   * Aus dem Funker ist ein EIGENES Programm geworden: das Orion
+   * Protection Panel — eigenes Repo, eigene Datenbank, eigener Link.
+   * Hier steht nur noch die Tür dorthin, sonst nichts.
+   *
+   * AUSDRÜCKLICH KEINE SYNCHRONITÄT (Karams Wort: "zwei komplett
+   * unterschiedliche Körper"): kein gemeinsamer Code, keine gemeinsamen
+   * Daten, kein Aufruf über die Grenze. Auch das Logo ist eine KOPIE
+   * und liegt inline — diese Seite lädt NICHTS von der anderen. Fällt
+   * der Prüfstand aus, ändert sich hier kein Pixel und keine Zahl.
+   *
+   * Was vom Funker im Panel bleibt, bleibt unberührt: nachrechnen()
+   * als stille Default-Prüfung bei jedem Takt (daten.js setzt
+   * f.nachpruefung) und der Kopieren-Knopf auf jeder Karte, dessen
+   * Bericht drüben von Hand nachgerechnet werden kann. antwort() wird
+   * nirgends mehr aufgerufen und wartet auf den Umzug.
+   *
+   * Farben NUR als Tokens, auch im SVG — die Design-Regel gilt hier
+   * genauso (var(--sonar) statt #3CC9F5 usw.). */
+  var PRUEFSTAND = 'https://saifokaram1-hub.github.io/orion-protection-panel/';
+
   function baue() {
     if (document.getElementById('funker-knopf')) return;
-    var k = document.createElement('button');
-    k.id = 'funker-knopf';
-    k.type = 'button';
-    k.title = 'Der Funker zieht in ein eigenes Programm um. Seine Nachprüfung läuft weiter — automatisch, an jeder Karte.';
-    k.textContent = '🎙 FUNKER';
-    document.body.appendChild(k);
+    var a = document.createElement('a');
+    a.id = 'funker-knopf';
+    a.href = PRUEFSTAND;
+    a.target = '_blank';
+    a.rel = 'noopener';
+    a.title = 'Orion Protection Panel öffnen — das getrennte Nachrechen-Programm (eigene Seite, neuer Tab)';
+    a.setAttribute('aria-label', 'Orion Protection Panel öffnen');
+    a.innerHTML =
+      '<svg class="ps-logo" viewBox="0 0 64 64" aria-hidden="true">' +
+        '<path d="M14 3 H50 L61 14 V50 L50 61 H14 L3 50 V14 Z" fill="var(--karte)" stroke="var(--rand)" stroke-width="2"/>' +
+        '<path d="M14 3 H50 L61 14 V50 L50 61 H14 L3 50 V14 Z" fill="none" stroke="var(--sonar)" stroke-width="1" opacity="0.55"/>' +
+        '<path d="M8 20 V14 L14 8 H20" fill="none" stroke="var(--sonar)" stroke-width="2" stroke-linecap="round"/>' +
+        '<path d="M56 44 V50 L50 56 H44" fill="none" stroke="var(--sonar)" stroke-width="2" stroke-linecap="round"/>' +
+        '<ellipse cx="32" cy="37" rx="21" ry="6.5" fill="none" stroke="var(--sonar)" stroke-width="1.2" stroke-dasharray="3 4" opacity="0.65"/>' +
+        '<path d="M32 13 L47 46 H17 Z" fill="none" stroke="var(--text)" stroke-width="2.4" stroke-linejoin="round"/>' +
+        '<path d="M32 24 L40 42 H24 Z" fill="none" stroke="var(--sonar)" stroke-width="1.6" stroke-linejoin="round"/>' +
+        '<circle cx="32" cy="37" r="1.8" fill="var(--sonar)"/>' +
+      '</svg>';
+    document.body.appendChild(a);
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', baue);

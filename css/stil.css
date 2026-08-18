@@ -2512,3 +2512,20 @@ button.chip.kopier {
   border: 1px solid var(--rand);
 }
 button.chip.kopier:hover { border-color: var(--sonar); }
+
+/* ============================================================================
+ * TÜR ZUM PRÜFSTAND (18.8.2026) — ersetzt den alten Funker-Knopf
+ * ============================================================================
+ * Aus dem Funker wurde ein eigenes Programm (Orion Protection Panel). Der
+ * Knopf ist jetzt ein LINK mit dessen Logo, sonst nichts. Diese Regeln
+ * stehen bewusst am Ende: spaetere Regeln ueberstimmen fruehere, so
+ * gewinnen sie gegen die alten #funker-knopf-Bloecke weiter oben. */
+
+#funker-knopf {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 0; padding: 7px; min-height: 0;
+  width: 54px; height: 54px; border-radius: 16px;
+  text-decoration: none; line-height: 0;
+}
+#funker-knopf .ps-logo { width: 100%; height: 100%; display: block; }
+#funker-knopf:hover { border-color: var(--sonar); }

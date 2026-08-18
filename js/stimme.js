@@ -319,7 +319,23 @@
     kopf.insertBefore(k, zu || null);
   }
 
+  /* STILLGELEGT am 18.08.2026 (Karams Befehl): Der Funker ist in ein
+   * eigenes Programm ausgezogen (Orion Protection Panel). An seiner
+   * Stelle steht jetzt ein LINK dorthin, der das dortige Logo trägt —
+   * gebaut in funker.js. Dieser Avatar hätte ihn bei jedem Ton-Ereignis
+   * wieder übermalt (innerHTML!) und den Schriftzug FUNKER
+   * zurückgeholt. Das Gesicht gehört dem Funker, also zieht es mit ihm
+   * um: hier wird nichts mehr gezeichnet.
+   *
+   * Der Ton selbst bleibt vollständig erhalten — nur das Gesicht ist
+   * fort. Die Zustands-Helfer darunter (spricht/froh/hoert …) dürfen
+   * stehen bleiben: sie schalten nur Klassen, deren Regeln allesamt auf
+   * .avatar-Kinder zielen, die es nicht mehr gibt. Einzige sichtbare
+   * Wirkung bleibt das sanfte Leuchten bei .spricht — das passt. */
+  var AVATAR_ZIEHT_UM = true;
+
   function avatarBauen() {
+    if (AVATAR_ZIEHT_UM) return;
     var k = document.getElementById('funker-knopf');
     if (!k || k.querySelector('.avatar')) return;
     k.innerHTML =
