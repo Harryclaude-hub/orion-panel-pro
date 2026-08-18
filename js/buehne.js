@@ -42,11 +42,13 @@
       f.className = 'flanke ' + seite;
       f.setAttribute('aria-hidden', 'true');
       f.innerHTML =
+        /* Das Gitter bleibt als ganz feine Tiefenzeichnung im Hintergrund.
+         * AUSGEBAUT am 18.08. (zweite Runde): die Scan-Saeule (fl-scan),
+         * das Tick-Lineal (fl-ticks) und das Mini-Radar (fl-radar) —
+         * Karam: "dieser seitliche Scanner soll weg". Der Rand ist jetzt
+         * Himmel, kein Messgeraet. */
         '<div class="fl-gitter"></div>' +
-        '<div class="fl-scan"></div>' +
-        '<div class="fl-ticks"></div>' +
-        /* Mini-Radar oben: derselbe Sweep wie am grossen Schirm, nur klein. */
-        '<div class="fl-radar"><i></i></div>' +
+        '<div class="fl-sterne"></div>' +
         /* PLANETEN (Vorgabe 18.08.): die Bildsprache des Pruefstands in
          * die Raender geholt. Zwei Gasriesen mit Wolkenbaendern, Licht
          * oben links, tiefer Schatten unten rechts, dazu ein Orbitring —
