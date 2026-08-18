@@ -383,3 +383,49 @@ von 400 Märkten tragen ihre Liga**.
 
 **Alte Bridges bleiben lauffähig:** `co` ist additiv, fehlt es, bleibt
 alles wie zuvor (`null` heißt „unbekannt", nicht „passt schon").
+
+## 8. BUILD 25 — der Grundanteil (19.08.2026)
+
+**NEUE BRIDGE, installiert und laufend.** Karams Verdacht („vielleicht
+haben wir E-Sport und die anderen Bereiche vernachlässigt") war richtig,
+und es war ein **stiller Fehlschlag**.
+
+**Gemessen vorher:** Von 497 hochgeladenen Märkten kamen nur DREI
+Sportarten an — Fußball 399, Tennis 94, Basketball 4. E-Sport, MMA,
+Baseball, Eishockey, Cricket, Boxen, Motorsport: **null**, obwohl der
+Vorrat 1.961 Märkte hielt und die Rotation lief.
+
+**Ursache:** `dringlichste()` nahm die 400 dringlichsten Märkte ALLER
+Sportarten. Fußball und Tennis fraßen das Kontingent. Die kleinen
+Sportarten wurden katalogisiert, bekamen aber nie einen Kurs — und
+`bauen()` lädt nur hoch, was einen Kurs hat.
+
+**Fix:** zwei Durchgänge. Erst Grundanteil je Sportart (Standard 24,
+als `grundanteilJeSportart` einstellbar), dann der Rest global nach
+Dringlichkeit.
+
+**Gemessen nachher, gegen Betfairs echtes Angebot im 72-h-Fenster:**
+
+| Sportart | Betfair bietet | Bridge lädt |
+|---|---|---|
+| E-Sport | 18 | **18** |
+| MMA | 5 | **5** |
+| Baseball | 25 | **26** |
+| Basketball | 6 | **6** |
+| Am. Football | 3 | **3** |
+| Cricket | 45 | 25 |
+| Tennis | 157 | 94 |
+| Fußball | 1.791 | 399 (Kontingent) |
+
+Eishockey, Boxen, Motorsport, Golf: Betfair bietet dort **null** —
+kein Defekt, kein Angebot.
+
+**Nicht geladen, weil der Server sie keinem Bereich zuordnen kann:**
+Darts (15), Rugby League (5), Rugby Union (2), Australian Rules (2).
+Wer sie will, trägt sie in `SPORT` (Bridge) UND `orion_bf_sport`
+(Datenbank) ein — beides, sonst verwirft der Scanner sie stumm.
+
+**Standby-Prüfung** (Build 25): Die Bridge kann den Ruhezustand nicht
+selbst verhindern (Adminrechte), aber sie sieht beim Start nach und
+meldet LAUT, wenn der Rechner einschlafen würde — samt der zwei
+`powercfg`-Befehle. Gemessen: „Standby: AUS (Netz und Akku)".
