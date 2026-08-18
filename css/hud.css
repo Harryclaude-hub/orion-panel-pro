@@ -613,14 +613,23 @@ html.seite-ruht #orion-puls *,
    Was BLEIBT, weil es etwas aussagt oder Atmosphaere ohne Kosten
    traegt: Radar, Suchstrahl, LED, Puls, Logoring, Avatar, Flanken.
 
-   ZURUECKHOLEN: diesen einen Block loeschen, sonst nichts.           */
-.s-hud-jet,
-.s-hud-boot,
-.fl-staffel,
-.flug,
-.fl-panzer,
-.fl-schuss,
-.fl-muendung{
+   ZURUECKHOLEN: diesen einen Block loeschen, sonst nichts.
+
+   TEILWEISE ZURUECKGEHOLT AM 18.8.2026. Karams neue Vorgabe: "mehr
+   Animation von Raketen, die da drauf landen oder Jets, die da
+   durchfliegen, aber keine Panzer und Soldaten mehr." Das ist die
+   Umkehrung fuer das FLIEGENDE, nicht fuer den Bodenkampf:
+
+     zurueck   .s-hud-jet, .fl-staffel, .flug   — Jets sollen fliegen
+     bleibt    .s-hud-boot                      — war nicht gewuenscht
+     entfaellt .fl-panzer/.fl-schuss/.fl-muendung — am 18.8. komplett
+               ausgebaut, die Elemente gibt es nicht mehr (buehne.js)
+
+   Damit es die alte Klage "da fliegt zu viel Zeug" nicht neu gibt: die
+   Staffel laeuft NUR in der hoechsten Animationsstufe (Kino). Wer Stufe
+   1 oder 2 waehlt, sieht sie weiterhin nicht — die Drosselung dafuer
+   steht in stil.css bei den Stufen.                                   */
+.s-hud-boot{
   display: none !important;
 }
 

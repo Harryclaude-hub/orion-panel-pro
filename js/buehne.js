@@ -6,17 +6,19 @@
  * Zwei Aufgaben:
  *
  * 1. DIE FLANKEN. Auf breiten Bildschirmen bleiben links und rechts der
- *    Seite leere Ränder. Dort laufen jetzt Scan-Säulen, und ihr Zustand
- *    zeigt die VERBINDUNGSLAGE — mit Funksprüchen statt Fehlercodes:
+ *    Seite leere Ränder. Dort steht seit dem 18.08. eine RUHIGE WELTRAUM-
+ *    SZENE: zwei schwebende Planeten mit Orbitring, eine Staffel Jets und
+ *    Raketen, die aufsteigen und wieder aufsetzen. Kein Text mehr.
  *
- *      ruhig    alle Bücher frisch          "ALLE EINHEITEN AUF STATION"
- *      wachsam  ein Buch wird alt           "VERBINDUNG SCHWACH — <BUCH>"
- *      alarm    ein Buch meldet sich nicht  "KAMERAD VERLOREN — <BUCH> STUMM"
- *               oder der Scanner steht      "FUNKSTILLE — SCANNER MELDET SICH NICHT"
- *               oder gar keine Daten        "VERBINDUNG ABGERISSEN"
+ *    Entfernt am 18.08. auf Karams Vorgabe: das Lagewort (fl-wort), die
+ *    Funkzeilen samt Motivationssprüchen (fl-funk) und das Schlachtfeld
+ *    mit Panzer und Mündungsfeuer (fl-feld). Der Rand soll ruhig sein,
+ *    nicht reden.
  *
- *    Der Zustand steuert Farbe und Tempo der Animation: ruhig scannt
- *    langsam gruen, wachsam schneller in Bernstein, alarm flackert rot.
+ *    Die LAGE bleibt und färbt weiter: ruhig / wachsam / alarm steuern
+ *    Farbe und Tempo. Ein Ausfall ist also weiter sichtbar — er wird nur
+ *    nicht mehr vorgelesen; im Klartext steht er ohnehin oben im
+ *    Warnungsblock, wo er hingehört.
  *
  * 2. DAS KINO. Wird eine NEUE Chance erfasst (Vergleich über Schlüssel,
  *    wie im Melder), spielt einmal eine Vollbild-Einblendung: Schleier,
@@ -45,7 +47,17 @@
         '<div class="fl-ticks"></div>' +
         /* Mini-Radar oben: derselbe Sweep wie am grossen Schirm, nur klein. */
         '<div class="fl-radar"><i></i></div>' +
-        '<div class="fl-wort"><span></span></div>' +
+        /* PLANETEN (Vorgabe 18.08.): die Bildsprache des Pruefstands in
+         * die Raender geholt. Zwei Gasriesen mit Wolkenbaendern, Licht
+         * oben links, tiefer Schatten unten rechts, dazu ein Orbitring —
+         * und alles schwebt sehr langsam. Bewegt wird ausschliesslich
+         * transform, also auf der Grafikkarte: kein Bild, kein WebGL,
+         * keine Zeichenschleife, kein Neuzeichnen der Kugelflaeche. */
+        '<div class="fl-planeten">' +
+          '<i class="fl-planet p1"></i>' +
+          '<i class="fl-planet p2"></i>' +
+          '<i class="fl-orbit"></i>' +
+        '</div>' +
         /* DIE LUFTWAFFE (Vorgabe 14.8. nachts): erkennbare Silhouetten in
          * Draufsicht — Nurfluegel-Bomber (B-2-Klasse), Doppelleitwerk-
          * Jaeger (F-15-Klasse), Delta-Canard (Eurofighter-Klasse) und
@@ -65,24 +77,27 @@
             '<path fill="currentColor" d="M24 0 C21.5 0 21.5 4 21.5 6 L2 8 L2 10 L21.5 10 L21.5 19 L16 24 L17 26 L24 21 L31 26 L32 24 L26.5 19 L26.5 10 L46 10 L46 8 L26.5 6 C26.5 4 26.5 0 24 0 Z"/>' +
           '</svg></i>' +
         '</div>' +
-        /* SCHLACHTFELD (Vorgabe 14.8. abends): "keine Scananimationen,
-         * sondern Panzer, Flugzeuge, Schuesse und Soldaten." Silhouetten,
-         * die die Flanke bevoelkern — alles reine CSS-Bewegung. */
-        '<div class="fl-feld">' +
-          '<svg class="fl-panzer" viewBox="0 0 64 28" aria-hidden="true">' +
-            '<path fill="currentColor" d="M4 20 h56 l-5 6 h-46 z"/>' +
-            '<circle cx="14" cy="23" r="2.2" fill="#070D18"/><circle cx="24" cy="23" r="2.2" fill="#070D18"/>' +
-            '<circle cx="34" cy="23" r="2.2" fill="#070D18"/><circle cx="44" cy="23" r="2.2" fill="#070D18"/>' +
-            '<path fill="currentColor" d="M16 12 h24 v8 h-28 z"/>' +
-            '<path fill="currentColor" d="M24 6 h12 v6 h-12 z"/>' +
-            '<rect fill="currentColor" x="36" y="8" width="24" height="2.6"/>' +
-          '</svg>' +
-          '<i class="fl-schuss sch1"></i>' +
-          '<i class="fl-schuss sch2"></i>' +
-          '<i class="fl-muendung"></i>' +
+        /* RAKETEN (Vorgabe 18.08.): statt Panzer und Soldaten steigen
+         * jetzt Traeger auf und setzen wieder auf — Start, Bahn, sanftes
+         * Aufsetzen, kurzer Staub. Jede laeuft ihren eigenen langen Takt,
+         * damit nie zwei gleichzeitig zuenden. */
+        '<div class="fl-raketen">' +
+          '<i class="fl-rakete r1">' +
+            '<svg viewBox="0 0 14 40" aria-hidden="true">' +
+              '<path fill="currentColor" d="M7 0 C10 6 11 12 11 20 L11 31 L3 31 L3 20 C3 12 4 6 7 0 Z"/>' +
+              '<path fill="currentColor" d="M3 24 L0 33 L3 31 Z M11 24 L14 33 L11 31 Z"/>' +
+            '</svg>' +
+            '<b class="fl-flamme"></b>' +
+          '</i>' +
+          '<i class="fl-rakete r2">' +
+            '<svg viewBox="0 0 14 40" aria-hidden="true">' +
+              '<path fill="currentColor" d="M7 0 C10 6 11 12 11 20 L11 31 L3 31 L3 20 C3 12 4 6 7 0 Z"/>' +
+              '<path fill="currentColor" d="M3 24 L0 33 L3 31 Z M11 24 L14 33 L11 31 Z"/>' +
+            '</svg>' +
+            '<b class="fl-flamme"></b>' +
+          '</i>' +
+          '<i class="fl-staub"></i>' +
         '</div>' +
-        /* Funkgeraet unten: die letzten drei Meldungen vom Gefecht. */
-        '<div class="fl-funk"></div>' +
         /* Explosion bei Zielerfassung: Blitz + Druckwelle, per Klasse gezuendet. */
         '<div class="fl-boom"><i class="fb-blitz"></i><i class="fb-welle"></i></div>';
       document.body.appendChild(f);
@@ -147,64 +162,21 @@
       var f = document.getElementById(id);
       if (!f) return;
       f.className = f.className.replace(/\b(ruhig|wachsam|alarm)\b/g, '').trim() + ' ' + l.stufe;
-      var w = f.querySelector('.fl-wort span');
-      if (w && w.textContent !== l.wort) w.textContent = l.wort;
     });
   }
 
-  /* ---------- Das Funkgeraet ----------
+  /* ---------- Das Funkgeraet ist AUSGEBAUT (Vorgabe 18.08.) ----------
    *
-   * Alle paar Sekunden eine Meldung im Gefechtston, passend zur Lage.
-   * Ereignisse (Ziel erfasst) draengen sich sofort dazwischen. Nur die
-   * letzten drei Zeilen bleiben stehen — ein Funkgeraet, kein Protokoll. */
-  /* Motivationsfunk (Vorgabe 14.8. nachts): ab und zu spricht das
-   * Funkgeraet dem Offizier Mut zu — Kasernenhof-Weisheiten. */
-  var MOTIVATION = [
-    'DURCHHALTEN, OFFIZIER', 'DAS RASTER SCHLÄFT NIE', 'GEDULD SCHLÄGT GIER',
-    'DISZIPLIN GEWINNT KRIEGE', 'RUHE BEWAHREN — PRÄZISE BLEIBEN',
-    'JEDE PRÜFUNG MACHT UNS SCHÄRFER', 'WER MISST, GEWINNT',
-    'KEIN ZIEL BLEIBT UNGEPRÜFT', 'STANDHAFT WIE DAS RASTER'
-  ];
-
-  var FUNK = {
-    ruhig: ['SEKTOR WIRD ABGETASTET …', 'KEIN KONTAKT — WEITER SUCHEN',
-            'ALLE EINHEITEN AUF STATION', 'LAGE RUHIG — AUGEN OFFEN',
-            'VIER BÜCHER IM BLICK'],
-    wachsam: ['STÖRSIGNAL IM SEKTOR', 'VERBINDUNG WIRD SCHWÄCHER',
-              'EINHEIT MELDET SICH VERSPÄTET'],
-    alarm: ['NOTRUF ABGESETZT', 'EINHEIT ANTWORTET NICHT',
-            'SUCHE LÄUFT AUF RESTVERBINDUNG']
-  };
-
-  function funken(text) {
-    /* Nur die LINKE Flanke traegt Funkzeilen: unten rechts sitzt der
-     * Funker-Knopf, dort stoerte die Laufschrift (Vorgabe 14.8. nachts). */
-    ['flanke-l'].forEach(function (id) {
-      var f = document.getElementById(id);
-      var funk = f && f.querySelector('.fl-funk');
-      if (!funk) return;
-      var z = document.createElement('div');
-      z.textContent = text;
-      funk.insertBefore(z, funk.firstChild);
-      while (funk.childNodes.length > 3) funk.removeChild(funk.lastChild);
-    });
-  }
-
-  function funkTakt() {
-    var pool = FUNK[letzteStufe || 'ruhig'] || FUNK.ruhig;
-    var e = welt.letztesErgebnis;
-    /* Ab und zu eine echte Zahl statt Prosa — das Funkgeraet soll berichten,
-     * nicht nur Stimmung machen. */
-    if (e && Array.isArray(e.chancen) && e.chancen.length && Math.random() < 0.4) {
-      funken(e.chancen.length + (e.chancen.length === 1 ? ' ZIEL' : ' ZIELE') + ' IM VISIER');
-      return;
-    }
-    if ((letzteStufe || 'ruhig') === 'ruhig' && Math.random() < 0.35) {
-      funken(MOTIVATION[Math.floor(Math.random() * MOTIVATION.length)]);
-      return;
-    }
-    funken(pool[Math.floor(Math.random() * pool.length)]);
-  }
+   * Karam: "diese Kenner und diesen Text entfernen". Damit fallen weg:
+   * das Lagewort an der Flanke (fl-wort) und die Funkzeilen darunter
+   * (fl-funk) samt Motivationsspruechen — und mit ihnen der einzige
+   * Grund, warum die Buehne ueberhaupt Text schrieb.
+   *
+   * Die LAGE selbst bleibt: lage() liefert weiter ruhig/wachsam/alarm,
+   * und die Flanke traegt den Zustand als Klasse. Er faerbt und taktet
+   * jetzt nur noch, statt zu reden — ein Ausfall bleibt also sichtbar,
+   * er wird nur nicht mehr vorgelesen. Die ausfuehrliche Meldung stand
+   * ohnehin immer im Warnungsblock oben, dort wo sie hingehoert. */
 
   /* ---------- Das Kino ---------- */
   var bekannteChancen = null;
@@ -238,9 +210,7 @@
     if (kinoWecker) clearTimeout(kinoWecker);
     kinoWecker = setTimeout(function () { kino.classList.remove('an'); }, 3000);
 
-    /* Die Flanken feuern mit: Blitz und Druckwelle von beiden Seiten,
-     * dazu die Funkmeldung. */
-    funken('ZIEL ERFASST — FEUER FREI');
+    /* Die Flanken feuern mit: Blitz und Druckwelle von beiden Seiten. */
     ['flanke-l', 'flanke-r'].forEach(function (id) {
       var fl = document.getElementById(id);
       if (!fl) return;
@@ -251,16 +221,11 @@
     });
   }
 
-  var funkZaehler = 0;
   function start() {
     baue();
     flankenTakt();
-    funken('FUNKGERÄT AUF EMPFANG');
     setInterval(function () {
       flankenTakt(); kinoTakt();
-      /* Funkspruch alle ~10 s (jeder fuenfte 2-s-Takt), nicht jede Sekunde —
-       * ein Funkgeraet, das dauerplappert, hoert niemand mehr. */
-      if (++funkZaehler % 5 === 0) funkTakt();
     }, 2000);
   }
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', start);
