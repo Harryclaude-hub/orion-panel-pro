@@ -538,3 +538,22 @@ Division Reserves).
 
 **Ungemessen ist nicht falsch:** Fehlt eine Zeit oder eine Liga, wird
 NICHT gesperrt. Dieselbe Regel wie bei der Menge.
+
+### Der Anpfiff kam nur vom zweiten Buch (18.8.2026, gefunden bei der Durchsuchung)
+
+**19 von 46 Live-Zeilen hatten gar keinen Anpfiff** — dort war die
+Zeitsperre blind, bei 41 Prozent. Ursache: `orion_zeiten_stimmigkeit()`
+liest die Zeit ausschließlich vom **zweiten** Buch. Stand Smarkets an
+erster Stelle, blieb das Feld leer, obwohl die Zeit vorlag.
+
+`orion_zeiten_erstbuch()` (Takt `orion-erstbuch-takt`) holt sie nach —
+über Kernwörter, dieselbe Technik, die dieselbe Funktion für die
+Buchprobe des ersten Buches schon nutzt. Ergebnis sofort: 10 Zeilen
+nachgetragen, offen blieben 7.
+
+**Kalshi bleibt bewusst außen vor.** Kalshi liefert eine *Schlusszeit*,
+keinen Anpfiff. Ob beides zusammenfällt, ist **ungemessen** — im Vorrat
+lag zum Prüfzeitpunkt keine einzige Partie, die bei Kalshi *und* Betfair
+vorkam. Lieber „nicht angegeben" als eine erfundene Zeit, die die
+Zeitsperre in die Irre führt. Sobald sich beide Bücher einmal
+überschneiden, ist das nachmessbar und kann nachgezogen werden.
