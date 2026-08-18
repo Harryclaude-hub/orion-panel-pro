@@ -159,3 +159,36 @@ nachgemessen: Daten 15 s alt, build 21, 400 Märkte hochgeladen.
 
 Build 22 getestet und installiert am 17.08.2026: speicher_mb kam mit
 80 MB in der Datenbank an, Daten 17 s alt, exakt eine Bridge-Instanz.
+
+DER WAECHTER (seit 19.08.2026)
+------------------------------
+Am 19.08. stand die Bridge still, ohne dass es jemand meldete. Die
+Aufgabenplanung merkt so etwas NICHT: wird der Prozess von aussen
+beendet oder das Fenster geschlossen, sieht sie nur "Aufgabe fertig".
+
+Deshalb laeuft jetzt zusaetzlich die Aufgabe "Orion Bridge Waechter"
+alle 5 Minuten. Sie startet die Bridge NUR, wenn gerade keine laeuft.
+Datei: Bridge-waechter.ps1 im selben Ordner.
+
+Zweimal geprueft am 19.08.:
+  - Bridge laeuft  -> Waechter tut nichts (blieb bei 1 Instanz)
+  - Bridge beendet -> Waechter holt sie binnen Sekunden zurueck
+
+WARUM PowerShell und nicht cmd: die erste Fassung nutzte "wmic" - das
+gibt es auf Windows 11 NICHT MEHR. Die Pruefung schlug damit immer
+fehl, der Waechter haette alle 5 Minuten einen sinnlosen Start
+versucht. Beim Testen aufgefallen, nicht im Betrieb.
+
+ENERGIE-EINSTELLUNGEN (19.08. gesetzt und nachgemessen)
+--------------------------------------------------------
+  Deckel zuklappen     am Netz: Nichts unternehmen   im Akku: Nichts unternehmen
+  Energie sparen nach  am Netz: NIE                  im Akku: NIE
+  Ruhezustand nach     am Netz: NIE                  im Akku: NIE
+
+Damit laeuft die Bridge weiter, wenn der Deckel zugeht oder der
+Bildschirm gesperrt wird. Der Bildschirm darf ausgehen - das stoppt
+nichts.
+
+WARNUNG: Im Akkubetrieb laeuft sie zwar weiter, zieht aber dauerhaft
+Strom. Ohne Netzteil ist der Akku in wenigen Stunden leer und dann
+steht alles. Fuer Dauerbetrieb: angesteckt lassen.
