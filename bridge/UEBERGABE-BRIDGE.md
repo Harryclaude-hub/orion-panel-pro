@@ -337,3 +337,29 @@ bevor sie baut. Kontext dazu:
 
 „Lies `bridge/UEBERGABE-BRIDGE.md` in `C:\Users\Home\orion-panel-pro` und
 dann besprechen wir, welche Konfigurationen in die Bridge kommen."
+
+## 6. BRIDGE-MELDEPFLICHT (Karams Regel, 18.08.2026)
+
+**Bei JEDER Änderung ausdrücklich sagen, ob eine NEUE BRIDGE nötig ist.**
+Karams Worte: „wenn wir Änderungen machen und diese Änderung auch in der
+lokalen Bridge geändert werden soll, dass Du mir sagst, dass ich eine
+neue Bridge hab."
+
+Also am Ende jeder Änderung einen der zwei Sätze schreiben:
+
+- **„Neue Bridge nötig"** — dann die Datei aushändigen und den
+  Installationsweg nennen (Datei nach `C:\Users\Home\OrionBridge`,
+  Aufgabe neu starten, per SQL nachmessen).
+- **„Keine neue Bridge nötig"** — dann dazusagen, warum nicht (Änderung
+  lag im Panel, im Server oder in der Datenbank).
+
+Faustregel, was eine neue Bridge braucht: alles in
+`bridge/orion-bridge-4.js` — Upload-Felder, Sportarten, Takte, Fenster,
+Speicherverhalten, `stats`. Panel, `orion-lauf`, SQL-Funktionen und
+Sammler laufen ohne Bridge-Wechsel.
+
+**Die anderen drei Anbieter brauchen NIE eine Bridge.** Nur Betfair
+verlangt einen Rechner zu Hause (Rechenzentren bekommen 403); Kalshi,
+Smarkets und Polymarket holt der Server selbst. Frische am 18.08.
+gemessen: Bridge 15 s (Build 23), Kalshi Sport und Welt je 66 s
+(Sammler v3), Smarkets 52 s, Polymarket 12 s — alle vier aktuell.
