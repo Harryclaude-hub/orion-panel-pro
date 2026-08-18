@@ -21,18 +21,33 @@
    * Cyan-Kontrast. Rollen und Namen bleiben unveraendert — getauscht
    * wurden NUR die Werte, genau dafuer gibt es diese Schicht. */
 
-  /* Grundton: fast schwarzes Marineblau, Panels eine Spur heller. */
-  --grund:    #070D18;
-  --karte:    #0D1726;
-  --karte-2:  #132135;
-  --rand:     #22384F;
-  --text:     #E7F1FB;
-  --text-leise: #89A2BC;
+  /* NACHGEZOGEN 18.8.2026 auf Karams Kommandopult-Bild — die Kontraste
+   * eins zu eins uebernommen: Grund eine Spur heller und blauer, Panels
+   * klarer abgesetzt, Raender kuehl statt graublau.
+   *
+   * ACHTUNG, gemessen am 18.8.: diese vier Werte werden von hud.css
+   * ueberschrieben, weil sie NACH dieser Datei laedt. Beide tragen
+   * seither DENSELBEN Wert — wer aendert, aendert an beiden Stellen,
+   * sonst kaempfen wieder zwei Paletten gegeneinander. */
+  --grund:    #0A1220;
+  --karte:    #0E1B2A;
+  --karte-2:  #14243A;
+  --rand:     #1E3650;
+  --text:     #E8F2FC;
+  --text-leise: #85A0BD;
 
-  /* Akzent: warmes Bernstein — der EINE warme Ton auf dem blauen Grund
-   * (Leuchtspur, Stempel, Rechnungsnummer, aktivstes Matrixfeld). */
-  --gold:     #E3A94A;
-  --akzent-rgb: 227, 169, 74;
+  /* Akzent: HELLES EISBLAU (18.8.2026). Hier stand warmes Bernstein —
+   * der einzige warme Ton der Oberflaeche. Karams Vorgabe: "der Rest
+   * immer blau, nur die Statistik behaelt etwas Orange". Weil ALLE
+   * Fundstellen ueber dieses eine Token laufen, genuegt der Tausch
+   * HIER; die Statistik holt sich ihr Orange in einer eigenen Regel
+   * zurueck (siehe .zstat am Dateiende).
+   *
+   * NICHT angetastet werden die Zustandsfarben gruen/orange/rot: eine
+   * Warnung muss warnen duerfen. Das ist Funktion, nicht Schmuck — und
+   * Design fasst Funktion nicht an. */
+  --gold:     #7FD4FF;
+  --akzent-rgb: 127, 212, 255;
 
   /* Zustandsfarben, auf den blauen Grund abgestimmt. */
   --gruen:    #2FD3A7;
@@ -663,7 +678,7 @@ h2 {
 /* Goldene Kappe oben: der eindeutige Anfang einer Wette. */
 .karte::before, .fund::before {
   content: ""; position: absolute; left: -2px; right: -2px; top: -2px; height: 4px;
-  background: linear-gradient(90deg, #E3A94A, #FFDD9B 45%, #E3A94A);
+  background: linear-gradient(90deg, var(--gold), #D8F1FF 45%, var(--gold));
   border-radius: 14px 14px 0 0;
 }
 /* Abschluss unten, damit auch das ENDE sichtbar ist. */
@@ -2529,3 +2544,98 @@ button.chip.kopier:hover { border-color: var(--sonar); }
 }
 #funker-knopf .ps-logo { width: 100%; height: 100%; display: block; }
 #funker-knopf:hover { border-color: var(--sonar); }
+
+/* ============================================================================
+ * FARBWELT 18.8.2026 — Karams Kommandopult-Bild, drei Nachtraege
+ * ============================================================================
+ * Reine Design-Schicht: loeschbar, ohne dass ein Wert oder eine Rechnung
+ * fehlt. Spaetere Regeln ueberstimmen fruehere — deshalb stehen sie hier. */
+
+/* --- 1. DIE STATISTIK BEHAELT IHR ORANGE -----------------------------------
+ * Karam: "Lass bei der Statistik ein bisschen Orange, aber der Rest immer
+ * blau." Das Akzent-Token wird NUR fuer diesen einen Block umdefiniert —
+ * alles darin (Knoepfe, Zahlen, Balken, Kennung) folgt automatisch, ohne
+ * dass eine einzige Regel im Statistik-Block angefasst werden muesste. */
+.zstat {
+  --gold: var(--orange);
+  --akzent-rgb: 240, 167, 60;
+}
+/* Die Kennung trug den alten Bernstein als festen Wert — jetzt am Token. */
+.zstat-kennung { color: rgba(var(--akzent-rgb), .5) !important; }
+
+/* --- 2. CHANCENKARTE: OLIV RAUS, BLAU REIN --------------------------------
+ * Die hervorgehobene Chancenkarte trug noch Olivgruen (#2C332C/#4C6242) aus
+ * der Farbwelt VOR dem Marineblau — ein warmer Fremdkoerper in einer sonst
+ * blauen Oberflaeche. Jetzt ein kuehles Leuchten aus demselben Cyan wie das
+ * Sonar, damit "das ist die gute Zeile" weiter sofort ins Auge springt. */
+.fund.chance {
+  border-color: rgba(var(--sonar-rgb), .55) !important;
+  background:
+    linear-gradient(180deg, rgba(var(--sonar-rgb), .10) 0%, transparent 120px),
+    var(--karte) !important;
+}
+
+/* --- 3. DER BERICHT ALS WEISSES BLATT -------------------------------------
+ * Karams Vorgabe: die volle Anzeige, in der erklaert wird, wie gerechnet
+ * wurde, soll sich wie Papier lesen — weisser Grund, schwarze Schrift,
+ * "angenehm fuer die Arbeit". Dunkle Oberflaechen sind gut fuer Radar und
+ * Zahlenblicke, aber schlecht fuer laengere Fliesstexte.
+ *
+ * Der Trick: im geoeffneten Bericht werden die TOKENS umdefiniert. Weil
+ * darin alles ueber Tokens faerbt, kippt der ganze Block auf Papier, ohne
+ * dass eine einzige seiner Regeln geaendert werden muss. Zugeklappt bleibt
+ * alles dunkel — nur beim Lesen wird das Blatt aufgeschlagen.
+ *
+ * Die Akzente werden dabei ABGEDUNKELT: helles Cyan auf Weiss waere
+ * unlesbar. Gleiche Rollen, andere Helligkeit. */
+.fund details.voll[open] {
+  /* --grund MUSS mit umschalten: die HUD-Schicht malt die Kurs-Kacheln
+   * (.fund .seite) damit. Ohne diese Zeile blieben sie tiefdunkel und
+   * ihr Text waere auf dem Blatt unsichtbar gewesen — am 18.8. mit
+   * einem Kontrast von 1,03 nachgemessen, also praktisch unlesbar. */
+  --grund:      #E7EFF7;
+  --karte:      #FFFFFF;
+  --karte-2:    #EEF4FA;
+  --rand:       #C3D3E2;
+  --text:       #0B1622;
+  --text-leise: #43566A;
+  --sonar:      #0A6A9E;
+  --sonar-rgb:  10, 106, 158;
+  --gold:       #14567F;
+  --akzent-rgb: 20, 86, 127;
+  --gruen:      #0A7350;
+  --orange:     #8A4B00;
+  --rot:        #A81F33;
+  --pm:         #2F4FA8;
+  --bf:         #7A5B00;
+  --ka:         #0F6B5A;
+  --sm:         #1D6B3A;
+  background: #FFFFFF;
+  color: var(--text);
+  border: 1px solid #C3D3E2;
+  border-radius: var(--rund);
+  padding: 10px 14px 14px;
+  margin-top: 10px;
+}
+/* Die Aufklappzeile selbst bleibt Teil des Blattes, aber ruhig. */
+.fund details.voll[open] > summary {
+  color: var(--text); border-color: var(--rand);
+  background: var(--karte-2);
+}
+/* Zustands-Chips: ihre Raender waren fuer dunklen Grund gemacht. */
+.fund details.voll[open] .chip { background: var(--karte-2); }
+.fund details.voll[open] .chip.gut  { border-color: #8FC9B4; }
+.fund details.voll[open] .chip.acht { border-color: #DCBE93; }
+.fund details.voll[open] .chip.rot  { border-color: #E4A9B4; }
+.fund details.voll[open] .warnung {
+  background: #FFF7EA; border-color: #DCBE93; color: var(--orange);
+}
+.fund details.voll[open] .urteil { background: var(--karte-2); }
+.fund details.voll[open] a { color: var(--sonar); }
+/* Die Formel-Zeilen sind der eigentliche Lesestoff: etwas groesser und
+ * mit Ziffern gleicher Breite, damit Zahlen untereinander stehen. */
+.fund details.voll[open] .formel,
+.fund details.voll[open] .rechenweg {
+  font-variant-numeric: tabular-nums;
+}
+.fund details.voll[open] .formel { color: #2B3D50; }
