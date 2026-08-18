@@ -2522,26 +2522,44 @@ button.chip.kopier:hover { border-color: var(--sonar); }
    * (.fund .seite) damit. Ohne diese Zeile blieben sie tiefdunkel und
    * ihr Text waere auf dem Blatt unsichtbar gewesen — am 18.8. mit
    * einem Kontrast von 1,03 nachgemessen, also praktisch unlesbar. */
-  --grund:      #E7EFF7;
-  --karte:      #FFFFFF;
-  --karte-2:    #EEF4FA;
-  --rand:       #C3D3E2;
-  --text:       #0B1622;
-  --text-leise: #43566A;
-  --sonar:      #0A6A9E;
-  --sonar-rgb:  10, 106, 158;
-  --gold:       #14567F;
-  --akzent-rgb: 20, 86, 127;
-  --gruen:      #0A7350;
-  --orange:     #8A4B00;
-  --rot:        #A81F33;
-  --pm:         #2F4FA8;
-  --bf:         #7A5B00;
-  --ka:         #0F6B5A;
-  --sm:         #1D6B3A;
-  background: #FFFFFF;
+  /* BUCHPAPIER STATT NEONWEISS (18.8., zweite Runde). Karam: "als würde
+   * ich in ein Buch reinschauen und nicht in ein Neonweiß — das Weiß und
+   * das Schwarze müssen aufeinander passen, es soll beruhigend zum Lesen
+   * sein."
+   *
+   * Reines Weiss (#FFFFFF) mit fast reinem Schwarz ergab 18,2:1 — richtig
+   * fuer eine Warnleuchte, zu hart fuer laengeren Text: das Blatt blendet
+   * und die Buchstaben stechen. Buchdruck liegt bei etwa 12-14:1 auf
+   * leicht warmem, cremefarbenem Grund.
+   *
+   * Die Werte sind DIESELBEN wie im Orion Protection Panel (dort
+   * --papier/--papier-text). Beide Programme lesen sich damit gleich —
+   * wer drueben nachrechnet, wechselt nicht die Lichtstimmung. */
+  --grund:      #E9E5D8;
+  --karte:      #F2EFE4;
+  --karte-2:    #EAE6D9;
+  --rand:       #D9D3C1;
+  --text:       #1C1B17;
+  /* GEMESSEN 18.8.: mit dem Pruefstand-Grauton (#6B6759) lag der
+   * Nebentext bei 4,9:1 — gerade noch zulaessig, aber fuer laengeres
+   * Lesen zu blass. Eine Spur dunkler bringt ihn auf rund 6:1, ohne
+   * dass er dem Haupttext Konkurrenz macht. */
+  --text-leise: #5A5648;
+  /* Akzente gedeckt statt leuchtend — Tinte, nicht Neon. */
+  --sonar:      #1F5E80;
+  --sonar-rgb:  31, 94, 128;
+  --gold:       #2A5570;
+  --akzent-rgb: 42, 85, 112;
+  --gruen:      #1B6B4A;
+  --orange:     #8A5A12;
+  --rot:        #A32B28;
+  --pm:         #33487F;
+  --bf:         #6E5714;
+  --ka:         #1A6154;
+  --sm:         #26603A;
+  background: var(--karte);
   color: var(--text);
-  border: 1px solid #C3D3E2;
+  border: 1px solid var(--rand);
   border-radius: var(--rund);
   padding: 10px 14px 14px;
   margin-top: 10px;
@@ -2553,11 +2571,39 @@ button.chip.kopier:hover { border-color: var(--sonar); }
 }
 /* Zustands-Chips: ihre Raender waren fuer dunklen Grund gemacht. */
 .fund details.voll[open] .chip { background: var(--karte-2); }
-.fund details.voll[open] .chip.gut  { border-color: #8FC9B4; }
-.fund details.voll[open] .chip.acht { border-color: #DCBE93; }
-.fund details.voll[open] .chip.rot  { border-color: #E4A9B4; }
+.fund details.voll[open] .chip.gut  { border-color: #A9C4B0; }
+.fund details.voll[open] .chip.acht { border-color: #D6C08F; }
+
+/* ---------- DER ROTE MARKER (Vorgabe 18.8.) ----------
+ * Karam: "bei wichtigen Informationen mit dem roten Marker, sodass die
+ * Schrift schwarz ist und rot markiert." Also kein roter TEXT — die
+ * Schrift bleibt Buchschwarz und liegt auf einem Markierstrich, wie mit
+ * dem Textmarker gezogen: unten aufliegend, oben auslaufend, mit leicht
+ * unruhigem Rand. Rote Schrift auf Papier liest sich schlechter als
+ * schwarze; die Farbe soll den Blick holen, nicht das Lesen erschweren. */
+.fund details.voll[open] .chip.rot {
+  color: var(--text);
+  border-color: #C08C86;
+  background: linear-gradient(180deg,
+    rgba(163, 43, 40, .10) 0%, rgba(163, 43, 40, .26) 55%, rgba(163, 43, 40, .30) 100%);
+}
 .fund details.voll[open] .warnung {
-  background: #FFF7EA; border-color: #DCBE93; color: var(--orange);
+  color: var(--text);
+  border: 1px solid #C08C86;
+  border-left: 4px solid var(--rot);
+  background: linear-gradient(180deg,
+    rgba(163, 43, 40, .06) 0%, rgba(163, 43, 40, .18) 100%);
+}
+.fund details.voll[open] .warnung b { color: var(--rot); }
+/* Der Marker als eigenes Mittel: alles, was im Bericht wirklich zaehlt,
+ * kann ihn tragen (Fehlpaarung, Absageverlust, abweichende Rechnung). */
+.fund details.voll[open] .marker,
+.fund details.voll[open] .urteil.rot {
+  color: var(--text);
+  background: linear-gradient(transparent 8%,
+    rgba(163, 43, 40, .28) 8%, rgba(163, 43, 40, .28) 92%, transparent 92%);
+  box-decoration-break: clone; -webkit-box-decoration-break: clone;
+  padding: 0 3px;
 }
 .fund details.voll[open] .urteil { background: var(--karte-2); }
 .fund details.voll[open] a { color: var(--sonar); }
@@ -2847,3 +2893,13 @@ html.anim-2 .s-hud-jet         { display: none !important; }
 .s-ringe i:nth-child(3) { border-color: rgba(138, 230, 255, .32); }
 .s-ringe i:nth-child(2) { border-color: rgba(var(--sonar-rgb), .22); }
 .s-ringe i:nth-child(1) { border-color: rgba(var(--sonar-rgb), .14); }
+
+/* Abschnittskoepfe und Urteil sind im Bericht die Wegweiser — sie tragen
+ * im Buchmodus die volle Schriftfarbe statt des Nebentons (gemessen: mit
+ * dem Nebenton lagen sie bei 4,5-4,9:1 und verschwammen mit dem
+ * Fliesstext). Gesperrte Grossbuchstaben halten sie trotzdem ruhig. */
+.fund details.voll[open] .ab-kopf {
+  color: var(--text); letter-spacing: .06em;
+}
+.fund details.voll[open] .urteil { color: var(--text); }
+.fund details.voll[open] .urteil.gut b { color: #14603F; }
