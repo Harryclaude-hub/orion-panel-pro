@@ -43,7 +43,7 @@ const fs = require('fs');
 const pfad = require('path');
 
 const VERSION = '4.0';
-const BUILD = 24;   // 21: Schalter · 22: speicher_mb · 23: et_namen · 24: co = Wettbewerb (Liga)
+const BUILD = 25;   // 24: co = Wettbewerb · 25: Grundanteil je Sportart + Standby-Pruefung
 
 /* ---------- Zugangsdatei ---------- */
 const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
@@ -108,7 +108,12 @@ const O = {
   /* Rückfall-Kommission, falls Betfair für einen Markt keine meldet. */
   feeBf: zahl(CFG.feeBetfairPercent, 3) / 100,
   /* Sportarten, die nie geladen werden (Standard: 7 = Pferde, 4339 = Hunde). */
-  aus: (CFG.excludeEventTypeIds || ['7', '4339']).map(String)
+  aus: (CFG.excludeEventTypeIds || ['7', '4339']).map(String),
+  /* GRUNDANTEIL je Sportart (Build 25): so viele Maerkte bekommt JEDE
+   * Sportart mit Bestand garantiert Kurse, bevor der Rest global nach
+   * Dringlichkeit verteilt wird. Ohne das fressen Fussball und Tennis
+   * das ganze Kontingent und die kleinen Sportarten kommen nie an. */
+  grundanteil: zahl(CFG.grundanteilJeSportart, 24)
 };
 
 const PAKET = 40;
@@ -409,16 +414,48 @@ async function kurseHolen(ids) {
 /* Welche Märkte brauchen jetzt Kurse? Die dringlichsten zuerst:
  * laufende Partien, dann die mit dem nächsten Anpfiff. */
 function dringlichste(anzahl) {
-  const alle = [];
-  for (const [, vorrat] of VORRAT) {
+  /* GRUNDANTEIL JE SPORTART (Build 25) — der Fund vom 19.8.
+   *
+   * Vorher wurden schlicht die dringlichsten Maerkte ALLER Sportarten
+   * genommen. Fussball und Tennis haben aber so viele Partien, dass sie
+   * das ganze Kontingent auffressen: gemessen kamen nur noch Fussball
+   * (399), Tennis (94) und Basketball (4) im Upload an — E-Sport, MMA,
+   * Baseball, Eishockey, Cricket, Boxen und Motorsport bekamen NIE einen
+   * Kurs und fielen damit aus dem Upload, obwohl sie im Vorrat lagen.
+   * Ein stiller Fehlschlag: die Rotation lief, der Katalog fuellte sich,
+   * angekommen ist nichts.
+   *
+   * Jetzt in ZWEI Durchgaengen:
+   *   1. Jede Sportart mit Maerkten bekommt ihren GRUNDANTEIL (Standard
+   *      24, in bridge-config.json als grundanteilJeSportart aenderbar) —
+   *      ihre eigenen dringlichsten Maerkte, garantiert.
+   *   2. Was vom Kontingent uebrig bleibt, wird global nach Dringlichkeit
+   *      verteilt. Fussball behaelt damit den Loewenanteil, aber keine
+   *      Sportart verhungert mehr. */
+  const jeSport = new Map();
+  for (const [et, vorrat] of VORRAT) {
+    const liste = [];
     for (const [mid, m] of vorrat) {
       const start = m.start ? Date.parse(m.start) : Infinity;
       const k = KURSE.get(mid);
-      alle.push({ mid, start, alter: k ? Date.now() - k.stand : Infinity });
+      liste.push({ mid, start, alter: k ? Date.now() - k.stand : Infinity });
     }
+    liste.sort((a, b) => (a.start - b.start) || (b.alter - a.alter));
+    if (liste.length) jeSport.set(et, liste);
   }
-  alle.sort((a, b) => (a.start - b.start) || (b.alter - a.alter));
-  return alle.slice(0, anzahl).map(x => x.mid);
+
+  const gewaehlt = new Set();
+  for (const [, liste] of jeSport) {
+    const n = Math.min(O.grundanteil, liste.length);
+    for (let i = 0; i < n && gewaehlt.size < anzahl; i++) gewaehlt.add(liste[i].mid);
+  }
+
+  const rest = [];
+  for (const [, liste] of jeSport) for (const x of liste) if (!gewaehlt.has(x.mid)) rest.push(x);
+  rest.sort((a, b) => (a.start - b.start) || (b.alter - a.alter));
+  for (const x of rest) { if (gewaehlt.size >= anzahl) break; gewaehlt.add(x.mid); }
+
+  return Array.from(gewaehlt);
 }
 
 /* ---------- Hochladen — Format wie in 3.8, Feld für Feld ---------- */
@@ -564,6 +601,48 @@ async function durchlauf() {
     laeuft = false;
   }
 }
+
+/* ---------- STANDBY-PRUEFUNG (Build 25) ----------
+ *
+ * Karams Wunsch: die Bridge soll auch laufen, wenn der Deckel zu ist.
+ * EHRLICH: ein Node-Programm kann den Ruhezustand nicht selbst
+ * verhindern — das ist eine Windows-Einstellung und braucht Adminrechte.
+ * Was die Bridge SEHR WOHL kann: beim Start nachsehen und LAUT sagen,
+ * wenn der Rechner einschlafen wuerde. Ein stiller Fehlschlag waere hier
+ * besonders teuer: die Bridge stuende still und niemand wuesste warum.
+ *
+ * Geprueft wird der Standby-Zeitgeber fuer Netz- UND Akkubetrieb.
+ * 0 heisst nie — nur dann ist Dauerbetrieb sicher. */
+function standbyPruefen() {
+  try {
+    const cp = require('child_process');
+    const aus = cp.execSync('powercfg /q SCHEME_CURRENT SUB_SLEEP STANDBYIDLE',
+                            { encoding: 'utf8', timeout: 8000, windowsHide: true });
+    const netz = /Wechselstromeinstellung|AC Power Setting.*?: *0x([0-9a-f]+)/i.exec(aus);
+    const werte = [...aus.matchAll(/: *0x([0-9a-f]+)/gi)].map(m => parseInt(m[1], 16));
+    const standby = werte.filter(w => !isNaN(w));
+    /* Die beiden letzten Werte sind Wechselstrom (Netz) und Gleichstrom (Akku). */
+    const netzWert = standby.length >= 2 ? standby[standby.length - 2] : null;
+    const akkuWert = standby.length >= 1 ? standby[standby.length - 1] : null;
+    if (netzWert === 0 && akkuWert === 0) {
+      console.log('  Standby: AUS (Netz und Akku) — Dauerbetrieb ist sicher.');
+      return { netz: 0, akku: 0, sicher: true };
+    }
+    console.log('');
+    console.log('  ACHTUNG: Der Rechner kann einschlafen — dann steht die Bridge!');
+    if (netzWert) console.log('    am Netz nach ' + Math.round(netzWert / 60) + ' Minuten');
+    if (akkuWert) console.log('    im Akku nach ' + Math.round(akkuWert / 60) + ' Minuten');
+    console.log('  So abschalten (Eingabeaufforderung als Administrator):');
+    console.log('    powercfg /change standby-timeout-ac 0');
+    console.log('    powercfg /change standby-timeout-dc 0');
+    console.log('');
+    return { netz: netzWert, akku: akkuWert, sicher: false };
+  } catch (e) {
+    console.log('  Standby-Pruefung nicht moeglich (' + (e.message || e) + ') — bitte selbst nachsehen.');
+    return null;
+  }
+}
+const STANDBY = standbyPruefen();
 
 /* ---------- Start ---------- */
 console.log('');
