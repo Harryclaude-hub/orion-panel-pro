@@ -43,7 +43,7 @@ const fs = require('fs');
 const pfad = require('path');
 
 const VERSION = '4.0';
-const BUILD = 23;   // 21: Sportarten-Schalter · 22: stats.speicher_mb · 23: et_namen wieder aus listEventTypes
+const BUILD = 24;   // 21: Schalter · 22: speicher_mb · 23: et_namen · 24: co = Wettbewerb (Liga)
 
 /* ---------- Zugangsdatei ---------- */
 const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
@@ -310,7 +310,11 @@ async function katalog(et, vonMs, bisMs, tiefe) {
         marketStartTime: { from: new Date(vonMs).toISOString(), to: new Date(bisMs).toISOString() }
       },
       maxResults: 1000, sort: 'FIRST_TO_START',
-      marketProjection: ['RUNNER_DESCRIPTION', 'EVENT', 'MARKET_START_TIME', 'MARKET_DESCRIPTION']
+      /* COMPETITION seit Build 24: der Wettbewerbsname ("Premier League 2",
+       * "Liga MX U21"). Er verraet eine Jugend-, Reserve- oder Frauenliga
+       * auch dann, wenn die MANNSCHAFTSNAMEN unauffaellig sind — genau der
+       * Fall, den die Namenspruefung nicht sehen kann. */
+      marketProjection: ['RUNNER_DESCRIPTION', 'EVENT', 'MARKET_START_TIME', 'MARKET_DESCRIPTION', 'COMPETITION']
     });
   } catch (e) {
     const zuViel = /TOO_MUCH_DATA|ANGX-0001/i.test(String(e.message || ''));
@@ -333,6 +337,9 @@ async function katalog(et, vonMs, bisMs, tiefe) {
     const satz = isFinite(+bd.marketBaseRate) && +bd.marketBaseRate >= 0 ? +bd.marketBaseRate / 100 : O.feeBf;
     vorrat.set(c.marketId, {
       ev: (c.event && c.event.name) || '',
+      /* Der WETTBEWERB (Build 24): verraet eine Jugend-, Reserve- oder
+       * Frauenliga auch dann, wenn die Mannschaftsnamen unauffaellig sind. */
+      co: (c.competition && c.competition.name) || '',
       mt: bd.marketType || '',
       satz,
       start: c.marketStartTime || (c.event && c.event.openDate) || null,
@@ -438,6 +445,7 @@ function bauen() {
         r: rs,
         mt: m.mt || '',
         ev: m.ev || '',
+        co: m.co || '',
         st: m.start || null,
         ip: k.inplay ? 1 : 0,
         sz: (typeof m.satz === 'number' && isFinite(m.satz)) ? m.satz : null,

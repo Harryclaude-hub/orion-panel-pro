@@ -351,7 +351,10 @@ Deno.serve(async (req) => {
                    : (m.art === 'sieger' || m.art === 'unentschieden') ? bfSieger
                    : [];
       if (bfKand.length) {
-        const tr = Z.besterTreffer(p[0], p[1], bfKand, SCHWELLE);
+        /* m.ende ist Polymarkets Marktende und liegt gemessen praktisch
+         * auf dem Anpfiff (59 von 64 Zeilen binnen einer Stunde, Median 0).
+         * Damit kann die Zeitsperre in besterTreffer greifen. */
+        const tr = Z.besterTreffer(p[0], p[1], bfKand, SCHWELLE, m.ende);
         if (tr) {
           const lauf = m.art === 'unentschieden' ? Z.drawLaeufer(tr.bf.r)
                      : m.art === 'ueber_unter'  ? Z.ouLaeufer(tr.bf.r)
@@ -398,7 +401,8 @@ Deno.serve(async (req) => {
                    : istOu ? Z.smOuKandidaten(smNachArt[m.art] || [], ou!.linie)
                    : smSieger;
       if (smKand.length) {
-        const tr = Z.besterTreffer(p[0], p[1], smKand as any, SCHWELLE);
+        /* Zeitsperre auch hier: Smarkets-Maerkte tragen ebenfalls st. */
+        const tr = Z.besterTreffer(p[0], p[1], smKand as any, SCHWELLE, m.ende);
         if (tr) {
           const lauf = Z.smLaeufer(m.art, m.teil, p, (tr.bf as any).r, tr.getauscht, LAEUFER_SCHWELLE);
           if (lauf) {

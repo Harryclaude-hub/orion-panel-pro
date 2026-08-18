@@ -195,7 +195,7 @@ export function ohneAnhang(s: unknown): string { return norm(s).replace(ANHANG, 
  *           unberuehrt. */
 const KENN_ALTER = /(^|[^a-z0-9])u ?-? ?(1[5-9]|2[0-3])([^0-9]|$)/;
 const KENN_FRAUEN = /(women|ladies|frauen|femenin|feminin|damen)/;
-const KENN_RESERVE = /(^|\s)(ii|iii|b|2|3|reserves?|academy|development)$/;
+const KENN_RESERVE = /(^|\s)(ii|iii|b|2|3|res|reserves?|academy|development)$/;
 export function kennung(name: unknown): string {
   const n = norm(name);
   const teile = [];
@@ -209,7 +209,38 @@ export function kennungGleich(a: unknown, b: unknown): boolean {
   return kennung(a) === kennung(b);
 }
 
-export function besterTreffer(pmA: string, pmB: string, bfListe: BfMarkt[], schwelle = 0.5) {
+
+/* ---------- ZEITSPERRE: dasselbe Spiel heisst dieselbe Anstosszeit ----------
+ *
+ * GEMESSEN 18.8.2026 an 274 gepaarten Zeilen mit beiderseitiger Zeit:
+ *   Median der Abweichung      0 Minuten
+ *   95. Perzentil              0 Minuten
+ *   innerhalb 1 Stunde       267 von 274 (97,4 %)
+ *   zwischen 2 und 3 Stunden   0  <- leere Zone
+ *   ueber 3 Stunden            4  <- ALLE VIER waren Fehlpaarungen
+ *
+ * Die vier Ausreisser sind genau die U21/U19-Faelle, die auch die
+ * Kennungssperre faengt: Pachuca 705 Minuten auseinander, Samsunspor
+ * 270. Damit gibt es ZWEI unabhaengige Wege, dieselbe Fehlerklasse zu
+ * erkennen — das Prinzip des ganzen Projekts.
+ *
+ * Die Zeitsperre kann MEHR als die Kennungssperre: sie faengt auch das
+ * Rueckspiel. Zwei Vereine spielen zweimal in einer Saison gegeneinander;
+ * die Namen sind identisch, die Kennungen auch — nur der Termin nicht.
+ *
+ * Toleranz 180 Minuten: grosszuegig gewaehlt, weil zwischen 2 und 3
+ * Stunden nachweislich KEIN echtes Paar liegt und die falschen erst bei
+ * 270 beginnen. Fehlt eine der beiden Zeiten, wird NICHT gesperrt —
+ * ungemessen ist nicht falsch (dieselbe Regel wie bei der Menge). */
+const ZEIT_TOLERANZ_MS = 180 * 60 * 1000;
+export function zeitPasst(a: unknown, b: unknown): boolean {
+  const ta = typeof a === 'number' ? a : Date.parse(String(a || ''));
+  const tb = typeof b === 'number' ? b : Date.parse(String(b || ''));
+  if (!isFinite(ta) || !isFinite(tb)) return true;   /* ungemessen ist nicht falsch */
+  return Math.abs(ta - tb) <= ZEIT_TOLERANZ_MS;
+}
+
+export function besterTreffer(pmA: string, pmB: string, bfListe: BfMarkt[], schwelle = 0.5, pmZeit?: unknown) {
   if (!pmA || !pmB || !bfListe || !bfListe.length) return null;
   const A = woerter(ohneAnhang(pmA)), B = woerter(ohneAnhang(pmB));
   let best: { score: number; bf: BfMarkt; getauscht: boolean } | null = null;
@@ -222,8 +253,21 @@ export function besterTreffer(pmA: string, pmB: string, bfListe: BfMarkt[], schw
      * nicht zusammenpassen, bekommt Wert 0 und faellt damit aus —
      * "Pachuca" gegen "Pachuca U21" ist keine Paarung, auch wenn die
      * Namen zu 100 % uebereinstimmen. */
-    const kGerade = kennungGleich(ohneAnhang(pmA), bp[0]) && kennungGleich(ohneAnhang(pmB), bp[1]);
-    const kKreuz  = kennungGleich(ohneAnhang(pmA), bp[1]) && kennungGleich(ohneAnhang(pmB), bp[0]);
+    /* ZEITSPERRE (18.8.): verschiedene Anstosszeit heisst verschiedenes
+     * Spiel — auch bei identischen Namen (Rueckspiel!). */
+    if (!zeitPasst(pmZeit, (bf as any).st)) continue;
+    /* LIGA-KENNUNG (Build 24): der Wettbewerbsname zaehlt zur Kennung der
+     * BETFAIR-Seite. Damit faellt auch der Fall auf, bei dem die
+     * Mannschaftsnamen unauffaellig sind, die Liga aber eine Jugend-,
+     * Reserve- oder Frauenliga ist ("Pachuca vs Puebla" in der "Liga MX
+     * U21"). Polymarket fuehrt im Sport nur Profiligen, traegt also keine
+     * solche Kennung — ungleich heisst hier zu Recht: nicht paaren.
+     * Alte Bridges senden co nicht; dann bleibt alles wie zuvor. */
+    const liga = kennung((bf as any).co || '');
+    const kBf0 = kennung(bp[0]) === '' && liga ? liga : kennung(bp[0]);
+    const kBf1 = kennung(bp[1]) === '' && liga ? liga : kennung(bp[1]);
+    const kGerade = kennung(ohneAnhang(pmA)) === kBf0 && kennung(ohneAnhang(pmB)) === kBf1;
+    const kKreuz  = kennung(ohneAnhang(pmA)) === kBf1 && kennung(ohneAnhang(pmB)) === kBf0;
     const gerade = kGerade ? Math.min(aehnlichkeitW(A, P0), aehnlichkeitW(B, P1)) : 0;
     const kreuz  = kKreuz  ? Math.min(aehnlichkeitW(A, P1), aehnlichkeitW(B, P0)) : 0;
     const wert = Math.max(gerade, kreuz);

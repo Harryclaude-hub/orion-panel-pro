@@ -363,3 +363,23 @@ verlangt einen Rechner zu Hause (Rechenzentren bekommen 403); Kalshi,
 Smarkets und Polymarket holt der Server selbst. Frische am 18.08.
 gemessen: Bridge 15 s (Build 23), Kalshi Sport und Welt je 66 s
 (Sammler v3), Smarkets 52 s, Polymarket 12 s — alle vier aktuell.
+
+## 7. BUILD 24 — der Wettbewerb (18.08.2026)
+
+**NEUE BRIDGE, bereits installiert und laufend.** Build 24 holt von
+Betfair zusätzlich `COMPETITION` und sendet sie als Feld `co` mit.
+
+**Warum:** Eine Liga verrät eine Jugend-, Reserve- oder Frauenmannschaft
+auch dann, wenn die Mannschaftsnamen unauffällig sind. Live belegt:
+Betfair führte „Argentinian Primera Division **Reserves**" — die Liga
+zeigte es, die Namen nicht.
+
+**Kette vollständig:** Bridge sendet `co` → `bf-bridge` lässt es durch
+(Version 15 ausgerollt, rein additiv) → `zuordnung` mischt die
+Liga-Kennung in die Betfair-Seite.
+
+**Nachgemessen nach der Installation:** Daten 20 s alt, Build 24, **400
+von 400 Märkten tragen ihre Liga**.
+
+**Alte Bridges bleiben lauffähig:** `co` ist additiv, fehlt es, bleibt
+alles wie zuvor (`null` heißt „unbekannt", nicht „passt schon").

@@ -515,3 +515,26 @@ gemessen bei ~2.700 Fremdmärkten):
 
 Zeile 2 ist der Vorrat für die Marktart „Schwelle" — noch liest ihn
 NIEMAND. Quelle im Repo: `supabase/functions/orion-kalshi/index.ts`.
+
+## Die drei Sperren gegen falsche Paarungen (18.8.2026)
+
+Anlass: Der Auftraggeber setzte auf eine Zeile, die die erste Elf gegen
+die U21 desselben Vereins stellte. Alle drei Sperren wirken unabhängig
+voneinander — jede allein hätte diesen Fall gefangen.
+
+| Sperre | Erkennt | Wo |
+|---|---|---|
+| **Kennung** | U15–U23, Frauen, Reserve (auch „(Res)") | Scanner + `orion_kennung_pruefen()`, Takt `orion-kennung-takt` |
+| **Liga** | Jugend-/Reserve-/Frauenliga, wenn die Namen unauffällig sind | Bridge Build 24 sendet `co`, Scanner mischt es in die Kennung |
+| **Zeit** | verschiedener Anpfiff — auch das Rückspiel | Scanner + `orion_zeit_pruefen()`, Takt `orion-zeit-takt` |
+
+**Gemessen, nicht geraten.** Kennung: 17 Fehlpaarungen unter 1185 Zeilen,
+alle mit Zuordnung 1,00. Zeit: 274 Paare mit beiderseitiger Zeit, Median
+0 Minuten, 267 binnen einer Stunde, **zwischen 2 und 3 Stunden kein
+einziges Paar** — und die vier darüber waren alle falsch. Toleranz
+deshalb 180 Minuten mit nachweislich leerer Zone davor. Liga: live
+gefunden, während die Namensprüfung blind war (Argentinian Primera
+Division Reserves).
+
+**Ungemessen ist nicht falsch:** Fehlt eine Zeit oder eine Liga, wird
+NICHT gesperrt. Dieselbe Regel wie bei der Menge.

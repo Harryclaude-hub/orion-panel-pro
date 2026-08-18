@@ -66,7 +66,13 @@ Deno.serve(async (req) => {
           // Alte Bridges schicken das Feld nicht — dann bleibt es null, und
           // null heisst NICHT "passt schon", sondern "Bereich unbekannt,
           // wird nicht gepaart". Dieselbe Regel wie bei Kalshi.
-          et:m.et!=null?s(m.et,20):null
+          et:m.et!=null?s(m.et,20):null,
+          // Additiv ab Bridge-Build 24: der WETTBEWERB (Liga). Er verraet
+          // eine Jugend-, Reserve- oder Frauenliga auch dann, wenn die
+          // Mannschaftsnamen unauffaellig sind ("Pachuca vs Puebla" in der
+          // "Liga MX U21"). Alte Bridges schicken es nicht — dann bleibt es
+          // null, und null heisst "unbekannt", nicht "passt schon".
+          co:m.co!=null?s(m.co,120):null
         }));
     }
     if(body && Array.isArray(body.arbs)){

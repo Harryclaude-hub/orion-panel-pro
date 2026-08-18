@@ -198,7 +198,7 @@
    *           unberuehrt. */
   const KENN_ALTER = /(^|[^a-z0-9])u ?-? ?(1[5-9]|2[0-3])([^0-9]|$)/;
   const KENN_FRAUEN = /(women|ladies|frauen|femenin|feminin|damen)/;
-  const KENN_RESERVE = /(^|\s)(ii|iii|b|2|3|reserves?|academy|development)$/;
+  const KENN_RESERVE = /(^|\s)(ii|iii|b|2|3|res|reserves?|academy|development)$/;
   function kennung(name) {
     const n = norm(name);
     const teile = [];
@@ -212,7 +212,38 @@
     return kennung(a) === kennung(b);
   }
 
-  function besterTreffer(pmA, pmB, bfListe, schwelle) {
+
+  /* ---------- ZEITSPERRE: dasselbe Spiel heisst dieselbe Anstosszeit ----------
+   *
+   * GEMESSEN 18.8.2026 an 274 gepaarten Zeilen mit beiderseitiger Zeit:
+   *   Median der Abweichung      0 Minuten
+   *   95. Perzentil              0 Minuten
+   *   innerhalb 1 Stunde       267 von 274 (97,4 %)
+   *   zwischen 2 und 3 Stunden   0  <- leere Zone
+   *   ueber 3 Stunden            4  <- ALLE VIER waren Fehlpaarungen
+   *
+   * Die vier Ausreisser sind genau die U21/U19-Faelle, die auch die
+   * Kennungssperre faengt: Pachuca 705 Minuten auseinander, Samsunspor
+   * 270. Damit gibt es ZWEI unabhaengige Wege, dieselbe Fehlerklasse zu
+   * erkennen — das Prinzip des ganzen Projekts.
+   *
+   * Die Zeitsperre kann MEHR als die Kennungssperre: sie faengt auch das
+   * Rueckspiel. Zwei Vereine spielen zweimal in einer Saison gegeneinander;
+   * die Namen sind identisch, die Kennungen auch — nur der Termin nicht.
+   *
+   * Toleranz 180 Minuten: grosszuegig gewaehlt, weil zwischen 2 und 3
+   * Stunden nachweislich KEIN echtes Paar liegt und die falschen erst bei
+   * 270 beginnen. Fehlt eine der beiden Zeiten, wird NICHT gesperrt —
+   * ungemessen ist nicht falsch (dieselbe Regel wie bei der Menge). */
+  const ZEIT_TOLERANZ_MS = 180 * 60 * 1000;
+  function zeitPasst(a, b) {
+    const ta = typeof a === 'number' ? a : Date.parse(String(a || ''));
+    const tb = typeof b === 'number' ? b : Date.parse(String(b || ''));
+    if (!isFinite(ta) || !isFinite(tb)) return true;   /* ungemessen ist nicht falsch */
+    return Math.abs(ta - tb) <= ZEIT_TOLERANZ_MS;
+  }
+
+  function besterTreffer(pmA, pmB, bfListe, schwelle, pmZeit) {
     var grenze = typeof schwelle === 'number' ? schwelle : 0.5;
     if (!pmA || !pmB || !bfListe || !bfListe.length) return null;
 
@@ -230,8 +261,15 @@
        * nicht zusammenpassen, bekommt Wert 0 und faellt damit aus —
        * "Pachuca" gegen "Pachuca U21" ist keine Paarung, auch wenn die
        * Namen zu 100 % uebereinstimmen. */
-      var kGerade = kennungGleich(a, bp[0]) && kennungGleich(b, bp[1]);
-      var kKreuz  = kennungGleich(a, bp[1]) && kennungGleich(b, bp[0]);
+      /* ZEITSPERRE (18.8.): verschiedene Anstosszeit heisst verschiedenes
+       * Spiel — auch bei identischen Namen (Rueckspiel!). */
+      if (!zeitPasst(pmZeit, bf.st)) continue;
+      /* LIGA-KENNUNG (Build 24), siehe Server-Fassung. */
+      var liga = kennung(bf.co || '');
+      var kBf0 = kennung(bp[0]) === '' && liga ? liga : kennung(bp[0]);
+      var kBf1 = kennung(bp[1]) === '' && liga ? liga : kennung(bp[1]);
+      var kGerade = kennung(a) === kBf0 && kennung(b) === kBf1;
+      var kKreuz  = kennung(a) === kBf1 && kennung(b) === kBf0;
       var gerade = kGerade ? Math.min(aehnlichkeit(a, bp[0]), aehnlichkeit(b, bp[1])) : 0;
       var kreuz  = kKreuz  ? Math.min(aehnlichkeit(a, bp[1]), aehnlichkeit(b, bp[0])) : 0;
       var wert   = gerade > kreuz ? gerade : kreuz;
@@ -787,6 +825,8 @@
     paar: paar,
     partieVon: partieVon,
     ohneAnhang: ohneAnhang,
+    zeitPasst: zeitPasst,
+    ZEIT_TOLERANZ_MS: ZEIT_TOLERANZ_MS,
     kennung: kennung,
     kennungGleich: kennungGleich,
     besterTreffer: besterTreffer,
