@@ -162,6 +162,56 @@
    *
    * schwelle: ab welcher Aehnlichkeit ein Paar gilt. 0.5 hat in der Messung
    * 39 richtige Partien gefunden, ohne erkennbare Fehlpaarung. */
+
+  /* ---------- MANNSCHAFTS-KENNUNGEN: Alter, Frauen, Reserve ----------
+   *
+   * FUND VOM 18.8.2026, gemeldet vom Auftraggeber nach einem echten
+   * Einsatz: gepaart wurden zwei Mannschaften GLEICHEN NAMENS, aber
+   * verschiedener Klasse — einmal die erste Elf, einmal die U21.
+   *
+   * Warum die Namenspruefung das nicht fing: aehnlichkeit rechnet
+   * Treffer geteilt durch die KUERZERE Wortliste. "Pachuca" steckt
+   * vollstaendig in "Pachuca U21", also ergibt der Vergleich 1,00 —
+   * das Kuerzel U21 zaehlt als ueberzaehliges Wort und faellt hinten
+   * runter. Dieselbe Falle wie bei der Namensgleichheit ohne Sachbezug,
+   * nur eine Ebene tiefer.
+   *
+   * NACHGEMESSEN an 1185 gespeicherten Zeilen — 17 Fehlpaarungen:
+   *   Pachuca vs Puebla    gegen  Pachuca U21 v Puebla U21     4,68 %
+   *   Samsunspor/Goeztepe  gegen  Samsunspor U19 v Goztepe U19 0,69 %
+   *   Colorado/Kansas City gegen  Kansas City II v Rapids 2   19,36 %
+   *   Qingdao Xihaian      gegen  Qingdao Youth Island         2,24 %
+   * Die sehr hohen fing die Plausibilitaetsgrenze (5 %) ab. Die
+   * gefaehrlichen sind 2,24 und 4,68: ueber der Chancenschwelle, unter
+   * der Verdachtsgrenze — genau die, die beim Auftraggeber ankamen.
+   *
+   * DIE REGEL: eine Kennung ist kein Schmuck am Namen, sie bezeichnet
+   * eine ANDERE Mannschaft. Beide Seiten muessen dieselbe tragen —
+   * oder beide keine. Ungleich heisst: nicht paaren, Punkt.
+   *
+   * Absichtlich ENG gefasst, um echte Paare nicht zu verlieren:
+   *   Alter   u15 bis u23, auch "U-21" und "U 21"
+   *   Frauen  women, ladies, frauen, femenin, damen
+   *   Reserve nur als ENDUNG (ii, iii, b, 2, 3, reserve, academy,
+   *           development) — "Boca Juniors" oder "Qingdao Youth Island"
+   *           tragen das Wort mitten im Vereinsnamen und bleiben
+   *           unberuehrt. */
+  const KENN_ALTER = /(^|[^a-z0-9])u ?-? ?(1[5-9]|2[0-3])([^0-9]|$)/;
+  const KENN_FRAUEN = /(women|ladies|frauen|femenin|feminin|damen)/;
+  const KENN_RESERVE = /(^|\s)(ii|iii|b|2|3|reserves?|academy|development)$/;
+  function kennung(name) {
+    const n = norm(name);
+    const teile = [];
+    const a = n.match(KENN_ALTER);
+    if (a) teile.push('u' + a[2]);
+    if (KENN_FRAUEN.test(n)) teile.push('w');
+    if (KENN_RESERVE.test(n)) teile.push('res');
+    return teile.sort().join('+');
+  }
+  function kennungGleich(a, b) {
+    return kennung(a) === kennung(b);
+  }
+
   function besterTreffer(pmA, pmB, bfListe, schwelle) {
     var grenze = typeof schwelle === 'number' ? schwelle : 0.5;
     if (!pmA || !pmB || !bfListe || !bfListe.length) return null;
@@ -175,8 +225,15 @@
       if (!bp) continue;
 
       // beide Richtungen: Heim und Auswaerts koennen vertauscht sein
-      var gerade = Math.min(aehnlichkeit(a, bp[0]), aehnlichkeit(b, bp[1]));
-      var kreuz  = Math.min(aehnlichkeit(a, bp[1]), aehnlichkeit(b, bp[0]));
+      /* KENNUNGSSPERRE (18.8.): erst pruefen, ob ueberhaupt dieselbe
+       * Mannschaftsklasse gemeint ist. Eine Richtung, deren Kennungen
+       * nicht zusammenpassen, bekommt Wert 0 und faellt damit aus —
+       * "Pachuca" gegen "Pachuca U21" ist keine Paarung, auch wenn die
+       * Namen zu 100 % uebereinstimmen. */
+      var kGerade = kennungGleich(a, bp[0]) && kennungGleich(b, bp[1]);
+      var kKreuz  = kennungGleich(a, bp[1]) && kennungGleich(b, bp[0]);
+      var gerade = kGerade ? Math.min(aehnlichkeit(a, bp[0]), aehnlichkeit(b, bp[1])) : 0;
+      var kreuz  = kKreuz  ? Math.min(aehnlichkeit(a, bp[1]), aehnlichkeit(b, bp[0])) : 0;
       var wert   = gerade > kreuz ? gerade : kreuz;
 
       if (!best || wert > best.score) {
@@ -553,8 +610,12 @@
       for (var j = 0; j < listeB.length; j++) {
         var b = listeB[j];
         if (!b || !b.partie) continue;
-        var gerade = Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1]));
-        var kreuz  = Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0]));
+        /* KENNUNGSSPERRE (18.8.), siehe besterTreffer: dieselbe Regel
+         * auch hier, sonst waere der Weg Buch-gegen-Buch das offene Tor. */
+        var kG = kennungGleich(a.partie[0], b.partie[0]) && kennungGleich(a.partie[1], b.partie[1]);
+        var kK = kennungGleich(a.partie[0], b.partie[1]) && kennungGleich(a.partie[1], b.partie[0]);
+        var gerade = kG ? Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1])) : 0;
+        var kreuz  = kK ? Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0])) : 0;
         var wert = Math.max(gerade, kreuz);
         if (wert < grenze) continue;
         /* Zeit nur pruefen, wenn BEIDE eine haben. Fehlende Zeit ist kein
@@ -726,6 +787,8 @@
     paar: paar,
     partieVon: partieVon,
     ohneAnhang: ohneAnhang,
+    kennung: kennung,
+    kennungGleich: kennungGleich,
     besterTreffer: besterTreffer,
     laeuferZu: laeuferZu,
     drawLaeufer: drawLaeufer,

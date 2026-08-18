@@ -159,6 +159,56 @@ export function partieVon(bf: BfMarkt | null): [string, string] | null {
 const ANHANG = /\s+(halftime result|second half result|exact score|first team to score|total corners|total goals|both teams to score|clean sheet|winning margin|correct score|double chance|draw no bet|more markets|first half|second half).*$/;
 export function ohneAnhang(s: unknown): string { return norm(s).replace(ANHANG, '').trim(); }
 
+
+/* ---------- MANNSCHAFTS-KENNUNGEN: Alter, Frauen, Reserve ----------
+ *
+ * FUND VOM 18.8.2026, gemeldet vom Auftraggeber nach einem echten
+ * Einsatz: gepaart wurden zwei Mannschaften GLEICHEN NAMENS, aber
+ * verschiedener Klasse — einmal die erste Elf, einmal die U21.
+ *
+ * Warum die Namenspruefung das nicht fing: aehnlichkeit rechnet
+ * Treffer geteilt durch die KUERZERE Wortliste. "Pachuca" steckt
+ * vollstaendig in "Pachuca U21", also ergibt der Vergleich 1,00 —
+ * das Kuerzel U21 zaehlt als ueberzaehliges Wort und faellt hinten
+ * runter. Dieselbe Falle wie bei der Namensgleichheit ohne Sachbezug,
+ * nur eine Ebene tiefer.
+ *
+ * NACHGEMESSEN an 1185 gespeicherten Zeilen — 17 Fehlpaarungen:
+ *   Pachuca vs Puebla    gegen  Pachuca U21 v Puebla U21     4,68 %
+ *   Samsunspor/Goeztepe  gegen  Samsunspor U19 v Goztepe U19 0,69 %
+ *   Colorado/Kansas City gegen  Kansas City II v Rapids 2   19,36 %
+ *   Qingdao Xihaian      gegen  Qingdao Youth Island         2,24 %
+ * Die sehr hohen fing die Plausibilitaetsgrenze (5 %) ab. Die
+ * gefaehrlichen sind 2,24 und 4,68: ueber der Chancenschwelle, unter
+ * der Verdachtsgrenze — genau die, die beim Auftraggeber ankamen.
+ *
+ * DIE REGEL: eine Kennung ist kein Schmuck am Namen, sie bezeichnet
+ * eine ANDERE Mannschaft. Beide Seiten muessen dieselbe tragen —
+ * oder beide keine. Ungleich heisst: nicht paaren, Punkt.
+ *
+ * Absichtlich ENG gefasst, um echte Paare nicht zu verlieren:
+ *   Alter   u15 bis u23, auch "U-21" und "U 21"
+ *   Frauen  women, ladies, frauen, femenin, damen
+ *   Reserve nur als ENDUNG (ii, iii, b, 2, 3, reserve, academy,
+ *           development) — "Boca Juniors" oder "Qingdao Youth Island"
+ *           tragen das Wort mitten im Vereinsnamen und bleiben
+ *           unberuehrt. */
+const KENN_ALTER = /(^|[^a-z0-9])u ?-? ?(1[5-9]|2[0-3])([^0-9]|$)/;
+const KENN_FRAUEN = /(women|ladies|frauen|femenin|feminin|damen)/;
+const KENN_RESERVE = /(^|\s)(ii|iii|b|2|3|reserves?|academy|development)$/;
+export function kennung(name: unknown): string {
+  const n = norm(name);
+  const teile = [];
+  const a = n.match(KENN_ALTER);
+  if (a) teile.push('u' + a[2]);
+  if (KENN_FRAUEN.test(n)) teile.push('w');
+  if (KENN_RESERVE.test(n)) teile.push('res');
+  return teile.sort().join('+');
+}
+export function kennungGleich(a: unknown, b: unknown): boolean {
+  return kennung(a) === kennung(b);
+}
+
 export function besterTreffer(pmA: string, pmB: string, bfListe: BfMarkt[], schwelle = 0.5) {
   if (!pmA || !pmB || !bfListe || !bfListe.length) return null;
   const A = woerter(ohneAnhang(pmA)), B = woerter(ohneAnhang(pmB));
@@ -167,8 +217,15 @@ export function besterTreffer(pmA: string, pmB: string, bfListe: BfMarkt[], schw
     const bp = partieVon(bf);
     if (!bp) continue;
     const P0 = woerter(bp[0]), P1 = woerter(bp[1]);
-    const gerade = Math.min(aehnlichkeitW(A, P0), aehnlichkeitW(B, P1));
-    const kreuz = Math.min(aehnlichkeitW(A, P1), aehnlichkeitW(B, P0));
+    /* KENNUNGSSPERRE (18.8.): erst pruefen, ob ueberhaupt dieselbe
+     * Mannschaftsklasse gemeint ist. Eine Richtung, deren Kennungen
+     * nicht zusammenpassen, bekommt Wert 0 und faellt damit aus —
+     * "Pachuca" gegen "Pachuca U21" ist keine Paarung, auch wenn die
+     * Namen zu 100 % uebereinstimmen. */
+    const kGerade = kennungGleich(ohneAnhang(pmA), bp[0]) && kennungGleich(ohneAnhang(pmB), bp[1]);
+    const kKreuz  = kennungGleich(ohneAnhang(pmA), bp[1]) && kennungGleich(ohneAnhang(pmB), bp[0]);
+    const gerade = kGerade ? Math.min(aehnlichkeitW(A, P0), aehnlichkeitW(B, P1)) : 0;
+    const kreuz  = kKreuz  ? Math.min(aehnlichkeitW(A, P1), aehnlichkeitW(B, P0)) : 0;
     const wert = Math.max(gerade, kreuz);
     if (!best || wert > best.score) best = { score: wert, bf, getauscht: kreuz > gerade };
   }
@@ -319,8 +376,12 @@ export function direktPaare(listeA: any[], listeB: any[], schwelle = 0.5, maxStu
     if (!a || !a.partie) continue;
     for (const b of listeB) {
       if (!b || !b.partie) continue;
-      const gerade = Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1]));
-      const kreuz  = Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0]));
+      /* KENNUNGSSPERRE (18.8.), siehe besterTreffer: dieselbe Regel
+       * auch hier, sonst waere der Weg Buch-gegen-Buch das offene Tor. */
+      const kG = kennungGleich(a.partie[0], b.partie[0]) && kennungGleich(a.partie[1], b.partie[1]);
+      const kK = kennungGleich(a.partie[0], b.partie[1]) && kennungGleich(a.partie[1], b.partie[0]);
+      const gerade = kG ? Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1])) : 0;
+      const kreuz  = kK ? Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0])) : 0;
       const wert = Math.max(gerade, kreuz);
       if (wert < schwelle) continue;
       if (typeof a.zeit === 'number' && typeof b.zeit === 'number' &&
