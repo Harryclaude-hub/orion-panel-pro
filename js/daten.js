@@ -614,6 +614,21 @@
            * Chance erscheinen. Entdeckt 14.8. an 10 pendelnden Zeilen. */
           if (f.fehlpaarung) return false;
           if (f.veraltet || f.zu_duenn) return false;
+          /* ACHTE BEDINGUNG (18.8.): dieselbe Mannschaftsklasse und dieselbe
+           * Anstosszeit — im BROWSER nachgerechnet, nicht nur geglaubt.
+           *
+           * Warum hier zusaetzlich: Scanner und Datenbank pruefen das auch,
+           * aber der Datenbank-Waechter laeuft im MINUTENTAKT. In diesem
+           * Fenster koennte eine frisch entstandene Fehlpaarung kurz als
+           * Chance sichtbar sein — genau in dem Moment, in dem Karam
+           * hinsieht. Diese Pruefung schliesst das Fenster ganz: sie laeuft
+           * bei JEDEM Zeichnen, also alle zwei Sekunden.
+           *
+           * Anlass: erste Elf gegen U21 desselben Vereins, 4,68 % Rendite. */
+          var Zu = welt.Zuordnung;
+          if (Zu && Zu.kennungGleich && f.bf_partie &&
+              !Zu.kennungGleich(f.titel, f.bf_partie)) return false;
+          if (Zu && Zu.zeitPasst && !Zu.zeitPasst(f.endet_am, f.beginnt_am)) return false;
           if (f.rendite < K.mindestRendite) return false;
           /* Bedingung 6: unplausibel hoch ist KEINE Chance (siehe KONFIG). */
           if (K.maxPlausibel && f.rendite > K.maxPlausibel) return false;
