@@ -2535,11 +2535,11 @@ button.chip.kopier:hover { border-color: var(--sonar); }
    * Die Werte sind DIESELBEN wie im Orion Protection Panel (dort
    * --papier/--papier-text). Beide Programme lesen sich damit gleich —
    * wer drueben nachrechnet, wechselt nicht die Lichtstimmung. */
-  --grund:      #E9E5D8;
-  --karte:      #F2EFE4;
-  --karte-2:    #EAE6D9;
-  --rand:       #D9D3C1;
-  --text:       #1C1B17;
+  --grund:      #E4DFD0;
+  --karte:      #EFEBDE;
+  --karte-2:    #E6E1D2;
+  --rand:       #D2CBB6;
+  --text:       #26241D;
   /* GEMESSEN 18.8.: mit dem Pruefstand-Grauton (#6B6759) lag der
    * Nebentext bei 4,9:1 — gerade noch zulaessig, aber fuer laengeres
    * Lesen zu blass. Eine Spur dunkler bringt ihn auf rund 6:1, ohne

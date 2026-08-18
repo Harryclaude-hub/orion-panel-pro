@@ -274,15 +274,26 @@
          * pruefbaren Unterschied wird nicht geraten: ein falscher Marktpfad
          * fuehrt ins Leere, der Spiel-Link wenigstens zur Partie. Bis dahin
          * nennt die Karte den zu waehlenden Markt im Klartext. */
+        /* SEIT 18.8.2026 (Karams Vorgabe): Smarkets-Zeilen zeigen nicht
+         * mehr auf smarkets.com, sondern auf SEINEN Broker
+         * (pro.sportmarket.com). Gesetzt wird dort, also gehoert der Link
+         * dorthin — dieselbe Ueberlegung wie bei Betfair ueber Orbit.
+         *
+         * Die Adresse haengt am BEREICH, nicht am einzelnen Markt: ein
+         * Link auf die Partie ist nicht baubar, weil die Seite auf JEDEN
+         * Pfad mit 200 antwortet (gemessen, siehe konfig.js). Wer die
+         * Partie sucht, findet ihren Namen auf der Karte im Klartext.
+         *
+         * Der alte Schraegstrich-Griff faellt damit weg: er richtete
+         * smarkets.com-Adressen, die hier nicht mehr vorkommen. */
         function smarketsLinkRichten(f) {
-          function schraeg(u) {
-            var s = String(u || '');
-            if (s.indexOf('smarkets.com') < 0) return u;
-            if (s.indexOf('?') >= 0 || s.indexOf('#') >= 0) return u;  // nichts anfassen
-            return s.charAt(s.length - 1) === '/' ? s : s + '/';
+          function broker() {
+            var sport = (K.smarketsSport || {})[f.bereich];
+            return K.smarketsBroker + (sport || '');
           }
-          if ((f.buch_1 || 'polymarket') === 'smarkets') f.pm_link = schraeg(f.pm_link);
-          if ((f.buch || 'betfair') === 'smarkets')      f.bf_link = schraeg(f.bf_link);
+          if (!K.smarketsBroker) return;
+          if ((f.buch_1 || 'polymarket') === 'smarkets') f.pm_link = broker();
+          if ((f.buch || 'betfair') === 'smarkets')      f.bf_link = broker();
         }
 
         live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); smarketsLinkRichten(f); });

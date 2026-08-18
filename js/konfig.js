@@ -323,8 +323,42 @@
      * orbitexch.com antwortet in 0,3 s. Muster mit drei verschiedenen
      * Marktnummern gegengeprueft: der Seitentitel nannte jedes Mal den
      * richtigen Wettbewerb (Leagues Cup, Delhi Premier League,
-     * International Twenty20). */
-    brokerMuster: 'https://www.orbitexch.com/customer/sport/1/market/{id}'
+     * International Twenty20).
+     *
+     * 18.8.2026, Karams Vorgabe: derselbe Broker, aber die Adresse OHNE
+     * das "e" — orbitxch.com statt orbitexch.com. Nachgemessen: der
+     * Marktpfad antwortet dort ebenso mit HTTP 200, die Pfadform bleibt
+     * unveraendert. Wer die Adresse spaeter wieder tauscht, aendert NUR
+     * diese eine Zeile; alle Zeilen richten sich danach, auch die alten
+     * im Verlauf. */
+    brokerMuster: 'https://www.orbitxch.com/customer/sport/1/market/{id}',
+
+    /* ---------- SMARKETS UEBER DEN BROKER (18.8.2026) ----------
+     *
+     * Karams Vorgabe: nicht mehr smarkets.com anspringen, sondern seinen
+     * Broker. Genannter Einstieg: pro.sportmarket.com/trade/american-football
+     *
+     * EHRLICHE GRENZE, am 18.8. gemessen: die Seite rendert erst im
+     * Browser und antwortet auf JEDEN Pfad mit 200 — auch auf
+     * /trade/quatsch-gibt-es-nicht, bei praktisch gleicher Groesse
+     * (36 257 gegen 36 248-36 279 Byte). Von aussen ist damit NICHT
+     * pruefbar, welche Sportpfade wirklich existieren: exakt dieselbe
+     * Falle wie seinerzeit bei smarkets.com.
+     *
+     * Deshalb wird ein Sportpfad nur fuer Bereiche gesetzt, deren
+     * Schreibweise gaengig ist (american-football ist durch Karams Link
+     * belegt); alles Uebrige landet auf der Handelsseite selbst. Die
+     * PARTIE nennt die Karte ohnehin im Klartext — geraten wird nichts. */
+    smarketsBroker: 'https://pro.sportmarket.com/trade/',
+    smarketsSport: {
+      fussball:   'soccer',
+      football:   'american-football',
+      tennis:     'tennis',
+      basketball: 'basketball',
+      baseball:   'baseball',
+      eishockey:  'ice-hockey',
+      cricket:    'cricket'
+    }
   };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
