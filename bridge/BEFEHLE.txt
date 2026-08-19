@@ -37,7 +37,13 @@ Schritt 1 - Token holen (nur einmal, wird nur EINMAL angezeigt):
 
 Schritt 2 - deployen. IHR_TOKEN ersetzen:
 
-cd C:\Users\Home\orion-panel-pro && set SUPABASE_ACCESS_TOKEN=IHR_TOKEN && npx --yes supabase@latest functions deploy orion-lauf --project-ref noexklrgtqveiclijdwp --no-verify-jwt
+cd C:\Users\Home\orion-panel-pro && set SUPABASE_ACCESS_TOKEN=cd C:\Users\Home\orion-panel-pro && set "SUPABASE_ACCESS_TOKEN=IHR_TOKEN" && npx --yes supabase@latest functions deploy orion-lauf --project-ref noexklrgtqveiclijdwp --no-verify-jwt && npx --yes supabase@latest functions deploy orion-lauf --project-ref noexklrgtqveiclijdwp --no-verify-jwt
+
+   ACHTUNG, die Anfuehrungszeichen um SUPABASE_ACCESS_TOKEN=... sind
+   PFLICHT. Ohne sie haengt cmd ein Leerzeichen an den Token an
+   (gemessen: Laenge 7 statt 6), und Supabase lehnt ihn ab. Genau
+   daran ist der erste Versuch am 19.8. gescheitert.
+
 
       Dauert etwa eine Minute. Am Ende muss stehen:
       "Deployed Functions on project noexklrgtqveiclijdwp"
