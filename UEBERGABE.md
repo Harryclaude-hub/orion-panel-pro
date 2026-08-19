@@ -2043,3 +2043,34 @@ Damit ein Spitzenwert kuenftig nachrechenbar ist, muessten die BEIDEN
 Kurse zum Zeitpunkt des Hoechststands mitgespeichert werden. Ohne das
 bleibt jeder Verlaufseintrag eine Behauptung. Das waere der naechste
 saubere Schritt -- und er kostet nur eine Spalte.
+
+### Nachtrag: der Spitzenwert ist ab jetzt beweisbar
+
+Neue Spalten in `orion_funde`: `beste_pm_preis`, `beste_bf_quote`,
+**`beste_buch_summe`**, `beste_am`. Der Trigger friert sie im Moment des
+Hoechststands ein.
+
+Eine Falle dabei, gleich beim Bauen aufgefallen: der Trigger feuert BEIM
+SCHREIBEN, `buch_summe` wird aber erst danach in einem eigenen Takt
+berechnet -- der Beleg war deshalb immer leer. `orion_beleg_nachtragen()`
+traegt ihn nach, aber NUR solange die Zeile noch auf ihrem Hoechststand
+steht (`rendite = beste_rendite`). Zieht der Kurs weiter, wird nichts mehr
+nachgetragen: eine spaetere Buchsumme waere kein Beleg, sondern genau der
+Zeitpunkt-Mischfehler von vorhin.
+
+`orion_verlauf_urteil()` entscheidet danach:
+  mit Beleg und Buchsumme >= 1,00  ->  **falsch** (bewiesen)
+  ohne Beleg, Spitze ueber 5 %     ->  **zweifelhaft** (nur eingeordnet)
+
+**Der Altbestand bleibt zweifelhaft und bekommt keine erfundenen Belege.**
+Von 65 lebenden Zeilen trug beim Umbau genau 1 einen Beleg -- die
+uebrigen standen nicht mehr auf ihrem Hoechststand. Ab jetzt bekommt jede
+neue Zeile ihren Beweis im richtigen Moment.
+
+### Was NICHT gebaut wurde und warum
+
+Tennis (`marktArt` erweitern) und die Marktart Schwelle sind NICHT
+gebaut. Beides braucht eine Messung davor und einen Deploy danach, und
+beides in einem Rutsch durchzuziehen haette geheissen, ohne Messung zu
+bauen -- nach dem Fehlurteil ueber 1051 Zeilen heute abend genau das
+Falsche. Sie stehen als naechstes an.
