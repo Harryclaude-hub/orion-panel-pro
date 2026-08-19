@@ -57,9 +57,17 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: false, grund: 'TELEGRAM_BOT_TOKEN fehlt als Geheimnis' }), { headers: kopf });
     }
 
-    /* ---------- Einrichtungsmodus: welche Chats sieht der Bot? ---------- */
+    /* ---------- Einrichtungsmodus: welche Chats sieht der Bot? ----------
+     * allowed_updates AUSDRUECKLICH: my_chat_member (Bot wurde irgendwo
+     * hinzugefuegt) liefert Telegram sonst gar nicht mit — beim ersten
+     * Einrichten am 19.8. kam deshalb eine leere Liste zurueck, obwohl
+     * der Bot laengst im Kanal war. Gilt erst fuer KUENFTIGE Ereignisse;
+     * darum braucht es nach dem Hinzufuegen eine frische Nachricht. */
     if (body.einrichten === true) {
-      const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates`);
+      const r = await fetch(`https://api.telegram.org/bot${TOKEN}/getUpdates`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ allowed_updates: ['message', 'channel_post', 'my_chat_member'] })
+      });
       const j = await r.json();
       if (!j.ok) {
         return new Response(JSON.stringify({ ok: false, grund: 'Telegram: ' + JSON.stringify(j).slice(0, 200) }), { headers: kopf });
@@ -81,6 +89,22 @@ Deno.serve(async (req) => {
     const ziel = (await zielRes.json())[0];
     if (!ziel?.aktiv || !ziel?.chat_id) {
       return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'kein aktiver Kanal in orion_telegram' }), { headers: kopf });
+    }
+
+    /* ---------- Funkprobe: beweist die ganze Kette bis in den Kanal ---------- */
+    if (body.test === true) {
+      const r = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
+        method: 'POST', headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          chat_id: ziel.chat_id,
+          text: 'FUNKPROBE, Offizier — der Orion-Melder steht. Ab jetzt kommt jede ' +
+                'Chance (2 bis 5 %, bewaehrt, mit bekannter Menge) hier herein. Ende.'
+        })
+      });
+      const tj = await r.json();
+      return new Response(JSON.stringify(tj.ok
+        ? { ok: true, funkprobe: 'gesendet', kanal: ziel.chat_id }
+        : { ok: false, grund: 'Telegram: ' + JSON.stringify(tj).slice(0, 200) }), { headers: kopf });
     }
 
     /* Wechselkurs fuer die Doppel-Anzeige. Fehlt er, bleibt es bei $. */
