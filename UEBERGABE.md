@@ -1985,3 +1985,61 @@ und werden deshalb von Stufe 2 vollstaendig gesperrt. Das ist die
 Stichzeit-Matrix (8l) im Betrieb: Kalshis `close_time` ist bei Spielen
 eine Abrechnungsfrist, kein Anstoss. Die Wache tut damit genau das
 Richtige.
+
+---
+
+## 8p. PUNKT 1 ABGESCHLOSSEN + EIN FEHLURTEIL, DAS ICH SELBST GEBAUT HABE
+
+### Der Befund
+
+In 24 h ueberschritten 106 Zeilen die 2-Prozent-Marke, 101 davon lagen
+ueber 10 % -- und **75 standen unbeanstandet da**. Die Wache fing sie
+nicht, aus zwei Gruenden: sie prueft nur `status='live'` (ein
+Verlaufseintrag wird nie beurteilt) und nur `rendite` (den Momentanwert),
+nicht `beste_rendite` (den Spitzenwert, der angezeigt wird).
+
+Von den 75: **65 hatten Buchsumme >= 1,00.** Das ist kein Verdacht,
+sondern Arithmetik -- liegt die Buchsumme ueber 1, kann es keinen Vorteil
+geben.
+
+### Mein Fehler dabei, und die Korrektur
+
+Erster Versuch: Regel auf `greatest(rendite, beste_rendite)` erweitert und
+auf den ganzen Verlauf losgelassen. Ergebnis **1051 von 1213 gesperrt,
+87 %**. Das war falsch.
+
+**Der Denkfehler:** `beste_rendite` ist der Spitzenwert von FRUEHER,
+`buch_summe` der Kursstand von JETZT. Zwei verschiedene Zeitpunkte. Eine
+Zeile, die um 09:00 echte 2 % hatte, wurde verurteilt, weil die Kurse bis
+20:00 weitergelaufen waren. Genau der Fehlschluss, vor dem dieses Projekt
+sonst warnt: zwei Zahlen vergleichen, die nicht zueinander gehoeren.
+
+Die 1051 Fehlurteile sind zurueckgenommen. Die Regel gilt jetzt nur noch
+fuer LEBENDE Zeilen, wo alle Zahlen aus demselben Moment stammen.
+
+### Was mit dem Verlauf stattdessen geschieht
+
+Ein Spitzenwert laesst sich nachtraeglich **nicht** nachrechnen -- die
+Kurse von damals sind nicht gespeichert. Er ist also nicht widerlegbar,
+nur einordenbar. Verlaufseintraege ueber 5 % bekommen deshalb das Urteil
+**`zweifelhaft`**, nicht `falsch`, mit Verweis auf die Messung vom 13.8.
+Die Wache soll nur sagen, was sie belegen kann.
+
+### Stand danach
+
+    zweifelhaft (Verlauf, Spitze ueber 5 %)   996
+    falsch (Verlauf, von den Sperren)         133
+    sauber, live                               48
+    sauber, Verlauf (Spitze unter 5 %)         26
+    falsch, live                                9
+
+Die **26** sauberen Verlaufseintraege unter 5 % sind der glaubwuerdige
+Bestand. Das deckt sich mit der Messung vom 13.8.: alle bestaetigt
+richtigen lagen zwischen 2,07 und 3,27 %.
+
+### Offen bleibt
+
+Damit ein Spitzenwert kuenftig nachrechenbar ist, muessten die BEIDEN
+Kurse zum Zeitpunkt des Hoechststands mitgespeichert werden. Ohne das
+bleibt jeder Verlaufseintrag eine Behauptung. Das waere der naechste
+saubere Schritt -- und er kostet nur eine Spalte.
