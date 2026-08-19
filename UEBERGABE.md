@@ -1663,3 +1663,103 @@ wörtlich im Aufruf. Genau dieser Weg hat heute schon einmal Regex-Zeichen
 zerlegt (`\s` → `s`), was erst durch den Trockenlauf auffiel. Bei einem
 Scanner, der im 20-Sekunden-Takt Geld-Entscheidungen vorbereitet, ist das
 kein vertretbares Risiko. **Deshalb: Deploy nur per CLI mit Token.**
+
+---
+
+## 8l. DIE STICHZEIT-MATRIX, gemessen am 19.8.2026 — HIER ANFANGEN
+
+Auftrag war: „miss die matrix". Gemessen wurde, was in jedem der vier Bücher
+das Zeitfeld **wirklich bedeutet** — denn nur wenn beide Seiten denselben
+Moment meinen, ist eine Paarung eine Wette auf dasselbe Ereignis. Alle Zahlen
+unten sind gemessen, nicht geschätzt.
+
+### Der Kern in einem Satz
+
+Kein Buch meint mit seinem Zeitfeld dasselbe. Betfair und Smarkets liefern den
+**Anpfiff**, Kalshi bei Spielen eine **Abrechnungsfrist zwei bis drei Tage
+später**, Polymarket je nach Sportart mal den Anpfiff und mal das
+**Turnierende sieben Tage später**.
+
+### Die Matrix
+
+| Basisart | Polymarket `endDate` | Betfair `st` | Smarkets `st` | Kalshi `schliesst` |
+|---|---|---|---|---|
+| Spiel Fußball | = Anpfiff (5019 von 5306 identisch) | Anpfiff | Anpfiff | Anpfiff **+65…76 h** |
+| Spiel Tennis | Anpfiff **+168 h** (Turnierende) | Anpfiff | — | — |
+| Spiel Baseball | teils Anpfiff, teils **+168 h** | Anpfiff | — | Anpfiff **+72 h** |
+| Spiel E-Sport | Anpfiff **+4…6 h** | Anpfiff | — | Anpfiff **+48 h** |
+| Schwelle Krypto/Rohstoff | = Stichzeit | — | — | **= Stichzeit, Versatz 0,00 h** |
+| Schwelle Index | = Stichzeit | — | — | Stichzeit **+16 h** |
+| Wetter | = Stichzeit | — | — | Stichzeit **+25…28 h** |
+| Wahl/Politik | **75,1 % auf Punkt Mitternacht** = Kalendertag, keine Uhrzeit | — | — | — |
+
+Vollständigkeit der Zeitangabe, gemessen:
+
+| Buch | Märkte | mit Zeitfeld | davon auf Mitternacht |
+|---|---|---|---|
+| Betfair | 560 | 560 (100 %) | 9 (1,6 %) |
+| Smarkets | 840 | 840 (100 %) | 9 (1,1 %) |
+| Kalshi | 1104 | 1104 (100 %) | — |
+| Polymarket | 1427 | 1268 (88,9 %) | **950 (66,6 %)** |
+
+### Der teuerste Einzelfund: Tennis ist zu 100 % unsichtbar
+
+`orion-lauf` filtert Polymarket auf `endDate` im 72-h-Fenster (Zeile 163).
+Polymarket setzt bei Tennis `endDate` aber auf das **Turnierende**. Ergebnis,
+live gemessen am 19.8.:
+
+| Bereich | Spiele mit Anpfiff im 72-h-Fenster | gefangen | **verloren** | Verlust |
+|---|---|---|---|---|
+| Tennis | 4079 | 0 | **4079** | **100 %** |
+| Baseball | 375 | 305 | 70 | 18,7 % |
+| Valorant | 278 | 244 | 34 | 12,2 % |
+| LoL | 1431 | 1385 | 46 | 3,2 % |
+| Fußball | 374 | 374 | 0 | 0 % |
+| Football | 25 | 25 | 0 | 0 % |
+
+Umgekehrt genauso falsch: **451 Wetter-**, 71 LoL- und 39 Valorant-Märkte
+haben ihr `endDate` im Fenster, obwohl das Ereignis **außerhalb** liegt — die
+werden gescannt und gepaart, obwohl sie gar nicht dran sind.
+
+Das erklärt den Bestand: von 46 lebenden Funden sind **46 Fußball**. Tennis
+hat nie einen einzigen geliefert, und zwar nicht aus Mangel an Märkten,
+sondern weil der Filter sie vorher wegwirft.
+
+### Die Reparatur, die daraus folgt
+
+Polymarket liefert eine echte Anpfiffzeit — **`gameStartTime`, 17.272 Märkte**
+im Messlauf. `orion-lauf` liest sie **nicht** (Zeile 162 liest nur
+`m.endDate || m.endDateIso`). Deckung je Bereich: Tennis 93,5 %, Wetter 81,9 %,
+Fußball 80,0 %, LoL 79,8 %, Valorant 65,1 %, Baseball 47,9 %, Football 8,9 %,
+Basketball/Eishockey/MMA 0 %.
+
+Zu bauen, in dieser Reihenfolge:
+1. `orion-lauf` Zeile 162/163: Stichzeit = `gameStartTime ?? endDate`, und
+   **danach** filtern. Fällt beides weg, Markt nicht aufnehmen.
+2. Kalshi-Spiele: `schliesst` ist **keine** Stichzeit. Entweder aus dem
+   Ticker (`KXNPBGAME-26AUG190500ORISAI` → 19.8. 05:00 **New York**) lesen
+   oder Kalshi-Spiele nur über Betfair/Smarkets zeitprüfen.
+3. Politik/Wahl: bei 75,1 % Mitternachtsdaten ist eine 3-h-Zeitprüfung
+   sinnlos. Dort muss die **Frage** zusammenpassen, nicht die Uhr.
+
+### Zwei Fallen, die bei dieser Messung Zeit gekostet haben
+
+- **`at time zone` dreht in die falsche Richtung.** `to_timestamp(...) at time
+  zone 'America/New_York'` nimmt eine *timestamptz* und gibt Wanduhrzeit —
+  alle Werte lagen um genau 8 h daneben. Richtig ist erst `::timestamp`
+  (nackt machen), **dann** `at time zone`. Ein Versatz, der überall gleich
+  ist, sieht aus wie ein echter Befund. Kontrollrechnung von Hand rettet.
+- **`pm_snapshot` ist eine tote Ablage.** Geschrieben nur von `pm-scan`, ohne
+  Cron-Takt, seit 8 Tagen kalt, von niemandem gelesen. Wer dort misst, misst
+  Vergangenheit. Der lebende Polymarket-Weg sitzt in `orion-lauf` und holt
+  direkt bei `gamma-api.polymarket.com`.
+
+### Nebenbei repariert: Kalshi lieferte null Märkte
+
+`orion-kalshi` v3 lief über `/markets?status=open` mit Seitenblättern. Kalshi
+hat den Endpunkt mit Kombinationsmärkten geflutet (`KXMVECROSSCATEGORY-…`,
+Kurse 0,0000/1,0000). Gemessen: 40 Seiten, 40.000 Märkte gesehen, **40.000
+verworfen, 0 abgelegt — und `fehler: 0` gemeldet.** Wieder eine stille
+Fehlklasse. v4 geht zurück auf den Serienweg (`?series_ticker=`), vierfach
+parallel. Nachher: 259 Sport-Serien → **497 Märkte**, 25 Welt-Serien →
+**607 Märkte**, 0 einseitig verworfen.
