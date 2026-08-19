@@ -1,0 +1,187 @@
+========================================================================
+ORION BRIDGE 4.0 - Build 26
+DIESER ORDNER IST DAS GANZE PROGRAMM. Es gibt keinen zweiten.
+========================================================================
+
+    C:\Users\Home\OrionBridge
+
+Hier drin liegt alles, was die Bridge zum Laufen braucht. Wird etwas
+geaendert - am Programm, an den Zugangsdaten, an der Anleitung - dann
+wird es HIER geaendert und die alte Fassung geloescht. Kein zweiter
+Ordner, keine Kopie in Downloads, keine zweite Fassung "zum Testen".
+
+Grund: die Sperrdatei bridge.lock gilt nur JE ORDNER. Zwei Ordner
+heisst zwei Bridges gleichzeitig - doppelte Betfair-Anfragen (die
+Drosselung droht) und zwei Uploads, die sich gegenseitig ueberschreiben.
+
+
+------------------------------------------------------------------------
+1. WAS HIER LIEGT
+------------------------------------------------------------------------
+
+  Orion-Bridge-STARTEN.cmd   <- NUR DAS doppelklicken. Startet alles.
+  orion-bridge-4.js          <- das gruene Node-Symbol: das Programm
+  bridge-config.json         <- Zugangsdaten, bereits ausgefuellt
+  README.md                  <- die ausfuehrliche technische Anleitung
+  ANLEITUNG.txt              <- diese Datei
+  bridge.lock                <- entsteht beim Start, haelt die
+                                Prozessnummer. NICHT anfassen, NICHT
+                                kopieren. Verschwindet beim Beenden.
+
+
+------------------------------------------------------------------------
+2. WOZU DAS GANZE UEBERHAUPT
+------------------------------------------------------------------------
+
+Betfair beantwortet Anfragen aus Rechenzentren mit "403 verboten".
+Deshalb - und NUR deshalb - muss dieses eine Stueck auf einem Rechner
+zu Hause laufen. Es holt Betfair-Kurse und laedt sie zum Panel hoch.
+Sonst nichts. Alles andere (Polymarket, Kalshi, Smarkets, die ganze
+Rechnung, die Pruefungen) macht der Server.
+
+Laeuft die Bridge nicht, fehlt im Panel die Betfair-Seite. Der Rest
+arbeitet weiter.
+
+
+------------------------------------------------------------------------
+3. STARTEN
+------------------------------------------------------------------------
+
+  Doppelklick auf   Orion-Bridge-STARTEN.cmd
+
+Ein schwarzes Fenster geht auf. Der Starter macht vier Dinge von allein:
+
+  1. Standby und "Deckel zu" abschalten, damit sie durchlaeuft
+  2. pruefen, ob Node da ist und alle Dateien vorhanden sind
+  3. die Bridge starten - aber nur, wenn nicht schon eine laeuft
+  4. den Waechter eintragen, der alle 5 Minuten nachsieht
+
+Das Fenster bleibt offen, solange die Bridge laeuft. Es darf
+kleingeklickt werden. Wird es GESCHLOSSEN, ist die Bridge weg - der
+Waechter holt sie dann binnen 5 Minuten zurueck.
+
+
+------------------------------------------------------------------------
+4. WORAN SIE SEHEN, DASS ES GEKLAPPT HAT
+------------------------------------------------------------------------
+
+Oben im schwarzen Fenster muss stehen:
+
+      ORION BRIDGE 4.0  (Build 26)
+
+Steht dort eine kleinere Zahl, laeuft noch eine alte Fassung.
+Dann: Fenster schliessen, eine Minute warten, neu starten.
+
+Danach laufen Zeilen durch, eine je Durchlauf, etwa alle 30 Sekunden.
+Jede nennt die Sportart, die gerade dran war, und wie viele Maerkte
+hochgeladen wurden.
+
+
+------------------------------------------------------------------------
+5. WAS SIE BRAUCHEN, DAMIT ES UEBERHAUPT GEHT
+------------------------------------------------------------------------
+
+Node.js. Ist installiert (Version 24). Pruefen laesst es sich in der
+Eingabeaufforderung mit:
+
+      node --version
+
+Kommt eine Fehlermeldung statt einer Nummer, ist Node weg - das ist
+schon einmal passiert. Neu holen mit:
+
+      winget install OpenJS.NodeJS.LTS
+
+Danach das schwarze Fenster schliessen und neu oeffnen, sonst kennt
+es den Befehl noch nicht.
+
+
+------------------------------------------------------------------------
+6. WENN ETWAS NICHT GEHT
+------------------------------------------------------------------------
+
+"Es laeuft bereits eine Bridge (Prozess NNNN)."
+      Gut so. Es laeuft schon eine. Fenster schliessen, fertig.
+
+Fenster geht auf und sofort wieder zu
+      Node fehlt. Siehe Punkt 5.
+
+"In bridge-config.json fehlt: ..."
+      Die Zugangsdatei ist unvollstaendig oder beschaedigt.
+
+Bridge laeuft, aber im Panel kommt nichts an
+      Betfair-Anmeldung abgelehnt. Passwort in bridge-config.json
+      pruefen. Betfair sperrt nach mehreren Fehlversuchen zeitweise.
+
+Bridge scheint zu haengen
+      Im Aufgabenplaner beenden hilft NICHT zuverlaessig (gemessen).
+      Sicher ist: Task-Manager -> node.exe -> Task beenden.
+      Danach startet der Waechter sie binnen 5 Minuten neu.
+
+
+------------------------------------------------------------------------
+7. DIE ZWEI AUFGABEN IM AUFGABENPLANER
+------------------------------------------------------------------------
+
+  "Orion Bridge"            startet sie beim Anmelden
+  "Orion Bridge Waechter"   sieht alle 5 Minuten nach und startet neu
+
+Beide zeigen auf Orion-Bridge-STARTEN.cmd in DIESEM Ordner.
+
+WICHTIG: Wird dieser Ordner verschoben oder umbenannt, zeigen beide
+Aufgaben ins Leere - und zwar STILL, ohne Fehlermeldung. Genau das war
+am 19.8.2026 der Fall: die Autostart-Aufgabe zeigte noch auf eine
+"Bridge-start.cmd", die es nach dem Umbau nicht mehr gab. Dass die
+Bridge trotzdem lief, verdankte sie allein dem Waechter.
+
+Also: diesen Ordner nicht verschieben. Muss es doch sein, danach
+einmal Orion-Bridge-STARTEN.cmd doppelklicken - der Starter traegt
+den Waechter neu ein.
+
+
+------------------------------------------------------------------------
+8. WAS BUILD 26 NEU KANN (19.8.2026)
+------------------------------------------------------------------------
+
+  - Golf kommt endlich mit. Es fehlte in der Sportliste der Bridge,
+    obwohl der Server es kannte und stuendlich danach suchte. Der
+    Bereich lief also und fand garantiert nichts.
+  - Politik, Special Bets und Financial Bets werden geholt und
+    gemeldet. Zugeordnet werden sie erst, wenn gemessen ist, was
+    zurueckkommt.
+  - Der Markttyp ist je Bereich einstellbar. Noetig, weil es
+    ausserhalb des Sports kein "MATCH_ODDS" gibt - mit dem alten
+    festen Filter waeren die drei neuen leer zurueckgekommen.
+  - E-Sport wird beim Server in LoL, Valorant und uebrige getrennt.
+
+
+------------------------------------------------------------------------
+9. SICHERHEIT
+------------------------------------------------------------------------
+
+bridge-config.json enthaelt Betfair-Benutzername, Passwort und den
+API-Schluessel IM KLARTEXT.
+
+  - Diese Datei gehoert NICHT ins Repo und ist dort ausgeschlossen.
+  - Keine Kopie davon anlegen. Jede Kopie ist ein weiterer Ort, an
+    dem das Passwort liegt.
+  - Wird das Betfair-Passwort geaendert, hier nachziehen - sonst
+    meldet sich die Bridge nicht mehr an.
+
+
+------------------------------------------------------------------------
+10. AENDERUNGSWEG
+------------------------------------------------------------------------
+
+Alles, was an der Bridge geaendert wird, wird in DIESEM Ordner
+geaendert, und die alte Fassung wird geloescht. Zusaetzlich liegt
+dieselbe Fassung im Projekt unter
+
+      C:\Users\Home\orion-panel-pro\bridge\
+
+Das ist die Fassung fuer GitHub - OHNE bridge-config.json. Beide
+muessen deckungsgleich sein, sonst laeuft hier etwas anderes als
+dokumentiert ist.
+
+Die Build-Nummer steht in orion-bridge-4.js ganz oben und wird bei
+JEDER Aenderung erhoeht. Sie erscheint beim Start im Fenster - nur so
+laesst sich von aussen sehen, welche Fassung wirklich laeuft.
