@@ -2528,6 +2528,40 @@
     }, function () { /* Fenster nicht im Vordergrund — dann eben nicht */ });
   });
 
+  /* DIREKTSPRUNG AUS DER TELEGRAM-MELDUNG (20.8.2026). Der Beitragslink
+   * in der Nachricht endet auf  #fund-<schluessel, url-kodiert>.  Dieser
+   * Block sucht nach dem Laden bis zu 30 s lang die Karte mit diesem
+   * Schluessel (die Karten entstehen erst nach Sperre und erstem
+   * Datenlauf), scrollt hin, klappt sie auf und hebt sie 4 s hervor.
+   * Ist der Fund inzwischen weg (vorbei, aussortiert), passiert still
+   * GAR nichts — ein Sprungziel ist keine Fehlerquelle.
+   * REINE ANZEIGE, loeschbar. */
+  (function () {
+    var m = String(location.hash || '').match(/^#fund-(.+)$/);
+    if (!m) return;
+    var schluessel;
+    try { schluessel = decodeURIComponent(m[1]); } catch (e) { return; }
+    var bis = Date.now() + 30000;
+    var takt = setInterval(function () {
+      if (Date.now() > bis) { clearInterval(takt); return; }
+      var traeger = document.querySelector('[data-schluessel="' + (window.CSS && CSS.escape ? CSS.escape(schluessel) : schluessel) + '"]');
+      if (!traeger) return;
+      var k = traeger.closest ? traeger.closest('.fund') : null;
+      if (!k) return;
+      clearInterval(takt);
+      k.scrollIntoView({ block: 'center' });
+      /* Zuklappte Abschnitte per summary-Klick oeffnen — der bestehende
+       * Klick-Zuhoerer merkt sich das in aufgeklappt[], damit es das
+       * Neuzeichnen alle 2 s ueberlebt. */
+      var zu = k.querySelectorAll('details:not([open]) > summary');
+      for (var j = 0; j < zu.length; j++) zu[j].click();
+      k.style.outline = '3px solid var(--bf)';
+      k.style.outlineOffset = '3px';
+      setTimeout(function () { k.style.outline = ''; k.style.outlineOffset = ''; }, 4000);
+      try { history.replaceState(null, '', location.pathname + location.search); } catch (e) { /* egal */ }
+    }, 500);
+  })();
+
   /* karte ist mit herausgereicht, damit der Prüfstand pruefung/karte-probe.html
    * echte Zeilen aus der Datenbank zeichnen kann, ohne die ganze Seite und
    * ohne die Sperre. Eine Karte, die man nur im laufenden Betrieb ansehen

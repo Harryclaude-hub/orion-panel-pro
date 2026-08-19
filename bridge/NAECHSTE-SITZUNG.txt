@@ -66,9 +66,11 @@ STAND: WAS FERTIG IST
 
 STAND: WAS OFFEN IST
 
-1. TELEGRAM SCHARF SCHALTEN: Karam legt Bot an (@BotFather), Bot als
-   Kanal-Admin, Token als Secret TELEGRAM_BOT_TOKEN, dann Einrichtungs-
-   aufruf -> chat_id nach orion_telegram, aktiv=true, Testnachricht.
+1. TELEGRAM IST SCHARF (19.8. spaet abends): Ziel = Karams DIREKTCHAT
+   mit dem Bot (orion_telegram id=1, aktiv), Funkprobe zugestellt,
+   Minutentakt Job 92 laeuft. Sein Kanal war fuer den Bot nie sichtbar
+   (vermutlich Community-Gruppe statt Kanal) - Direktchat erfuellt
+   denselben Zweck. Umtragen jederzeit: neue chat_id in orion_telegram.
 2. UNGEMESSEN: in welcher Waehrung liefert Betfair die MENGEN (bs/ls)
    der Bridge? Kontowaehrung des Betfair-Kontos. Wenn EUR: max_einsatz/
    max_gewinn der Betfair-Seite um den Kurs daneben (Rendite NICHT
