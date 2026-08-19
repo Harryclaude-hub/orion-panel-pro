@@ -128,6 +128,20 @@ rem  Geprueft wird ueber PowerShell, NICHT ueber wmic: wmic gibt es auf
 rem  Windows 11 nicht mehr - die erste Fassung haette deshalb immer einen
 rem  sinnlosen Start versucht (am 19.08. beim Testen aufgefallen).
 :starten
+rem  NOTBREMSE (19.08., nach einem echten Vorfall in dieser Nacht):
+rem  Ist PROG leer, startete node OHNE Argument - das ist dann die
+rem  node-Eingabeaufforderung, nicht die Bridge. Deren Befehlszeile
+rem  enthaelt den Dateinamen NICHT, also erkennt die Pruefung unten sie
+rem  nicht als laufende Bridge und startet beim naechsten Waechter-Lauf
+rem  die naechste. So entstehen alle 5 Minuten neue Geisterprozesse.
+rem  Es liefen kurzzeitig DREI node-Prozesse gleichzeitig, die sich beim
+rem  Hochladen gegenseitig ueberschrieben.
+if "%PROG%"=="" (
+  echo         ABBRUCH: keine Programmdatei gefunden - es wird NICHTS gestartet.
+  exit /b 1
+)
+rem  Zusaetzlich raeumt die Pruefung argumentlose node-Prozesse NICHT weg,
+rem  aber sie zaehlt sie auch nicht als Bridge. Beides ist Absicht.
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
   "$l = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -like '*Orion-Bridge-Pro-*.js*' };" ^
   "if ($l) { Write-Host ('        Laeuft bereits (PID ' + $l.ProcessId + ') - nichts zu tun.'); exit 0 }" ^
