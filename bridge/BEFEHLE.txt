@@ -1,0 +1,99 @@
+========================================================================
+ALLE BEFEHLE - Orion Panel Pro
+Stand 19.08.2026. Wird bei jeder Aenderung nachgezogen.
+========================================================================
+
+Eingabeaufforderung oeffnen: Windows-Taste -> cmd -> Enter
+
+
+------------------------------------------------------------------------
+1. BRIDGE
+------------------------------------------------------------------------
+
+Starten (der normale Weg):
+      Doppelklick auf Orion-Bridge-STARTEN.cmd
+
+Laeuft sie gerade?
+      tasklist | findstr node.exe
+
+Beenden (sicher; Aufgabenplaner beenden reicht NICHT):
+      Task-Manager -> Details -> node.exe -> Task beenden
+
+Node vorhanden?
+      node --version
+Node neu holen:
+      winget install OpenJS.NodeJS.LTS
+
+
+------------------------------------------------------------------------
+2. DER OFFENE DEPLOY  (orion-lauf)
+------------------------------------------------------------------------
+
+Ohne diesen Schritt fehlen: Pruefstufe 1 und die 4079 Tennisspiele.
+
+Schritt 1 - Token holen (nur einmal, wird nur EINMAL angezeigt):
+      https://supabase.com/dashboard/account/tokens
+      -> "Generate new token" -> Name: orion-deploy -> kopieren
+
+Schritt 2 - deployen. IHR_TOKEN ersetzen:
+
+cd C:\Users\Home\orion-panel-pro && set SUPABASE_ACCESS_TOKEN=IHR_TOKEN && npx --yes supabase@latest functions deploy orion-lauf --project-ref noexklrgtqveiclijdwp --no-verify-jwt
+
+      Dauert etwa eine Minute. Am Ende muss stehen:
+      "Deployed Functions on project noexklrgtqveiclijdwp"
+
+Schritt 3 - Trockenlauf. Rechnet alles, schreibt NICHTS:
+
+curl -s -X POST https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-lauf -H "content-type: application/json" -d "{\"bereich\":\"tennis\",\"probe\":true}"
+
+Schritt 4 - Token wieder loeschen ("Revoke") auf derselben Seite.
+      Er hat vollen Zugriff auf das GANZE Supabase-Konto.
+
+WICHTIG: Den Token nirgends abspeichern und nicht in den Chat
+schreiben. Das "set" gilt nur in dem einen Fenster.
+
+
+------------------------------------------------------------------------
+3. PRUEFUNGEN (vor jeder Aenderung am Code)
+------------------------------------------------------------------------
+
+Beweist, dass Browser- und Server-Fassung sich GLEICH verhalten
+(15188 Pruefungen):
+
+      cd C:\Users\Home\orion-panel-pro && node pruefung\spiegel.test.js
+
+Beweist, dass die Paarungspruefung RICHTIG liegt (26 Faelle) -
+das ist die andere Haelfte, denn zwei gleich falsche Fassungen
+bestehen den Spiegeltest anstandslos:
+
+      cd C:\Users\Home\orion-panel-pro && node pruefung\vollpruefung.test.js
+
+Beide muessen gruen sein. Sonst nichts ausrollen.
+
+
+------------------------------------------------------------------------
+4. PROJEKT
+------------------------------------------------------------------------
+
+Ordner:      C:\Users\Home\orion-panel-pro
+Repo:        github.com/saifokaram1-hub/orion-panel-pro
+Seite:       saifokaram1-hub.github.io/orion-panel-pro
+Supabase:    noexklrgtqveiclijdwp
+
+Stand holen und hochladen:
+      cd C:\Users\Home\orion-panel-pro && git pull
+      cd C:\Users\Home\orion-panel-pro && git status
+      cd C:\Users\Home\orion-panel-pro && git push origin main
+
+
+------------------------------------------------------------------------
+5. WAS GERADE OFFEN IST
+------------------------------------------------------------------------
+
+  - orion-lauf deployen (Abschnitt 2). Das Einzige, was noch fehlt.
+  - Danach messen, was Politik/Special Bets/Financial Bets liefern.
+    Vermutlich wenig: Betfair fuehrt dort Termine bis 2029, unser
+    Fenster sind 72 Stunden.
+
+Der volle Stand steht in UEBERGABE.md, Abschnitte 8l (die Matrix) und
+8m (die Vollpruefung in zwei Stufen).

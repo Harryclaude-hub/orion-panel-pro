@@ -1,4 +1,4 @@
-# Orion Bridge 4.0 — Build 26 (19.08.2026)
+# Orion Bridge 4.0 — Build 27 (19.08.2026)
 
 **Vier Dateien, mehr braucht es nicht.** Früher waren es acht — mit zwei
 Startern, zwei Anleitungen und einer Vorlage neben der echten Zugangsdatei.
@@ -140,6 +140,7 @@ brauchen wir.
 
 | Build | Änderung |
 |---|---|
+| 27 | **Sperre gilt geräteweit** statt je Ordner. Vorher lag `bridge.lock` im Programmordner — zwei Ordner hießen zwei Sperren und damit ZWEI laufende Bridges: doppelte Betfair-Anfragen und zwei Uploads, die sich gegenseitig überschreiben. Jetzt liegt sie fest im Benutzerprofil und nennt beim Blockieren auch den Ordner der laufenden Bridge |
 | 26 | **Golf ergänzt** (et 3) — es stand seit jeher in `orion_bf_sport` und hatte einen stündlichen Cron-Job, fehlte aber in der Sportliste der Bridge: der Bereich lief und fand garantiert nichts. Dazu **Politik, Special Bets und Financial Bets** aufgenommen und der **Markttyp je Bereich** einstellbar (`mt`) — außerhalb des Sports gibt es kein `MATCH_ODDS`, mit dem alten festen Filter wären diese drei leer zurückgekommen |
 | **25** | **Grundanteil je Sportart.** Vorher fraßen Fußball und Tennis das ganze Kurs-Kontingent — gemessen kamen nur 3 Sportarten an, E-Sport/MMA/Baseball waren bei **null**, obwohl der Vorrat 1961 Märkte hielt. Jetzt bekommt jede Sportart ihren Anteil garantiert. Danach: E-Sport 18 von 18, MMA 5 von 5, Baseball alle. Dazu die Standby-Prüfung beim Start |
 | 24 | `co` = der **Wettbewerb** (Liga). Verrät eine Jugend-, Reserve- oder Frauenliga auch dann, wenn die Mannschaftsnamen unauffällig sind |

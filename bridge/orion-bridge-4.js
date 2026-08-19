@@ -43,7 +43,7 @@ const fs = require('fs');
 const pfad = require('path');
 
 const VERSION = '4.0';
-const BUILD = 26;   // 24: co = Wettbewerb · 25: Grundanteil + Standby · 26: Golf ergaenzt, Nicht-Sport-Bereiche, Markttyp je Bereich
+const BUILD = 27;   // 25: Grundanteil+Standby - 26: Golf, Nicht-Sport, Markttyp je Bereich - 27: Sperre geraeteweit
 
 /* ---------- Zugangsdatei ---------- */
 const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
@@ -65,22 +65,39 @@ for (const feld of ['betfairUsername', 'betfairPassword', 'betfairAppKey', 'brid
  * Bridges nebeneinander: doppelte Betfair-Anfragen (Drosselung droht) und
  * zwei Uploads, die sich gegenseitig überschreiben. Die Sperrdatei hält
  * die Prozessnummer; lebt der Prozess nicht mehr, wird sie übernommen. */
-const SPERRE = pfad.join(__dirname, 'bridge.lock');
+/* BUILD 27 (19.8.2026): die Sperre gilt jetzt GERÄTEWEIT statt je Ordner.
+ *
+ * Vorher lag sie in __dirname. Damit war sie wirkungslos, sobald derselbe
+ * Programmordner ein zweites Mal existierte — genau der Fall, wenn ein
+ * Paket in Downloads liegt und eines woanders. Zwei Ordner hiessen zwei
+ * Sperrdateien und damit ZWEI laufende Bridges: doppelte Betfair-Anfragen
+ * (Drosselung droht) und zwei Uploads, die sich gegenseitig überschreiben.
+ *
+ * Die Sperre liegt jetzt an einer festen Stelle im Benutzerprofil. Egal aus
+ * welchem Ordner gestartet wird — es kann nur EINE Bridge laufen. Damit
+ * muss niemand mehr aufpassen, wo das Paket liegt; das Programm passt
+ * selbst auf. Sie merkt sich zusätzlich den Ordner, damit die Meldung
+ * sagen kann, WO die andere läuft. */
+const SPERRE = pfad.join(process.env.LOCALAPPDATA || process.env.HOME || __dirname,
+                         'orion-bridge.lock');
 (function einzeln() {
   try {
-    const alt = Number(fs.readFileSync(SPERRE, 'utf8').trim());
+    const roh = fs.readFileSync(SPERRE, 'utf8').trim().split('|');
+    const alt = Number(roh[0]);
+    const woher = roh[1] || 'unbekannt';
     if (alt && alt !== process.pid) {
       try {
         process.kill(alt, 0);          // wirft, wenn es den Prozess nicht gibt
         console.error('');
         console.error('  Es läuft bereits eine Bridge (Prozess ' + alt + ').');
+        console.error('  Sie läuft aus: ' + woher);
         console.error('  Dieses Fenster kann geschlossen werden.');
         console.error('');
         process.exit(0);
       } catch (e) { /* Prozess ist tot — Sperre übernehmen */ }
     }
   } catch (e) { /* keine Sperrdatei — erster Start */ }
-  fs.writeFileSync(SPERRE, String(process.pid));
+  fs.writeFileSync(SPERRE, process.pid + '|' + __dirname);
   const weg = () => { try { fs.unlinkSync(SPERRE); } catch (e) {} };
   process.on('exit', weg);
   process.on('SIGINT', () => { weg(); process.exit(0); });
