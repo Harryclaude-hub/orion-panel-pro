@@ -179,7 +179,14 @@ const NAMEN = [
   'Italy vs Bahrain', 'Under 3.5 Goals vs Over 3.5 Goals', 'A v The Draw',
   'Cruz Azul vs New York City Winner?', 'Palermo vs Juventus Winner?',
   'Charlotte FC vs. CF Pachuca: Draw at halftime?', 'The Draw', 'Draw', 'Tie',
-  'Over 2.5 Goals', 'Under 2.5 Goals', 'Yes', 'No', '200', 'will'
+  'Over 2.5 Goals', 'Under 2.5 Goals', 'Yes', 'No', '200', 'will',
+  /* Tennis-Titel mit Turnierpraefix (19.8.2026) */
+  'Cincinnati Open: Iga Swiatek vs Diane Parry',
+  'ITF W35 Krakow Women: Amelia Paszun vs Radka Zelnickova',
+  'Prague 2 (Doubles): Cerny/Martin vs Latinovic/Loof',
+  'Roland Garros, Qualification WTA: Sinja Kraus vs Noma Noha Akugue',
+  'Cancun: Completed Match: Rodrigo Pacheco vs Tomas Barrios',
+  'US Open Winner: no vs here'
 ];
 
 const TEILE = [
@@ -196,7 +203,17 @@ const FRAGEN = [
   'Charlotte FC to win the second half?',
   'Charlotte FC vs. CF Pachuca: Draw at halftime?',
   'Charlotte FC vs. CF Pachuca: Second half draw?',
-  'Will Bitcoin hit $200,000?', 'Will the Republican Party win?'
+  'Will Bitcoin hit $200,000?', 'Will the Republican Party win?',
+  /* Tennis-Frageformen (19.8.2026) */
+  'Cincinnati Open: Iga Swiatek vs Diane Parry',
+  'ITF W35 Krakow Women: Amelia Paszun vs Radka Zelnickova',
+  'Prague 2 (Doubles): Cerny/Martin vs Latinovic/Loof',
+  'Cancun: Completed Match: Rodrigo Pacheco vs Tomas Barrios',
+  'Set 1 Winner: Siegemund vs Samsonova',
+  'Set Handicap: Samsonova (-1.5) vs Siegemund (+1.5)',
+  'Siegemund vs. Samsonova: Total Sets O/U 2.5',
+  'Pacheco vs. Barrios: Match O/U 21.5',
+  'Pacheco vs. Barrios: Set 1 Games O/U 8.5'
 ];
 
 const LAEUFER = [
@@ -323,7 +340,14 @@ async function main() {
     ouArt: TEILE.map(x => [x]),
     bfOuLinie: [null, undefined, '', 'OVER_UNDER_25', 'OVER_UNDER_05', 'OVER_UNDER_355',
                 'MATCH_ODDS', 'over_under_25'].map(x => [x]),
-    marktArt: paareVon(FRAGEN, TEILE),
+    /* marktArt seit 19.8. mit drittem Parameter (Bereich): beide Spiegel
+     * muessen ihn GLEICH auswerten — auch da, wo er fehlt oder Unsinn ist. */
+    marktArt: paareVon(FRAGEN, TEILE)
+      .concat(paareVon(FRAGEN, TEILE).map(([f, t]) => [f, t, 'tennis']))
+      .concat(paareVon(FRAGEN, TEILE).map(([f, t]) => [f, t, 'fussball']))
+      .concat(FRAGEN.map(f => [f, null, 'TENNIS']))
+      .concat(FRAGEN.map(f => [f, null, null])),
+    turnierRein: NAMEN.map(x => [x]),
     smMarktArt: SM_TYPEN.map(x => [x]),
     kalshiZeit: TICKER.map(x => [x]),
     partieVon: BF_MAERKTE.map(x => [x]).concat([[null], [undefined]]),

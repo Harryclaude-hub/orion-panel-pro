@@ -98,6 +98,68 @@ for (const [name, A, B, soll] of FAELLE) {
 const nachsicht = Z.pruefeSpiel(mit({ zeit: null }), mit({}), 0.5, { zeitPflicht: false });
 if (nachsicht.ok) gut++; else { schlecht++; console.log('  FEHLER zeitPflicht:false wirkt nicht'); }
 
+/* ---------- TENNIS Ende-zu-Ende (19.8.2026) ----------
+ *
+ * Die Kette des Scanners an ECHTEN Maerkten aus der Messung vom 19.8.:
+ * marktArt -> paar(Titel mit Turnierpraefix) -> pruefeSpiel gegen Betfair
+ * -> laeuferZu. Jeder Schritt war vorher einzeln kaputt: marktArt kannte
+ * die Form nicht (4876 Maerkte, 0 erkannt), das Turnierpraefix verwaesserte
+ * die Namen, und beim Frauen-Turnier haette die Kennungssperre ein
+ * RICHTIGES Paar verworfen. */
+function tennisFall(name, bedingung, gemessen) {
+  if (bedingung) { gut++; return; }
+  schlecht++;
+  console.log('  FEHLER ' + name + (gemessen !== undefined ? '  -> ' + gemessen : ''));
+}
+
+const T_ANPFIFF = '2026-08-19T15:00:00.000Z';
+const T_BF = { ev: 'Iga Swiatek v D Parry', k: 'Iga Swiatek vs Diane Parry',
+               mt: 'MATCH_ODDS', st: T_ANPFIFF, link: 'market/1.99',
+               r: [{ n: 'Iga Swiatek', b: 1.3, l: 1.32, bs: 100, ls: 80 },
+                   { n: 'Diane Parry', b: 3.6, l: 3.7, bs: 50, ls: 40 }] };
+
+tennisFall('Matchsieger wird erkannt',
+  Z.marktArt('Cincinnati Open: Iga Swiatek vs Diane Parry', null, 'tennis') === 'sieger');
+
+const tPaar = Z.paar('Cincinnati Open: Iga Swiatek vs Diane Parry');
+tennisFall('Titel zerlegt ohne Turnier', tPaar && tPaar[0] === 'iga swiatek' && tPaar[1] === 'diane parry',
+  JSON.stringify(tPaar));
+
+const tTr = Z.besterTreffer(tPaar[0], tPaar[1], [T_BF], 0.5, T_ANPFIFF, 'tennis');
+tennisFall('Betfair-Partie wird gefunden', tTr !== null && tTr.bf === T_BF);
+
+const tLauf = tTr && Z.laeuferZu('Iga Swiatek', tTr.bf.r, 0.8);
+tennisFall('Laeufer ist die JA-Seite (erster Ausgang)',
+  tLauf !== null && tLauf.laeufer.n === 'Iga Swiatek');
+
+/* Frauen-Turnier: MIT Schnitt geht das richtige Paar durch ... */
+const wPaar = Z.paar('ITF W35 Krakow Women: Amelia Paszun vs Radka Zelnickova');
+const wOk = Z.pruefeSpiel(
+  { partie: wPaar, zeit: 1000, liga: null, bereich: 'tennis' },
+  { partie: ['amelia paszun', 'radka zelnickova'], zeit: 1000, liga: null, bereich: 'tennis' }, 0.5);
+tennisFall('Frauen-Turnier geht durch (Kennung haengt nicht am Turnier)', wOk.ok, wOk.grund);
+
+/* ... und OHNE Schnitt haette die Kennungssperre gesperrt — der Beleg,
+ * dass der Schnitt noetig ist und die Sperre weiter greift. */
+const wAlt = Z.pruefeSpiel(
+  { partie: ['itf w35 krakow women amelia paszun', 'radka zelnickova'], zeit: 1000, liga: null, bereich: 'tennis' },
+  { partie: ['amelia paszun', 'radka zelnickova'], zeit: 1000, liga: null, bereich: 'tennis' }, 0.5);
+tennisFall('ungeschnittener Titel wuerde weiter gesperrt (Sperre lebt)', !wAlt.ok);
+
+/* Echte Frauen- gegen Maenner-Partie bleibt bei Tennis gesperrt. */
+const wGegen = Z.pruefeSpiel(
+  { partie: ['siegemund women', 'samsonova women'], zeit: 1000, liga: null, bereich: 'tennis' },
+  { partie: ['siegemund', 'samsonova'], zeit: 1000, liga: null, bereich: 'tennis' }, 0.5);
+tennisFall('Frauen gegen Maenner bleibt gesperrt', !wGegen.ok);
+
+/* Nebenmaerkte stellen ANDERE Fragen und duerfen keine Marktart bekommen. */
+tennisFall('Completed Match bleibt draussen',
+  Z.marktArt('Cancun: Completed Match: Rodrigo Pacheco vs Tomas Barrios', 'Completed Match', 'tennis') === null);
+tennisFall('Satzsieger bleibt draussen',
+  Z.marktArt('Set 1 Winner: Siegemund vs Samsonova', null, 'tennis') === null);
+tennisFall('ausserhalb des Bereichs tennis bleibt die Form draussen',
+  Z.marktArt('Premier League: Arsenal vs Chelsea', null, 'fussball') === null);
+
 console.log('');
 console.log('Vollpruefung: ' + gut + ' von ' + (gut + schlecht) + ' Faellen richtig');
 if (schlecht) { console.log('FEHLGESCHLAGEN'); process.exit(1); }

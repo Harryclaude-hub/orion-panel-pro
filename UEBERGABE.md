@@ -2103,7 +2103,21 @@ steigend -- jede neue Zeile bekommt ihn im Moment ihres Hoechststands).
 
 ## 8q. TENNIS GEBAUT + SCHWELLEN GEMESSEN UND BEWUSST NICHT GEBAUT (19.8., abends)
 
-### Tennis: gemessen, dann gebaut — wartet auf den Deploy
+> **DEPLOY IST DURCH (spaeter am Abend): orion-lauf Version 23**, ausgerollt
+> ueber die Supabase-MCP-Verbindung (ohne Access-Token; DEPLOY-JETZT.cmd
+> bleibt der Weg fuer kuenftige Deploys). Das Wache-SQL hat Karam im
+> SQL-Editor angewendet, alle sechs Proben gruen. Scharfer Lauf:
+> 68 Tennis-Sieger erkannt (vorher 0), sieger_ohne_ausgang 0, erstes
+> lebendes Paar "Cincinnati Open: Diana Shnaider vs Elena Rybakina" gegen
+> Betfairs abgekuerztes "Di Shnaider v E Rybakina" — Rendite -0,52 %
+> (keine Chance, korrekt gerechnet), beginnt_am vom Zeiten-Takt aus
+> Betfair belegt (Abstand 0 min), buch_summe 1,0077 nachgerechnet.
+> Damit ist die ganze Kette im Betrieb bewiesen. ABENDSTUNDE: nur 29
+> Betfair-Maerkte im Fenster; die vollen Zahlen kommen mit dem
+> Vormittagsprogramm. AB JETZT: BETRIEBSRUHE (Karams Ansage) — keine
+> Updates an Bridge, Panel, PC oder Verwaltung, nur beobachten.
+
+### Tennis: gemessen, dann gebaut
 
 **Messung zuerst** (alle Zahlen vom 19.8., gegen die echten Schnittstellen):
 

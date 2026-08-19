@@ -98,7 +98,7 @@ async function messeBereich(reg) {
           z.maerkte++;
           if (!handelbar(m)) continue;
           z.handelbar++;
-          const art = Z.marktArt(m.question, m.groupItemTitle);
+          const art = Z.marktArt(m.question, m.groupItemTitle, reg.bereich);
           if (!art) {
             if (z.ohne_art_beispiele.length < 3) {
               z.ohne_art_beispiele.push(String(m.question || '').slice(0, 70));
@@ -107,7 +107,13 @@ async function messeBereich(reg) {
           }
           z.mit_art++;
           z.arten[art] = (z.arten[art] || 0) + 1;
-          const ende = Date.parse(m.endDate || m.endDateIso || '');
+          /* Stichzeit wie im Scanner seit v22: gameStartTime zuerst,
+           * endDate nur als Rueckfall (UEBERGABE 8l/8m). Vorher mass
+           * dieses Werkzeug den ALTEN Filter und damit etwas anderes
+           * als den Betrieb. */
+          const anpfiff = Date.parse(m.gameStartTime || '');
+          const endeRoh = Date.parse(m.endDate || m.endDateIso || '');
+          const ende = isFinite(anpfiff) ? anpfiff : endeRoh;
           if (isNaN(ende) || ende <= jetzt || ende > grenze) continue;
           z.im_fenster++;
           if (paarung) z.mit_paarung++;

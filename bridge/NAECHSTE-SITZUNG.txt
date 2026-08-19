@@ -7,7 +7,7 @@ Alles hineinkopieren, ab der Linie unten.
 ------------------------------ ab hier ---------------------------------
 
 Orion Panel Pro. Lies ZUERST C:\Users\Home\orion-panel-pro\UEBERGABE.md,
-die Abschnitte 8l bis 8p, dazu STRUKTUR.md. Danach erst anfangen.
+die Abschnitte 8l bis 8q, dazu STRUKTUR.md. Danach erst anfangen.
 
 Antworte auf Deutsch, militaerischer Ton, "Jawohl, Chef".
 
@@ -38,38 +38,34 @@ STAND: WAS FERTIG IST
 - Kalshi-Sammler v4 (Serienweg), E-Sport in lol/valorant/esport
   getrennt, Deadlocks behoben.
 
-STAND: WAS OFFEN IST -- genau zwei Dinge, beide fuer MEHR CHANCEN,
-nicht fuer mehr Sicherheit.
+- TENNIS ist GEBAUT (19.8. abends, UEBERGABE 8q): marktArt kennt den
+  Matchsieger ("Turnier: A vs B", nur Bereich tennis), turnierRein()
+  schneidet das Turnierpraefix, orion-lauf setzt teil = outcomes[0].
+  Trockenlauf: 127 Sieger erkannt (vorher 0), 19 Paare gegen Betfair.
+  Alle vier Pruefstaende gruen (296 + 36 + 19896 + 195).
+- SCHWELLEN sind GEMESSEN und BEWUSST NICHT GEBAUT (8q): nur ~26 von
+  696 Kalshi-Schwellen haetten ein Polymarket-Gegenstueck, davon 8
+  fluechtige Krypto-Stundenpaare. Einziger tragfaehiger Kandidat, falls
+  doch gewollt: WTI-Tagessettlement (~18 Paare, Tag "commodities").
 
-AUFGABE 1: TENNIS
-Problem: 4876 Tennis-Maerkte bei Polymarket, 4562 in "vs"-Partien,
-1925 mit Anpfiff im 72-h-Fenster -- und marktArt() erkennt davon NULL.
-marktArt kennt nur fussballfoermige Fragen ("win on YYYY MM DD",
-"end in a draw", Tore-Ueber/Unter). Tennis fragt anders:
-   "Australian Open Women's: Laura Siegemund vs Liudmila Samsonova"
-   "Siegemund vs. Samsonova: Total Sets O/U 2.5"
-   "Set 1 Winner: Siegemund vs Samsonova"
-Betfair hat 51 Tennis-Maerkte bereitliegen, Polymarket liefert 0.
-Zu tun: ZUERST messen, welche Betfair-Markttypen zu welchen
-Polymarket-Fragen passen (Matchsieger, Saetze-Ueber/Unter,
-Games-Ueber/Unter). Dann marktArt in js/zuordnung.js UND
-supabase/functions/orion-lauf/zuordnung.ts spiegelgleich erweitern,
-Testfaelle in beide Pruefungen, dann Deploy.
+- DEPLOY TENNIS IST DURCH (19.8. spaeter Abend): orion-lauf v23 aktiv,
+  Wache-SQL angewendet (6 Proben gruen), scharfer Lauf bewiesen:
+  68 Sieger erkannt, erstes Paar live (Shnaider/Rybakina, -0,52 %),
+  beginnt_am aus Betfair belegt, buch_summe nachgerechnet.
+- AUFRAEUM-TAKT NEU (Job 91, taeglich 03:20): cron-Protokoll 3 Tage,
+  orion_laeufe/orion_wache 30 Tage. Datenbank von 191 auf 98 MB
+  (Free-Limit 500 MB). Details in supabase/datenbank.md.
 
-AUFGABE 2: MARKTART SCHWELLE
-Problem: elf von zwanzig Bereichen haben nur EIN Buch und koennen
-darum strukturell nichts finden. Kalshi hat 607 Schwellenmaerkte in
-kalshi_snapshot id=2 (Bitcoin, Ethereum, Gold, Silber, Oel, Indizes,
-Wetter), die keinem Bereich zugeordnet sind. Polymarket hat Krypto-
-und Wirtschaftsmaerkte.
-WICHTIG aus der Stichzeit-Matrix (UEBERGABE 8l): bei Schwellen ist
-Kalshis close_time die ECHTE Stichzeit (Versatz 0,00 h) -- anders als
-bei Spielen. Bei Indizes aber +16 h, bei Wetter +25 bis +28 h.
-Zu tun: ZUERST messen, wie viele Kalshi-Schwellen ueberhaupt ein
-Polymarket-Gegenstueck mit gleicher Basisgroesse UND gleicher
-Stichzeit haben. Erst wenn die Zahl es rechtfertigt, marktArt um
-"schwelle" erweitern und paaren. Wenn die Zahl klein ist: sagen und
-nicht bauen.
+STAND: WAS OFFEN IST
+
+**NICHTS. BETRIEBSRUHE (Karams Ansage vom 19.8.):** fuer eine Weile
+keine Updates an Bridge, Panel, PC oder Verwaltung, kein Design, kein
+UX. Nur beobachten und nachmessen, bauen NUR auf ausdrueckliche Ansage.
+
+RESTRISIKO Tennis kennen (8q, steht auch in logik.html): bei
+Aufgabe NACH Matchbeginn zahlt Polymarket den Weiterkommer aus,
+Betfair macht Match-Odds void -- die Absicherung zerfaellt dann.
+Das ist eine Eigenschaft der Regeln beider Buecher, kein Fehler.
 
 DEPLOY
 Ich rolle selbst aus, per Doppelklick auf DEPLOY-JETZT.cmd auf dem

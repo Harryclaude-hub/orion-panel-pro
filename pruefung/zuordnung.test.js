@@ -110,35 +110,47 @@ ok('ohne ev wird k genommen',
 ok('ohne beides gibt null', Z.partieVon({ k: '', ev: '' }) === null);
 ok('null gibt null',       Z.partieVon(null) === null);
 
-/* ---------- Zuordnung gegen eine Betfair-Liste ---------- */
+/* ---------- Zuordnung gegen eine Betfair-Liste ----------
+ *
+ * SEIT 19.8.2026 ist die Zeit PFLICHT (Huerde 4 der Vollpruefung). Die
+ * Faelle hier tragen deshalb beiderseitig eine Anstosszeit — sonst
+ * pruefen sie nur noch die Zeitsperre statt der Namensregeln, fuer die
+ * sie gebaut wurden. Genau das war hier passiert: der Pruefstand stand
+ * seit der Zeitpflicht rot und niemand hat es gemerkt. */
+
+var ST = '2026-08-19T15:00:00Z';
 
 var bfListe = [
-  { k: 'Cruz Azul vs New York City vs The Draw', ev: 'Cruz Azul v New York City',
+  { k: 'Cruz Azul vs New York City vs The Draw', ev: 'Cruz Azul v New York City', st: ST,
     r: [{ n: 'Cruz Azul', b: 2.48, l: 2.55 }, { n: 'New York City', b: 2.92, l: 3.0 }, { n: 'The Draw', b: 3.55, l: 3.7 }] },
-  { k: 'Chicago Fire vs Santos Laguna vs The Draw', ev: 'Chicago Fire v Santos Laguna',
+  { k: 'Chicago Fire vs Santos Laguna vs The Draw', ev: 'Chicago Fire v Santos Laguna', st: ST,
     r: [{ n: 'Chicago Fire', b: 1.63, l: 1.68 }, { n: 'Santos Laguna', b: 5.6, l: 5.9 }, { n: 'The Draw', b: 4.8, l: 5.0 }] },
-  { k: 'Liverpool vs Monaco vs The Draw', ev: 'Liverpool v Monaco',
+  { k: 'Liverpool vs Monaco vs The Draw', ev: 'Liverpool v Monaco', st: ST,
     r: [{ n: 'Liverpool', b: 1.51, l: 1.55 }, { n: 'Monaco', b: 6.2, l: 6.6 }, { n: 'The Draw', b: 4.9, l: 5.1 }] }
 ];
 
-var t1 = Z.besterTreffer('cruz azul', 'new york city', bfListe);
+var t1 = Z.besterTreffer('cruz azul', 'new york city', bfListe, 0.5, ST);
 ok('exakte Partie wird gefunden',      t1 !== null);
-nah('und zwar mit Score 1.0',          t1.score, 1);
-ok('richtige Betfair-Partie',          t1.bf.k.indexOf('Cruz Azul') === 0);
-ok('nicht als getauscht markiert',     t1.getauscht === false);
+nah('und zwar mit Score 1.0',          t1 ? t1.score : NaN, 1);
+ok('richtige Betfair-Partie',          t1 !== null && t1.bf.k.indexOf('Cruz Azul') === 0);
+ok('nicht als getauscht markiert',     t1 !== null && t1.getauscht === false);
 
-var t2 = Z.besterTreffer('new york city', 'cruz azul', bfListe);
+var t2 = Z.besterTreffer('new york city', 'cruz azul', bfListe, 0.5, ST);
 ok('vertauschte Reihenfolge wird gefunden', t2 !== null);
-ok('und als getauscht markiert',            t2.getauscht === true);
+ok('und als getauscht markiert',            t2 !== null && t2.getauscht === true);
 
-var t3 = Z.besterTreffer('chicago fire', 'club santos laguna', bfListe);
+var t3 = Z.besterTreffer('chicago fire', 'club santos laguna', bfListe, 0.5, ST);
 ok('Namenszusatz "club" stoert nicht',  t3 !== null && t3.bf.k.indexOf('Chicago Fire') === 0);
 
-var t4 = Z.besterTreffer('austin', 'club puebla total corners', bfListe);
+var t4 = Z.besterTreffer('austin', 'club puebla total corners', bfListe, 0.5, ST);
 ok('Partie ohne Betfair-Gegenstueck wird abgewiesen', t4 === null);
 
-var t5 = Z.besterTreffer('bayern muenchen', 'borussia dortmund', bfListe);
+var t5 = Z.besterTreffer('bayern muenchen', 'borussia dortmund', bfListe, 0.5, ST);
 ok('voellig fremde Partie wird abgewiesen', t5 === null);
+
+/* Die Zeitpflicht selbst: OHNE Zeit darf nichts mehr durchgehen. */
+ok('ohne beiderseitige Zeit wird NICHT gepaart',
+   Z.besterTreffer('cruz azul', 'new york city', bfListe) === null);
 
 ok('leere Betfair-Liste gibt null',   Z.besterTreffer('a', 'b', []) === null);
 ok('fehlende Liste gibt null',        Z.besterTreffer('a', 'b', null) === null);
@@ -146,9 +158,9 @@ ok('fehlender Name gibt null',        Z.besterTreffer('', 'b', bfListe) === null
 ok('null als Name gibt null',         Z.besterTreffer(null, 'b', bfListe) === null);
 
 /* Die Schwelle muss wirklich greifen, nicht nur dastehen */
-var streng = Z.besterTreffer('liverpool', 'monaco', bfListe, 0.99);
+var streng = Z.besterTreffer('liverpool', 'monaco', bfListe, 0.99, ST);
 ok('strenge Schwelle 0.99 laesst den echten Treffer durch', streng !== null);
-var unmoeglich = Z.besterTreffer('liverpool', 'monaco', bfListe, 1.01);
+var unmoeglich = Z.besterTreffer('liverpool', 'monaco', bfListe, 1.01, ST);
 ok('Schwelle ueber 1.0 weist ALLES ab (Grenze schlaegt an)', unmoeglich === null);
 
 /* ---------- marktArt: stellt der Markt DIESELBE Frage wie Betfair? ----------
@@ -211,17 +223,73 @@ ok('Innings-Linie wird abgewiesen',   Z.ouLinie('1st 5 Innings O/U 4.5') === nul
 ok('leerer Teil gibt null',           Z.ouLinie('') === null);
 ok('null gibt null',                  Z.ouLinie(null) === null);
 
+/* ---------- TENNIS-MATCHSIEGER (19.8.2026) ----------
+ *
+ * Gemessen an 4063 handelbaren Tennis-Maerkten: der reine Siegermarkt
+ * ("Cincinnati Open: Iga Swiatek vs Diane Parry") traegt KEINEN Teilnamen;
+ * jeder Nebenmarkt traegt einen UND unterscheidet sich in der Form.
+ * Die Regel gilt NUR im Bereich tennis — Tennis kennt kein Unentschieden;
+ * im Fussball waere dieselbe Titelform als Zwei-Ausgangs-Frage falsch. */
+
+ok('Tennis-Matchsieger wird erkannt',
+   Z.marktArt('Cincinnati Open: Iga Swiatek vs Diane Parry', null, 'tennis') === 'sieger');
+ok('Tennis-Doppel wird erkannt',
+   Z.marktArt('Prague 2 (Doubles): Cerny/Martin vs Latinovic/Loof', null, 'tennis') === 'sieger');
+ok('Turnier mit Zusatz im Namen wird erkannt',
+   Z.marktArt('ITF W35 Krakow Women: Amelia Paszun vs Radka Zelnickova', null, 'tennis') === 'sieger');
+ok('OHNE Bereich tennis wird dieselbe Frage NICHT erkannt',
+   Z.marktArt('Cincinnati Open: Iga Swiatek vs Diane Parry', null) === null);
+ok('im Bereich fussball wird dieselbe Titelform NICHT erkannt',
+   Z.marktArt('Premier League: Arsenal vs Chelsea', null, 'fussball') === null);
+ok('Completed Match ist eine ANDERE Frage (zwei Doppelpunkte + Teilname)',
+   Z.marktArt('Cancun: Completed Match: Rodrigo Pacheco vs Tomas Barrios', 'Completed Match', 'tennis') === null);
+ok('Completed Match faellt auch OHNE Teilname (zweiter Doppelpunkt haelt)',
+   Z.marktArt('Cancun: Completed Match: Rodrigo Pacheco vs Tomas Barrios', null, 'tennis') === null);
+ok('Satzsieger ist keine Marktart (Blockwort haelt auch ohne Teilname)',
+   Z.marktArt('Set 1 Winner: Siegemund vs Samsonova', null, 'tennis') === null);
+ok('Satz-Handicap ist keine Marktart',
+   Z.marktArt('Set Handicap: Samsonova (-1.5) vs Siegemund (+1.5)', null, 'tennis') === null);
+ok('Saetze-Ueber/Unter ist keine Marktart (Partie steht VOR dem Doppelpunkt)',
+   Z.marktArt('Siegemund vs. Samsonova: Total Sets O/U 2.5',
+              'Australian Open Women\'s: Laura Siegemund vs Liudmila Samsonova Total Sets: O/U 2.5', 'tennis') === null);
+ok('Games im Match sind keine Marktart',
+   Z.marktArt('Pacheco vs. Barrios: Match O/U 21.5', 'Cancun: Rodrigo Pacheco vs Tomas Barrios Match O/U 21.5', 'tennis') === null);
+ok('Games je Satz sind keine Marktart',
+   Z.marktArt('Pacheco vs. Barrios: Set 1 Games O/U 8.5', 'Cancun: Rodrigo Pacheco vs Tomas Barrios Set 1 O/U 8.5', 'tennis') === null);
+ok('Fussball-Siegerform bleibt im Bereich tennis unangetastet',
+   Z.marktArt('Will Charlotte FC win on 2026 08 11', 'Charlotte FC', 'tennis') === 'sieger');
+
+/* turnierRein: das Turnier ist Beiwerk, die Partie steht nach dem LETZTEN
+ * Doppelpunkt. Ohne den Schnitt traegt "ITF ... Women" die Frauen-Kennung
+ * in die Partie und die Kennungssperre verwirft ein RICHTIGES Paar. */
+var tp1 = Z.paar('Cincinnati Open: Iga Swiatek vs Diane Parry');
+ok('Turnierpraefix wird abgeschnitten',
+   tp1 && tp1[0] === 'iga swiatek' && tp1[1] === 'diane parry', JSON.stringify(tp1));
+var tp2 = Z.paar('ITF W35 Krakow Women: Amelia Paszun vs Radka Zelnickova');
+ok('Frauen-Turnier: Kennung bleibt NICHT an der Partie haengen',
+   tp2 && Z.kennung(tp2[0]) === '' && Z.kennung(tp2[1]) === '', JSON.stringify(tp2));
+ok('Titel ohne Doppelpunkt bleibt unveraendert',
+   JSON.stringify(Z.paar('Italy vs Bahrain')) === JSON.stringify(['italy', 'bahrain']));
+ok('Doppelpunkt OHNE vs dahinter schneidet nicht',
+   JSON.stringify(Z.paar('Charlotte FC vs. CF Pachuca: Draw at halftime?')) ===
+   JSON.stringify(Z.paar('Charlotte FC vs. CF Pachuca Draw at halftime?')));
+ok('turnierRein laesst praefixlose Titel in Ruhe',
+   Z.turnierRein('Italy vs Bahrain') === 'Italy vs Bahrain');
+ok('turnierRein schneidet am LETZTEN Doppelpunkt',
+   Z.turnierRein('Roland Garros, Qualification WTA: Sinja Kraus vs Noma Noha Akugue').trim() ===
+   'Sinja Kraus vs Noma Noha Akugue');
+
 ok('OVER_UNDER_25 -> 2.5',  Z.bfOuLinie('OVER_UNDER_25') === 2.5);
 ok('OVER_UNDER_05 -> 0.5',  Z.bfOuLinie('OVER_UNDER_05') === 0.5);
 ok('MATCH_ODDS gibt null',  Z.bfOuLinie('MATCH_ODDS') === null);
 ok('FIRST_HALF_GOALS_15 gibt null', Z.bfOuLinie('FIRST_HALF_GOALS_15') === null);
 
 var ouListe = [
-  { mt: 'OVER_UNDER_25', ev: 'St Gallen v Luzern', k: 'Under 2.5 Goals vs Over 2.5 Goals',
+  { mt: 'OVER_UNDER_25', ev: 'St Gallen v Luzern', st: ST, k: 'Under 2.5 Goals vs Over 2.5 Goals',
     r: [{ n: 'Under 2.5 Goals', b: 2.6, l: 2.7 }, { n: 'Over 2.5 Goals', b: 1.59, l: 1.62 }] },
-  { mt: 'OVER_UNDER_35', ev: 'St Gallen v Luzern', k: 'Under 3.5 Goals vs Over 3.5 Goals',
+  { mt: 'OVER_UNDER_35', ev: 'St Gallen v Luzern', st: ST, k: 'Under 3.5 Goals vs Over 3.5 Goals',
     r: [{ n: 'Under 3.5 Goals', b: 1.64, l: 1.7 }, { n: 'Over 3.5 Goals', b: 2.46, l: 2.5 }] },
-  { mt: 'MATCH_ODDS', ev: 'St Gallen v Luzern', k: 'St Gallen vs Luzern vs The Draw',
+  { mt: 'MATCH_ODDS', ev: 'St Gallen v Luzern', st: ST, k: 'St Gallen vs Luzern vs The Draw',
     r: [{ n: 'St Gallen', b: 2.1, l: 2.2 }, { n: 'Luzern', b: 3.4, l: 3.5 }, { n: 'The Draw', b: 3.3, l: 3.4 }] }
 ];
 
@@ -238,7 +306,7 @@ ok('ohne Over gibt null',         Z.ouLaeufer([{ n: 'Under 2.5 Goals', b: 2 }]) 
 ok('leere Liste gibt null',       Z.ouLaeufer([]) === null);
 
 /* Die Partie muss auch bei O/U aus ev kommen */
-var ouTreffer = Z.besterTreffer('st gallen', 'luzern', k25, 0.5);
+var ouTreffer = Z.besterTreffer('st gallen', 'luzern', k25, 0.5, ST);
 ok('O/U-Markt wird der Partie zugeordnet', ouTreffer !== null && ouTreffer.bf.mt === 'OVER_UNDER_25');
 
 /* ---------- namensgleichheit: symmetrisch, nicht austricksbar ----------
@@ -301,7 +369,7 @@ ok('null gibt null',           Z.drawLaeufer(null) === null);
 var kuerzelBf = [{
   k: 'Flamengo vs EC Vitoria Salvador vs The Draw',
   ev: 'Flamengo v EC Vitoria Salvador',
-  mt: 'MATCH_ODDS',
+  mt: 'MATCH_ODDS', st: ST,
   r: [{ n: 'Flamengo', b: 1.5, l: 1.6 }, { n: 'EC Vitoria Salvador', b: 6, l: 6.4 }, { n: 'The Draw', b: 6.6, l: 7 }]
 }];
 
@@ -312,26 +380,26 @@ ok('"cr" zaehlt nicht als Namensbeleg', Z.woerter('CR Flamengo').indexOf('cr') =
 ok('"cruzeiro" bleibt erhalten',        Z.woerter('Cruzeiro EC').indexOf('cruzeiro') !== -1);
 ok('"flamengo" bleibt erhalten',        Z.woerter('CR Flamengo').indexOf('flamengo') !== -1);
 
-var fehl = Z.besterTreffer('cruzeiro ec', 'cr flamengo', kuerzelBf, 0.5);
+var fehl = Z.besterTreffer('cruzeiro ec', 'cr flamengo', kuerzelBf, 0.5, ST);
 ok('Cruzeiro gegen Flamengo trifft NICHT Flamengo gegen Vitoria', fehl === null,
    fehl ? 'Score ' + fehl.score.toFixed(2) : 'null');
 
 /* Und die richtigen Paare mit demselben Muster muessen erhalten bleiben.
  * Die Schwelle anzuheben haette genau diese mit weggeworfen. */
 var medellinBf = [{
-  k: 'Ind. Medellin vs Millonarios vs The Draw', ev: 'Ind. Medellin v Millonarios', mt: 'MATCH_ODDS',
+  k: 'Ind. Medellin vs Millonarios vs The Draw', ev: 'Ind. Medellin v Millonarios', mt: 'MATCH_ODDS', st: ST,
   r: [{ n: 'Ind. Medellin', b: 2.1, l: 2.2 }, { n: 'Millonarios', b: 3.4, l: 3.6 }, { n: 'The Draw', b: 3.1, l: 3.3 }]
 }];
-var medellin = Z.besterTreffer('independiente medellin', 'millonarios fc', medellinBf, 0.5);
+var medellin = Z.besterTreffer('independiente medellin', 'millonarios fc', medellinBf, 0.5, ST);
 ok('abgekuerzter Vereinsname wird weiter gefunden', medellin !== null,
    medellin ? 'Score ' + medellin.score.toFixed(2) : 'null');
 
 var zvezdaBf = [{
-  k: 'Crvena Zvezda vs Hapoel Beer Sheva vs The Draw', ev: 'Crvena Zvezda v Hapoel Beer Sheva', mt: 'MATCH_ODDS',
+  k: 'Crvena Zvezda vs Hapoel Beer Sheva vs The Draw', ev: 'Crvena Zvezda v Hapoel Beer Sheva', mt: 'MATCH_ODDS', st: ST,
   r: [{ n: 'Crvena Zvezda', b: 1.7, l: 1.8 }, { n: 'Hapoel Beer Sheva', b: 5, l: 5.4 }, { n: 'The Draw', b: 3.9, l: 4.1 }]
 }];
 ok('Crvena Zvezda trotz "FK" und "MH" gefunden',
-   Z.besterTreffer('fk crvena zvezda', "mh hapoel be'er sheva", zvezdaBf, 0.5) !== null);
+   Z.besterTreffer('fk crvena zvezda', "mh hapoel be'er sheva", zvezdaBf, 0.5, ST) !== null);
 
 /* ---------- Sportbegriffe und der Rueckfallweg ----------
  *
@@ -349,19 +417,19 @@ ok('Over/Under-Laeufername ergibt gar keinen Namensbeleg mehr',
 /* Der eigentliche Zweck: zwei VERSCHIEDENE Partien duerfen sich nicht ueber
  * ihre Over/Under-Laeufernamen finden, wenn ev einmal fehlt. */
 var ouOhneEv = [{
-  k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: '', mt: 'OVER_UNDER_35',
+  k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: '', mt: 'OVER_UNDER_35', st: ST,
   r: [{ n: 'Under 3.5 Goals', b: 1.6, l: 1.7 }, { n: 'Over 3.5 Goals', b: 2.4, l: 2.5 }]
 }];
 ok('fremde Partie trifft NICHT ueber die Over/Under-Laeufer',
-   Z.besterTreffer('under 3.5 goals', 'over 3.5 goals', ouOhneEv, 0.5) === null);
+   Z.besterTreffer('under 3.5 goals', 'over 3.5 goals', ouOhneEv, 0.5, ST) === null);
 
 /* Und der normale Weg muss weiter funktionieren. */
 var ouMitEv = [{
-  k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: 'St Gallen v Luzern', mt: 'OVER_UNDER_35',
+  k: 'Under 3.5 Goals vs Over 3.5 Goals', ev: 'St Gallen v Luzern', mt: 'OVER_UNDER_35', st: ST,
   r: [{ n: 'Under 3.5 Goals', b: 1.6, l: 1.7 }, { n: 'Over 3.5 Goals', b: 2.4, l: 2.5 }]
 }];
 ok('mit ev wird die Partie weiterhin gefunden',
-   Z.besterTreffer('st gallen', 'luzern', ouMitEv, 0.5) !== null);
+   Z.besterTreffer('st gallen', 'luzern', ouMitEv, 0.5, ST) !== null);
 
 /* ouLaeufer arbeitet auf dem normalisierten Namen, nicht ueber woerter().
  * Die neuen Stoppwoerter duerfen es deshalb NICHT kaputtmachen. */
@@ -600,20 +668,26 @@ ok('null ergibt null',                  Z.kalshiZeit(null) === null);
 
 /* ---------- Direkte Paarung: EINDEUTIGKEIT ist die Absicherung ---------- */
 
+/* SEIT 19.8.2026 laeuft direktPaare durch dieselbe Vollpruefung wie
+ * besterTreffer (UEBERGABE 8m): Zeit ist PFLICHT, Toleranz 180 Minuten.
+ * Die Faelle hier tragen deshalb beiderseitig passende Zeiten. Auch
+ * dieser Block stand seit der Umstellung rot, ohne dass es jemand sah. */
+var DZ = Date.UTC(2026, 7, 10, 19, 0);
+
 var A = [
-  { id: 'a1', partie: ['plymouth', 'exeter'],  zeit: Date.UTC(2026, 7, 10, 19, 0) },
+  { id: 'a1', partie: ['plymouth', 'exeter'],  zeit: DZ },
   { id: 'a2', partie: ['caracas', 'la guaira'], zeit: Date.UTC(2026, 7, 10, 22, 0) }
 ];
 var B = [
-  { id: 'b1', partie: ['plymouth', 'exeter'],  zeit: Date.UTC(2026, 7, 10, 0, 0) },
-  { id: 'b2', partie: ['caracas', 'la guaira'], zeit: Date.UTC(2026, 7, 10, 0, 0) }
+  { id: 'b1', partie: ['plymouth', 'exeter'],  zeit: DZ },
+  { id: 'b2', partie: ['caracas', 'la guaira'], zeit: Date.UTC(2026, 7, 10, 22, 0) }
 ];
 var r1 = Z.direktPaare(A, B, 0.5);
 ok('zwei saubere Partien ergeben zwei Paare', r1.paare.length === 2, r1.paare.length);
 ok('keine davon mehrdeutig', r1.mehrdeutig === 0);
 
 /* DIE Regel muss ausgeloest werden: zwei gleiche Partien auf einer Seite. */
-var Bdoppelt = B.concat([{ id: 'b3', partie: ['plymouth', 'exeter'], zeit: Date.UTC(2026, 7, 10, 0, 0) }]);
+var Bdoppelt = B.concat([{ id: 'b3', partie: ['plymouth', 'exeter'], zeit: DZ }]);
 var r2 = Z.direktPaare(A, Bdoppelt, 0.5);
 ok('MEHRDEUTIG wird NICHT gepaart', r2.paare.length === 1, r2.paare.length);
 ok('und die Mehrdeutigkeit wird gezaehlt', r2.mehrdeutig === 2, r2.mehrdeutig);
@@ -622,8 +696,8 @@ ok('das eindeutige Paar ueberlebt trotzdem',
 
 /* Gekreuzte Reihenfolge muss erkannt werden. */
 var r3 = Z.direktPaare(
-  [{ id: 'x', partie: ['juventus turin', 'palermo'], zeit: null }],
-  [{ id: 'y', partie: ['palermo', 'juventus turin'], zeit: null }], 0.5);
+  [{ id: 'x', partie: ['juventus turin', 'palermo'], zeit: DZ }],
+  [{ id: 'y', partie: ['palermo', 'juventus turin'], zeit: DZ }], 0.5);
 ok('gekreuzte Partie wird gefunden', r3.paare.length === 1);
 ok('und als getauscht gekennzeichnet', r3.paare.length === 1 && r3.paare[0].getauscht === true);
 
@@ -634,23 +708,30 @@ var weit = Z.direktPaare(
 ok('15 Tage Abstand wird abgewiesen', weit.paare.length === 0, weit.paare.length);
 ok('und als zu weit gezaehlt', weit.zuWeit === 1);
 
-/* Die gemessenen 47-h-Faelle muessen DURCHKOMMEN — ein enger Filter haette
- * echte Paare verworfen, darunter eine laufende Chance. */
+/* PREIS DER ZEITPFLICHT, festgehalten: die frueher gemessenen 47-h-Faelle
+ * (Kalshi-Ticker OHNE Uhrzeit = Mitternacht) werden seit dem 19.8. von
+ * der 180-Minuten-Sperre in pruefeSpiel ABGEWIESEN. Das ist die bewusste
+ * Haertung "Es bleibt keine Moeglichkeit fuer Verlust" — Verlustschutz
+ * schlaegt Abdeckung. DIREKT_MAX_STUNDEN (120 h) ist dadurch nur noch
+ * ein aeusseres Fenster hinter einer engeren Sperre. */
 var real = Z.direktPaare(
   [{ id: 'sm', partie: ['independiente medellin', 'millonarios'], zeit: Date.UTC(2026, 7, 12, 1, 0) }],
   [{ id: 'ka', partie: ['ind medellin', 'millonarios'], zeit: Date.UTC(2026, 7, 10, 0, 0) }], 0.5);
-ok('49 h Abstand kommt durch (gemessener echter Fall)', real.paare.length === 1, real.paare.length);
+ok('49 h Abstand wird seit der Zeitpflicht abgewiesen', real.paare.length === 0, real.paare.length);
+ok('und als zu weit gezaehlt', real.zuWeit === 1, real.zuWeit);
 
-/* Fehlende Zeit ist unbekannt, nicht falsch. */
+/* Fehlende Zeit weist seit dem 19.8. AB — vorher galt "ungemessen ist
+ * nicht falsch", und genau das war das offene Tor (UEBERGABE 8m). */
 var ohneZeit = Z.direktPaare(
   [{ id: 'x', partie: ['plymouth', 'exeter'], zeit: null }],
   [{ id: 'y', partie: ['plymouth', 'exeter'], zeit: Date.UTC(2030, 0, 1) }], 0.5);
-ok('fehlende Zeit weist NICHT ab', ohneZeit.paare.length === 1);
+ok('fehlende Zeit weist ab (Zeitpflicht)', ohneZeit.paare.length === 0, ohneZeit.paare.length);
 
-/* Verschiedene Partien duerfen sich nicht treffen. */
+/* Verschiedene Partien duerfen sich nicht treffen — Zeiten passen, damit
+ * wirklich die NAMENSregel entscheidet. */
 var fremd = Z.direktPaare(
-  [{ id: 'x', partie: ['plymouth', 'exeter'], zeit: null }],
-  [{ id: 'y', partie: ['bayern muenchen', 'dortmund'], zeit: null }], 0.5);
+  [{ id: 'x', partie: ['plymouth', 'exeter'], zeit: DZ }],
+  [{ id: 'y', partie: ['bayern muenchen', 'dortmund'], zeit: DZ }], 0.5);
 ok('verschiedene Partien ergeben kein Paar', fremd.paare.length === 0);
 
 ok('leere Listen ergeben nichts', Z.direktPaare([], B, 0.5).paare.length === 0);
@@ -658,8 +739,8 @@ ok('null ergibt nichts',          Z.direktPaare(null, null, 0.5).paare.length ==
 
 /* Regel 5 gilt auch hier: Vereinskuerzel sind kein Namensbeleg. */
 var kuerzel = Z.direktPaare(
-  [{ id: 'x', partie: ['cruzeiro ec', 'cr flamengo'], zeit: null }],
-  [{ id: 'y', partie: ['flamengo', 'ec vitoria salvador'], zeit: null }], 0.5);
+  [{ id: 'x', partie: ['cruzeiro ec', 'cr flamengo'], zeit: DZ }],
+  [{ id: 'y', partie: ['flamengo', 'ec vitoria salvador'], zeit: DZ }], 0.5);
 ok('die Flamengo-Falle greift auch bei direkter Paarung NICHT',
    kuerzel.paare.length === 0, kuerzel.paare.length);
 

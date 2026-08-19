@@ -77,6 +77,15 @@ function tokenVon(m: any): string[] {
     return Array.isArray(t) ? t.map(String) : [];
   } catch { return []; }
 }
+/* Die Ausgaenge des Marktes, in derselben Reihenfolge wie clobTokenIds:
+ * outcomes[0] gehoert zu tokens[0]. Gebraucht fuer den Tennis-Matchsieger,
+ * dessen Ausgaenge die SPIELERNAMEN sind (kein Yes/No). */
+function ausgaengeVon(m: any): string[] {
+  try {
+    const o = typeof m.outcomes === 'string' ? JSON.parse(m.outcomes) : (m.outcomes || []);
+    return Array.isArray(o) ? o.map(String) : [];
+  } catch { return []; }
+}
 function handelbar(m: any) {
   return m.closed === false && m.active === true && m.enableOrderBook === true &&
          m.acceptingOrders !== false && tokenVon(m).length >= 2;
@@ -147,6 +156,9 @@ Deno.serve(async (req) => {
     // ---------- Polymarket: NUR die Tags dieses Bereichs ----------
     const nachId = new Map<string, any>();
     const jeArt: Record<string, number> = {};
+    /* Rest-Topf, sichtbar: Sieger-Maerkte, deren Ausgaenge NICHT die zwei
+     * erwarteten Namen sind. Stumm verwerfen waere die stille Fehlklasse. */
+    let siegerOhneAusgang = 0;
     for (const tag of TAGS) {
       for (let off = 0; off < 3000; off += 100) {
         const r = await wiederholt(`https://gamma-api.polymarket.com/events?closed=false&active=true&limit=100&offset=${off}&tag_slug=${tag}`,
@@ -157,8 +169,23 @@ Deno.serve(async (req) => {
         for (const ev of daten) {
           for (const m of (ev.markets || [])) {
             if (!handelbar(m)) continue;
-            const art = Z.marktArt(m.question, m.groupItemTitle);
+            const art = Z.marktArt(m.question, m.groupItemTitle, bereich);
             if (!art) continue;
+            /* TENNIS-MATCHSIEGER (19.8.2026): der Markt traegt keinen
+             * Teilnamen; seine Ausgaenge sind die SPIELERNAMEN, und
+             * outcomes[0] gehoert zu tokens[0]. Die JA-Seite ist also
+             * "outcomes[0] gewinnt" — dieser Name wird als teil
+             * mitgefuehrt, damit Laeuferzuordnung (laeuferZu gegen
+             * Betfairs volle Spielernamen, gemessen identisch) und
+             * Anzeige denselben Weg gehen wie ueberall sonst.
+             * Zweite, von der Formpruefung in marktArt UNABHAENGIGE
+             * Sicherung: genau zwei Namens-Ausgaenge, kein Yes/No. */
+            let teil = m.groupItemTitle || null;
+            if (art === 'sieger' && !teil) {
+              const out = ausgaengeVon(m);
+              if (out.length === 2 && !/^(yes|no)$/i.test(out[0].trim())) teil = out[0];
+              else { siegerOhneAusgang++; continue; }
+            }
             /* DIE STICHZEIT, gemessen am 19.8.2026 (Matrix, UEBERGABE 8l).
              *
              * Bis heute stand hier nur `endDate` -- und endDate bedeutet je
@@ -188,7 +215,7 @@ Deno.serve(async (req) => {
             if (nachId.has(id)) continue;
             jeArt[art] = (jeArt[art] || 0) + 1;
             nachId.set(id, {
-              id, art, frage: m.question, teil: m.groupItemTitle || null,
+              id, art, frage: m.question, teil,
               titel: ev.title, tag, ende: new Date(stich).toISOString(),
               /* getrennt mitfuehren, damit spaeter nachweisbar bleibt, ob
                * die Zeit ein echter Anpfiff war oder nur ein Rueckfall. */
@@ -745,6 +772,7 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({
         ok: true, probe: true, bereich, dauer_ms: Date.now() - t0,
         pm_maerkte: maerkte.length, je_art: jeArt,
+        sieger_ohne_ausgang: siegerOhneAusgang,
         kalshi_maerkte: kalshi.length, kalshi_anderer_bereich: kaAnderesFach,
         betfair_maerkte: bfImFenster.length, smarkets_maerkte: smAlle.length,
         karte_ok: karteOk,
@@ -811,6 +839,7 @@ Deno.serve(async (req) => {
       betfair: { geladen: bfImFenster.length, sieger: bfSieger.length,
                  ueber_unter: bfOu.length, alter_s: bfAlterS },
       pm_maerkte: maerkte.length, je_art: jeArt,
+      sieger_ohne_ausgang: siegerOhneAusgang,
       kalshi_maerkte: kalshi.length, kalshi_alter_s: kaAlterS,
       kalshi_anderer_bereich: kaAnderesFach,
       smarkets_maerkte: smAlle.length, smarkets_alter_s: smAlterS,

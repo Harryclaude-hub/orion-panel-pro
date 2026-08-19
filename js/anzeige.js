@@ -103,9 +103,14 @@
    * es nicht, api.frankfurter.dev sendet keinen CORS-Header.
    *
    * DREI ZUSTAENDE, nie zwei:
-   *   Kurs bekannt      ->  "81,40 €"        umgerechnet
-   *   kein Kurs         ->  "94,00 $"        ehrlich in USD, mit Einheit
-   *   Betrag unbekannt  ->  "unbekannt"      nicht 0, nicht leer
+   *   Kurs bekannt      ->  "81,40 € ($ 94,00)"   BEIDE Waehrungen, unuebersehbar
+   *   kein Kurs         ->  "94,00 $"             ehrlich in USD, mit Einheit
+   *   Betrag unbekannt  ->  "unbekannt"           nicht 0, nicht leer
+   *
+   * SEIT 19.8. STEHEN IMMER BEIDE WAEHRUNGEN DA (Vorgabe des Auftraggebers):
+   * zwei Buecher fuehren Dollar (Polymarket, Kalshi), die Gegenseite fuehrt
+   * bei ihm Euro. Ein Betrag mit nur einem Zeichen laesst sich verwechseln,
+   * und ein verwechselter Betrag ist ein falscher Betrag.
    *
    * Ein erfundener Kurs waere schlimmer als eine fremde Waehrung: er sieht
    * aus wie eine Zahl, auf die man sich verlassen kann. */
@@ -116,8 +121,9 @@
     var n = Number(betragUsd);
     if (betragUsd === null || betragUsd === undefined || !isFinite(n)) return 'unbekannt';
     var s = (stellen === undefined) ? 2 : stellen;
-    if (fxKurs) return (n * Number(fxKurs.kurs)).toFixed(s) + ' €';
-    return n.toFixed(s) + ' $';
+    var z = function (x) { return Math.abs(x) >= 1000 ? Math.round(x).toLocaleString('de-AT') : x.toFixed(s); };
+    if (fxKurs) return z(n * Number(fxKurs.kurs)) + ' € ($ ' + z(n) + ')';
+    return z(n) + ' $';
   }
   /* Nur die Einheit, fuer Zeilen die selbst rechnen. */
   function einheit() { return fxKurs ? '€' : '$'; }
@@ -254,13 +260,9 @@
     /* "-54,68 Gewinn" ist Unsinn. Bei Minus ist es ein Verlust, und genau so
      * muss es dastehen — sonst liest man ueber das Vorzeichen hinweg. */
     /* MIT EINHEIT. Vorher stand hier "max. 94 Einsatz möglich" — die nackte
-     * Zahl liess offen, ob das Euro, Dollar oder eine Skala ist. Sie war
-     * ausserdem auf ganze Zahlen gerundet, was bei 2,94 zu "3" wurde und
-     * einen Betrag von drei Euro wie eine runde Groesse aussehen liess. */
-    var eA = inEur(e);
-    return '<span><b>max. ' +
-           (eA >= 1000 ? Math.round(eA).toLocaleString('de-AT') : eA.toFixed(2)) +
-           ' ' + einheit() + '</b> Einsatz möglich' + (g === null ? '' :
+     * Zahl liess offen, ob das Euro, Dollar oder eine Skala ist. Seit dem
+     * 19.8. zeigt geld() beide Waehrungen — auch hier. */
+    return '<span><b>max. ' + geld(e) + '</b> Einsatz möglich' + (g === null ? '' :
              ' &rarr; ' + (g >= 0 ? '+' + geld(g) + ' Gewinn'
                                   : geld(g) + ' Verlust')) + '</span>';
   }
@@ -1385,8 +1387,10 @@
     z += '<li>Rendite: (1 / ' + (isFinite(inv) ? inv.toFixed(4) : '?') + ' − 1) × 100 = <b>' +
          (isFinite(r) ? ((r >= 0 ? '+' : '') + r.toFixed(2)) : '?') + ' %</b> — nach allen Gebühren</li>';
     if (fxKurs) {
-      z += '<li>Geldbeträge: aus Dollar mit EZB-Kurs <b>' + Number(fxKurs.kurs).toFixed(4) +
-           '</b> (Stand ' + txt(fxKurs.stand) + ') in Euro umgerechnet</li>';
+      z += '<li>Geldbeträge: immer BEIDE Währungen — Euro zuerst (EZB-Kurs <b>' +
+           Number(fxKurs.kurs).toFixed(4) + '</b>, Stand ' + txt(fxKurs.stand) +
+           '), der Dollar-Ursprungsbetrag in Klammern. Polymarket und Kalshi führen $, ' +
+           'Betfair/Orbit und Smarkets führen bei dir €.</li>';
     } else {
       z += '<li>Kein Wechselkurs verfügbar — alle Geldbeträge stehen ehrlich in $.</li>';
     }
@@ -1438,9 +1442,17 @@
     zeile('  Kehrwertsumme = 1/' + qeEins(f) + ' + 1/' + qeZwei(f) + ' = ' + Number(f.inv).toFixed(4));
     zeile('  Rendite = (1 / ' + Number(f.inv).toFixed(4) + ' - 1) x 100 = ' +
           (Number(f.rendite) >= 0 ? '+' : '') + Number(f.rendite).toFixed(2) + ' % — nach allen Gebühren');
-    zeile('  Aufteilung bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' + b1.name +
-          ', ' + geld(f.einsatz_2) + ' auf ' + b2.name);
-    zeile('  Auszahlung bei BEIDEN Ausgängen: ' + geld(f.auszahlung));
+    /* AUFTEILUNG OHNE KURSDREHUNG (19.8.): einsatz_1/_2 sind ANTEILE einer
+     * 100er-Basis und damit waehrungsfrei. Vorher lief geld() darueber und
+     * drehte die Anteile durch den Wechselkurs — "bei 100 € Einsatz:
+     * 38,80 € + 47,20 €" ergab 86 statt 100. Genau die Mischfalle, vor der
+     * dieses Projekt sonst warnt: Basis in der einen, Teile in der anderen
+     * Waehrung. Jetzt konsequent in $ (der Waehrung der Datenbank), mit dem
+     * ausdruecklichen Hinweis, dass die Aufteilung prozentual ist. */
+    zeile('  Aufteilung bei 100 $ Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' $ auf ' + b1.name +
+          ', ' + Number(f.einsatz_2).toFixed(2) + ' $ auf ' + b2.name +
+          ' (prozentual, gilt in € genauso)');
+    zeile('  Auszahlung bei BEIDEN Ausgängen: ' + Number(f.auszahlung).toFixed(2) + ' $ je 100 $ Einsatz');
     zeile('  Max. Einsatz (beide Seiten zusammen): ' + (f.max_einsatz == null ? 'unbekannt' : geld(f.max_einsatz)) +
           ' · tatsächlicher Gewinn: ' + (f.echter_gewinn == null ? 'unbekannt' : geld(f.echter_gewinn)));
     if (f.beste_rendite != null) zeile('  Beste je gesehene Rendite: ' + Number(f.beste_rendite).toFixed(2) + ' %');
@@ -1678,11 +1690,14 @@
           gebuehrZeile(f) +
           absageZeile(f) +
           pruefzeile(f) +
-          '<div class="unter leise">Bei 100 ' + einheit() + ' Einsatz: ' + geld(f.einsatz_1) + ' auf ' +
-            txt(buch1(f).name) + ', ' + geld(f.einsatz_2) + ' auf ' + txt(buch2(f).name) +
+          /* Aufteilung OHNE Kursdrehung (19.8.): die Anteile sind
+           * waehrungsfrei, siehe Funker-Bericht. */
+          '<div class="unter leise">Bei 100 $ Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' $ auf ' +
+            txt(buch1(f).name) + ', ' + Number(f.einsatz_2).toFixed(2) + ' $ auf ' + txt(buch2(f).name) +
+            ' (prozentual, gilt in € genauso)' +
             ' &middot; Kehrwertsumme ' + Number(f.inv).toFixed(4) +
             ' (Summe der beiden Gegenwahrscheinlichkeiten; unter 1,0000 heißt: ' +
-            'beide Seiten zusammen kosten weniger als der sichere Euro — genau darum geht es)' +
+            'beide Seiten zusammen kosten weniger als die sichere Auszahlung — genau darum geht es)' +
             ' &middot; Partie beim zweiten Buch: ' + txt(f.bf_partie) + '</div>' +
         '</details>' +
         '</details>' +

@@ -99,6 +99,26 @@ nach `orion_wache`. Ruft:
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
   `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
   den Wächter (neben JS- und TS-Spiegel).
+- **Aufräum-Takt `orion-protokoll-aufraeumen`** (Job 91, täglich 03:20 UTC,
+  NEU 19.8.2026): löscht `cron.job_run_details` älter 3 Tage sowie
+  `orion_laeufe`/`orion_wache` älter 30 Tage. ANLASS: das pg_cron-Protokoll
+  war mit **137 MB der größte Brocken der ganzen Datenbank** (Wachstum
+  ~13 MB/Tag bei 16.000 Läufen); ohne Deckel wäre das 500-MB-Free-Limit in
+  ~3 Wochen erreicht gewesen. Nach Löschung + `vacuum full`: Datenbank von
+  191 auf 98 MB. Die Spalten heißen `gelaufen_am` (orion_laeufe) und
+  `geprueft_am` (orion_wache) — NICHT raten, der erste Entwurf des Takts
+  wäre daran nachts still gescheitert.
+- `orion_partie_von_titel(t)` — **NEU 19.8.2026, Tennis.** SQL-Spiegel von
+  `turnierRein()` (js/zuordnung.js, zuordnung.ts): steht nach dem LETZTEN
+  Doppelpunkt eines Titels eine vs-Partie, zählt nur dieser Teil. Nötig,
+  weil Polymarket-Tennis-Titel das Turnier vorn tragen („ITF W35 Krakow
+  **Women**: A vs B") und `orion_kennung(titel)` sonst die Frauen-Kennung
+  aus dem TURNIERNAMEN zieht — `orion_wache_stufe2()` und
+  `orion_kennung_pruefen()` hätten jede Frauen-Tennis-Paarung als
+  „Mannschaftsklasse ungleich" gesperrt. Beide Funktionen reinigen den
+  Titel jetzt vor dem Kennungsvergleich. **Drei Fassungen, ein Verhalten:
+  wer turnierRein ändert, zieht diese Funktion mit.** Der komplette
+  Änderungssatz liegt in `supabase/wache-tennis-turnier.sql`.
 
 **Betfair-Vorfilter** — `orion_bf_maerkte(fenster_h, bereich_p)`. Liefert
 MATCH_ODDS und OVER_UNDER aus `bridge_odds`, seit 11.8. spät mit `et` und

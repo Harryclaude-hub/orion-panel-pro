@@ -124,8 +124,28 @@
     return s.trim();
   }
 
+  /* TURNIER-TITEL (19.8.2026): Polymarket schreibt Tennis-Partien als
+   *   "Cincinnati Open: Iga Swiatek vs Diane Parry"
+   *   "ITF W35 Krakow Women: Amelia Paszun vs Radka Zelnickova"
+   * Fuer die Partie zaehlt nur der Teil nach dem LETZTEN Doppelpunkt.
+   * Das Turnier ist Beiwerk: seine Woerter verwaessern die Namenspruefung,
+   * und schlimmer, es traegt Kennungswoerter ("Women"), die die
+   * Kennungssperre ausloesen, obwohl beide Buecher dieselbe Frauen-Partie
+   * meinen. Gemessen am 19.8.: erst mit diesem Schnitt finden 19 von 46
+   * Betfair-Tennis-Partien ihr Polymarket-Gegenstueck.
+   * ENG gefasst: geschnitten wird NUR, wenn nach dem Doppelpunkt eine
+   * vs-Partie steht. "A vs B: Draw at halftime?" bleibt unberuehrt —
+   * dort steht die Partie VOR dem Doppelpunkt. */
+  function turnierRein(titel) {
+    var s = String(titel == null ? '' : titel);
+    var i = s.lastIndexOf(':');
+    if (i < 0) return s;
+    var rest = s.slice(i + 1);
+    return /\svs?\.?\s/i.test(rest) ? rest : s;
+  }
+
   function paar(titel) {
-    var s = esportRein(titel).replace(/\s+vs\s+/g, ' v ');
+    var s = esportRein(turnierRein(titel)).replace(/\s+vs\s+/g, ' v ');
     s = s.replace(/\s+v\s+the draw\s*$/, '');
     var m = s.match(/^(.+?)\s+v\s+(.+)$/);
     if (!m) return null;
@@ -306,7 +326,7 @@
    * Absicherung, auch wenn dieselben Mannschaften darin vorkommen.
    *
    * Gibt 'sieger', 'unentschieden' oder null zurueck. */
-  function marktArt(frage, teil) {
+  function marktArt(frage, teil, bereich) {
     var f = norm(frage);
     if (/\bwin on \d{4} \d{2} \d{2}\b/.test(f)) return 'sieger';
     if (/end in a draw/.test(f)) return 'unentschieden';
@@ -341,6 +361,29 @@
     }
     /* ESPORT-MATCH — siehe zuordnung.ts: nur "Match Winner" MIT (BOx). */
     if (norm(teil) === 'match winner' && /\bbo\d\b/.test(f)) return 'sieger';
+    /* TENNIS-MATCHSIEGER. Gemessen am 19.8.2026 an 4063 handelbaren
+     * Tennis-Maerkten: der reine Siegermarkt hat die Form
+     *     "Cincinnati Open: Iga Swiatek vs Diane Parry"
+     * — GENAU EIN Doppelpunkt, dahinter die Partie, KEIN Teilname
+     * (groupItemTitle leer; alle 130 im Fenster). Jeder Nebenmarkt
+     * unterscheidet sich in BEIDEN Eigenschaften:
+     *     "Cancun: Completed Match: A vs B"      zwei Doppelpunkte + Teilname
+     *     "Set 1 Winner: A vs B"                 Blockwort + Teilname
+     *     "Set Handicap: A (-1.5) vs B (+1.5)"   Blockwort + Teilname
+     *     "A vs. B: Total Sets O/U 2.5"          Partie VOR dem Doppelpunkt
+     * Teilname leer UND Blockliste sind zwei unabhaengige Sicherungen —
+     * faellt eine, haelt die andere (Regel 2: nie nur ein Merkmal).
+     * NUR im Bereich tennis: in Sportarten MIT Unentschieden waere
+     * "A gegen B" als Zwei-Ausgangs-Frage falsch (der Fussball-Draw
+     * deckt keine der beiden Seiten). Tennis kennt kein Unentschieden. */
+    if (bereich === 'tennis') {
+      var roh = String(frage == null ? '' : frage);
+      var teilLeer = String(teil == null ? '' : teil).trim() === '';
+      var tf = roh.match(/^([^:]+):\s*[^:]+\svs\.?\s+[^:]+$/i);
+      if (teilLeer && tf && !/\b(set|sets|winner|handicap|total|completed|game|games|o\/u)\b/i.test(tf[1])) {
+        return 'sieger';
+      }
+    }
     return null;
   }
 
@@ -960,6 +1003,7 @@
     ouKandidaten: ouKandidaten,
     ouLaeufer: ouLaeufer,
     esportRein: esportRein,
+    turnierRein: turnierRein,
     paar: paar,
     partieVon: partieVon,
     ohneAnhang: ohneAnhang,
