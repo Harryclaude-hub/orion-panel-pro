@@ -429,3 +429,57 @@ Wer sie will, trägt sie in `SPORT` (Bridge) UND `orion_bf_sport`
 selbst verhindern (Adminrechte), aber sie sieht beim Start nach und
 meldet LAUT, wenn der Rechner einschlafen würde — samt der zwei
 `powercfg`-Befehle. Gemessen: „Standby: AUS (Netz und Akku)".
+
+## 9. WARUM NUR SPORT? Die Antwort, gemessen am 19.08.2026
+
+Der Auftraggeber fragt das zum vierten Mal. Hier steht sie endgültig, mit
+Messwerten statt Vermutung.
+
+**Die sieben Welt-Bereiche LAUFEN** (Politik, Krypto, Wirtschaft, Wetter,
+Technik, Welt, Popkultur — letzte Läufe 23:33 bis 23:51). Sie finden aber
+**null Polymarket-Märkte**. Nicht null Paare — **null Märkte**.
+
+**Die Ursache liegt in `marktArt()`** (`zuordnung.ts`). Diese Funktion
+ordnet jedem Polymarket-Markt eine Art zu, und sie kennt **ausschließlich
+Sportarten von Fragen**:
+
+| erkannt | Beispiel |
+|---|---|
+| `sieger` | „Will X win on 2026-08-19?" |
+| `unentschieden` | „…end in a draw" |
+| `ueber_unter` | Over/Under 2.5 |
+| `btts` | „both teams to score" |
+| `hz_sieger` | „…at halftime" |
+| E-Sport-Match | Teilname „Match Winner" + „(BO3)" |
+
+Alles andere gibt `null` zurück, und in `index.ts` steht dann
+`if (!art) continue;` — **der Markt wird verworfen**. Eine Frage wie
+„Will Trump be indicted in 2026?" oder „Bitcoin above 70000 on Aug 19?"
+fällt genau dort heraus.
+
+**Der Scanner ist also ein SPORT-Scanner.** Politik- und Krypto-Märkte
+werden geholt und sofort weggeworfen. Das ist kein Fehler im Betrieb,
+sondern eine Lücke im Bauplan — es gibt schlicht keine Marktart dafür.
+
+### Was gebaut werden muss
+
+1. **Marktart „Schwelle"** in `marktArt()`: Fragen der Form „X above/below
+   <Zahl> on <Datum>" erkennen, Schwelle und Stichzeit herauslösen.
+2. **Paarung nach den vom Auftraggeber genehmigten STRENGEN Regeln**
+   (siehe Abschnitt 3): gleiche Basisgröße über Weißliste, exakt gleiche
+   Zahl, exakt gleiche Minute, **gleiche Referenzquelle**.
+3. **Deploy von `orion-lauf`** — ohne den wirkt keine dieser Änderungen.
+
+### Die ehrliche Erwartung
+
+Am 17.08. gemessen: Polymarkets Tagesschwellen stechen 12:00 New York,
+Kalshis BTC/ETH-Serien 9:00 und 17:00 — **kein gemeinsamer
+Stichzeitpunkt**. Dazu lösen sie über verschiedene Quellen auf
+(Binance ↔ CF Benchmarks). Unter der strengen Regel ergäbe Krypto damit
+**null Paare** — nicht weil die Technik fehlt, sondern weil die beiden
+Börsen verschiedene Fragen stellen.
+
+**Vor dem Bau deshalb Pflicht:** die Stichzeit-Matrix über ALLE
+Basisgrößen neu messen (Indizes, Metalle, Öl, Wetter, Politik), und nur
+dort bauen, wo Minute UND Quelle zusammenpassen. Sonst entsteht Arbeit,
+die nie eine Chance liefert — oder schlimmer: eine, die keine ist.
