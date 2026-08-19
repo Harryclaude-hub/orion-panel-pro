@@ -1,0 +1,84 @@
+========================================================================
+PROMPT FUER DIE NAECHSTE SITZUNG
+Alles hineinkopieren, ab der Linie unten.
+========================================================================
+
+
+------------------------------ ab hier ---------------------------------
+
+Orion Panel Pro. Lies ZUERST C:\Users\Home\orion-panel-pro\UEBERGABE.md,
+die Abschnitte 8l bis 8p, dazu STRUKTUR.md. Danach erst anfangen.
+
+Antworte auf Deutsch, militaerischer Ton, "Jawohl, Chef".
+
+WAS DAS PROGRAMM IST
+Surebet-Scanner ueber vier Boersen (Polymarket, Kalshi, Smarkets,
+Betfair). Alles laeuft serverseitig auf Supabase noexklrgtqveiclijdwp
+(pg_cron ruft Edge Functions, die schreiben nach orion_funde, die
+Website liest nur ab). Nur Betfair braucht meinen Laptop, weil Betfair
+Rechenzentren mit 403 sperrt.
+Lokal: C:\Users\Home\orion-panel-pro
+Bridge: C:\Users\Home\Desktop\ORION-BRIDGE (Build 27)
+
+WIE ICH ARBEITE
+Erst messen, dann bauen. Ungemessenes ausdruecklich kennzeichnen.
+Vor jedem Deploy: node pruefung\spiegel.test.js UND
+node pruefung\vollpruefung.test.js -- beide muessen gruen sein.
+Klartext statt Beschoenigung. Ich finde Fehler zuverlaessig selbst.
+
+STAND: WAS FERTIG IST
+- Pruefung in zwei Stufen. Stufe 1 = pruefeSpiel() mit sieben Huerden
+  (Sportart, Mannschaftsklasse, Liga-Klasse, Datum als PFLICHT, Name
+  asymmetrisch, Name symmetrisch, Trennschaerfe). Stufe 2 =
+  orion_wache_stufe2() jede Minute, leitet alles neu aus der Zeile ab.
+- orion-lauf laeuft auf Version 22, Stufe 1 ist scharf.
+- Spitzenwerte tragen jetzt ihren Beleg (beste_buch_summe, beste_am).
+- Bridge Build 27: Golf ergaenzt, Nicht-Sport-eventTypes, Sperre
+  geraeteweit. Waechter im Minutentakt.
+- Kalshi-Sammler v4 (Serienweg), E-Sport in lol/valorant/esport
+  getrennt, Deadlocks behoben.
+
+STAND: WAS OFFEN IST -- genau zwei Dinge, beide fuer MEHR CHANCEN,
+nicht fuer mehr Sicherheit.
+
+AUFGABE 1: TENNIS
+Problem: 4876 Tennis-Maerkte bei Polymarket, 4562 in "vs"-Partien,
+1925 mit Anpfiff im 72-h-Fenster -- und marktArt() erkennt davon NULL.
+marktArt kennt nur fussballfoermige Fragen ("win on YYYY MM DD",
+"end in a draw", Tore-Ueber/Unter). Tennis fragt anders:
+   "Australian Open Women's: Laura Siegemund vs Liudmila Samsonova"
+   "Siegemund vs. Samsonova: Total Sets O/U 2.5"
+   "Set 1 Winner: Siegemund vs Samsonova"
+Betfair hat 51 Tennis-Maerkte bereitliegen, Polymarket liefert 0.
+Zu tun: ZUERST messen, welche Betfair-Markttypen zu welchen
+Polymarket-Fragen passen (Matchsieger, Saetze-Ueber/Unter,
+Games-Ueber/Unter). Dann marktArt in js/zuordnung.js UND
+supabase/functions/orion-lauf/zuordnung.ts spiegelgleich erweitern,
+Testfaelle in beide Pruefungen, dann Deploy.
+
+AUFGABE 2: MARKTART SCHWELLE
+Problem: elf von zwanzig Bereichen haben nur EIN Buch und koennen
+darum strukturell nichts finden. Kalshi hat 607 Schwellenmaerkte in
+kalshi_snapshot id=2 (Bitcoin, Ethereum, Gold, Silber, Oel, Indizes,
+Wetter), die keinem Bereich zugeordnet sind. Polymarket hat Krypto-
+und Wirtschaftsmaerkte.
+WICHTIG aus der Stichzeit-Matrix (UEBERGABE 8l): bei Schwellen ist
+Kalshis close_time die ECHTE Stichzeit (Versatz 0,00 h) -- anders als
+bei Spielen. Bei Indizes aber +16 h, bei Wetter +25 bis +28 h.
+Zu tun: ZUERST messen, wie viele Kalshi-Schwellen ueberhaupt ein
+Polymarket-Gegenstueck mit gleicher Basisgroesse UND gleicher
+Stichzeit haben. Erst wenn die Zahl es rechtfertigt, marktArt um
+"schwelle" erweitern und paaren. Wenn die Zahl klein ist: sagen und
+nicht bauen.
+
+DEPLOY
+Ich rolle selbst aus, per Doppelklick auf DEPLOY-JETZT.cmd auf dem
+Desktop im Ordner ORION-BRIDGE. Du bekommst KEINEN Token, auch nicht
+im Chat. Sag mir einfach, wenn deployt werden muss.
+
+------------------------------ bis hier --------------------------------
+
+
+HINWEIS FUER MICH SELBST
+Nach jedem Deploy den Token wieder loeschen:
+https://supabase.com/dashboard/account/tokens  ->  Revoke
