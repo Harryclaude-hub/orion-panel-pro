@@ -1855,3 +1855,77 @@ verglich.
 (laeuft, jede Minute) plus die Browserpruefung in `daten.js` die Last.
 Das ist kein Versehen, sondern der bekannte Engpass — der Deploy umfasst
 drei Dateien und gehoert eigenstaendig geprueft.
+
+---
+
+## 8n. NACHTPRUEFUNG 19.8.2026, mittags
+
+Auftrag: „Ueberpruef, ob irgendwelche Fehler vorgekommen sind" und „dass die
+App immer auf hundert Prozent ist, auch wenn's Nacht ist."
+
+### Die Nacht war lueckenlos
+
+Neue Funde je Stunde, 23:00 bis 13:00, **jede Stunde besetzt und jede mit
+Betfair dabei**: 1, 4, 3, 4, 7, 2, 2, 9, 15, 4, 9, 12, 13, 17, 22.
+
+Dass nachts weniger kommt, ist **kein** Ausfall: um 03:00 laufen weniger
+Partien als um 13:00. Der Scanner lief durchgehend -- `orion-lauf-fussball`
+2151 Laeufe in 12 h bei 2160 moeglichen (Takt 20 s).
+
+Standby ist auf Netz UND Akku aus (beide `0x00000000`), der Laptop schlaeft
+nicht.
+
+### Fehler 1: vier Deadlocks in 12 Stunden
+
+    orion-wache2-takt   3x  (05:54, 07:51, 08:22)
+    orion-zeiten-takt   1x  (06:03)
+
+Beide laufen jede Minute und aendern massenhaft Zeilen in `orion_funde`, aber
+in unterschiedlicher Reihenfolge. Treffen sie sich, schiesst Postgres einen ab.
+
+**Warum das nicht harmlos ist:** der abgeschossene Lauf hat NICHTS geprueft.
+Faellt die Wache in genau der Minute aus, in der eine Fehlpaarung entsteht,
+steht sie eine Minute laenger in den Chancen. Selten (3 von 643), aber es ist
+die stille Sorte -- pg_cron meldet es nur im Protokoll.
+
+**Behoben:** `orion_schreibsperre()`, eine gemeinsame Beratungssperre. Wer
+`orion_funde` massenhaft aendert, nimmt sie zuerst; beide Takte koennen
+einander nicht mehr ueberholen. Bewusst blockierend statt `try_`: ein Takt,
+der eine Minute wartet, ist richtig; ein stillschweigend uebersprungener
+waere wieder ein stiller Ausfall. Dazu schreibt die Wache jetzt in fester
+Reihenfolge (`order by schluessel`) als zweiter Riegel.
+
+### Fehler 2: bis zu 12 Minuten Bridge-Luecke
+
+Die Bridge starb gegen 13:23. Der Waechter lief um 13:20 (korrekt: sie lebte
+noch) und waere erst 13:35 wieder drangewesen. **Waechter steht jetzt auf
+jede Minute** statt alle fuenf (`schtasks /ri 1`).
+
+### Falsche Faehrte, festgehalten damit sie niemand nochmal laeuft
+
+Beim Pruefen sahen sechs `node.exe` nach sechs parallelen Bridges aus. Es
+waren PDF-Server der Werkzeugumgebung (`@modelcontextprotocol/server-pdf`).
+**Ein `Get-Process node | Stop-Process` haette die mit erschlagen.** Vor dem
+Abschiessen immer die Befehlszeile lesen, nie nach Prozessnamen gehen.
+
+### Was die Wache in diesen Laeufen gefangen hat
+
+    33 geprueft -> 10 gesperrt      (nachts)
+    59 geprueft -> 15 gesperrt      (mittags)
+
+Darunter Rechenwidersprueche mit 3042 % und 3087 % bei Buchsumme 1,0121, und
+weiter regelmaessig „Anpfiff nicht belegt" (11 von 15). Letzteres ist der
+Beleg dafuer, dass die Zeitpflicht taeglich greift.
+
+### Was NUR am fehlenden Deploy haengt
+
+`orion-lauf` steht weiter auf **Version 21**. Nicht scharf sind damit:
+
+  1. **Stufe 1** (`pruefeSpiel`, alle sieben Huerden) -- laeuft nur im
+     Browser und in der Wache, nicht im Scanner selbst
+  2. **`gameStartTime`** -- Tennis bleibt unsichtbar, gemessen 4079 von
+     4079 Spielen
+  3. Bereichsuebergabe an `besterTreffer`
+
+Alles andere ist ausgerollt und arbeitet: Kalshi v4, Wache Stufe 2,
+`orion_bereich_bf` (E-Sport-Trennung), die Deadlock-Sperre.
