@@ -65,7 +65,7 @@ STAND: WAS FERTIG IST
   orion_telegram. Einrichtungsmodus: {"einrichten":true}.
 
 - DESIGN-PHASE 20.8. (Karams Auftrag) UMGESETZT: eigene Beitragsseite
-  beitrag.html?fund=... (Telegram-Link fuehrt dorthin, Melder v6),
+  beitrag.html?fund=... (Telegram-Link fuehrt dorthin, Melder v5),
   Speichern-Knopf auf jeder Karte + gespeichert.html + Tabelle
   orion_gespeichert; Flanken fuellen den Rand (bis 300px) und tragen
   DIE WACHT (Radarturm + Peilrose statt Planeten), Raketen mit
