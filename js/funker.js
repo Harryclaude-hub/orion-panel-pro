@@ -237,7 +237,7 @@
    *
    * Farben NUR als Tokens, auch im SVG — die Design-Regel gilt hier
    * genauso (var(--sonar) statt #3CC9F5 usw.). */
-  var PRUEFSTAND = 'https://saifokaram1-hub.github.io/orion-protection-panel/';
+  var PRUEFSTAND = 'https://harryclaude-hub.github.io/orion-protection-panel/';
 
   function baue() {
     if (document.getElementById('funker-knopf')) return;

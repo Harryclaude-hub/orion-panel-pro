@@ -25,8 +25,8 @@ steht ausdrücklich als ungemessen da.
 **Betfair** über eine Bridge auf einem eigenen Laptop (mit drei
 Einschränkungen, siehe 8c).
 
-**Live:** https://saifokaram1-hub.github.io/orion-panel-pro/
-**Repo:** `saifokaram1-hub/orion-panel-pro` · lokal `C:\Users\Home\orion-panel-pro`
+**Live:** https://harryclaude-hub.github.io/orion-panel-pro/
+**Repo:** `harryclaude-hub/orion-panel-pro` · lokal `C:\Users\Home\orion-panel-pro`
 **Supabase:** `noexklrgtqveiclijdwp` · Sperrwort der Website: `ARBRADAR2026`
 
 ---
@@ -2098,3 +2098,121 @@ REGEL: jede Funktion, die `orion_funde` massenhaft aendert, ruft
 Nachgemessen nach der Korrektur: **0 Fehlschlaege**, und der Beleg
 fuellt sich (11 von 65 lebenden Zeilen tragen ihn schon, Tendenz
 steigend -- jede neue Zeile bekommt ihn im Moment ihres Hoechststands).
+
+---
+
+## 8q. TENNIS GEBAUT + SCHWELLEN GEMESSEN UND BEWUSST NICHT GEBAUT (19.8., abends)
+
+### Tennis: gemessen, dann gebaut — wartet auf den Deploy
+
+**Messung zuerst** (alle Zahlen vom 19.8., gegen die echten Schnittstellen):
+
+    Betfair (bridge_odds, Bereich tennis):   46 Maerkte, ALLE MATCH_ODDS,
+                                             Laeufer = volle Spielernamen
+    Polymarket, 72-h-Fenster:  Satz-Games-O/U 678 | Match-Games-O/U 339
+                               MATCHSIEGER 130 (129 Partien) | Satzsieger 226
+                               Satz-Handicap 215 | Saetze-O/U 113
+                               dazu 130 "Completed Match" (Ja/Nein!)
+
+Nur der **Matchsieger** hat also ein Betfair-Gegenstueck. Seine Form:
+
+    "Cincinnati Open: Iga Swiatek vs Diane Parry"
+    — question = Eventtitel, GENAU EIN Doppelpunkt, KEIN groupItemTitle,
+      outcomes = DIE SPIELERNAMEN (nicht Yes/No), outcomes[0] <-> tokens[0]
+
+Die Falle daneben: "Cancun: Completed Match: A vs B" (wird das Match
+beendet?) hat fast dieselbe Form — zwei Doppelpunkte, Teilname gesetzt,
+outcomes Yes/No. 130 gegen 130, exakt haelftig.
+
+**Gebaut** (Spiegel gleichzeitig, Tests zuerst):
+
+1. `marktArt(frage, teil, bereich)` — dritter Parameter. Tennis-Sieger
+   NUR im Bereich tennis (kein Unentschieden; im Fussball waere die
+   Zwei-Ausgangs-Form falsch). Zwei unabhaengige Sicherungen: Teilname
+   leer UND Blockliste im Praefix (set/winner/handicap/total/completed/
+   game/o u). In js/zuordnung.js UND zuordnung.ts.
+2. `turnierRein(titel)` — NEU in beiden Spiegeln, in `paar()` eingebaut:
+   steht nach dem LETZTEN Doppelpunkt eine vs-Partie, zaehlt nur dieser
+   Teil. Sonst verwaessert das Turnier die Namenspruefung, und "ITF W35
+   Krakow **Women**" traegt die Frauen-Kennung in die Partie — die
+   Kennungssperre haette RICHTIGE Paare verworfen.
+3. `orion-lauf/index.ts`: bereich an marktArt; beim Tennis-Sieger wird
+   `teil = outcomes[0]` gesetzt (JA-Seite; laeuferZu findet damit den
+   Betfair-Laeufer, gemessen identische Namen). outcomes ohne zwei
+   Namens-Ausgaenge -> Zaehler `sieger_ohne_ausgang` in der Antwort,
+   nichts faellt stumm.
+4. SQL: `orion_partie_von_titel()` (Spiegel von turnierRein) und beide
+   Kennungssperren (`orion_wache_stufe2`, `orion_kennung_pruefen`)
+   reinigen den Titel vor dem Vergleich. **Liegt in
+   supabase/wache-tennis-turnier.sql, MUSS im SQL-Editor angewendet
+   werden** — der Deploy-Knopf rollt nur die Edge-Funktion aus. Ohne
+   diesen Schritt sperrt die Wache jede Frauen-Tennis-Zeile.
+5. Pruefstaende: zuordnung.test.js 296, vollpruefung.test.js 36 (neuer
+   Tennis-Ende-zu-Ende-Block), spiegel.test.js 19896, rechnung.test.js
+   195 — alle gruen. bereiche.js mitgezogen (Bereich an marktArt,
+   Stichzeit gameStartTime wie v22 — das Werkzeug mass vorher den ALTEN
+   Filter).
+
+**Trockenlauf lokal** (neue Spiegel, echte Daten): 127 Sieger im Fenster
+erkannt (vorher 0), **19 vollstaendige Paare** gegen die 46 Betfair-
+Maerkte, 0 Laeufer-Ausfaelle, Frauen-Turniere gehen durch. Die uebrigen
+Betfair-Partien (ITF-Kleinturniere, Doppel) fuehrt Polymarket nicht.
+
+**Zwei Bestandsfunde nebenbei:**
+- `zuordnung.test.js` stand seit der Zeitpflicht (8m) ROT und niemand
+  sah es — das Deploy-Tor prueft nur spiegel+vollpruefung. Repariert:
+  die Faelle tragen jetzt Zeiten; ein neuer Fall prueft die Zeitpflicht
+  selbst.
+- Seit direktPaare durch pruefeSpiel laeuft, weist die 180-min-Sperre
+  auch die frueher gemessenen 47-h-Kalshi-Faelle ab (Ticker ohne
+  Uhrzeit = Mitternacht). Das ist die bewusste Haertung — im Test jetzt
+  als PREIS festgehalten, nicht mehr als Wunschverhalten.
+
+**RESTRISIKO Tennis, nicht wegbaubar, KARAM MUSS ES KENNEN:** Gibt ein
+Spieler NACH Matchbeginn auf, wertet Polymarket den Weiterkommer als
+Sieger (steht woertlich in allen 282 gemessenen Marktregeln), Betfair
+erklaert Match-Odds bei nicht zu Ende gespieltem Match fuer ungueltig.
+In dem Fall zerfaellt die Absicherung: eine Seite gewinnt oder verliert
+ALLEIN. Walkover (Rueckzug VOR Beginn): Polymarket 50-50, Betfair void.
+Aufgaben sind im Tennis nicht selten (ITF-Ebene mehr als ATP/WTA).
+Steht auch in logik.html.
+
+**Deploy noetig:** DEPLOY-JETZT.cmd (rollt orion-lauf aus, macht den
+Tennis-Probelauf) UND EINMAL supabase/wache-tennis-turnier.sql im
+SQL-Editor. Reihenfolge egal, beides vor dem ersten Tennis-Fund.
+
+### Schwellen: gemessen — die Zahl rechtfertigt den Bau NICHT
+
+Auftrag: erst messen, wie viele Kalshi-Schwellen ein Polymarket-
+Gegenstueck mit gleicher Basisgroesse UND Stichzeit haben; klein heisst
+nicht bauen. Gemessen am 19.8. (Schnappschuss id=2, 696 auswertbare
+Schwellen; Polymarket ueber die Register-Tags PLUS stocks/commodities):
+
+    Indizes (Dow/S&P/Nasdaq, 356 = groesster Block):  0 Gegenstuecke
+      (Polymarket fuehrt keine Intraday-Index-Schwellen)
+    Rohstoffe ausser WTI (Gold/Silber/Gas/Kupfer/Brent, 233):  0
+      (Polymarket fragt Monats-HOCH/TIEF — "hit $67 in August" ist eine
+      ANDERE Frage als Kalshis "Tagesschluss ueber $67")
+    Wetter (20):  0  (Polymarket: globale Temperatur je Monat, Kalshi:
+      Tageshoechstwert je Stadt — andere Basisgroesse)
+    Krypto BTC/ETH-Stundenmaerkte:  8 exakte Paare um 13:07 —
+      und 0 um 13:50. Beide Buecher legen die Schwellen um den
+      wandernden Kurs; die Ueberlappung ist FLUECHTIG und einstellig.
+    WTI-Tagessettlement:  ~18 Paare ueber zwei Tage ("Above $83.99
+      settlement" gegen "closes above $84 on August 19") — aber NUR
+      ueber den Tag `commodities`, der NICHT im Register steht, und
+      mit Sonderregel (Kalshi schliesst 18:30Z, Polymarket 21:00Z —
+      dasselbe Settlement, Zuordnung muesste ueber den Kalendertag).
+
+**Urteil: NICHT gebaut.** ~26 von 696 (unter 4 %), davon 8 fluechtig.
+Der Bau waere gross: Schwellen haben keine Partie, der ganze
+Durchgang-1-Fluss haengt an `paar(titel)` — es braeuchte eine neue
+Marktart mit eigenem Paarungsweg, neue Tags im Register und je
+Kategorie eigene Stichzeitregeln (8l-Matrix). Die Rendite ist
+ungemessen und bei Kalshis 7-%-Krypto-Gebuehr fraglich.
+
+**Falls Karam doch will:** der einzige tragfaehige Kandidat ist das
+WTI-Settlement (18 stabile Paare/2 Tage, dieselbe Frage, belegbare
+Stichzeit). Das waere ein eigener, kleiner, messbarer Bau — Tag
+`commodities` ins Register, Marktart "schwelle" nur fuer diesen Weg,
+Kalendertag-Zuordnung. Vorher Renditeprobe ueber ein paar Tage.

@@ -6,10 +6,10 @@ Ereignisses zusammen unter 100 % liegen.
 
 **Nur Börsen, nie Buchmacher.**
 
-Live: https://saifokaram1-hub.github.io/orion-panel-pro/
+Live: https://harryclaude-hub.github.io/orion-panel-pro/
 
 Die alte Fassung liegt unverändert unter
-https://saifokaram1-hub.github.io/orion-panel/ und im Repo `orion-panel`.
+https://harryclaude-hub.github.io/orion-panel/ und im Repo `orion-panel`.
 
 ---
 

@@ -82,8 +82,8 @@ Beide muessen gruen sein. Sonst nichts ausrollen.
 ------------------------------------------------------------------------
 
 Ordner:      C:\Users\Home\orion-panel-pro
-Repo:        github.com/saifokaram1-hub/orion-panel-pro
-Seite:       saifokaram1-hub.github.io/orion-panel-pro
+Repo:        github.com/harryclaude-hub/orion-panel-pro
+Seite:       harryclaude-hub.github.io/orion-panel-pro
 Supabase:    noexklrgtqveiclijdwp
 
 Stand holen und hochladen:
