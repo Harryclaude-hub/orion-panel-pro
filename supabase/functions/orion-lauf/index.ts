@@ -159,14 +159,41 @@ Deno.serve(async (req) => {
             if (!handelbar(m)) continue;
             const art = Z.marktArt(m.question, m.groupItemTitle);
             if (!art) continue;
-            const ende = Date.parse(m.endDate || m.endDateIso || '');
-            if (isNaN(ende) || ende <= jetzt || ende > grenze) continue;
+            /* DIE STICHZEIT, gemessen am 19.8.2026 (Matrix, UEBERGABE 8l).
+             *
+             * Bis heute stand hier nur `endDate` -- und endDate bedeutet je
+             * nach Sportart etwas voellig anderes:
+             *   Fussball  endDate = Anpfiff            (brauchbar)
+             *   Tennis    endDate = Anpfiff + 168 h    (Turnierende!)
+             *   Baseball  teils Anpfiff, teils +168 h
+             *   E-Sport   Anpfiff + 4..6 h
+             *
+             * Weil das 72-h-Fenster auf endDate filterte, waren von 4079
+             * Tennisspielen mit Anpfiff im Fenster ALLE 4079 unsichtbar --
+             * 100 % Verlust. Baseball 18,7 %, Valorant 12,2 %. Umgekehrt
+             * standen 451 Wettermaerkte im Fenster, deren Ereignis gar
+             * nicht dran war.
+             *
+             * `gameStartTime` ist der echte Anpfiff und liegt bei 17.272
+             * Maerkten vor (Tennis 93,5 %, Wetter 81,9 %, Fussball 80,0 %).
+             * Er zaehlt jetzt zuerst; endDate ist nur noch der Rueckfall.
+             * Damit filtert das Fenster nach dem Ereignis, und die
+             * Zeitsperre in pruefeSpiel vergleicht Anpfiff mit Anpfiff
+             * statt Anpfiff mit Turnierende. */
+            const anpfiff = Date.parse(m.gameStartTime || '');
+            const endeRoh = Date.parse(m.endDate || m.endDateIso || '');
+            const stich = isFinite(anpfiff) ? anpfiff : endeRoh;
+            if (isNaN(stich) || stich <= jetzt || stich > grenze) continue;
             const id = String(m.id);
             if (nachId.has(id)) continue;
             jeArt[art] = (jeArt[art] || 0) + 1;
             nachId.set(id, {
               id, art, frage: m.question, teil: m.groupItemTitle || null,
-              titel: ev.title, tag, ende: new Date(ende).toISOString(),
+              titel: ev.title, tag, ende: new Date(stich).toISOString(),
+              /* getrennt mitfuehren, damit spaeter nachweisbar bleibt, ob
+               * die Zeit ein echter Anpfiff war oder nur ein Rueckfall. */
+              anpfiffEcht: isFinite(anpfiff),
+              endeRoh: isFinite(endeRoh) ? new Date(endeRoh).toISOString() : null,
               evSlug: ev.slug, mSlug: m.slug, tokens: tokenVon(m),
               satz: m.feeSchedule ? m.feeSchedule.rate : null,
               expo: m.feeSchedule ? m.feeSchedule.exponent : 1
@@ -354,7 +381,7 @@ Deno.serve(async (req) => {
         /* m.ende ist Polymarkets Marktende und liegt gemessen praktisch
          * auf dem Anpfiff (59 von 64 Zeilen binnen einer Stunde, Median 0).
          * Damit kann die Zeitsperre in besterTreffer greifen. */
-        const tr = Z.besterTreffer(p[0], p[1], bfKand, SCHWELLE, m.ende);
+        const tr = Z.besterTreffer(p[0], p[1], bfKand, SCHWELLE, m.ende, bereich);
         if (tr) {
           const lauf = m.art === 'unentschieden' ? Z.drawLaeufer(tr.bf.r)
                      : m.art === 'ueber_unter'  ? Z.ouLaeufer(tr.bf.r)
@@ -402,7 +429,7 @@ Deno.serve(async (req) => {
                    : smSieger;
       if (smKand.length) {
         /* Zeitsperre auch hier: Smarkets-Maerkte tragen ebenfalls st. */
-        const tr = Z.besterTreffer(p[0], p[1], smKand as any, SCHWELLE, m.ende);
+        const tr = Z.besterTreffer(p[0], p[1], smKand as any, SCHWELLE, m.ende, bereich);
         if (tr) {
           const lauf = Z.smLaeufer(m.art, m.teil, p, (tr.bf as any).r, tr.getauscht, LAEUFER_SCHWELLE);
           if (lauf) {

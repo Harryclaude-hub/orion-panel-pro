@@ -1763,3 +1763,95 @@ verworfen, 0 abgelegt — und `fehler: 0` gemeldet.** Wieder eine stille
 Fehlklasse. v4 geht zurück auf den Serienweg (`?series_ticker=`), vierfach
 parallel. Nachher: 259 Sport-Serien → **497 Märkte**, 25 Welt-Serien →
 **607 Märkte**, 0 einseitig verworfen.
+
+---
+
+## 8m. VOLLPRUEFUNG IN ZWEI STUFEN, 19.8.2026
+
+Auftrag woertlich: „Es muss wirklich beide Teams gleich sein. Gleiche
+Sportart, gleiches Datum, gleiche Liga. Mit zwei Stufen pruefen, mit der
+Wache noch. Es bleibt keine Moeglichkeit fuer Verlust."
+
+### Warum ueberhaupt umgebaut
+
+Die Pruefungen gab es zum Teil schon — aber **verstreut, und jeder Weg
+kannte einen anderen Teil**:
+
+| | Bereich | Kennung | Liga | Zeit | Namen sym | Trennschaerfe |
+|---|---|---|---|---|---|---|
+| `besterTreffer` (PM gegen BF/SM) | nein | ja | nur als Ersatz | **liess Fehlende durch** | nein | nein |
+| `direktPaare` (Buch gegen Buch) | nein | ja | **nein** | **liess Fehlende durch** | nein | nein |
+| Kalshi-Zweig | ja | ja | nein | ja | nein | nein |
+
+Zwei Wege mit zwei Massstaeben sind genau die Drift, die hier schon
+mehrfach Geld gekostet hat. Jetzt gibt es **eine** Stelle: `pruefeSpiel()`
+in `js/zuordnung.js` und spiegelgleich in `zuordnung.ts`.
+
+### Stufe 1: `pruefeSpiel()` — sieben Huerden beim Paaren
+
+1. **Bereich** — „Eintracht Frankfurt" gibt es im Fussball UND in LoL (11.8.)
+2. **Mannschaftsklasse** — Pachuca gegen Pachuca U21, Namen zu 100 % gleich (18.8.)
+3. **Liga-Klasse** — NEU. Nur die Kennung wird verglichen, nie der Name:
+   dieselbe Liga heisst bei jedem Buch anders
+4. **Zeit — jetzt PFLICHT.** NEU und die wichtigste Aenderung: bisher galt
+   „ungemessen ist nicht falsch", eine **fehlende** Zeit liess durch. Das
+   war das offene Tor
+5. **Name symmetrisch** — der CSD-Municipal-Fall (9.8., 663 Scheinchancen)
+6. **Name asymmetrisch, beide Seiten** — eine Mannschaft zu treffen genuegt nie
+7. **Trennschaerfe** — NEU. Jede Mannschaft muss zu IHRER Gegenueber besser
+   passen als zur anderen
+
+Huerde 7 kam erst durch den Verhaltenstest ans Licht: der CSD-Fall kam
+trotz Huerde 5 durch. Huerde 5 hochzudrehen waere falsch gewesen — dann
+faellt Shanghai Haigang/Shanghai Port (derselbe Verein, zwei Namen,
+symmetrisch nur 0,40). Huerde 7 trennt beide Faelle sauber: CSD hat
+Abstand 0, Shanghai hat 0,67.
+
+### Stufe 2: `orion_wache_stufe2()` — jede Minute, ohne Stufe 1 zu glauben
+
+Leitet jede Huerde **neu aus der gespeicherten Zeile** ab. Eine Stufe, die
+der anderen glaubt, ist keine zweite Stufe, sondern eine Wiederholung. Sie
+kann zudem etwas, das Stufe 1 nicht kann: sie laeuft **spaeter** — eine
+beim Paaren saubere Zeile kann inzwischen faul sein.
+
+Zusaetzlich zu den Huerden prueft sie: Anpfiff schon vorbei (oder unter
+5 min), Buchsumme ueber 1,00 trotz positiver Rendite, fehlender Marktlink.
+Eigene Urteile nimmt sie zurueck, wenn die Zeile wieder sauber ist —
+fremde nie.
+
+**Erster Lauf, sofort scharf:** 21 geprueft, **4 gesperrt** —
+2 ohne belegten Anpfiff, 1 Reserve-gegen-Profi, und eine Zeile mit
+**Buchsumme 1,0210 bei behaupteten 1674,43 % Rendite**. Die stand live.
+
+### Was das kostet
+
+Gemessen: 2 von 23 lebenden Zeilen fallen durch die Zeitpflicht, **beide
+mit negativer Rendite**. Der Preis ist also praktisch null.
+
+### Neu: `pruefung/vollpruefung.test.js`
+
+Der Spiegeltest beweist, dass beide Fassungen sich **gleich** verhalten —
+nicht, dass sie **richtig** liegen. Zwei gleich falsche Fassungen bestehen
+ihn anstandslos. Der neue Test ist die andere Haelfte: 26 Faelle, jede
+Huerde mit einem Fall der durchgehen MUSS und einem der scheitern MUSS.
+Jeder Sperrfall ist ein echter Schaden aus dem Betrieb.
+
+    node pruefung/spiegel.test.js       15188 Pruefungen
+    node pruefung/vollpruefung.test.js  26 Faelle
+
+### Ebenfalls drin: Polymarket liest endlich `gameStartTime`
+
+Aus der Matrix (8l): `orion-lauf` filterte auf `endDate` und verlor damit
+**4079 von 4079 Tennisspielen**. Jetzt gilt `gameStartTime ?? endDate`, und
+die Zeile fuehrt mit `anpfiffEcht` mit, ob die Zeit ein echter Anpfiff war
+oder nur ein Rueckfall. Das repariert zweierlei auf einmal: die Abdeckung
+UND die Genauigkeit der Zeitsperre, die vorher Anpfiff gegen Turnierende
+verglich.
+
+### NICHT gemacht, bewusst
+
+**`orion-lauf` ist noch nicht deployt.** Stufe 1 und die
+`gameStartTime`-Reparatur wirken erst danach. Bis dahin traegt Stufe 2
+(laeuft, jede Minute) plus die Browserpruefung in `daten.js` die Last.
+Das ist kein Versehen, sondern der bekannte Engpass — der Deploy umfasst
+drei Dateien und gehoert eigenstaendig geprueft.

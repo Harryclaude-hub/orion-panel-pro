@@ -378,12 +378,69 @@ async function main() {
       /* Zeitlich zu weit auseinander */
       [[{ id: 'x', partie: ['palermo', 'juventus'], zeit: 0 }],
        [{ id: 'y', partie: ['palermo', 'juventus'], zeit: 999 * 3600000 }], 0.5, 120],
-      /* Zeit unbekannt auf einer Seite: kein Grund abzuweisen */
+      /* Zeit unbekannt auf einer Seite: SEIT 19.8. ein Grund abzuweisen.
+       * Vorher galt "ungemessen ist nicht falsch" — das war das offene Tor,
+       * durch das ein Spiel ohne belegtes Datum in die Chancen kam. */
       [[{ id: 'x', partie: ['palermo', 'juventus'], zeit: null }],
        [{ id: 'y', partie: ['palermo', 'juventus'], zeit: 999 * 3600000 }], 0.5, 120],
+      [[{ id: 'x', partie: ['palermo', 'juventus'], zeit: null }],
+       [{ id: 'y', partie: ['palermo', 'juventus'], zeit: null }], 0.5, 120],
       [[{ id: 'x', partie: ['cruzeiro', 'flamengo'], zeit: 0 }],
-       [{ id: 'y', partie: ['flamengo', 'vitoria salvador'], zeit: 0 }], 0.5, 120]
-    ]
+       [{ id: 'y', partie: ['flamengo', 'vitoria salvador'], zeit: 0 }], 0.5, 120],
+      /* Liga-Klasse widerspricht sich: Jugendliga gegen Profiliga. */
+      [[{ id: 'x', partie: ['palermo', 'juventus'], zeit: 0, liga: 'Serie A' }],
+       [{ id: 'y', partie: ['palermo', 'juventus'], zeit: 0, liga: 'Primavera U19' }], 0.5, 120],
+      /* Sportart widerspricht sich: derselbe Vereinsname, anderer Bereich. */
+      [[{ id: 'x', partie: ['eintracht frankfurt', 'rossmann centaurs'], zeit: 0, bereich: 'fussball' }],
+       [{ id: 'y', partie: ['eintracht frankfurt', 'rossmann centaurs'], zeit: 0, bereich: 'lol' }], 0.5, 120]
+    ],
+
+    /* ---------- Die Vollpruefung selbst, Huerde fuer Huerde ----------
+     * Jeder Fall zielt auf GENAU eine der sechs Huerden. Faellt eine davon
+     * in einer der beiden Fassungen weg, weicht `grund` ab und der Test
+     * schlaegt an — nicht nur `ok`. */
+    pruefeSpiel: (function () {
+      var GRUND = { partie: ['palermo', 'juventus'], zeit: 1000, liga: null, bereich: null };
+      function mit(x) { var o = {}; for (var k in GRUND) o[k] = GRUND[k];
+                        for (var j in x) o[j] = x[j]; return o; }
+      return [
+        /* geht durch */
+        [GRUND, mit({}), 0.5],
+        /* 1 Sportart */
+        [mit({ bereich: 'fussball' }), mit({ bereich: 'lol' }), 0.5],
+        [mit({ bereich: 'fussball' }), mit({ bereich: 'fussball' }), 0.5],
+        [mit({ bereich: 'fussball' }), mit({ bereich: null }), 0.5],
+        /* 2 Mannschaftsklasse — der Pachuca-Fall vom 18.8. */
+        [mit({ partie: ['pachuca', 'puebla'] }), mit({ partie: ['pachuca u21', 'puebla u21'] }), 0.5],
+        [mit({ partie: ['pachuca u21', 'puebla u21'] }), mit({ partie: ['pachuca u21', 'puebla u21'] }), 0.5],
+        [mit({ partie: ['arsenal women', 'chelsea women'] }), mit({ partie: ['arsenal', 'chelsea'] }), 0.5],
+        /* 3 Liga-Klasse */
+        [mit({ liga: 'Serie A' }), mit({ liga: 'Primavera U19' }), 0.5],
+        [mit({ liga: 'Serie A' }), mit({ liga: 'Copa Italia' }), 0.5],
+        [mit({ liga: 'Slovenian U19' }), mit({ liga: 'Other Competitions U19' }), 0.5],
+        /* 4 Zeit: fehlend, gleich, zu weit, genau an der Toleranz */
+        [mit({ zeit: null }), mit({}), 0.5],
+        [mit({}), mit({ zeit: null }), 0.5],
+        [mit({ zeit: null }), mit({ zeit: null }), 0.5],
+        [mit({ zeit: 0 }), mit({ zeit: 180 * 60000 }), 0.5],
+        [mit({ zeit: 0 }), mit({ zeit: 180 * 60000 + 1 }), 0.5],
+        [mit({ zeit: '2026-08-19T10:00:00Z' }), mit({ zeit: '2026-08-19T10:00:00Z' }), 0.5],
+        /* 5 der CSD-Municipal-Fall vom 9.8.: Name steckt nur im anderen */
+        [mit({ partie: ['csd municipal', 'csd coban imperial'] }),
+         mit({ partie: ['csd municipal 1 3 csd coban imperial', 'csd coban imperial'] }), 0.5],
+        /* 6 beide Teams — eines zu treffen genuegt nie */
+        [mit({ partie: ['palermo', 'juventus'] }), mit({ partie: ['palermo', 'inter mailand'] }), 0.5],
+        /* Kreuzrichtung: Heim und Gast vertauscht */
+        [mit({ partie: ['palermo', 'juventus'] }), mit({ partie: ['juventus', 'palermo'] }), 0.5],
+        /* Randfaelle */
+        [null, mit({}), 0.5],
+        [mit({}), null, 0.5],
+        [mit({ partie: null }), mit({}), 0.5],
+        [GRUND, mit({}), 1],
+        /* Nachsicht ausdruecklich erbeten (nur fuer Messlaeufe) */
+        [mit({ zeit: null }), mit({}), 0.5, { zeitPflicht: false }]
+      ];
+    })()
   });
 
   /* Die Wortlisten-Varianten sind nur schneller, nicht anders. Wenn das je

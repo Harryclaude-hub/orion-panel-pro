@@ -243,43 +243,35 @@
     return Math.abs(ta - tb) <= ZEIT_TOLERANZ_MS;
   }
 
-  function besterTreffer(pmA, pmB, bfListe, schwelle, pmZeit) {
+  function besterTreffer(pmA, pmB, bfListe, schwelle, pmZeit, bereich) {
     var grenze = typeof schwelle === 'number' ? schwelle : 0.5;
     if (!pmA || !pmB || !bfListe || !bfListe.length) return null;
 
     var a = ohneAnhang(pmA), b = ohneAnhang(pmB);
-    var best = null;
+    var best = null, letzterGrund = '';
 
     for (var i = 0; i < bfListe.length; i++) {
       var bf = bfListe[i];
       var bp = partieVon(bf);
       if (!bp) continue;
 
-      // beide Richtungen: Heim und Auswaerts koennen vertauscht sein
-      /* KENNUNGSSPERRE (18.8.): erst pruefen, ob ueberhaupt dieselbe
-       * Mannschaftsklasse gemeint ist. Eine Richtung, deren Kennungen
-       * nicht zusammenpassen, bekommt Wert 0 und faellt damit aus —
-       * "Pachuca" gegen "Pachuca U21" ist keine Paarung, auch wenn die
-       * Namen zu 100 % uebereinstimmen. */
-      /* ZEITSPERRE (18.8.): verschiedene Anstosszeit heisst verschiedenes
-       * Spiel — auch bei identischen Namen (Rueckspiel!). */
-      if (!zeitPasst(pmZeit, bf.st)) continue;
-      /* LIGA-KENNUNG (Build 24), siehe Server-Fassung. */
-      var liga = kennung(bf.co || '');
-      var kBf0 = kennung(bp[0]) === '' && liga ? liga : kennung(bp[0]);
-      var kBf1 = kennung(bp[1]) === '' && liga ? liga : kennung(bp[1]);
-      var kGerade = kennung(a) === kBf0 && kennung(b) === kBf1;
-      var kKreuz  = kennung(a) === kBf1 && kennung(b) === kBf0;
-      var gerade = kGerade ? Math.min(aehnlichkeit(a, bp[0]), aehnlichkeit(b, bp[1])) : 0;
-      var kreuz  = kKreuz  ? Math.min(aehnlichkeit(a, bp[1]), aehnlichkeit(b, bp[0])) : 0;
-      var wert   = gerade > kreuz ? gerade : kreuz;
+      /* SEIT 19.8. geht ALLES durch pruefeSpiel: Bereich, Kennung, Liga,
+       * Zeit (jetzt Pflicht) und beide Namensmasse. Vorher standen hier
+       * drei der sechs Huerden einzeln im Code -- die Liga wurde nur als
+       * Kennungs-Ersatz benutzt und nie selbst geprueft, und eine fehlende
+       * Zeit liess durch. */
+      var pr = pruefeSpiel(
+        { partie: [a, b],   zeit: pmZeit, liga: null,      bereich: bereich || null },
+        { partie: bp,       zeit: bf.st,  liga: bf.co || null, bereich: bereich || null },
+        grenze);
+      if (!pr.ok) { letzterGrund = pr.grund; continue; }
 
-      if (!best || wert > best.score) {
-        best = { score: wert, bf: bf, getauscht: kreuz > gerade };
+      if (!best || pr.score > best.score) {
+        best = { score: pr.score, bf: bf, getauscht: pr.getauscht };
       }
     }
 
-    if (!best || best.score < grenze) return null;
+    if (!best) return null;
     return best;
   }
 
@@ -648,22 +640,20 @@
       for (var j = 0; j < listeB.length; j++) {
         var b = listeB[j];
         if (!b || !b.partie) continue;
-        /* KENNUNGSSPERRE (18.8.), siehe besterTreffer: dieselbe Regel
-         * auch hier, sonst waere der Weg Buch-gegen-Buch das offene Tor. */
-        var kG = kennungGleich(a.partie[0], b.partie[0]) && kennungGleich(a.partie[1], b.partie[1]);
-        var kK = kennungGleich(a.partie[0], b.partie[1]) && kennungGleich(a.partie[1], b.partie[0]);
-        var gerade = kG ? Math.min(aehnlichkeit(a.partie[0], b.partie[0]), aehnlichkeit(a.partie[1], b.partie[1])) : 0;
-        var kreuz  = kK ? Math.min(aehnlichkeit(a.partie[0], b.partie[1]), aehnlichkeit(a.partie[1], b.partie[0])) : 0;
-        var wert = Math.max(gerade, kreuz);
-        if (wert < grenze) continue;
-        /* Zeit nur pruefen, wenn BEIDE eine haben. Fehlende Zeit ist kein
-         * Grund abzuweisen — sie ist unbekannt, nicht falsch. */
-        if (typeof a.zeit === 'number' && typeof b.zeit === 'number' &&
-            isFinite(a.zeit) && isFinite(b.zeit) && Math.abs(a.zeit - b.zeit) > fenster) {
-          aus.zuWeit++;
+        /* SEIT 19.8. dieselbe Vollpruefung wie in besterTreffer. Vorher war
+         * dieser Weg der schwaechere von beiden: er kannte keine Liga und
+         * liess eine fehlende Zeit durch. Zwei Wege mit zwei verschiedenen
+         * Massstaeben sind genau die Drift, die dieses Projekt schon
+         * mehrfach Geld gekostet hat. */
+        var pr = pruefeSpiel(a, b, grenze);
+        if (!pr.ok) {
+          if (pr.grund.indexOf('Anpfiff') === 0) aus.zuWeit++;
           continue;
         }
-        kand.push({ a: a, b: b, score: wert, getauscht: kreuz > gerade });
+        /* Das eigene, engere Fenster dieses Weges gilt zusaetzlich. */
+        if (isFinite(zeitVon(a.zeit)) && isFinite(zeitVon(b.zeit)) &&
+            Math.abs(zeitVon(a.zeit) - zeitVon(b.zeit)) > fenster) { aus.zuWeit++; continue; }
+        kand.push({ a: a, b: b, score: pr.score, getauscht: pr.getauscht });
       }
     }
 
@@ -807,6 +797,154 @@
     return (pmSeite === 'a' && kalshiSeite === 'b') || (pmSeite === 'b' && kalshiSeite === 'a');
   }
 
+  /* ================= STUFE 1: DIE VOLLPRUEFUNG =================
+   *
+   * Auftrag vom 19.8.2026, woertlich: "Es muss wirklich beide Teams gleich
+   * sein. Gleiche Sportart, gleiches Datum, gleiche Liga. Es bleibt keine
+   * Moeglichkeit fuer Verlust, weil es ist der Sinn vom Arbitrage."
+   *
+   * Bis heute lagen die Pruefungen VERSTREUT: besterTreffer kannte Zeit und
+   * Kennung, direktPaare kannte Kennung und Zeit aber keine Liga, und die
+   * Bereichspruefung sass allein im Kalshi-Zweig des Scanners. Jeder Weg
+   * kannte einen anderen Teil der Wahrheit. Ab jetzt gibt es EINE Stelle,
+   * die alles prueft, und alle Wege rufen sie.
+   *
+   * Die sechs Huerden, jede aus einem gemessenen Schaden geboren:
+   *
+   *  1 BEREICH   11.8.: "Eintracht Frankfurt" gibt es im Fussball UND in
+   *              League of Legends. Namen koennen das nicht trennen.
+   *  2 KENNUNG   18.8.: Pachuca gegen Pachuca U21, Namen zu 100 % gleich.
+   *              u15..u23, Frauen, Reserve. Beide dieselbe -- oder keine.
+   *  3 LIGA      NEU 19.8.: die Liga traegt die Kennung oft allein
+   *              ("Slovenian U19"; "Sunderland U21" steht in "Other
+   *              Competitions Soccer"). Widersprechen sich die
+   *              Liga-Kennungen, ist es ein anderer Wettbewerb.
+   *  4 ZEIT      NEU STRENG 19.8.: bisher galt "ungemessen ist nicht
+   *              falsch" -- eine FEHLENDE Zeit liess durch. Das war das
+   *              offene Tor. Gemessen kostet die Pflicht 2 von 23 lebenden
+   *              Zeilen, und beide hatten negative Rendite. Wer nicht
+   *              belegen kann, dass es dasselbe Spiel ist, paart nicht.
+   *  5 NAME sym  9.8.: die asymmetrische aehnlichkeit() gab 1.00, weil jedes
+   *              Wort des kuerzeren Namens im laengeren stand ("CSD
+   *              Municipal" in "CSD Municipal 1 - 3 CSD Coban") -- 663
+   *              Scheinchancen bis 184 %. Das symmetrische Mass kommt als
+   *              ZUSATZ, nicht als Ersatz: als Ersatz wuerde es echte Paare
+   *              toeten (Shanghai Haigang = Shanghai Port, nachgemessen
+   *              19.8.). Darum eine niedrige Zusatzhuerde.
+   *  6 NAME asym Das bisherige Mass, unveraendert, auf BEIDEN Seiten
+   *              (Math.min) -- eine Mannschaft zu treffen genuegt nie.
+   *
+   * A und B sind je { partie:[heim,gast], zeit:ms|null, liga:string|null,
+   *                   bereich:string|null }.
+   * Zurueck: { ok, getauscht, score, grund }. `grund` nennt die ERSTE
+   * Huerde, an der es gescheitert ist, im Klartext -- damit die Wache in
+   * Stufe 2 und die Anzeige denselben Satz zeigen koennen. */
+
+  var STRENG_SYM = 0.34;          /* Zusatzhuerde symmetrisch, siehe Punkt 5 */
+
+  function zeitVon(x) {
+    if (typeof x === 'number') return isFinite(x) ? x : NaN;
+    return Date.parse(String(x == null ? '' : x));
+  }
+
+  function pruefeSpiel(A, B, schwelle, opt) {
+    var grenze = typeof schwelle === 'number' ? schwelle : 0.5;
+    var o = opt || {};
+    var aus = { ok: false, getauscht: false, score: 0, grund: '' };
+    if (!A || !B || !A.partie || !B.partie) { aus.grund = 'keine Partie'; return aus; }
+
+    /* 1 BEREICH -- nennen beide einen, muessen sie gleich sein. Nennt nur
+     * einer einen, ist das kein Widerspruch, sondern eine Luecke. */
+    if (A.bereich && B.bereich && !gleicherBereich(A.bereich, B.bereich)) {
+      aus.grund = 'andere Sportart: ' + A.bereich + ' gegen ' + B.bereich;
+      return aus;
+    }
+
+    /* 2 KENNUNG -- beide Richtungen offen halten, Heim und Gast koennen
+     * vertauscht sein. Die Liga leiht ihre Kennung, wenn der Vereinsname
+     * selbst keine traegt (Build 24). */
+    var lA = kennung(A.liga || ''), lB = kennung(B.liga || '');
+    function kenn(name, liga) { var k = kennung(name); return k === '' && liga ? liga : k; }
+    var a0 = kenn(A.partie[0], lA), a1 = kenn(A.partie[1], lA);
+    var b0 = kenn(B.partie[0], lB), b1 = kenn(B.partie[1], lB);
+    var kGerade = a0 === b0 && a1 === b1;
+    var kKreuz  = a0 === b1 && a1 === b0;
+    if (!kGerade && !kKreuz) {
+      aus.grund = 'andere Mannschaftsklasse (' + (a0 || '-') + '/' + (a1 || '-') +
+                  ' gegen ' + (b0 || '-') + '/' + (b1 || '-') + ')';
+      return aus;
+    }
+
+    /* 3 LIGA -- die Kennungen der Wettbewerbe duerfen sich nicht
+     * widersprechen. Die Liganamen selbst zu vergleichen geht NICHT:
+     * dieselbe Liga heisst bei jedem Buch anders ("CONMEBOL Copa
+     * Libertadores" gegen "Copa Libertadores"). Die Kennung ist der
+     * belastbare Teil. */
+    if (A.liga && B.liga && lA !== lB) {
+      aus.grund = 'andere Liga-Klasse: ' + A.liga + ' gegen ' + B.liga;
+      return aus;
+    }
+
+    /* 4 ZEIT -- Pflicht auf beiden Seiten. opt.zeitPflicht === false gibt
+     * es nur fuer Messlaeufe; im Betrieb ruft das niemand so auf. */
+    var tA = zeitVon(A.zeit), tB = zeitVon(B.zeit);
+    if (o.zeitPflicht !== false && (!isFinite(tA) || !isFinite(tB))) {
+      aus.grund = 'Anpfiff fehlt (' + (!isFinite(tA) ? 'erste' : 'zweite') + ' Seite)';
+      return aus;
+    }
+    if (isFinite(tA) && isFinite(tB) && Math.abs(tA - tB) > ZEIT_TOLERANZ_MS) {
+      aus.grund = 'Anpfiff ' + Math.round(Math.abs(tA - tB) / 60000) + ' min auseinander';
+      return aus;
+    }
+
+    /* 5+6+7 NAMEN -- nur in der erlaubten Richtung, alle drei Masse.
+     *
+     * TRENNSCHAERFE (Huerde 7, NEU 19.8.): jede Mannschaft muss zu IHRER
+     * Gegenueber besser passen als zur anderen. Klingt selbstverstaendlich,
+     * ist es nicht -- der CSD-Municipal-Fall vom 9.8. bestand die anderen
+     * beiden Masse glatt:
+     *
+     *   A: "csd municipal"  /  "csd coban imperial"
+     *   B: "csd municipal 1 3 csd coban imperial"  /  "csd coban imperial"
+     *
+     * "csd coban imperial" passt zu BEIDEN Seiten von B mit 1.00, weil der
+     * lange B-Name beide Vereine enthaelt. Wo kein Abstand ist, ist auch
+     * keine Zuordnung -- dann ist die Partie falsch zerlegt worden.
+     * Gemessen: der echte Fall Shanghai Haigang/Shanghai Port behaelt hier
+     * Abstand 0.67 und bleibt zu Recht drin. */
+    function wert(y0, y1) {
+      var e0 = aehnlichkeit(A.partie[0], y0), e1 = aehnlichkeit(A.partie[1], y1);
+      var q0 = aehnlichkeit(A.partie[0], y1), q1 = aehnlichkeit(A.partie[1], y0);
+      return { asym: Math.min(e0, e1),
+               sym:  Math.min(namensgleichheit(A.partie[0], y0), namensgleichheit(A.partie[1], y1)),
+               trenn: Math.min(e0 - q0, e1 - q1) };
+    }
+    var leer = { asym: 0, sym: 0, trenn: 0 };
+    var g = kGerade ? wert(B.partie[0], B.partie[1]) : leer;
+    var k = kKreuz  ? wert(B.partie[1], B.partie[0]) : leer;
+    var nimmKreuz = k.asym > g.asym;
+    var w = nimmKreuz ? k : g;
+
+    if (w.asym < grenze) {
+      aus.grund = 'Namen zu verschieden (' + w.asym.toFixed(2) + ' unter ' + grenze + ')';
+      return aus;
+    }
+    if (w.sym < STRENG_SYM) {
+      aus.grund = 'Name steckt nur im anderen (symmetrisch ' + w.sym.toFixed(2) +
+                  ' unter ' + STRENG_SYM + ')';
+      return aus;
+    }
+    if (w.trenn <= 0) {
+      aus.grund = 'Mannschaften nicht trennscharf: eine passt zu beiden Seiten gleich gut';
+      return aus;
+    }
+
+    aus.ok = true;
+    aus.getauscht = nimmKreuz;
+    aus.score = w.asym;
+    return aus;
+  }
+
   var api = {
     norm: norm,
     kalshiPaar: kalshiPaar,
@@ -829,6 +967,8 @@
     ZEIT_TOLERANZ_MS: ZEIT_TOLERANZ_MS,
     kennung: kennung,
     kennungGleich: kennungGleich,
+    pruefeSpiel: pruefeSpiel,
+    STRENG_SYM: STRENG_SYM,
     besterTreffer: besterTreffer,
     laeuferZu: laeuferZu,
     drawLaeufer: drawLaeufer,

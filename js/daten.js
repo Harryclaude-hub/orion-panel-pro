@@ -628,6 +628,16 @@
           var Zu = welt.Zuordnung;
           if (Zu && Zu.kennungGleich && f.bf_partie &&
               !Zu.kennungGleich(f.titel, f.bf_partie)) return false;
+          /* ZEITPFLICHT (19.8.2026): bisher stand hier nur zeitPasst(), und
+           * das gibt bei einer FEHLENDEN Zeit true zurueck ("ungemessen ist
+           * nicht falsch"). Damit stand eine Zeile ohne belegten Anpfiff in
+           * den Chancen. Ab jetzt gilt hier dieselbe Regel wie im Scanner
+           * (pruefeSpiel, Huerde 4) und in der Wache (Stufe 2): ohne Datum
+           * auf BEIDEN Seiten ist nicht beweisbar, dass es dasselbe Spiel
+           * ist -- und was nicht beweisbar ist, ist keine Chance.
+           * Gemessen: kostet 2 von 23 lebenden Zeilen, beide mit negativer
+           * Rendite. */
+          if (!f.beginnt_am || !f.endet_am) return false;
           if (Zu && Zu.zeitPasst && !Zu.zeitPasst(f.endet_am, f.beginnt_am)) return false;
           if (f.rendite < K.mindestRendite) return false;
           /* Bedingung 6: unplausibel hoch ist KEINE Chance (siehe KONFIG). */
