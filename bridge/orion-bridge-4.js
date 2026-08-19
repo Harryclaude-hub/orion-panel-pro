@@ -43,7 +43,7 @@ const fs = require('fs');
 const pfad = require('path');
 
 const VERSION = '4.0';
-const BUILD = 25;   // 24: co = Wettbewerb · 25: Grundanteil je Sportart + Standby-Pruefung
+const BUILD = 26;   // 24: co = Wettbewerb · 25: Grundanteil + Standby · 26: Golf ergaenzt, Nicht-Sport-Bereiche, Markttyp je Bereich
 
 /* ---------- Zugangsdatei ---------- */
 const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
@@ -136,6 +136,21 @@ const NACH_ANPFIFF_STD = 3;      // so lange nach Anpfiff bleibt ein Markt
  * Fehlt das Feld, läuft alles exakt wie bisher. Die erste AKTIVE Sportart
  * der Liste (normal: Fußball) kommt in jeder zweiten Runde dran; "anteil"
  * steuert die übrigen. */
+/* BUILD 26 (19.8.2026): die Liste war unvollständig, und zwar STILL.
+ *
+ * Golf steht seit jeher in orion_bf_sport (et 3 -> Bereich golf) und hat
+ * einen eigenen Cron-Job (orion-lauf-golf, stündlich). Nur geholt hat die
+ * Bridge es nie — es fehlte schlicht in dieser Liste. Der Bereich lief
+ * also jede Stunde und fand garantiert nichts, ohne dass irgendwo ein
+ * Fehler aufschlug. Genau die stille Fehlerklasse dieses Projekts.
+ *
+ * Dazu neu: die NICHT-sportlichen Bereiche. Betfair führt Politik als
+ * eigenen eventType; die anderen Weltthemen (Krypto, Wirtschaft) laufen
+ * dort unter "Special Bets" und "Financial Bets". Sie kommen mit
+ * `melde: true` in die Liste: die Bridge holt sie und meldet, WAS sie
+ * findet, aber der Server ordnet sie erst zu, wenn orion_bf_sport den
+ * eventType kennt. Unbekannt heißt nicht "passt schon" — dieselbe Regel
+ * wie überall. */
 const SPORT = [
   { key: 'fussball',   et: '1',        name: 'Fußball' },
   { key: 'tennis',     et: '2',        name: 'Tennis' },
@@ -147,8 +162,26 @@ const SPORT = [
   { key: 'boxen',      et: '6',        name: 'Boxen' },
   { key: 'mma',        et: '26420387', name: 'MMA' },
   { key: 'motorsport', et: '8',        name: 'Motorsport' },
-  { key: 'esport',     et: '27454571', name: 'E-Sport' }
+  { key: 'esport',     et: '27454571', name: 'E-Sport' },
+  { key: 'golf',       et: '3',        name: 'Golf' },
+  /* mt: null heißt KEIN Markttyp-Filter. Nötig, weil die Standardliste nur
+   * MATCH_ODDS und Über/Unter enthält — Markttypen, die es außerhalb des
+   * Sports gar nicht gibt. Mit dem Filter kämen diese drei garantiert leer
+   * zurück, und zwar ohne Fehlermeldung.
+   *
+   * NOCH NICHT ZUGEORDNET: orion_bf_sport kennt diese eventTypes nicht,
+   * der Server verwirft sie also weiter. Das ist Absicht: erst messen, WAS
+   * zurückkommt (die Bridge meldet es je Lauf unter `fremd`), dann
+   * zuordnen. Vermutlich reicht das 72-h-Fenster für Politik ohnehin nicht
+   * — Betfair führt dort Termine bis 2029. */
+  { key: 'politik',     et: '2378961', name: 'Politik',         mt: null, melde: true },
+  { key: 'sonderwette', et: '10',      name: 'Special Bets',    mt: null, melde: true },
+  { key: 'finanzwette', et: '6231',    name: 'Financial Bets',  mt: null, melde: true }
 ];
+
+/* Die Standard-Markttypen. Früher standen sie fest im Katalogaufruf. */
+const MT_SPORT = ['MATCH_ODDS', 'OVER_UNDER_05', 'OVER_UNDER_15', 'OVER_UNDER_25',
+                  'OVER_UNDER_35', 'OVER_UNDER_45', 'OVER_UNDER_55'];
 
 /* ---------- Sportarten-Schalter auswerten ----------
  * Stille Fehlschläge sind in diesem Projekt eine bekannte Fehlerklasse.
@@ -181,7 +214,7 @@ const AKTIV = (function schalter() {
     }
     if (!(fenster > 0)) fenster = O.fensterStunden;
     const anteil = Math.max(1, Math.round(zahl(c.anteil, 1)));
-    liste.push({ key: s.key, et: s.et, name: s.name, fenster, anteil });
+    liste.push({ key: s.key, et: s.et, name: s.name, fenster, anteil, mt: s.mt, melde: !!s.melde });
   }
   if (liste.length === 0) {
     console.error('\n  In bridge-config.json sind ALLE Sportarten abgeschaltet — dann gibt es nichts zu tun.');
@@ -304,16 +337,19 @@ async function sportkarteHolen() {
 
 /* Fenster halbieren, wenn Betfair „zu viel verlangt" meldet — das ist
  * kein Fehler, sondern der normale Weg bei großen Sportarten. */
-async function katalog(et, vonMs, bisMs, tiefe) {
+async function katalog(et, vonMs, bisMs, tiefe, marktTypen) {
   let res;
+  /* undefined = Standardliste (Sport). null = ausdrücklich KEIN Filter,
+   * für eventTypes, die MATCH_ODDS gar nicht kennen. */
+  const mt = marktTypen === undefined ? MT_SPORT : marktTypen;
   try {
+    const filter = {
+      eventTypeIds: [et],
+      marketStartTime: { from: new Date(vonMs).toISOString(), to: new Date(bisMs).toISOString() }
+    };
+    if (mt) filter.marketTypeCodes = mt;
     res = await rpc('listMarketCatalogue', {
-      filter: {
-        eventTypeIds: [et],
-        marketTypeCodes: ['MATCH_ODDS', 'OVER_UNDER_05', 'OVER_UNDER_15', 'OVER_UNDER_25',
-                          'OVER_UNDER_35', 'OVER_UNDER_45', 'OVER_UNDER_55'],
-        marketStartTime: { from: new Date(vonMs).toISOString(), to: new Date(bisMs).toISOString() }
-      },
+      filter: filter,
       maxResults: 1000, sort: 'FIRST_TO_START',
       /* COMPETITION seit Build 24: der Wettbewerbsname ("Premier League 2",
        * "Liga MX U21"). Er verraet eine Jugend-, Reserve- oder Frauenliga
@@ -325,8 +361,8 @@ async function katalog(et, vonMs, bisMs, tiefe) {
     const zuViel = /TOO_MUCH_DATA|ANGX-0001/i.test(String(e.message || ''));
     if (zuViel && bisMs - vonMs > 2 * 60e3 && tiefe < 20) {
       const mitte = Math.floor((vonMs + bisMs) / 2);
-      await katalog(et, vonMs, mitte, tiefe + 1);
-      await katalog(et, mitte, bisMs, tiefe + 1);
+      await katalog(et, vonMs, mitte, tiefe + 1, mt);
+      await katalog(et, mitte, bisMs, tiefe + 1, mt);
       return;
     }
     if (zuViel) return;          // kleinstes Fenster, trotzdem zu viel: auslassen
@@ -356,8 +392,8 @@ async function katalog(et, vonMs, bisMs, tiefe) {
   /* Genau am Deckel heißt: das Fenster war voll, es fehlen Märkte. */
   if (res.length >= 1000 && bisMs - vonMs > 2 * 60e3 && tiefe < 20) {
     const mitte = Math.floor((vonMs + bisMs) / 2);
-    await katalog(et, vonMs, mitte, tiefe + 1);
-    await katalog(et, mitte, bisMs, tiefe + 1);
+    await katalog(et, vonMs, mitte, tiefe + 1, mt);
+    await katalog(et, mitte, bisMs, tiefe + 1, mt);
   }
 }
 
@@ -555,7 +591,7 @@ async function durchlauf() {
     const dran = PLAN[runde % PLAN.length];
     runde++;
     const von = Date.now(), bis = von + dran.fenster * 3600e3;
-    await katalog(dran.et, von, bis, 0);
+    await katalog(dran.et, von, bis, 0, dran.mt);
 
     const weg = aufraeumen();
     const ids = dringlichste(O.kurseProDurchlauf);
