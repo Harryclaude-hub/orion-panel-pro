@@ -1929,3 +1929,59 @@ Beleg dafuer, dass die Zeitpflicht taeglich greift.
 
 Alles andere ist ausgerollt und arbeitet: Kalshi v4, Wache Stufe 2,
 `orion_bereich_bf` (E-Sport-Trennung), die Deadlock-Sperre.
+
+---
+
+## 8o. DEPLOY IST DURCH (v22) + KORREKTUR ZUM TENNIS-BEFUND
+
+### Ausgerollt und nachgemessen
+
+`orion-lauf` steht auf **Version 22**. Belegt im ausgelieferten Code:
+`pruefeSpiel`, `gameStartTime`, `trenn` (Huerde 7), `STRENG_SYM`,
+`anpfiffEcht`. Probelauf Fussball: **pm 1332, bf 393, sm 863, ka 173,
+56 Paare.**
+
+### KORREKTUR: die Tennis-Ursache war nicht die, die ich genannt habe
+
+Am 19.8. stand hier, der `endDate`-Filter verliere 4079 von 4079
+Tennisspielen. Das war **unvollstaendig**. Nach dem Deploy liefert Tennis
+weiterhin **pm = 0**. Nachgemessen:
+
+    Tennis-Maerkte gesamt:          4876
+    davon in einer "vs"-Partie:     4562
+    davon Anpfiff im 72-h-Fenster:  1925
+    davon von marktArt erkannt:        0   <-- HIER bricht es
+
+`marktArt()` kennt nur fussballfoermige Fragen (`win on YYYY MM DD`,
+`end in a draw`, Tore-Ueber/Unter). Tennis fragt anders:
+
+    Australian Open Women's: Laura Siegemund vs Liudmila Samsonova
+    Siegemund vs. Samsonova: Total Sets O/U 2.5
+    Set 1 Winner: Siegemund vs Samsonova
+
+Der Markt wird also schon **vor** der Zeitpruefung verworfen. Beide
+Aussagen stimmen einzeln (der endDate-Filter haette sie auch verloren),
+aber die Reihenfolge im Code entscheidet: `marktArt` kommt zuerst.
+
+**Lehre:** eine Ursache ist erst belegt, wenn die Reparatur wirkt. Ich
+hatte gemessen, dass Filter B sie verwirft, ohne zu pruefen, ob Filter A
+davor sie schon verworfen hat.
+
+**Offen:** `marktArt` um die Tennis-Formen erweitern (Satzsieger,
+Games-Ueber/Unter, Saetze-Ueber/Unter) und die Betfair-Gegenstuecke
+zuordnen. 1925 Spiele im Fenster warten darauf.
+
+### Alle vier Buecher kreuzen jetzt
+
+    kalshi   <-> smarkets    19 Paare
+    polymarket <-> smarkets  18
+    kalshi   <-> polymarket   8   (ALLE von der Wache gesperrt)
+    smarkets <-> polymarket   5
+    smarkets <-> kalshi       3
+    betfair  <-> smarkets     2
+
+Die acht Kalshi-Polymarket-Paare haben **kein einziges belegtes Anpfiff**
+und werden deshalb von Stufe 2 vollstaendig gesperrt. Das ist die
+Stichzeit-Matrix (8l) im Betrieb: Kalshis `close_time` ist bei Spielen
+eine Abrechnungsfrist, kein Anstoss. Die Wache tut damit genau das
+Richtige.
