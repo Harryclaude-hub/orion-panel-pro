@@ -21,6 +21,23 @@ cd /d "%~dp0"
 set "HIER=%~dp0"
 if "%HIER:~-1%"=="\" set "HIER=%HIER:~0,-1%"
 
+rem  ---- Welche Programmdatei liegt hier? ----
+rem  Das Programm heisst seit Build 27 Orion-Bridge-Pro-NN.js, mit der
+rem  Buildnummer im Namen. Damit dieser Starter beim naechsten Umbenennen
+rem  nicht bricht, SUCHT er die Datei, statt sie fest zu kennen.
+rem  Regel: es darf immer nur EINE geben, die alte wird geloescht.
+rem
+rem  DIESER BLOCK STEHT VOR DER WAECHTER-WEICHE, und das ist der Punkt:
+rem  stuende er darunter, waere PROG im Waechter-Lauf leer und node wuerde
+rem  alle 5 Minuten OHNE Argument starten - also die Eingabeaufforderung
+rem  von node statt der Bridge. Beim Bauen am 19.08. genau so passiert.
+set PROG=
+set ANZAHL=0
+for /f "delims=" %%f in ('dir /b "%HIER%\Orion-Bridge-Pro-*.js" 2^>nul') do (
+  set PROG=%%f
+  set /a ANZAHL+=1
+)
+
 if /i "%~1"=="/waechter" goto :waechter
 
 rem ============================ VOLLER START ==================================
@@ -45,8 +62,20 @@ powercfg /setactive SCHEME_CURRENT >nul 2>&1
 echo         Deckel zuklappen: nichts unternehmen. Standby und Ruhezustand: nie.
 
 echo   [2/4] Dateien pruefen ...
+rem  Liegen zwei Programmdateien da, wird ABGEBROCHEN statt geraten - sonst
+rem  laeuft womoeglich eine alte Fassung und niemand merkt es.
 set FEHLT=0
-if not exist "%HIER%\orion-bridge-4.js"  ( echo         FEHLT: orion-bridge-4.js & set FEHLT=1 )
+if "%ANZAHL%"=="0" ( echo         FEHLT: Orion-Bridge-Pro-NN.js & set FEHLT=1 )
+if %ANZAHL% GTR 1 (
+  echo.
+  echo   Es liegen %ANZAHL% Programmdateien im Ordner:
+  dir /b "%HIER%\Orion-Bridge-Pro-*.js"
+  echo.
+  echo   Es darf nur EINE geben. Die aeltere loeschen, dann neu starten.
+  echo.
+  pause
+  exit /b 1
+)
 if not exist "%HIER%\bridge-config.json" ( echo         FEHLT: bridge-config.json & set FEHLT=1 )
 if "%FEHLT%"=="1" (
   echo.
@@ -56,6 +85,7 @@ if "%FEHLT%"=="1" (
   pause
   exit /b 1
 )
+echo         Programm: %PROG%
 where node >nul 2>nul
 if errorlevel 1 (
   echo.
@@ -99,11 +129,11 @@ rem  Windows 11 nicht mehr - die erste Fassung haette deshalb immer einen
 rem  sinnlosen Start versucht (am 19.08. beim Testen aufgefallen).
 :starten
 powershell -NoProfile -ExecutionPolicy Bypass -Command ^
-  "$l = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -like '*orion-bridge-4.js*' };" ^
+  "$l = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -like '*Orion-Bridge-Pro-*.js*' };" ^
   "if ($l) { Write-Host ('        Laeuft bereits (PID ' + $l.ProcessId + ') - nichts zu tun.'); exit 0 }" ^
-  "$s = Join-Path '%HIER%' 'bridge.lock'; if (Test-Path $s) { Remove-Item $s -Force -ErrorAction SilentlyContinue };" ^
-  "Start-Process -FilePath 'node.exe' -ArgumentList 'orion-bridge-4.js' -WorkingDirectory '%HIER%' -WindowStyle Minimized;" ^
+  "$s = Join-Path $env:LOCALAPPDATA 'orion-bridge.lock'; if (Test-Path $s) { Remove-Item $s -Force -ErrorAction SilentlyContinue };" ^
+  "Start-Process -FilePath 'node.exe' -ArgumentList '%PROG%' -WorkingDirectory '%HIER%' -WindowStyle Minimized;" ^
   "Start-Sleep -Seconds 6;" ^
-  "$n = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -like '*orion-bridge-4.js*' };" ^
+  "$n = Get-CimInstance Win32_Process -Filter \"Name='node.exe'\" | Where-Object { $_.CommandLine -like '*Orion-Bridge-Pro-*.js*' };" ^
   "if ($n) { Write-Host ('        Gestartet (PID ' + $n.ProcessId + ').') } else { Write-Host '        START FEHLGESCHLAGEN.' }"
 exit /b 0

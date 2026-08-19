@@ -15,7 +15,8 @@ WAS HIER LIEGT
 ------------------------------------------------------------------------
 
   Orion-Bridge-STARTEN.cmd   <- NUR DAS doppelklicken. Sonst nichts.
-  orion-bridge-4.js          <- das gruene Node-Symbol: das Programm
+  Orion-Bridge-Pro-27.js     <- das Programm. Die 27 ist der Build.
+                                NICHT doppelklicken (siehe unten).
   bridge-config.json         <- Zugangsdaten, bereits ausgefuellt
   ANLEITUNG.txt              <- diese Datei
   BEFEHLE.txt                <- alle Befehle zum Kopieren
@@ -87,6 +88,40 @@ AUCH NEU (Build 26)
     es kein "MATCH_ODDS"; mit dem alten festen Filter waeren die drei
     neuen leer zurueckgekommen.
   - E-Sport wird beim Server in LoL, Valorant und uebrige getrennt.
+
+
+------------------------------------------------------------------------
+DER NAME DER PROGRAMMDATEI
+------------------------------------------------------------------------
+
+Die Programmdatei traegt die Buildnummer im Namen:
+
+      Orion-Bridge-Pro-27.js
+
+Bei jedem neuen Build wird sie umbenannt (28, 29 ...) und die alte
+GELOESCHT. So sieht man am Dateinamen, welche Fassung man vor sich hat,
+ohne sie zu oeffnen.
+
+Der Starter kennt den Namen NICHT fest - er sucht Orion-Bridge-Pro-*.js.
+Deshalb bricht beim Umbenennen nichts. Liegen zwei Dateien da, bricht er
+ab und sagt es, statt zu raten: sonst liefe womoeglich eine alte Fassung
+und niemand merkte es.
+
+
+WARUM DIE DATEI KEIN GRUENES SYMBOL HAT
+---------------------------------------
+
+Windows verknuepft .js von Haus aus mit dem Windows Script Host
+(.js = JSFile -> WScript.exe), nicht mit Node. Das gruene Node-Symbol
+kam von einer frueheren Verknuepfung, die verlorenging, als Node am
+19.08. verschwand und neu installiert wurde.
+
+Das ist nur das Symbol - am Programm aendert es nichts.
+
+Die Verknuepfung wird ABSICHTLICH nicht auf Node zurueckgestellt: dann
+liesse sich die Datei doppelklicken, und genau das darf man nicht. Die
+Bridge braucht den Starter davor (Standby aus, Waechter eintragen).
+Ein gruenes "Klick mich"-Symbol wuerde zum falschen Weg einladen.
 
 
 ------------------------------------------------------------------------

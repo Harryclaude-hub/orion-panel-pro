@@ -7,7 +7,7 @@ Alles Doppelte ist zusammengefasst.
 | Datei | Wofür |
 |---|---|
 | **`Orion-Bridge-STARTEN.cmd`** | **Doppelklick — das ist alles.** Schaltet Standby ab, prüft, startet, richtet den Wächter ein. Ist zugleich selbst der Wächter |
-| `orion-bridge-4.js` | das Programm (Node, ~500 Zeilen) |
+| `Orion-Bridge-Pro-27.js` | das Programm (Node, ~500 Zeilen) |
 | `bridge-config.json` | **deine Zugangsdaten** — Benutzername, Passwort, App-Key, Token |
 | `README.md` | diese Anleitung |
 
