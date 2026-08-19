@@ -2074,3 +2074,27 @@ gebaut. Beides braucht eine Messung davor und einen Deploy danach, und
 beides in einem Rutsch durchzuziehen haette geheissen, ohne Messung zu
 bauen -- nach dem Fehlurteil ueber 1051 Zeilen heute abend genau das
 Falsche. Sie stehen als naechstes an.
+
+### Nachtrag zum Nachtrag: die Tuersperre war wertlos, bis ALLE sie nahmen
+
+Nach dem Einbau von `orion_beleg_nachtragen()` stiegen die Deadlocks von
+4 in 12 Stunden auf **9 in EINER Stunde** -- also schlimmer als vor der
+Sperre, die sie verhindern sollte. Die Meldung nannte den Grund genau:
+
+    Process A wartet auf ExclusiveLock on advisory lock, blockiert von B
+    Process B wartet auf ShareLock on transaction,       blockiert von A
+
+`orion_beleg_nachtragen()` nahm ZEILENsperren (sein UPDATE), OHNE vorher
+an die Tuer zu gehen. `orion_zeiten_stimmigkeit()` nahm die Tuer zuerst
+und wollte dann dieselben Zeilen. Zwei Reihenfolgen, also Deadlock --
+diesmal MIT der Sperre im Spiel.
+
+**Eine Tuersperre wirkt nur, wenn ALLE sie als ERSTES nehmen. Wer eine
+Zeile anfasst, bevor er an der Tuer war, macht die Tuer wertlos.**
+
+REGEL: jede Funktion, die `orion_funde` massenhaft aendert, ruft
+`orion_schreibsperre()` als allererste Anweisung. Ohne Ausnahme.
+
+Nachgemessen nach der Korrektur: **0 Fehlschlaege**, und der Beleg
+fuellt sich (11 von 65 lebenden Zeilen tragen ihn schon, Tendenz
+steigend -- jede neue Zeile bekommt ihn im Moment ihres Hoechststands).
