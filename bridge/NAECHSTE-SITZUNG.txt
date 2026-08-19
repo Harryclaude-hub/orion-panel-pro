@@ -56,9 +56,26 @@ STAND: WAS FERTIG IST
   orion_laeufe/orion_wache 30 Tage. Datenbank von 191 auf 98 MB
   (Free-Limit 500 MB). Details in supabase/datenbank.md.
 
+- WAEHRUNG BEIDSEITIG (19.8. spaet): geld() zeigt immer beide Zeichen
+  ("81,40 EUR ($ 94,00)"); der Aufteilungs-Mischfehler (Anteile durch
+  den Kurs gedreht, Summe 86 statt 100) ist behoben. Gepusht.
+- TELEGRAM-MELDER gebaut und deployt (orion-melder-telegram, Takt
+  Job 92 minuetlich, Tabelle orion_telegram, Spalte telegram_gemeldet).
+  WARTET auf Karams TELEGRAM_BOT_TOKEN als Edge-Secret + chat_id in
+  orion_telegram. Einrichtungsmodus: {"einrichten":true}.
+
 STAND: WAS OFFEN IST
 
-**NICHTS. BETRIEBSRUHE (Karams Ansage vom 19.8.):** fuer eine Weile
+1. TELEGRAM SCHARF SCHALTEN: Karam legt Bot an (@BotFather), Bot als
+   Kanal-Admin, Token als Secret TELEGRAM_BOT_TOKEN, dann Einrichtungs-
+   aufruf -> chat_id nach orion_telegram, aktiv=true, Testnachricht.
+2. UNGEMESSEN: in welcher Waehrung liefert Betfair die MENGEN (bs/ls)
+   der Bridge? Kontowaehrung des Betfair-Kontos. Wenn EUR: max_einsatz/
+   max_gewinn der Betfair-Seite um den Kurs daneben (Rendite NICHT
+   betroffen, Quoten sind waehrungsfrei). Karam fragen, dann ggf.
+   kleine Scanner-Korrektur.
+
+DANACH BETRIEBSRUHE (Karams Ansage vom 19.8.): fuer eine Weile
 keine Updates an Bridge, Panel, PC oder Verwaltung, kein Design, kein
 UX. Nur beobachten und nachmessen, bauen NUR auf ausdrueckliche Ansage.
 

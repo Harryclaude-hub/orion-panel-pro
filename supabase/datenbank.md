@@ -99,6 +99,17 @@ nach `orion_wache`. Ruft:
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
   `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
   den Wächter (neben JS- und TS-Spiegel).
+- **Telegram-Melder** (NEU 19.8.2026 spät): Edge-Funktion
+  `orion-melder-telegram` (Takt `orion-telegram-takt`, Job 92, minütlich) —
+  Zwilling des Mail-Melders mit GLEICHEM Maßstab (live, 2–5 %, 25 s
+  bewährt, Gewinn ≥ 5 $), eigener Markierungsspalte
+  `orion_funde.telegram_gemeldet` und eigenem Ziel `orion_telegram`
+  (id=1: `chat_id`, `aktiv`; RLS an, keine Policies). Braucht das
+  Geheimnis `TELEGRAM_BOT_TOKEN` (Edge Function Secrets); ohne meldet
+  die Funktion das ehrlich und tut nichts. Einrichtung: Aufruf mit
+  `{"einrichten":true}` listet die Chats des Bots samt chat_id.
+  Geldbeträge in der Nachricht tragen BEIDE Währungen (€ zuerst,
+  $-Ursprung in Klammern, Kurs aus `orion_kurse`).
 - **Aufräum-Takt `orion-protokoll-aufraeumen`** (Job 91, täglich 03:20 UTC,
   NEU 19.8.2026): löscht `cron.job_run_details` älter 3 Tage sowie
   `orion_laeufe`/`orion_wache` älter 30 Tage. ANLASS: das pg_cron-Protokoll
