@@ -344,7 +344,7 @@
      * richtigen Wettbewerb (Leagues Cup, Delhi Premier League,
      * International Twenty20).
      *
-     * 18.8.2026, Karams Vorgabe: derselbe Broker, aber die Adresse OHNE
+     * 18.8.2026, des Auftraggebers Vorgabe: derselbe Broker, aber die Adresse OHNE
      * das "e" — orbitxch.com statt orbitexch.com. Nachgemessen: der
      * Marktpfad antwortet dort ebenso mit HTTP 200, die Pfadform bleibt
      * unveraendert. Wer die Adresse spaeter wieder tauscht, aendert NUR
@@ -354,7 +354,7 @@
 
     /* ---------- SMARKETS UEBER DEN BROKER (18.8.2026) ----------
      *
-     * Karams Vorgabe: nicht mehr smarkets.com anspringen, sondern seinen
+     * des Auftraggebers Vorgabe: nicht mehr smarkets.com anspringen, sondern seinen
      * Broker. Genannter Einstieg: pro.sportmarket.com/trade/american-football
      *
      * EHRLICHE GRENZE, am 18.8. gemessen: die Seite rendert erst im
@@ -365,7 +365,7 @@
      * Falle wie seinerzeit bei smarkets.com.
      *
      * Deshalb wird ein Sportpfad nur fuer Bereiche gesetzt, deren
-     * Schreibweise gaengig ist (american-football ist durch Karams Link
+     * Schreibweise gaengig ist (american-football ist durch des Auftraggebers Link
      * belegt); alles Uebrige landet auf der Handelsseite selbst. Die
      * PARTIE nennt die Karte ohnehin im Klartext — geraten wird nichts. */
     smarketsBroker: 'https://pro.sportmarket.com/trade/',

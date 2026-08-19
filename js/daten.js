@@ -274,7 +274,7 @@
          * pruefbaren Unterschied wird nicht geraten: ein falscher Marktpfad
          * fuehrt ins Leere, der Spiel-Link wenigstens zur Partie. Bis dahin
          * nennt die Karte den zu waehlenden Markt im Klartext. */
-        /* SEIT 18.8.2026 (Karams Vorgabe): Smarkets-Zeilen zeigen nicht
+        /* SEIT 18.8.2026 (des Auftraggebers Vorgabe): Smarkets-Zeilen zeigen nicht
          * mehr auf smarkets.com, sondern auf SEINEN Broker
          * (pro.sportmarket.com). Gesetzt wird dort, also gehoert der Link
          * dorthin — dieselbe Ueberlegung wie bei Betfair ueber Orbit.
@@ -299,7 +299,7 @@
         live.forEach(function (f) { f.veraltet = veraltet(f); brokerRichten(f); smarketsLinkRichten(f); });
         verlauf.forEach(function (f) { f.veraltet = false; brokerRichten(f); smarketsLinkRichten(f); });
 
-        /* FUNKER-NACHPRUEFUNG ALS DEFAULT (Karams Befehl 17.08. nachts):
+        /* FUNKER-NACHPRUEFUNG ALS DEFAULT (des Auftraggebers Befehl 17.08. nachts):
          * die unabhaengige Nachrechnung, die frueher nur auf Chat-Befehl
          * lief („pruefe #…"), laeuft jetzt IMMER — jede Zeile, jeder Takt.
          * Reine Arithmetik mit denselben Spiegel-Formeln, billig. Das
@@ -620,7 +620,7 @@
            * Warum hier zusaetzlich: Scanner und Datenbank pruefen das auch,
            * aber der Datenbank-Waechter laeuft im MINUTENTAKT. In diesem
            * Fenster koennte eine frisch entstandene Fehlpaarung kurz als
-           * Chance sichtbar sein — genau in dem Moment, in dem Karam
+           * Chance sichtbar sein — genau in dem Moment, in dem der Auftraggeber
            * hinsieht. Diese Pruefung schliesst das Fenster ganz: sie laeuft
            * bei JEDEM Zeichnen, also alle zwei Sekunden.
            *

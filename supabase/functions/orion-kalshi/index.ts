@@ -3,7 +3,7 @@
 // Kalshi ist eine regulierte US-Boerse, kein Buchmacher. Die Kursdaten sind
 // OHNE Konto und OHNE Schluessel lesbar. Weder Anmeldung noch Heim-PC noetig.
 //
-// V3 (17.8.2026, Karams Befehl "alles muss gescannt werden"):
+// V3 (17.8.2026, des Auftraggebers Befehl "alles muss gescannt werden"):
 //
 // Der alte Weg fragte EINE Serie je Anfrage ab und kannte nur die Kategorie
 // Sports mit Endung GAME. Gemessen: 258 Serien, 61 s. Politik allein haette

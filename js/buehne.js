@@ -10,7 +10,7 @@
  *    SZENE: zwei schwebende Planeten mit Orbitring, eine Staffel Jets und
  *    Raketen, die aufsteigen und wieder aufsetzen. Kein Text mehr.
  *
- *    Entfernt am 18.08. auf Karams Vorgabe: das Lagewort (fl-wort), die
+ *    Entfernt am 18.08. auf des Auftraggebers Vorgabe: das Lagewort (fl-wort), die
  *    Funkzeilen samt Motivationssprüchen (fl-funk) und das Schlachtfeld
  *    mit Panzer und Mündungsfeuer (fl-feld). Der Rand soll ruhig sein,
  *    nicht reden.
@@ -45,7 +45,7 @@
         /* Das Gitter bleibt als ganz feine Tiefenzeichnung im Hintergrund.
          * AUSGEBAUT am 18.08. (zweite Runde): die Scan-Saeule (fl-scan),
          * das Tick-Lineal (fl-ticks) und das Mini-Radar (fl-radar) —
-         * Karam: "dieser seitliche Scanner soll weg". Der Rand ist jetzt
+         * der Auftraggeber: "dieser seitliche Scanner soll weg". Der Rand ist jetzt
          * Himmel, kein Messgeraet. */
         '<div class="fl-gitter"></div>' +
         '<div class="fl-sterne"></div>' +
@@ -169,7 +169,7 @@
 
   /* ---------- Das Funkgeraet ist AUSGEBAUT (Vorgabe 18.08.) ----------
    *
-   * Karam: "diese Kenner und diesen Text entfernen". Damit fallen weg:
+   * der Auftraggeber: "diese Kenner und diesen Text entfernen". Damit fallen weg:
    * das Lagewort an der Flanke (fl-wort) und die Funkzeilen darunter
    * (fl-funk) samt Motivationsspruechen — und mit ihnen der einzige
    * Grund, warum die Buehne ueberhaupt Text schrieb.

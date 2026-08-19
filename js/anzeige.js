@@ -1332,12 +1332,12 @@
   });
 
   /* ---------- Der Rechenweg — zum Selbst-Nachrechnen (Vorgabe 17.8.) ----------
-   * Karams Ansage: „dass wir das auch nachrechnen können." Hier wird
+   * des Auftraggebers Ansage: „dass wir das auch nachrechnen können." Hier wird
    * NICHTS neu gerechnet: jede Zahl steht in der Zeile oder kommt aus
    * denselben Helfern wie die übrige Anzeige. Angezeigt wird gerundet —
    * wer nachtippt und in der letzten Stelle abweicht, sieht Rundung,
    * keinen Fehler. */
-  /* Die Formel je Seite, mit den ECHTEN Zahlen eingesetzt — Karams
+  /* Die Formel je Seite, mit den ECHTEN Zahlen eingesetzt — des Auftraggebers
    * Stichrechnung (17.8. abends). Beim Dagegenhalten (Lay) in seiner
    * Schreibweise mit dem Risikofaktor:
    *   Risikofaktor = Quote − 1 · Effektivquote = 1 + (1 − Gebühr) ÷ Risikofaktor
@@ -1399,7 +1399,7 @@
     return z;
   }
 
-  /* ---------- KOPIEREN STATT RECHNUNGSNUMMER (Karams Befehl 17.08. nachts) --
+  /* ---------- KOPIEREN STATT RECHNUNGSNUMMER (des Auftraggebers Befehl 17.08. nachts) --
    * Ein Knopf je Karte kopiert den KOMPLETTEN Gedankengang als Text in die
    * Zwischenablage: Spiel, Anbieter, Links, Kurse, Gebühren, Effektivquoten
    * samt Formeln, Kehrwertsumme, Rendite, Einsätze, Zeiten, Absage-Bilanz,

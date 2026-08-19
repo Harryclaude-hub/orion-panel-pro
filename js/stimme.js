@@ -319,7 +319,7 @@
     kopf.insertBefore(k, zu || null);
   }
 
-  /* STILLGELEGT am 18.08.2026 (Karams Befehl): Der Funker ist in ein
+  /* STILLGELEGT am 18.08.2026 (des Auftraggebers Befehl): Der Funker ist in ein
    * eigenes Programm ausgezogen (Orion Protection Panel). An seiner
    * Stelle steht jetzt ein LINK dorthin, der das dortige Logo trägt —
    * gebaut in funker.js. Dieser Avatar hätte ihn bei jedem Ton-Ereignis

@@ -604,7 +604,7 @@ async function durchlauf() {
 
 /* ---------- STANDBY-PRUEFUNG (Build 25) ----------
  *
- * Karams Wunsch: die Bridge soll auch laufen, wenn der Deckel zu ist.
+ * des Auftraggebers Wunsch: die Bridge soll auch laufen, wenn der Deckel zu ist.
  * EHRLICH: ein Node-Programm kann den Ruhezustand nicht selbst
  * verhindern — das ist eine Windows-Einstellung und braucht Adminrechte.
  * Was die Bridge SEHR WOHL kann: beim Start nachsehen und LAUT sagen,

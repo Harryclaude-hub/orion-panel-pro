@@ -1425,7 +1425,7 @@ die Partie. Diese Probe gehört als Regel in den Wächter — noch offen.
 | **Kursalter-Sperre** | Die Spalten `pm_preis_seit`/`bf_quote_seit` laufen seit 13.8. Sobald ein paar ungestörte Stunden Daten da sind: Trockenlauf, dann Regel „ist der ältere Kurs über 15 Minuten alt, keine Chance". Behebt 7 der 8 Fehlerklassen. |
 | **Ein-Buch-gegen-alle als Regel** | Siehe oben. Fängt genau das, was das Kursalter nicht sieht. |
 | **Kurse zum Bestwert speichern** | Heute speichert eine Zeile nur die zuletzt gesehenen Kurse — der Höchstwert ist dadurch nachträglich von niemandem prüfbar. Zwei Spalten. |
-| **KI-Tor** | NICHT gebaut. Idee: nur die 5–20 Kandidaten am Tag, die über die Schwelle kommen, von einem Modell prüfen lassen — gefragt wird „finde einen Grund abzulehnen". Braucht einen API-Schlüssel als Supabase-Secret, den nur Karam einträgt. Geschätzt 1–5 Cent am Tag. Gehört HINTER die festen Regeln, nicht an deren Stelle. |
+| **KI-Tor** | NICHT gebaut. Idee: nur die 5–20 Kandidaten am Tag, die über die Schwelle kommen, von einem Modell prüfen lassen — gefragt wird „finde einen Grund abzulehnen". Braucht einen API-Schlüssel als Supabase-Secret, den nur der Auftraggeber einträgt. Geschätzt 1–5 Cent am Tag. Gehört HINTER die festen Regeln, nicht an deren Stelle. |
 | **Vier weitere Marktarten** | halbzeit, hz1/hz2_ueber_unter, ecken_ueber_unter. Der Scanner versteht sie längst, Polymarket liefert 1000 Märkte dafür, Smarkets führt die Gegenmärkte — aber der Sammler wirft sie weg. Erster Versuch am 13.8. brachte den Scanner zum Absturz. Nächster Anlauf: **eigener Sammler mit eigenem Takt**. |
 | **Spielerwetten** | 21. Bereich, steht im Register, ausgeschaltet. Sieben Polymarket-Kennungen geprüft, alle 0 Ereignisse. Erst Quelle finden, dann einschalten. |
 
@@ -1442,7 +1442,7 @@ die Partie. Diese Probe gehört als Regel in den Wächter — noch offen.
 - **Der Rechner darf nicht schlafen**, sonst steht die Bridge. Deckel
   zuklappen ist erlaubt.
 
-### Wie Karam arbeitet
+### Wie der Auftraggeber arbeitet
 
 Erst messen, dann bauen. Nichts behaupten, was nicht gemessen ist;
 Ungemessenes ausdrücklich so kennzeichnen. Vor jedem Ausrollen ein
@@ -1539,7 +1539,7 @@ im Bereich an — lautlos. Korrigiert. Auffällig war es nur daran, dass
 
 ### Smarkets: der Marktlink geht nicht, der Markt existiert
 
-Karams Verdacht („bei Smarkets immer die falschen Links") ist zur Hälfte
+des Auftraggebers Verdacht („bei Smarkets immer die falschen Links") ist zur Hälfte
 bestätigt, und die andere Hälfte ist wichtiger:
 
 - **Der Markt existiert.** Die Smarkets-Schnittstelle führt je Partie 103
@@ -1555,7 +1555,7 @@ bestätigt, und die andere Hälfte ist wichtiger:
 - Deshalb bleibt der Link auf der **Partie**, und die Karte nennt weiterhin
   ausdrücklich den Markt, auf den dort zu wechseln ist.
 
-> **Offene Frage an Karam, ein Klick genügt:** öffnet
+> **Offene Frage an der Auftraggeber, ein Klick genügt:** öffnet
 > `…/ac-omonia-nicosia-vs-lincoln-red-imps-fc/over-under-2-5/` bei dir den
 > richtigen Markt oder den Standardmarkt? Wenn ja, kann der Sammler die
 > Marktadresse bauen. Von hier aus ist es nicht messbar, smarkets.com ist im

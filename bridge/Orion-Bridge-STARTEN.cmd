@@ -11,7 +11,7 @@ rem     /waechter       stiller Nachschau-Lauf alle 5 Minuten (von der Aufgabe)
 rem
 rem  Warum beides in EINER Datei: vorher gab es Bridge-start.cmd,
 rem  Bridge-waechter.ps1 und diesen Starter nebeneinander - drei Dateien fuer
-rem  eine Aufgabe. Karam am 19.08.: "warum sind manche einfach doppelt?"
+rem  eine Aufgabe. der Auftraggeber am 19.08.: "warum sind manche einfach doppelt?"
 rem
 rem  KEINE UMLAUTE hier: cmd.exe liest die Datei in der alten Codepage,
 rem  Umlaute in rem-Zeilen wurden als Befehle missverstanden.

@@ -1,7 +1,7 @@
 # ÜBERGABE: Orion Bridge 4.0 — Startpunkt für die nächste Sitzung
 
 > **Für die neue Sitzung:** Diese Datei zuerst lesen, dazu `UEBERGABE.md`
-> Abschnitt 8j (Gesamtprojekt) und `supabase/datenbank.md`. Karam ist der
+> Abschnitt 8j (Gesamtprojekt) und `supabase/datenbank.md`. der Auftraggeber ist der
 > Offizier, die Anrede ist militärisch, alles auf Deutsch.
 
 ## 1. Stand (17.08.2026, Ende der Sitzung)
@@ -12,19 +12,19 @@
 prüft die et→Bereich-Zuordnung gegen `orion_bf_sport.name_erwartet`
 („Soccer", „Boxing" …) — die 4.0 schickte seit dem 16.8. deutsche Namen,
 dadurch schlug der Wächter **1.262-mal in 24 h Dauer-Fehlalarm** und
-ersäufte echte Vermischungs-Alarme im Rauschen. Gefunden bei Karams
+ersäufte echte Vermischungs-Alarme im Rauschen. Gefunden bei des Auftraggebers
 Prüfauftrag am 17.08. („keine Vermischungen wie damals"). Solange die
 Sportkarte noch nicht geholt ist, lässt die Bridge `et_namen` weg — die
 Prüfung pausiert dann sichtbar, statt Unsinn zu melden. Neu in 22:
 `stats.speicher_mb`, der eigene Speicherverbrauch bei jedem Upload
-(Karams Sorge nach der stets wachsenden 3.8; gemessen: 80 MB, Ordner
+(des Auftraggebers Sorge nach der stets wachsenden 3.8; gemessen: 80 MB, Ordner
 enthält nur 5 Programmdateien ohne Protokolle — es wächst nichts, und
 das ist jetzt jederzeit per SQL ablesbar). Neu in 21: die
 Sportarten-Schalter. In `bridge-config.json` darf ein Feld
 `sportarten` stehen (je Schlüssel: `aktiv`, `fensterStunden`, `anteil`;
 gültige Schlüssel: fussball, tennis, basketball, baseball, football,
 eishockey, cricket, boxen, mma, motorsport, esport). Fehlt das Feld,
-läuft alles exakt wie Build 20 — im Trockenlauf mit Karams unveränderter
+läuft alles exakt wie Build 20 — im Trockenlauf mit des Auftraggebers unveränderter
 Config nachgemessen. Vertippte Schlüssel/Felder und ein Fenster über dem
 globalen werden beim Start LAUT gemeldet (gegen stille Fehlschläge); die
 wirksame Einstellung steht vollständig im Startbild samt Zeile
@@ -36,7 +36,7 @@ Installationsordner), `bridge-config.example.json` und `README.md`
 17.08. die Verknüpfung „Orion Bridge 4.0" (Node-Symbol) für den
 Handstart; der alte 3.8-Autostart wurde entschärft (Verknüpfung in den
 3.8-Ordner verschoben — sonst wären bei jeder Anmeldung ZWEI Bridges
-gestartet). ACHTUNG: Am 17.08. hat Karam versehentlich den kompletten
+gestartet). ACHTUNG: Am 17.08. hat der Auftraggeber versehentlich den kompletten
 Repo-Ordner `bridge/` von der Platte gelöscht (statt Desktop-3.8);
 alles wiederhergestellt aus Git-Historie + Installationskopien.
 
@@ -72,7 +72,7 @@ der Server (`orion-lauf`).
    `CFG.bridgeUrl` (Edge Function **bf-bridge**) mit Header `x-bridge-token`.
    Der Server erwartet exakt das. Endpunkt und Supabase-Projekt
    (`noexklrgtqveiclijdwp`) niemals umbenennen.
-2. **`bridge-config.json` bleibt kompatibel** — Karams Zugangsdatei wird
+2. **`bridge-config.json` bleibt kompatibel** — des Auftraggebers Zugangsdatei wird
    weiterverwendet, nie neu ausgefüllt, nie committet.
 3. **Änderungsweg:** Repo-Datei editieren → `node --check` → Testlauf in
    einem Scratch-Ordner (Config dazukopieren, `timeout 100 node …`) →
@@ -92,7 +92,7 @@ der Server (`orion-lauf`).
 4. Prüfung, ob sie läuft: SQL
    `SELECT now()-updated_at, stats FROM bridge_odds WHERE id=1;`
    (Alter muss < ~1 min sein; `stats.bridge` = "4.0").
-5. **Die Bridge nie hinter uns lassen (Karams Ansage, 17.08. abends):**
+5. **Die Bridge nie hinter uns lassen (des Auftraggebers Ansage, 17.08. abends):**
    Bei JEDER neuen Logik (neue Marktarten, neue Bereiche, neue
    Prüfungen) gehört die Frage in den Bauplan: „Muss die Bridge das
    mittragen — neue Markttypen, neue Sportarten, neue Felder?" Die
@@ -119,7 +119,7 @@ Anbietertafel zeigt bei Betfair „? von ? hochgeladen" — die
 Übersichts-Funktion liest noch die 3.8-stats-Schlüssel (`bf_katalog`,
 `hochgeladen`), die Bridge 4.0 sendet stattdessen `maerkte`/`vorrat`.
 
-**Neue definierte Bauaufgabe (Karams Nachfrage 17.08. nachts):
+**Neue definierte Bauaufgabe (des Auftraggebers Nachfrage 17.08. nachts):
 Marktart „WAHL" — Betfair-Politik gegen Polymarket-Binärfragen.**
 Gemessen 17.08. nachts: Betfair et 2378961 führt **117 Märkte**, alle
 Art NONSPORT, Stichtage = Wahltermine (Nov. 2026–2029, weit außerhalb
@@ -134,10 +134,10 @@ braucht eine Politik-Ausnahme), Server paart Kandidaten-/Parteinamen
 NUR über Weißliste (Kandidatennamen = schärfste Namensgleichheits-
 Falle; „Trump" steht in dutzenden Fragen), PM-Seite: Binärfrage gegen
 Back/Lay auf den Läufer (der Lay-Fall war im 3.8-Regelwerk vorgedacht).
-**Regel Karam VORHER vorlegen, wie bei der Schwelle.** Messskript:
+**Regel der Auftraggeber VORHER vorlegen, wie bei der Schwelle.** Messskript:
 Scratchpad bf-politik-messung.js (Muster im UEBERGABE-Verlauf).
 
-**Karams Feature-Auftrag (17.08. tief nachts) — ERSTER BAU DER
+**des Auftraggebers Feature-Auftrag (17.08. tief nachts) — ERSTER BAU DER
 NÄCHSTEN SITZUNG: das Drei-Tage-Archiv.** Seine Worte sinngemäß:
 Hauptanzeige schlank halten; alles, was älter als 3 Tage in Verlauf,
 Knapp-Archiv oder Falschen Rechnungen steht, wandert in ein ARCHIV —
@@ -158,7 +158,7 @@ flackern weg" — das ist eine MESSAUFGABE (Bewährungszeit 25 s,
 Mindestrendite 2 %, Lebensdauer der Chancen auswerten), bevor an
 Schwellen gedreht wird.
 
-**Karams Feature-Auftrag 2 (17.08. tief nachts, „letzte Sache") —
+**des Auftraggebers Feature-Auftrag 2 (17.08. tief nachts, „letzte Sache") —
 BAU 2 DER NÄCHSTEN SITZUNG: das GESETZT-Fach.** Seine Worte
 sinngemäß: an jedem Eintrag ein kleiner, dezenter Speichern-Knopf
 („darauf habe ich gesetzt"). Gespeichert wird: der Fund samt seiner
@@ -167,7 +167,7 @@ die Zeile ändert sich ja weiter!), der EIGENE eingesetzte Betrag,
 später das Urteil „war die Rechnung des Programms richtig?"
 (ja/nein/offen) und freie Notizen. Dazu eine eigene Ansicht aller
 Gespeicherten, und an gespeicherten Karten ein sichtbares
-„gesetzt"-Zeichen. **Karam hat entschieden (17.08. tief nachts): Variante (b) —
+„gesetzt"-Zeichen. **der Auftraggeber hat entschieden (17.08. tief nachts): Variante (b) —
 Datenbank, auf jedem Gerät verfügbar.** Bauskizze: Tabelle
 `orion_einsaetze` (schluessel, nr, schnappschuss jsonb, einsatz_eur,
 urteil offen/richtig/falsch, notiz, erstellt_am, geaendert_am), RLS
@@ -177,9 +177,9 @@ Ausweis (dasselbe Muster wie bf-bridge: Vergleich gegen
 `profiles.bridge_token`); das Panel erfährt den Token einmalig über
 die Einstellungen-Seite und behält ihn lokal. So bleibt die Tabelle
 trotz öffentlichem Panel-Schlüssel geschützt, und die Einsätze
-gehören nachweislich Karam.
+gehören nachweislich der Auftraggeber.
 
-**VORRANG vor allem anderen (Karams Schlussansage 17.08. nachts):
+**VORRANG vor allem anderen (des Auftraggebers Schlussansage 17.08. nachts):
 das WANDERN der Karten beim Lesen.** Diagnose (nicht raten — sie
 steht hier fest): Der Scroll-Anker von heute hält die SEITE fest,
 aber die Live-Listen werden bei jedem Takt neu nach Rendite
@@ -192,7 +192,7 @@ sortiert wird erst beim Reiterwechsel, beim Neuladen oder nach
 längerer Ruhe. Muss mit der Bereichs-Gruppierung (17.08., „c")
 zusammenspielen. Danach erst Archiv und Gesetzt-Fach.
 
-**ERLEDIGT 17.08. tief nachts (Karams Planänderung, „erste
+**ERLEDIGT 17.08. tief nachts (des Auftraggebers Planänderung, „erste
 Priorität"):** Funker-Chat STILLGELEGT — der Knopf bleibt als
 Platzhalter und tut nichts; `antwort()` bleibt im Code für später.
 Seine Nachprüfung läuft jetzt als DEFAULT bei jedem Takt für jede
@@ -204,13 +204,13 @@ Formel/Menge/Link, Kehrwertsumme, Rendite, Einsätze, Zeiten,
 Absage-Bilanz, Buchprobe, Währungskurs, Nachprüfung). Skript-Version
 auf v=57. Browser-verifiziert, Commit 3c48f13.
 
-**Künftiges Kapitel (Karams Ansage vor der Planänderung): der FUNKER
+**Künftiges Kapitel (des Auftraggebers Ansage vor der Planänderung): der FUNKER
 als EIGENES Projekt** — eigenes Repo auf GitHub, eigener Link, mit
 dem Panel verbunden/synchronisiert („eine komplett größere Aufgabe,
 die separat ist"). Der stillgelegte Knopf im Panel ist der spätere
 Einstiegspunkt; `funker.js` hält antwort() als Ausgangsmaterial.
 
-**Actions aufgeräumt (17.08. spät, Karams Auftrag „nur grüne
+**Actions aufgeräumt (17.08. spät, des Auftraggebers Auftrag „nur grüne
 Workflows"):** Alle 16 Repos geprüft — **kein Workflow war pausiert,
 deaktiviert oder verwaist**, alle Workflow-Dateien vorhanden, nichts
 war versehentlich gelöscht (also nichts wiederherzustellen). Entfernt
@@ -228,7 +228,7 @@ lief; mit `gh api -X POST .../pages/builds` neu gebaut → „built".
 
 1. **Deckel-Test:** Standby-/Ruhezustands-Timer nachgemessen auf „nie"
    (Netz UND Akku). Deckel-Aktion ließ sich per Abfrage nicht
-   bestätigen — Beweis: Deckel 5 min zu, dann Kontroll-SQL. Karam muss
+   bestätigen — Beweis: Deckel 5 min zu, dann Kontroll-SQL. der Auftraggeber muss
    den Deckel selbst zuklappen.
 2. **Überschneidungs-Matrix** (Kategorie × Anbieter, gemessen) — welche
    Bereiche tragen wirklich zwei Quellen. Stand 13.8.: 3 von 21.
@@ -237,14 +237,14 @@ lief; mit `gh api -X POST .../pages/builds` neu gebaut → „built".
    drosselt, Supabase 546/Verbindungspool.
 4. **Zwei-Quellen-Wächter, meldend statt selbstschaltend:** prüft, ob
    ein ruhender Bereich (Nur-ein-Anbieter-Regel) eine zweite Quelle
-   bekommen hat, und meldet — Karam gibt das Einschalten frei.
-5. **Desktop\Orion-Bridge-3.8 löschen** (macht Karam selbst; enthält
+   bekommen hat, und meldet — der Auftraggeber gibt das Einschalten frei.
+5. **Desktop\Orion-Bridge-3.8 löschen** (macht der Auftraggeber selbst; enthält
    die ALTE Zugangsdatei — die aktuelle liegt in
    C:\Users\Home\OrionBridge und darf NIEMALS gelöscht werden).
 6. ~~Commit/Push~~ **erledigt am 17.08.** (Commit f9a5840 auf main,
    gepusht): kompletter 4.0-Stand ist in der Git-Historie verankert.
 
-## 3. DER AUFTRAG VOM 16.08. (Karams Worte — erledigt, siehe 3a)
+## 3. DER AUFTRAG VOM 16.08. (des Auftraggebers Worte — erledigt, siehe 3a)
 
 > „Ich möchte die lokale Bridge weiterbearbeiten … ich hab da mehrere
 > Konfigurationen, die ich auch direkt in die Bridge integrieren möchte."
@@ -288,7 +288,7 @@ bevor sie baut. Kontext dazu:
    gemessen: Betfair trägt außerhalb der 11 Bridge-Sportarten fast
    nichts Paarbares (Darts 4, Rugby 1, Golf 0, Politik 0) — die Bridge
    scannt bereits alles, was Paare tragen kann.
-3. Marktart „Schwelle": **Regel am 17.08. abends von Karam GENEHMIGT**
+3. Marktart „Schwelle": **Regel am 17.08. abends von der Auftraggeber GENEHMIGT**
    (nur Stichtag-gegen-Stichtag; Weißliste statt Wortähnlichkeit; exakt
    gleiche Zahl; exakt gleiche Minute; alle bestehenden Prüfungen;
    Start klein mit BTC). **Erste Anwendung der Regel, gemessen:**
@@ -298,11 +298,11 @@ bevor sie baut. Kontext dazu:
    Stichzeitpunkt → regelkonforme BTC/ETH-Paare heute: NULL.** Das ist
    die Regel bei der Arbeit — eine 12:00-gegen-17:00-Paarung sähe wie
    Geld aus und wäre reines Risiko. Zweites, grundsätzlicheres
-   Hindernis (bei der Regelvorlage noch übersehen, Karam noch NICHT
+   Hindernis (bei der Regelvorlage noch übersehen, der Auftraggeber noch NICHT
    vorgelegt): die REFERENZQUELLEN differieren (Polymarket löst über
    Binance auf, Kalshi über CF Benchmarks) — nahe der Schwelle können
    beide Bücher GEGENSÄTZLICH abrechnen; selbst zeitgleiche Märkte
-   wären nicht streng dieselbe Frage. **Karam hat 17.08. spät
+   wären nicht streng dieselbe Frage. **der Auftraggeber hat 17.08. spät
    „STRENG" entschieden:** gepaart wird nur bei gleicher
    Referenzquelle; die Weißliste führt sie mit.
    **Stichzeit-Matrix KOMPLETT gemessen (17.08. spät) — Ergebnis:
@@ -323,7 +323,7 @@ bevor sie baut. Kontext dazu:
    Paarungs-Scanner gebaut. orion-lauf bleibt unberührt. Vorrat
    liegt bereit (id=2, Schwellenzahl in jaName, notfalls
    floor_strike im Sammler nachrüsten).
-4. **Nur-ein-Anbieter-Regel am 17.8. auf Karams Befehl UMGEKEHRT**
+4. **Nur-ein-Anbieter-Regel am 17.8. auf des Auftraggebers Befehl UMGEKEHRT**
    („alles muss gescannt werden"): alle 8 Welt-Bereiche wieder aktiv,
    Stunden-Takte versetzt (:30–:51), 20 Scanner laufen. Politik-Lauf
    von Hand gezündet und im Protokoll bestätigt (10,3 s, fehlerfrei).
@@ -331,17 +331,17 @@ bevor sie baut. Kontext dazu:
    Quelle (Kalshi-Erweiterung + Marktart „Schwelle"). Doku:
    `supabase/datenbank.md`, Abschnitt „Nur-ein-Anbieter-Regel".
 5. Secrets offen: `RESEND_API_KEY` (E-Mail), `ELEVENLABS_API_KEY`
-   (Vorlese-Funktion) — beides Karam.
+   (Vorlese-Funktion) — beides der Auftraggeber.
 
 ## 5. Startsatz für die neue Sitzung
 
 „Lies `bridge/UEBERGABE-BRIDGE.md` in `C:\Users\Home\orion-panel-pro` und
 dann besprechen wir, welche Konfigurationen in die Bridge kommen."
 
-## 6. BRIDGE-MELDEPFLICHT (Karams Regel, 18.08.2026)
+## 6. BRIDGE-MELDEPFLICHT (des Auftraggebers Regel, 18.08.2026)
 
 **Bei JEDER Änderung ausdrücklich sagen, ob eine NEUE BRIDGE nötig ist.**
-Karams Worte: „wenn wir Änderungen machen und diese Änderung auch in der
+des Auftraggebers Worte: „wenn wir Änderungen machen und diese Änderung auch in der
 lokalen Bridge geändert werden soll, dass Du mir sagst, dass ich eine
 neue Bridge hab."
 
@@ -386,7 +386,7 @@ alles wie zuvor (`null` heißt „unbekannt", nicht „passt schon").
 
 ## 8. BUILD 25 — der Grundanteil (19.08.2026)
 
-**NEUE BRIDGE, installiert und laufend.** Karams Verdacht („vielleicht
+**NEUE BRIDGE, installiert und laufend.** des Auftraggebers Verdacht („vielleicht
 haben wir E-Sport und die anderen Bereiche vernachlässigt") war richtig,
 und es war ein **stiller Fehlschlag**.
 

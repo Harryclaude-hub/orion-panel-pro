@@ -94,7 +94,7 @@ nach `orion_wache`. Ruft:
   > (`ø đ ł ß æ œ`) sind keine Akzente, NFD zerlegt sie nicht. JS behält
   > `bodø`, SQL macht `bod`. Betrifft gemessen **eine** Zeile (Bodø/Glimt).
   > Die Reparatur läge in der PAARUNGSLOGIK, nicht im Prüfweg — sie würde
-  > neue Paarungen erzeugen und gehört deshalb vor Karams Augen gemacht,
+  > neue Paarungen erzeugen und gehört deshalb vor des Auftraggebers Augen gemacht,
   > mit Trockenlauf, in allen drei Fassungen (js, ts, sql).
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
   `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
@@ -226,7 +226,7 @@ Archive (Verlauf + Falsch + Knapp-Archiv, Stand 14.8.: 442) über 1000,
 fallen die ältesten wieder aus dem Fenster — dann braucht es getrennte
 Abfragen oder eine höhere Grenze.
 
-> Karam hat es bemerkt: „Ich hab eine Chance gesehen, die war kurz da, dann
+> der Auftraggeber hat es bemerkt: „Ich hab eine Chance gesehen, die war kurz da, dann
 > war sie weg — aber nicht im Verlauf."
 
 Dazu gehört die Anzeige (`js/daten.js`): sie verlangte, dass **auch der
@@ -241,7 +241,7 @@ wiederholt:
 
 **Ausfall 1, 45 Minuten.** Zwanzig Bereichs-Scanner statt einem (Änderung vom
 12.8.) erzeugten 67 % der Datenbankzeit in `net.http_post`. Verbindungspool
-erschöpft, PGRST002, erst ein Neustart durch Karam half. Behoben: die 19
+erschöpft, PGRST002, erst ein Neustart durch der Auftraggeber half. Behoben: die 19
 leeren Bereiche von 1–2 auf 10 Minuten gestreckt — sie lieferten in 24
 Stunden **null** Paare bei ~17 000 Läufen.
 
@@ -479,7 +479,7 @@ standen dort 791 Polymarket-Märkte ohne jedes Gegenstück.
 plus `cron.schedule('orion-lauf-<bereich>', …)`. Genau das ist der letzte
 Schritt, sobald der Kalshi-Sammler Krypto/Wetter/Wirtschaft mitholt.
 
-### UMGEKEHRT am 17.8.2026 — Karams Befehl: „alles muss gescannt werden"
+### UMGEKEHRT am 17.8.2026 — des Auftraggebers Befehl: „alles muss gescannt werden"
 
 Alle 8 Bereiche wieder `aktiv = true`, `takt_sek = 3600`, Stunden-Takte
 versetzt neu angelegt (golf :30, politik :33, krypto :36, wirtschaft :39,
@@ -494,7 +494,7 @@ in `orion_laeufe`), aber PAARE entstehen erst, wenn eine zweite Quelle
 dieselben Fragen führt: Polymarket hat dort keine „A gegen B"-Titel.
 Der Weg zu echten Chancen bleibt: Kalshi-Welt-Vorrat (seit 17.8. da,
 siehe unten) mit der Marktart „Schwelle" und strikter Paarung verbinden
-(Regel VORHER Karam zeigen; Polymarket „erreicht X im Zeitraum" ist
+(Regel VORHER der Auftraggeber zeigen; Polymarket „erreicht X im Zeitraum" ist
 NICHT Kalshi „Preis am Stichtag").
 
 ### orion-kalshi v3 (17.8.2026) — alle Kategorien, zwei Ablagen

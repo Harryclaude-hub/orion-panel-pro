@@ -16,7 +16,7 @@
  * gespeicherten Zeile, die sechs Bedingungen, die Buchprobe, das Urteil.
  *
  * Das KI-Tor (ein echtes Sprachmodell hinter den festen Regeln) steht im
- * Plan und braucht Karams API-Schluessel als Supabase-Secret.
+ * Plan und braucht des Auftraggebers API-Schluessel als Supabase-Secret.
  *
  * EIGENE DATEI wie melder/buehne: liest nur welt.letztesErgebnis und
  * welt.Rechnung, darf geloescht werden, keine Logik haengt an ihm.
@@ -217,13 +217,13 @@
            'Ich rate nie: jede Zahl ist nachgerechnet, jede Aussage gemessen. Ende.';
   }
 
-  /* ---------- EINE TÜR ZUM PRÜFSTAND (Karams Befehl, 18.08.) ----------
+  /* ---------- EINE TÜR ZUM PRÜFSTAND (des Auftraggebers Befehl, 18.08.) ----------
    *
    * Aus dem Funker ist ein EIGENES Programm geworden: das Orion
    * Protection Panel — eigenes Repo, eigene Datenbank, eigener Link.
    * Hier steht nur noch die Tür dorthin, sonst nichts.
    *
-   * AUSDRÜCKLICH KEINE SYNCHRONITÄT (Karams Wort: "zwei komplett
+   * AUSDRÜCKLICH KEINE SYNCHRONITÄT (des Auftraggebers Wort: "zwei komplett
    * unterschiedliche Körper"): kein gemeinsamer Code, keine gemeinsamen
    * Daten, kein Aufruf über die Grenze. Auch das Logo ist eine KOPIE
    * und liegt inline — diese Seite lädt NICHTS von der anderen. Fällt
