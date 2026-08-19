@@ -99,6 +99,13 @@ nach `orion_wache`. Ruft:
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
   `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
   den Wächter (neben JS- und TS-Spiegel).
+- **Gespeicherte Funde** (NEU 20.8.2026): Tabelle `orion_gespeichert`
+  (`schluessel` PK, `zeile` jsonb = SCHNAPPSCHUSS der Fundzeile beim
+  Klick, `gespeichert_am`). RLS an, anon darf lesen/anlegen/loeschen —
+  dieselbe Vertrauensstufe wie `orion_mail` (das Panel schreibt mit dem
+  oeffentlichen Schluessel). Bedient von js/speicher.js (Knopf auf jeder
+  Karte), angezeigt von gespeichert.html; beitrag.html zeigt zu einem
+  Schluessel den HEUTIGEN Stand.
 - **Telegram-Melder** (NEU 19.8.2026 spät): Edge-Funktion
   `orion-melder-telegram` (Takt `orion-telegram-takt`, Job 92, minütlich) —
   Zwilling des Mail-Melders mit GLEICHEM Maßstab (live, 2–5 %, 25 s

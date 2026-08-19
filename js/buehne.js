@@ -6,9 +6,12 @@
  * Zwei Aufgaben:
  *
  * 1. DIE FLANKEN. Auf breiten Bildschirmen bleiben links und rechts der
- *    Seite leere Ränder. Dort steht seit dem 18.08. eine RUHIGE WELTRAUM-
- *    SZENE: zwei schwebende Planeten mit Orbitring, eine Staffel Jets und
- *    Raketen, die aufsteigen und wieder aufsetzen. Kein Text mehr.
+ *    Seite leere Ränder. Dort steht seit dem 20.08. DIE WACHT: ein
+ *    Radarturm mit drehender Antenne und Funkwellen im Lage-Takt, eine
+ *    Peilrose mit Suchzeiger, die Jet-Staffel und Raketen, die starten
+ *    und das Bild nach OBEN verlassen (ehrliche Physik, nichts fliegt
+ *    rückwärts). Die Flanken füllen den Rand bis zum Inhalt und neigen
+ *    sich der Maus leicht entgegen (nur Stufe 3). Kein Text.
  *
  *    Entfernt am 18.08. auf des Auftraggebers Vorgabe: das Lagewort (fl-wort), die
  *    Funkzeilen samt Motivationssprüchen (fl-funk) und das Schlachtfeld
@@ -49,16 +52,37 @@
          * Himmel, kein Messgeraet. */
         '<div class="fl-gitter"></div>' +
         '<div class="fl-sterne"></div>' +
-        /* PLANETEN (Vorgabe 18.08.): die Bildsprache des Pruefstands in
-         * die Raender geholt. Zwei Gasriesen mit Wolkenbaendern, Licht
-         * oben links, tiefer Schatten unten rechts, dazu ein Orbitring —
-         * und alles schwebt sehr langsam. Bewegt wird ausschliesslich
-         * transform, also auf der Grafikkarte: kein Bild, kein WebGL,
-         * keine Zeichenschleife, kein Neuzeichnen der Kugelflaeche. */
-        '<div class="fl-planeten">' +
-          '<i class="fl-planet p1"></i>' +
-          '<i class="fl-planet p2"></i>' +
-          '<i class="fl-orbit"></i>' +
+        /* DIE WACHT (20.08., Karams Vorgabe: "die Planeten sind zu
+         * langweilig, ich will ein Militaerdesign"): oben ein
+         * Radar-Wachturm mit drehender Balkenantenne und auslaufenden
+         * Funkwellen, unten eine Peilrose mit gegenlaeufigem
+         * Suchzeiger. Beides dreht per transform auf der Grafikkarte —
+         * gleiche Kostenklasse wie die alten Planeten, und die LAGE
+         * faerbt weiter mit (ruhig/wachsam/alarm ueber --fl-farbe). */
+        '<div class="fl-wacht">' +
+          '<i class="fl-turm">' +
+            '<svg class="fl-mast" viewBox="0 0 60 96" aria-hidden="true">' +
+              '<path fill="currentColor" d="M27 34 L33 34 L36 88 L40 88 L40 92 L20 92 L20 88 L24 88 Z"/>' +
+              '<path fill="currentColor" opacity=".55" d="M24 62 L10 88 L14 88 L27 66 Z M36 62 L50 88 L46 88 L33 66 Z"/>' +
+              '<circle cx="30" cy="30" r="4.5" fill="currentColor"/>' +
+            '</svg>' +
+            '<b class="fl-antenne"><svg viewBox="0 0 76 18" aria-hidden="true">' +
+              '<path fill="currentColor" d="M4 9 C20 1 56 1 72 9 C56 11 20 11 4 9 Z"/>' +
+              '<rect x="34" y="8" width="8" height="4" fill="currentColor"/>' +
+            '</svg></b>' +
+            '<b class="fl-welle w1"></b><b class="fl-welle w2"></b><b class="fl-welle w3"></b>' +
+          '</i>' +
+          '<i class="fl-rose">' +
+            '<svg viewBox="0 0 100 100" aria-hidden="true">' +
+              '<circle cx="50" cy="50" r="46" fill="none" stroke="currentColor" stroke-width="1.6" opacity=".7"/>' +
+              '<circle cx="50" cy="50" r="30" fill="none" stroke="currentColor" stroke-width="1" opacity=".4"/>' +
+              '<g stroke="currentColor" stroke-width="1.4" opacity=".8">' +
+                '<path d="M50 4 v9 M50 87 v9 M4 50 h9 M87 50 h9"/>' +
+                '<path opacity=".5" d="M17.5 17.5 l6.4 6.4 M76.1 76.1 l6.4 6.4 M82.5 17.5 l-6.4 6.4 M23.9 76.1 l-6.4 6.4"/>' +
+              '</g>' +
+            '</svg>' +
+            '<b class="fl-zeiger"></b>' +
+          '</i>' +
         '</div>' +
         /* DIE LUFTWAFFE (Vorgabe 14.8. nachts): erkennbare Silhouetten in
          * Draufsicht — Nurfluegel-Bomber (B-2-Klasse), Doppelleitwerk-
@@ -79,10 +103,10 @@
             '<path fill="currentColor" d="M24 0 C21.5 0 21.5 4 21.5 6 L2 8 L2 10 L21.5 10 L21.5 19 L16 24 L17 26 L24 21 L31 26 L32 24 L26.5 19 L26.5 10 L46 10 L46 8 L26.5 6 C26.5 4 26.5 0 24 0 Z"/>' +
           '</svg></i>' +
         '</div>' +
-        /* RAKETEN (Vorgabe 18.08.): statt Panzer und Soldaten steigen
-         * jetzt Traeger auf und setzen wieder auf — Start, Bahn, sanftes
-         * Aufsetzen, kurzer Staub. Jede laeuft ihren eigenen langen Takt,
-         * damit nie zwei gleichzeitig zuenden. */
+        /* RAKETEN (20.08., ehrliche Physik): lange Ruhe auf der Rampe,
+         * Zuendung mit Startstaub, Aufstieg, Abgang nach OBEN aus dem
+         * Bild — nichts setzt rueckwaerts wieder auf. Jede laeuft ihren
+         * eigenen langen Takt, damit nie zwei gleichzeitig zuenden. */
         '<div class="fl-raketen">' +
           '<i class="fl-rakete r1">' +
             '<svg viewBox="0 0 14 40" aria-hidden="true">' +
@@ -223,9 +247,47 @@
     });
   }
 
+  /* ---------- PARALLAX (20.08., Karams Vorgabe: "die Sidebars ein
+   * bisschen interaktiver") ----------
+   *
+   * Die Flanken neigen sich der Maus minimal entgegen: Wacht, Staffel
+   * und Raketen tragen je eine eigene Tiefe, dadurch entsteht beim
+   * Bewegen ein leiser Raumeindruck. KOSTENRAHMEN: nur transform
+   * (Grafikkarte), gerechnet hoechstens einmal je Bild ueber
+   * requestAnimationFrame, NUR bei echter Maus (pointer: fine) und NUR
+   * in Animationsstufe 3 — Stufe 1 und 2 bleiben unberuehrt, wie es
+   * die Stufenregel verlangt. pointer-events bleibt aus: die Flanke
+   * faengt weiterhin keinen einzigen Klick ab. */
+  function parallaxStart() {
+    if (!window.matchMedia || !matchMedia('(pointer: fine)').matches) return;
+    var wartend = false;
+    document.addEventListener('mousemove', function (ev) {
+      if (wartend) return;
+      wartend = true;
+      requestAnimationFrame(function () {
+        wartend = false;
+        var wurzel = document.documentElement;
+        if (wurzel.classList.contains('anim-1') || wurzel.classList.contains('anim-2')) return;
+        var dx = (ev.clientX / window.innerWidth - 0.5);
+        var dy = (ev.clientY / window.innerHeight - 0.5);
+        ['flanke-l', 'flanke-r'].forEach(function (id) {
+          var f = document.getElementById(id);
+          if (!f) return;
+          var wacht = f.querySelector('.fl-wacht');
+          var staffel = f.querySelector('.fl-staffel');
+          var raketen = f.querySelector('.fl-raketen');
+          if (wacht) wacht.style.transform = 'translate3d(' + (dx * 10) + 'px,' + (dy * 8) + 'px,0)';
+          if (staffel) staffel.style.transform = 'translate3d(' + (dx * 16) + 'px,' + (dy * 12) + 'px,0)';
+          if (raketen) raketen.style.transform = 'translate3d(' + (dx * 6) + 'px,' + (dy * 4) + 'px,0)';
+        });
+      });
+    }, { passive: true });
+  }
+
   function start() {
     baue();
     flankenTakt();
+    parallaxStart();
     setInterval(function () {
       flankenTakt(); kinoTakt();
     }, 2000);

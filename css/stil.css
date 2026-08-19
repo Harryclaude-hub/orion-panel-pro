@@ -51,7 +51,13 @@
 
   /* Zustandsfarben, auf den blauen Grund abgestimmt. */
   --gruen:    #2FD3A7;
-  --orange:   #F0A73C;
+  /* ORANGE IST ABGESCHAFFT (20.8.2026, Karams Vorgabe: "komplett
+   * entfernt und ersetzt"). Der Token behaelt seinen NAMEN, damit
+   * keine der vielen Verweisstellen angefasst werden muss, traegt
+   * aber jetzt ein gedaempftes Scanner-Tuerkis: ruhig zu lesen,
+   * militaerisch-kuehl, klar unterscheidbar von Gold (Betfair),
+   * Gruen (gut), Rot (falsch) und Blau (Polymarket). */
+  --orange:   #7FC2B6;
   --rot:      #FF6B85;
 
   /* Das Sonar: leuchtendes Cyan wie auf der Vorlage — der Leitton der
@@ -135,7 +141,7 @@ button.gesperrt { opacity: .5; }
 .chip.pm { color: var(--pm); border-color: color-mix(in srgb, var(--pm) 45%, transparent); }
 .chip.bf { color: var(--bf); border-color: color-mix(in srgb, var(--bf) 45%, transparent); }
 .chip.gut { color: var(--gruen);  border-color: #1C4A42; }
-.chip.acht { color: var(--orange); border-color: #5A4526; }
+.chip.acht { color: var(--orange); border-color: #2E524C; }
 .chip.rot  { color: var(--rot);    border-color: #5C2F3C; }
 
 /* ---------- Kartengitter ---------- */
@@ -176,7 +182,7 @@ button.gesperrt { opacity: .5; }
 .leise { color: var(--text-leise); font-size: 14px; }
 .warnung {
   padding: 12px 14px; margin-bottom: 14px;
-  border: 1px solid #5A4526; border-radius: var(--rund);
+  border: 1px solid #2E524C; border-radius: var(--rund);
   background: #1B2436; color: var(--orange); font-size: 14px;
 }
 
@@ -966,7 +972,7 @@ h2 {
 .fund .setz-absage { font-size: 13.5px; padding: 8px 12px; border-radius: 10px; }
 .fund .setz-absage.gut  { border: 1px solid #1C4A42; background: rgba(96,160,96,.08); color: var(--gruen); }
 .fund .setz-absage.rot  { border: 1px solid #5C2F3C; background: rgba(200,80,80,.10); color: var(--rot); }
-.fund .setz-absage.acht { border: 1px solid #5A4526; background: rgba(200,140,60,.08); color: var(--orange); }
+.fund .setz-absage.acht { border: 1px solid #2E524C; background: rgba(127,194,182,.08); color: var(--orange); }
 .fund .setz-absage a { color: inherit; }
 
 /* ============================================================================
@@ -1065,7 +1071,12 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
  * keine Klicks. Zustand (ruhig/wachsam/alarm) kommt aus js/buehne.js.
  */
 .flanke {
-  position: fixed; top: 0; bottom: 0; width: 120px; z-index: 0;
+  /* BREITE (20.8., Karam: "das Design soll weiter in die Mitte gehen,
+   * da ist so eine leere Flaeche"): die Flanke fuellt den Rand jetzt
+   * bis kurz vor den Inhalt (Huelle 1180px + Luft), gedeckelt bei
+   * 300px, damit auf sehr breiten Schirmen kein Jahrmarkt entsteht. */
+  position: fixed; top: 0; bottom: 0;
+  width: min(300px, calc((100vw - 1220px) / 2)); z-index: 0;
   pointer-events: none; display: none; overflow: hidden;
   --fl-farbe: var(--sonar-rgb);
   --fl-tempo: 7s;
@@ -1091,9 +1102,9 @@ header.kopf { flex-direction: column; align-items: stretch; gap: 10px; }
  * den Planeten, weil das Mini-Radar ausgebaut ist: der Zustand bleibt
  * damit sichtbar, ohne dass ein Messgeraet dafuer noetig waere. */
 .flanke.ruhig   { --fl-farbe: var(--sonar-rgb); --fl-tempo: 7s; }
-.flanke.wachsam { --fl-farbe: 201, 155, 98;     --fl-tempo: 3.5s; }
+.flanke.wachsam { --fl-farbe: 196, 176, 122;    --fl-tempo: 3.5s; }
 .flanke.alarm   { --fl-farbe: 201, 138, 130;    --fl-tempo: 1.4s; }
-.flanke.alarm .fl-planeten { animation: fl-flackern 1.1s steps(2, jump-none) infinite; }
+.flanke.alarm .fl-wacht { animation: fl-flackern 1.1s steps(2, jump-none) infinite; }
 @keyframes fl-flackern { 50% { opacity: .35; } }
 
 /* ---------- Das Kino: Vollbild bei ZIEL ERFASST ----------
@@ -2480,16 +2491,10 @@ button.chip.kopier:hover { border-color: var(--sonar); }
  * Reine Design-Schicht: loeschbar, ohne dass ein Wert oder eine Rechnung
  * fehlt. Spaetere Regeln ueberstimmen fruehere — deshalb stehen sie hier. */
 
-/* --- 1. DIE STATISTIK BEHAELT IHR ORANGE -----------------------------------
- * Karam: "Lass bei der Statistik ein bisschen Orange, aber der Rest immer
- * blau." Das Akzent-Token wird NUR fuer diesen einen Block umdefiniert —
- * alles darin (Knoepfe, Zahlen, Balken, Kennung) folgt automatisch, ohne
- * dass eine einzige Regel im Statistik-Block angefasst werden muesste. */
-.zstat {
-  --gold: var(--orange);
-  --akzent-rgb: 240, 167, 60;
-}
-/* Die Kennung trug den alten Bernstein als festen Wert — jetzt am Token. */
+/* --- 1. STATISTIK-ORANGE AUFGEHOBEN (20.8.2026) ----------------------------
+ * Die Ausnahme vom 18.8. ("Statistik behaelt ein bisschen Orange") ist
+ * mit Karams neuer Vorgabe "Orange komplett entfernt" hinfaellig. Die
+ * Statistik folgt jetzt dem normalen Gold-Akzent der Seite. */
 .zstat-kennung { color: rgba(var(--akzent-rgb), .5) !important; }
 
 /* --- 2. CHANCENKARTE: OLIV RAUS, BLAU REIN --------------------------------
@@ -2551,7 +2556,7 @@ button.chip.kopier:hover { border-color: var(--sonar); }
   --gold:       #2A5570;
   --akzent-rgb: 42, 85, 112;
   --gruen:      #1B6B4A;
-  --orange:     #8A5A12;
+  --orange:     #2A6459;
   --rot:        #A32B28;
   --pm:         #33487F;
   --bf:         #6E5714;
@@ -2628,60 +2633,68 @@ button.chip.kopier:hover { border-color: var(--sonar); }
  * setzen. Die Takte sind absichtlich sehr lang (28-90 s): ruhig im Blick
  * und praktisch gratis auf einem schwachen Laptop. */
 
-/* ---------- 1. DIE PLANETEN ---------- */
-.flanke .fl-planeten {
+/* ---------- 1. DIE WACHT: RADARTURM UND PEILROSE (20.8.2026) ----------
+ * Karams Vorgabe: "die Planeten sind zu langweilig, ich will ein
+ * Militaerdesign." Oben ein Radar-Wachturm, dessen Balkenantenne sich
+ * perspektivisch um die Hochachse dreht (scaleX 1 -> -1 -> 1 -- das IST
+ * die Rundumdrehung in Seitenansicht), dazu auslaufende Funkwellen im
+ * LAGE-Tempo: je nervoeser die Lage, desto schneller funkt der Turm.
+ * Unten eine Peilrose, deren Suchzeiger gegenlaeufig zur Gradscheibe
+ * laeuft. Alles transform/opacity, alles am Lage-Token --fl-farbe --
+ * die Wacht wird bei Alarm rot, wie zuvor die Planeten. */
+.flanke .fl-wacht {
   position: absolute; inset: 0; overflow: hidden; pointer-events: none;
-}
-.fl-planet {
-  position: absolute; border-radius: 50%;
+  color: rgba(var(--fl-farbe), .8);
   will-change: transform;
-  animation: fl-schweben 62s ease-in-out infinite alternate;
 }
-/* Wolkenbaender eines Gasriesen — ABSICHTLICH unbewegt: eine Animation
- * auf background-position muesste der Browser in jedem Bild ueber die
- * ganze Kugelflaeche neu zeichnen. Die Bewegung kommt allein vom sehr
- * langsamen Schweben, und das laeuft auf der Grafikkarte. */
-.fl-planet::before {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  background: repeating-linear-gradient(172deg,
-    rgba(var(--sonar-rgb), .13) 0px, rgba(var(--sonar-rgb), .13) 3px,
-    rgba(10, 30, 48, 0) 3px,  rgba(10, 30, 48, 0) 11px,
-    rgba(96, 165, 214, .09) 11px, rgba(96, 165, 214, .09) 15px,
-    rgba(5, 15, 26, 0) 15px,  rgba(5, 15, 26, 0) 26px);
+.fl-turm {
+  position: absolute; top: 5%; left: 50%; width: 132px; height: 212px;
+  margin-left: -66px;
 }
-/* Die Kugel: Licht oben links, tiefer Schatten unten rechts. */
-.fl-planet::after {
-  content: ''; position: absolute; inset: 0; border-radius: 50%;
-  background: radial-gradient(circle at 30% 26%,
-    rgba(120, 200, 240, .22) 0%, rgba(10, 25, 40, .10) 42%,
-    rgba(2, 8, 16, .72) 78%,     rgba(2, 6, 12, .92) 100%);
-  box-shadow: inset -14px -18px 40px rgba(2, 8, 16, .85),
-              inset 8px 10px 26px rgba(var(--sonar-rgb), .10);
+.fl-turm .fl-mast { display: block; width: 100%; height: auto; opacity: .85; }
+.fl-antenne {
+  position: absolute; top: 34px; left: 50%; width: 150px; height: 36px;
+  margin-left: -75px;
+  animation: fl-radardreh 12s linear infinite;
 }
-/* GEMESSEN 18.08.: die Flanke ist nur 120 px breit und schneidet ab
- * (overflow: hidden). Die Kugeln bleiben deshalb schmaler als die
- * Spalte — sonst waeren es Halbmonde statt Planeten. */
-.fl-planet.p1 {
-  width: 104px; height: 104px; top: 7%; left: 50%; margin-left: -52px;
-  background: radial-gradient(circle at 32% 28%, #16354E 0%, #0C1E30 46%, #060F1B 100%);
-  box-shadow: 0 0 70px rgba(var(--sonar-rgb), .10);
+.fl-antenne svg { display: block; width: 100%; height: 100%; }
+.fl-welle {
+  position: absolute; top: 46px; left: 50%; width: 12px; height: 12px;
+  margin: -6px 0 0 -6px; border-radius: 50%;
+  border: 1px solid rgba(var(--fl-farbe), .6);
+  opacity: 0;
+  animation: fl-funkwelle calc(var(--fl-tempo) * 2) ease-out infinite;
 }
-.fl-planet.p2 {
-  width: 62px; height: 62px; bottom: 12%; left: 50%; margin-left: -31px;
-  background: radial-gradient(circle at 36% 30%, #123B4A 0%, #0A1F2B 52%, #050D16 100%);
-  box-shadow: 0 0 44px rgba(var(--sonar-rgb), .08);
-  animation-duration: 78s; animation-delay: -14s;
+.fl-welle.w2 { animation-delay: calc(var(--fl-tempo) * .66); }
+.fl-welle.w3 { animation-delay: calc(var(--fl-tempo) * 1.33); }
+.fl-rose {
+  position: absolute; bottom: 8%; left: 50%; width: 148px; height: 148px;
+  margin-left: -74px; opacity: .8;
 }
-/* Ein Orbitring um den grossen Planeten — Umlaufbahn, kein Saturnring. */
-.fl-orbit {
-  position: absolute; top: 7%; left: 50%;
-  width: 152px; height: 152px; margin: -24px 0 0 -76px;
-  border-radius: 50%; border: 1px solid rgba(var(--sonar-rgb), .13);
-  transform: rotate(-16deg) scaleY(.34);
-  animation: fl-ringatmen 46s ease-in-out infinite alternate;
+.fl-rose svg {
+  display: block; width: 100%; height: 100%;
+  animation: fl-rosedreh 140s linear infinite;
 }
-@keyframes fl-schweben { from { transform: translate3d(0,0,0); } to { transform: translate3d(0,-24px,0); } }
-@keyframes fl-ringatmen { from { opacity: .45; } to { opacity: .95; } }
+.fl-zeiger {
+  position: absolute; top: 50%; left: 50%; width: 2px; height: 62px;
+  margin: -62px 0 0 -1px; transform-origin: 50% 100%;
+  background: linear-gradient(180deg, rgba(var(--fl-farbe), .95), rgba(var(--fl-farbe), 0));
+  animation: fl-peilen 18s linear infinite;
+}
+/* Seitenansicht einer Rundumdrehung: der Balken wird schmal, kippt
+ * durch und kommt zurueck. */
+@keyframes fl-radardreh {
+  0%   { transform: scaleX(1); }
+  50%  { transform: scaleX(-1); }
+  100% { transform: scaleX(1); }
+}
+@keyframes fl-funkwelle {
+  0%   { transform: scale(.3); opacity: .75; }
+  70%  { opacity: .18; }
+  100% { transform: scale(11); opacity: 0; }
+}
+@keyframes fl-rosedreh { from { transform: rotate(0); } to { transform: rotate(360deg); } }
+@keyframes fl-peilen   { from { transform: rotate(0); } to { transform: rotate(-360deg); } }
 
 /* ---------- 2. DIE RAKETEN ---------- */
 .flanke .fl-raketen {
@@ -2701,37 +2714,41 @@ button.chip.kopier:hover { border-color: var(--sonar); }
   background: linear-gradient(180deg, rgba(var(--sonar-rgb), .95), rgba(var(--sonar-rgb), 0));
   opacity: 0;
 }
-/* Aufstieg, Schwebephase, weiches Aufsetzen — ein voller Zyklus. */
-.fl-rakete.r1 { left: 24%; animation: fl-flug 34s ease-in-out infinite; }
-.fl-rakete.r2 { left: 62%; animation: fl-flug 46s ease-in-out infinite 12s; transform: scale(.78); }
-.fl-rakete.r1 .fl-flamme { animation: fl-schub 34s ease-in-out infinite; }
-.fl-rakete.r2 .fl-flamme { animation: fl-schub 46s ease-in-out infinite 12s; }
+/* EHRLICHE PHYSIK (20.8.2026, Karams Vorgabe: "die Raketen duerfen
+ * nicht verkehrt zurueckfliegen"): vorher stieg die Rakete auf und
+ * SANK dieselbe Bahn wieder herab -- das sah aus wie ein rueckwaerts
+ * abgespielter Start. Jetzt: lange Ruhe auf der Rampe, Zuendung mit
+ * Startstaub, beschleunigender Aufstieg, und die Rakete verlaesst das
+ * Bild OBEN. Nichts kommt rueckwaerts zurueck. */
+.fl-rakete.r1 { left: 24%; animation: fl-flug 34s linear infinite; }
+.fl-rakete.r2 { left: 62%; animation: fl-flug 46s linear infinite 12s; transform: scale(.78); }
+.fl-rakete.r1 .fl-flamme { animation: fl-schub 34s linear infinite; }
+.fl-rakete.r2 .fl-flamme { animation: fl-schub 46s linear infinite 12s; }
 @keyframes fl-flug {
-  0%           { transform: translateY(0) scale(1);    opacity: 0; }
-  4%           { opacity: 1; }
-  38%          { transform: translateY(-52vh) scale(.82); opacity: 1; }
-  52%          { transform: translateY(-58vh) scale(.8);  opacity: 1; }
-  94%          { transform: translateY(0) scale(1);   opacity: 1; }
-  99%, 100%    { transform: translateY(0) scale(1);   opacity: 0; }
+  0%, 54%   { transform: translateY(0) scale(1); opacity: 0; }
+  55%       { transform: translateY(0) scale(1); opacity: 1; }
+  62%       { transform: translateY(-4vh) scale(.98); opacity: 1; }
+  96%       { transform: translateY(-66vh) scale(.72); opacity: 1; }
+  100%      { transform: translateY(-78vh) scale(.68); opacity: 0; }
 }
 @keyframes fl-schub {
-  0%, 2%    { opacity: 0; transform: scaleY(.4); }
-  6%, 34%   { opacity: 1; transform: scaleY(1.5); }
-  46%, 74%  { opacity: 0; transform: scaleY(.4); }
-  84%, 93%  { opacity: .9; transform: scaleY(1.1); }
-  96%, 100% { opacity: 0; transform: scaleY(.3); }
+  0%, 54%   { opacity: 0; transform: scaleY(.3); }
+  56%       { opacity: 1; transform: scaleY(1.6); }
+  70%       { opacity: 1; transform: scaleY(1.2); }
+  96%       { opacity: .9; transform: scaleY(1.4); }
+  100%      { opacity: 0; transform: scaleY(.4); }
 }
-/* Der Staub beim Aufsetzen. */
+/* Der Staub gehoert jetzt zum START, nicht mehr zur Landung. */
 .flanke .fl-staub {
   position: absolute; bottom: 2px; left: 24%; width: 46px; height: 10px;
   margin-left: -23px; border-radius: 50%;
   background: radial-gradient(ellipse at center, rgba(var(--sonar-rgb), .30), transparent 70%);
-  opacity: 0; animation: fl-staub-auf 34s ease-in-out infinite;
+  opacity: 0; animation: fl-staub-auf 34s linear infinite;
 }
 @keyframes fl-staub-auf {
-  0%, 88%   { opacity: 0; transform: scale(.4); }
-  93%       { opacity: .8; transform: scale(1); }
-  100%      { opacity: 0; transform: scale(1.5); }
+  0%, 53%   { opacity: 0; transform: scale(.4); }
+  56%       { opacity: .9; transform: scale(1); }
+  66%, 100% { opacity: 0; transform: scale(2); }
 }
 
 /* ---------- 3. DAS RADAR: HELLBLAUGRUEN STATT PHOSPHORGRUEN ----------
@@ -2768,9 +2785,10 @@ html.anim-2 .fl-rakete.r2      { display: none; }   /* nur EINE Rakete */
 html.anim-2 .s-hud-jet         { display: none !important; }
 
 /* Wer Bewegung im Betriebssystem abgeschaltet hat, bekommt eine ruhige
- * Szene: Planeten stehen, nichts fliegt. Der Zustand bleibt sichtbar. */
+ * Szene: die Wacht steht still, nichts fliegt. Der Zustand bleibt sichtbar. */
 @media (prefers-reduced-motion: reduce) {
-  .fl-planet, .fl-orbit, .fl-rakete, .fl-rakete .fl-flamme, .fl-staub { animation: none; }
+  .fl-antenne, .fl-welle, .fl-rose svg, .fl-zeiger,
+  .fl-rakete, .fl-rakete .fl-flamme, .fl-staub { animation: none; }
   .flanke .fl-staffel, .flanke .fl-raketen { display: none; }
 }
 

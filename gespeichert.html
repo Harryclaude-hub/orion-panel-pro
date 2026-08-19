@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion Panel Pro — Gespeichert</title>
+<meta name="robots" content="noindex, nofollow">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="schrift/schrift.css?v=70">
+<link rel="stylesheet" href="css/stil.css?v=70">
+<link rel="stylesheet" href="css/hud.css?v=70">
+<style>
+  .gesp-huelle { max-width: 900px; margin: 0 auto; padding: 18px 16px 60px; }
+  .gesp-kopf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 18px; }
+  .gesp-kopf h1 { margin: 0; font-size: 22px; }
+  .gesp-kopf .luecke { flex: 1; }
+  .gesp-stand { border: 1px solid var(--rand); border-radius: 10px; padding: 12px 14px;
+                margin-bottom: 16px; font-size: 14px; color: var(--text-leise); }
+  .gesp-stand b { color: var(--text); }
+  .gesp-eintrag { margin-bottom: 26px; }
+  .gesp-zeile { display: flex; align-items: center; gap: 10px; margin: 0 0 6px;
+                font-size: 13px; color: var(--text-leise); }
+  .gesp-zeile .luecke { flex: 1; }
+  .gesp-zeile button, .gesp-zeile a.knopf { font-size: 13px; }
+</style>
+</head>
+<body>
+
+<div id="sperre">
+  <div class="kasten">
+    <h2>Orion Panel Pro</h2>
+    <input id="sperrwort" type="password" placeholder="Wort" autocomplete="off">
+    <button id="entsperren">Öffnen</button>
+    <div class="fehler" id="sperrfehler"></div>
+  </div>
+</div>
+
+<div class="gesp-huelle">
+  <header class="gesp-kopf">
+    <h1>★ Gespeicherte Funde</h1>
+    <span class="luecke"></span>
+    <a class="knopf" href="index.html">Zurück zum Panel</a>
+  </header>
+
+  <div id="stand" class="gesp-stand">wird geladen …</div>
+  <div id="liste"></div>
+</div>
+
+<script src="js/konfig.js?v=70"></script>
+<script src="js/sperre.js?v=70"></script>
+<script src="js/rechnung.js?v=70"></script>
+<script src="js/zuordnung.js?v=70"></script>
+<script src="js/filter.js?v=70"></script>
+<script src="js/anzeige.js?v=70"></script>
+<script src="js/speicher.js?v=70"></script>
+<script>
+(function () {
+  'use strict';
+  var K = window.KONFIG || {};
+
+  function hole(pfad) {
+    return fetch(K.supabase + '/rest/v1/' + pfad, {
+      headers: { apikey: K.key, authorization: 'Bearer ' + K.key, accept: 'application/json' }
+    }).then(function (r) {
+      if (!r.ok) throw new Error('HTTP ' + r.status);
+      return r.json();
+    });
+  }
+  function stand(text) { document.getElementById('stand').innerHTML = text; }
+  function txt(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').replace(/</g, '&lt;'); }
+
+  function ergaenze(f) {
+    if (f.echter_gewinn === undefined) {
+      f.echter_gewinn = (f.max_gewinn === null || f.max_gewinn === undefined)
+        ? null : Number(f.max_gewinn);
+    }
+    if (f.zu_duenn === undefined) {
+      f.zu_duenn = f.max_einsatz !== null && f.max_einsatz !== undefined &&
+                   Number(f.max_einsatz) < (K.mindestEinsatz || 0);
+    }
+    return f;
+  }
+
+  hole('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle&limit=1').then(function (z) {
+    if (z && z[0]) window.Anzeige.setzeKurs(z[0]);
+    lade();
+  }).catch(function () { lade(); });
+
+  function lade() {
+    window.Speicher.liste().then(function (eintraege) {
+      if (!eintraege.length) {
+        stand('<b>Noch nichts gespeichert.</b> Auf jeder Fundkarte gibt es den Knopf ' +
+              '„☆ Speichern“ — was du dort merkst, liegt danach hier, auf jedem Gerät.');
+        document.getElementById('liste').innerHTML = '';
+        return;
+      }
+      stand('<b>' + eintraege.length + '</b> ' +
+            (eintraege.length === 1 ? 'gespeicherter Fund' : 'gespeicherte Funde') + '. Jede Karte ist der ' +
+            '<b>Schnappschuss vom Moment des Speicherns</b> — die Kurse darin sind ' +
+            'historisch, nicht live. Der Beitrags-Link daneben zeigt den heutigen Stand.');
+      document.getElementById('liste').innerHTML = eintraege.map(function (e) {
+        var f = ergaenze(e.zeile || {});
+        return '<div class="gesp-eintrag">' +
+          '<div class="gesp-zeile">' +
+            'gespeichert am ' + txt(window.Anzeige.zeitpunkt(e.gespeichert_am)) +
+            '<span class="luecke"></span>' +
+            '<a class="knopf" href="beitrag.html?fund=' + encodeURIComponent(e.schluessel) + '">Beitrag (heutiger Stand)</a>' +
+            '<button type="button" class="chip gesp-weg" data-schluessel="' + txt(e.schluessel) + '">Entfernen</button>' +
+          '</div>' +
+          window.Anzeige.karte(f, f.status !== 'live') +
+        '</div>';
+      }).join('');
+    }, function (e) {
+      stand('<b>Nicht geladen:</b> ' + e.message);
+    });
+  }
+
+  document.addEventListener('click', function (ev) {
+    var k = ev.target && ev.target.closest ? ev.target.closest('.gesp-weg') : null;
+    if (!k) return;
+    k.disabled = true; k.textContent = 'entfernt …';
+    window.Speicher.entferne(k.getAttribute('data-schluessel')).then(lade, function (e) {
+      k.textContent = 'Fehler: ' + e.message;
+      setTimeout(function () { k.textContent = 'Entfernen'; k.disabled = false; }, 3000);
+    });
+  });
+})();
+</script>
+</body>
+</html>

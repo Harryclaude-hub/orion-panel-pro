@@ -1622,6 +1622,11 @@
            * Die Nummer lebt nur noch IM kopierten Bericht weiter. */
           '<button type="button" class="chip kopier" data-schluessel="' + txt(f.schluessel) +
             '" title="Kopiert den kompletten Gedankengang dieser Zeile als Text: Spiel, Anbieter, Links, Kurse, Gebühren, Effektivquoten samt Formeln, Rendite, Einsätze, Zeiten, Absage-Bilanz — zum Prüfen in jedem anderen Programm.">Kopieren</button> ' +
+          /* SPEICHERN (20.8.): legt den Schnappschuss der Zeile in
+           * orion_gespeichert ab — nachsehen auf gespeichert.html.
+           * Der Klick-Zuhoerer sitzt in js/speicher.js. */
+          '<button type="button" class="chip speich" data-schluessel="' + txt(f.schluessel) +
+            '" title="Merkt sich diesen Fund als Schnappschuss — auf jedem Gerät abrufbar unter „Gespeichert“. Die Kurse darin bleiben die vom Moment des Speicherns.">☆ Speichern</button> ' +
           nachChip(f) +
           '<span class="chip ' + txt(buch1(f).chip) + '">' + txt(buch1(f).name) + '</span> ' +
           '<span class="chip leise">gegen</span> ' +
@@ -2569,8 +2574,12 @@
   /* absageBilanz mit herausgereicht: daten.js braucht dieselbe Rechnung
    * fuer die Chancen-Zaehlung — zwei Fassungen derselben Formel waeren die
    * Drift-Falle, die dieses Projekt schon kennt. */
+  /* setzeKurs mit herausgereicht (20.8.): beitrag.html und
+   * gespeichert.html zeichnen einzelne Karten ausserhalb von zeichne()
+   * und muessen den EZB-Kurs selbst setzen, sonst stuenden dort nur
+   * Dollar-Betraege, waehrend das Panel beide Waehrungen zeigt. */
   welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt,
-                   setzeWennAnders: setzeWennAnders, karte: karte,
+                   setzeWennAnders: setzeWennAnders, karte: karte, setzeKurs: setzeKurs,
                    absageBilanz: absageBilanz, istGedeckt: istGedeckt };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);

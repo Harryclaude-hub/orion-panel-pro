@@ -64,6 +64,15 @@ STAND: WAS FERTIG IST
   WARTET auf Karams TELEGRAM_BOT_TOKEN als Edge-Secret + chat_id in
   orion_telegram. Einrichtungsmodus: {"einrichten":true}.
 
+- DESIGN-PHASE 20.8. (Karams Auftrag) UMGESETZT: eigene Beitragsseite
+  beitrag.html?fund=... (Telegram-Link fuehrt dorthin, Melder v6),
+  Speichern-Knopf auf jeder Karte + gespeichert.html + Tabelle
+  orion_gespeichert; Flanken fuellen den Rand (bis 300px) und tragen
+  DIE WACHT (Radarturm + Peilrose statt Planeten), Raketen mit
+  ehrlicher Physik (verlassen das Bild OBEN), Maus-Parallax nur in
+  Stufe 3; ORANGE KOMPLETT ERSETZT durch Scanner-Tuerkis #7FC2B6
+  (auch Papier-Modus + Statistik-Ausnahme aufgehoben). Cache v=70.
+
 STAND: WAS OFFEN IST
 
 1. TELEGRAM IST SCHARF (19.8. spaet abends): Ziel = Karams DIREKTCHAT

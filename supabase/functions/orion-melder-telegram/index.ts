@@ -25,8 +25,8 @@
  *   - DIREKTLINK zu beiden Anbietern (dieselben Links wie auf der Karte)
  *   - MINIRECHNUNG: Aufteilung bei 100 $ und Auszahlung — die Anteile
  *     sind prozentual und waehrungsfrei, deshalb dort KEINE Kursdrehung
- *   - BEITRAGSLINK ins Panel: #fund-<schluessel> springt direkt zur
- *     Karte (Gegenstueck in js/anzeige.js, Direktsprung-Block)
+ *   - BEITRAGSLINK auf die eigene Seite beitrag.html?fund=<schluessel>:
+ *     genau diese eine Karte, ohne Suchen, mit Zurueck-Knopf
  *   - Geldbetraege tragen IMMER beide Waehrungen — "4,31 € ($ 5,00)" —
  *     zwei Buecher fuehren Dollar, die Gegenseite fuehrt Euro; der Kurs
  *     kommt aus orion_kurse, ohne Kurs ehrlich in $
@@ -74,7 +74,10 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string): st
   const p1 = PUNKT[b1] ?? '⚪', p2 = PUNKT[b2] ?? '⚪';
   const n1 = BUCHNAME[b1] ?? b1, n2 = BUCHNAME[b2] ?? b2;
   const e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2), aus = Number(f.auszahlung);
-  const beitrag = PANEL + '#fund-' + encodeURIComponent(String(f.schluessel ?? ''));
+  /* Seit 20.8. die EIGENE Beitragsseite: zeigt genau diese eine Karte,
+   * ohne Suchen, mit Zurueck-Knopf. Der alte #fund-Sprung im Panel
+   * bleibt als Zweitweg bestehen. */
+  const beitrag = PANEL + 'beitrag.html?fund=' + encodeURIComponent(String(f.schluessel ?? ''));
   const zeilen = [
     `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} %</b>`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
@@ -84,7 +87,7 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string): st
       ? `\u{1F9EE} Bei 100 $ Einsatz: <b>${e1.toFixed(2)} $</b> auf ${n1}, <b>${e2.toFixed(2)} $</b> auf ${n2} → <b>${aus.toFixed(2)} $</b> zurück, egal wie es endet (Aufteilung prozentual, gilt in € genauso)`
       : ''),
     `\u{1F4B0} Einsatz bis <b>${geld(f.max_einsatz)}</b> · holbar ~<b>${geld(f.max_gewinn)}</b>`,
-    `\u{1F4CB} <a href="${beitrag}">Beitrag im Orion Panel öffnen</a> (Karte nennt Gebühren, Absage-Ausgang, Fristen)`
+    `\u{1F4CB} <a href="${beitrag}">Beitrag öffnen</a> (eigene Seite: genau diese Karte — Gebühren, Absage-Ausgang, Fristen, Speichern)`
   ].filter(z => z !== '');
   return zeilen.join('\n');
 }
