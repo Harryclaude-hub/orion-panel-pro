@@ -2562,19 +2562,34 @@ Server. Im Repo fehlte er ganz. Ein Neuaufsetzen haette ihn verloren, und
 niemand haette es gemerkt, weil er weiterlaeuft. Jetzt liegt er unter
 `supabase/functions/orion-melder-knapp/index.ts`.
 
-### DEPLOY STEHT AUS, Karam muss ihn ausloesen
+### DEPLOY IST DURCH, ueber die MCP-Verbindung
 
-Der Supabase-MCP-Weg konnte die Melder diesmal **nicht** ausrollen: das
-Werkzeug nimmt das Dateiarray nicht an (es kommt als Text an, Zod lehnt
-ab). Einen `sbp_`-Token gibt es hier nicht.
+    orion-melder-telegram   Version 7 -> 8
+    orion-melder-knapp      Version 3 -> 4
 
-Deshalb neu: **`DEPLOY-MELDER.cmd`**, Schwesterdatei zu DEPLOY-JETZT.cmd,
-im Repo unter `bridge/` und als Arbeitskopie in `Desktop\ORION-BRIDGE`.
-Doppelklick, Token einfuegen, rollt BEIDE Bots aus und schickt danach
-beide Funkproben. Schlaegt er fehl, aendert sich nichts.
+**Der erste Fehlschlag lag an mir, nicht am Werkzeug.** Beim ersten
+ToolSearch kam das Schema der Deploy-Funktion LEER zurueck
+(`parameters: {type: object}`, ohne Eigenschaften); ohne Schema wurde
+mein Dateiarray als Text durchgereicht, und der Server lehnte ab
+("expected array, received string"). Ich habe daraus geschlossen, der
+Weg sei versperrt, und das auch so gemeldet. Beim zweiten Laden kam das
+volle Schema mit `files: {type: array}` und derselbe Aufruf ging durch.
 
-**Bis zum Doppelklick melden beide Bots weiter mit Anbieterlinks.** Das
-Panel ist davon unabhaengig und schon scharf.
+LEHRE: eine Fehlermeldung ueber ein FORMAT ist kein Beleg, dass ein Weg
+verschlossen ist. Erst pruefen, ob die eigene Uebergabe stimmt, bevor
+man einen Weg fuer tot erklaert. Vorher noch das JSON maschinell bauen
+und zurueckrechnen lassen (Laenge, Rueckvergleich, rohe Steuerzeichen)
+statt es von Hand zu schreiben.
+
+**Nachgelesen im AUSGEROLLTEN Servercode** (nicht im Repo-Stand): beide
+Bots tragen jetzt `<a href="${beitrag}&amp;zu=1">ansehen</a>` und
+`&amp;zu=2`. Beide Funkproben zugestellt, Kanal 6795362180, je
+`{"ok":true,"funkprobe":"gesendet"}`.
+
+**`DEPLOY-MELDER.cmd`** bleibt trotzdem liegen (Repo `bridge/` und
+Arbeitskopie in `Desktop\ORION-BRIDGE`): der Doppelklick-Weg fuer den
+Fall, dass die MCP-Verbindung mal fehlt. Er rollt beide Bots aus und
+funkt danach beide Proben.
 
 ### Zwei eigene Fehler, festgehalten
 
