@@ -2852,3 +2852,91 @@ Exit-Code 0, Datei Byte fuer Byte wiederhergestellt.
 
     spiegel 19896 · vollpruefung 36 · zuordnung 296
     rechnung 195 · melder 12 + Abgleich      alle gruen
+
+---
+
+## 8y. ZWEI MELDUNGEN FUER EINE PARTIE + MELDUNG INS LEERE (21.8.)
+
+Karams Meldung: „Durch den Bot zwei Benachrichtigungen bekommen fuer eine
+Chance, davon war nix mehr in den Chancen und es war auch nix im
+Verlauf." Zwei getrennte Fehler in einem Satz, beide bestaetigt.
+
+### Fehler 1: die Gruppierung verglich Titel BUCHSTAEBLICH
+
+Die Zusammenfassung von 8w gruppierte nach `titel` als Zeichenkette. Das
+genuegt nicht, weil dieselbe Partie unter ZWEI Titeln laeuft:
+
+    "Botafogo FR vs. CS Cienciano"
+    "Botafogo FR vs. CS Cienciano - More Markets"
+
+Gemessen ueber drei Tage: **164 von 453 Zeilen (36 %)** tragen den
+Zusatz. Die Gruppierung sah zwei Partien, wo eine war, und meldete
+zweimal.
+
+Behoben mit `partieSchluessel()` in BEIDEN Meldern: schneidet den Zusatz
+am Ende ab, ebnet Gross- und Kleinschreibung ein. Abgeschnitten wird NUR
+fuer den Vergleich; in der Nachricht steht weiter der volle Titel, denn
+er sagt, welcher Markt gemeint ist.
+
+### Fehler 2, der schwerere: der Bot meldete Unauffindbares
+
+„nix in den Chancen und nix im Verlauf" stimmte woertlich. Der Grund
+steht in `js/konfig.js`:
+
+    rauschGrenze: 0.0
+    /* Ab hier abwaerts ist es Rauschen und wird gar nicht mehr gezeigt. */
+
+Das Panel zeigt eine Zeile nur, wenn sie **aktuell bei mindestens 0**
+steht ODER **je eine Chance war** (`besteVon(f) >= mindestRendite`). Der
+Knapp-Bot meldete aber ab **-0,5 %**. Alles zwischen -0,5 und 0 war
+damit gemeldet und gleichzeitig unsichtbar: nicht in Chancen, nicht in
+Knapp, nicht im Verlauf.
+
+Die gemeldeten Botafogo-Zeilen lagen bei -0,10 bis -0,94 %. Genau in der
+Luecke.
+
+**Das ist die Fehlerklasse „zwei Wege mit zwei Massstaeben"**, diesmal
+zwischen Server und Browser. Die Messung vom 20.8., die das Band
+-0,5..2 begruendete, sah nur die DATENBANK und nie das Panel.
+
+Behoben: der Bot richtet sich nach dem Panel, Untergrenze **0**. Eine
+Meldung ueber etwas Unauffindbares ist schlimmer als keine Meldung.
+
+**PREIS, ehrlich gesagt:** im 24-h-Fenster vom 20.8. lagen NULL Zeilen im
+Band 0..2 %. Der Knapp-Bot wird also selten melden. Wer das aendert,
+senkt die `rauschGrenze` im Panel UND zieht die Bot-Zeile mit. Eine
+Zahl, zwei Stellen, immer gemeinsam. Der Pruefstand erzwingt das jetzt.
+
+### Der Pruefstand wacht ueber beides
+
+`pruefung/melder.test.js` hat einen dritten Teil bekommen:
+
+    Teil A  Verhalten (jetzt 7 Faelle, neu: der Doppelmeldungs-Fall und
+            die Frage, ob der Zusatz nur am ENDE abgeschnitten wird)
+    Teil B  Abgleich gegen BEIDE Melder-Dateien: gleicher Block,
+            partieSchluessel definiert, gleiche Abschneide-Regel
+    Teil C  NEU: liest die rauschGrenze aus js/konfig.js UND die
+            Untergrenze aus dem Knapp-Bot und vergleicht sie
+
+Teil C ist der Riegel gegen genau diesen Fehler: laufen die zwei Zahlen
+je wieder auseinander, wird der Test rot und sagt es im Klartext
+(„Bot ab -0.5, Panel zeigt ab 0").
+
+**Gegenprobe gelaufen:** altes Band -0,5 wieder eingebaut -> ROT,
+Exit-Code 1, mit der genannten Meldung. Zurueckgesetzt -> gruen.
+
+    spiegel 19896 · vollpruefung 36 · zuordnung 296
+    rechnung 195 · melder 7 Faelle + Abgleich + Schwellenprobe
+
+    orion-melder-telegram   Version 9  -> 10
+    orion-melder-knapp      Version 5  -> 6
+    beide Funkproben zugestellt, beide echten Laeufe ohne Absturz
+
+### Nebenbefund, NICHT gebaut
+
+24 lebende Zeilen tragen ein `vorbei_grund` („nicht mehr gefunden
+(Waechter)"), obwohl sie auf `status='live'` stehen und alle unter fuenf
+Minuten frisch sind. Das Feld wird bei der Rueckkehr einer Zeile nicht
+geleert und erzaehlt deshalb eine falsche Geschichte. Ausgewertet wird
+es derzeit nur bei `status='vorbei'`, ein Schaden entsteht also nicht.
+Aufraeumen waere ein eigener kleiner Bau.

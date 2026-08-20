@@ -21,10 +21,17 @@ const MELDER = [
   'supabase/functions/orion-melder-knapp/index.ts'
 ];
 
+function partieSchluessel(titel) {
+  return String(titel ?? '')
+    .replace(/\s*-\s*More Markets\s*$/i, '')
+    .trim()
+    .toLowerCase();
+}
+
 function gruppiere(kand) {
   const jePartie = new Map();
   for (const f of kand) {
-    const t = String(f.titel ?? '');
+    const t = partieSchluessel(f.titel);
     const bisher = jePartie.get(t);
     if (bisher) bisher.push(f); else jePartie.set(t, [f]);
   }
@@ -82,6 +89,29 @@ e = gruppiere([
 pruefe('aus 2 wird 1', e.length === 1, e.length);
 pruefe('nennt 1 weitere', e[0]._weitere === 1, e[0]._weitere);
 
+console.log('\nFall 6: der ECHTE Doppelmeldungs-Fall vom 21.8.');
+console.log('        "Botafogo FR vs. CS Cienciano" und derselbe Titel');
+console.log('        mit Zusatz "- More Markets" sind EINE Partie.');
+e = gruppiere([
+  { titel: 'Botafogo FR vs. CS Cienciano', rendite: -0.30 },
+  { titel: 'Botafogo FR vs. CS Cienciano - More Markets', rendite: -0.94 }
+]);
+pruefe('aus 2 Meldungen wird 1', e.length === 1, e.length);
+pruefe('nennt 1 weitere Paarung', e[0]._weitere === 1, e[0]._weitere);
+
+console.log('\nFall 7: der Zusatz wird NUR zum Vergleichen abgeschnitten');
+pruefe('Schreibweise egal (Gross/Klein)',
+       partieSchluessel('A vs B - MORE MARKETS') === partieSchluessel('a vs b'),
+       partieSchluessel('A vs B - MORE MARKETS'));
+pruefe('Zusatz nur am ENDE, nicht mitten im Titel',
+       partieSchluessel('More Markets Cup: A vs B') === 'more markets cup: a vs b',
+       partieSchluessel('More Markets Cup: A vs B'));
+pruefe('verschiedene Partien bleiben verschieden',
+       partieSchluessel('A vs B') !== partieSchluessel('A vs C'),
+       [partieSchluessel('A vs B'), partieSchluessel('A vs C')]);
+pruefe('voller Titel bleibt in der Meldung erhalten',
+       e[0].titel === 'Botafogo FR vs. CS Cienciano', e[0].titel);
+
 /* ---------------------------------------------------------------------
  * TEIL B: der Abgleich gegen die echten Melder.
  * ------------------------------------------------------------------ */
@@ -96,7 +126,7 @@ function kern(text) {
 const ERWARTET = kern(`
   const jePartie = new Map<string, Record<string, unknown>[]>();
   for (const f of kand as Record<string, unknown>[]) {
-    const t = String(f.titel ?? '');
+    const t = partieSchluessel(f.titel);
     const bisher = jePartie.get(t);
     if (bisher) bisher.push(f); else jePartie.set(t, [f]);
   }
@@ -129,7 +159,37 @@ for (const rel of MELDER) {
   /* Gemeldet werden muss die gruppierte Liste, nicht die rohe. */
   const meldetGruppiert = /const text = zuMelden\.map/.test(inhalt);
   pruefe(rel.split('/')[2] + ': meldet die gruppierte Liste', meldetGruppiert, meldetGruppiert);
+
+  /* Die Titel-Normalisierung muss in BEIDEN Dateien definiert sein,
+   * sonst ruft die Gruppierung eine Funktion auf, die es nicht gibt. */
+  const hatFunktion = /function partieSchluessel\(/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': partieSchluessel ist definiert', hatFunktion, hatFunktion);
+
+  const gleicheRegel = kern(inhalt).indexOf(kern(`
+    return String(titel ?? '')
+      .replace(/\\s*-\\s*More Markets\\s*$/i, '')
+      .trim()
+      .toLowerCase();
+  `)) >= 0;
+  pruefe(rel.split('/')[2] + ': dieselbe Abschneide-Regel', gleicheRegel, gleicheRegel);
 }
+
+/* Der Knapp-Bot darf nichts melden, was das Panel ausblendet.
+ * js/konfig.js rauschGrenze ist die eine Wahrheit; der Bot-Filter muss
+ * dazu passen, sonst meldet er Unauffindbares (Karams Fund 21.8.). */
+console.log('\nTeil C: Bot-Band gegen die Rauschgrenze des Panels');
+const konfig = fs.readFileSync(path.join(WURZEL, 'js/konfig.js'), 'utf8');
+const mGrenze = konfig.match(/rauschGrenze:\s*(-?[\d.]+)/);
+const grenze = mGrenze ? Number(mGrenze[1]) : null;
+pruefe('rauschGrenze in konfig.js gefunden', grenze !== null, grenze);
+
+const knapp = fs.readFileSync(path.join(WURZEL, MELDER[1]), 'utf8');
+const mBand = knapp.match(/rendite=gte\.(-?[\d.]+)/);
+const untergrenze = mBand ? Number(mBand[1]) : null;
+pruefe('Untergrenze im Knapp-Bot gefunden', untergrenze !== null, untergrenze);
+pruefe('Bot meldet nichts unter der Rauschgrenze (' + grenze + ')',
+       untergrenze !== null && grenze !== null && untergrenze >= grenze,
+       'Bot ab ' + untergrenze + ', Panel zeigt ab ' + grenze);
 
 pruefe('beide Melder tragen denselben Block',
        gefunden.length === 2 && gefunden[0] && gefunden[1],

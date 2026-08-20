@@ -76,6 +76,26 @@ function esc(s: unknown): string {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
 }
 
+/* WELCHE PARTIE IST DAS? (21.8., Karams Fund: "zwei Benachrichtigungen
+ * fuer eine Chance")
+ *
+ * Die Gruppierung von heute frueh verglich den Titel BUCHSTAEBLICH. Das
+ * genuegt nicht: dieselbe Partie laeuft unter zwei Titeln,
+ *     "Botafogo FR vs. CS Cienciano"
+ *     "Botafogo FR vs. CS Cienciano - More Markets"
+ * und wurde deshalb zweimal gemeldet. Gemessen ueber drei Tage: 164 von
+ * 453 Zeilen (36 %) tragen den Zusatz.
+ *
+ * Abgeschnitten wird NUR fuer den Vergleich. In der Nachricht steht
+ * weiter der volle Titel: er sagt, welcher Markt gemeint ist.
+ * SPIEGEL: dieselbe Funktion steht in orion-melder-knapp. */
+function partieSchluessel(titel: unknown): string {
+  return String(titel ?? '')
+    .replace(/\s*-\s*More Markets\s*$/i, '')
+    .trim()
+    .toLowerCase();
+}
+
 /* Eine Chance als Telegram-HTML. geld() rechnet USD->EUR wenn Kurs da. */
 function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string): string {
   const b1 = String(f.buch_1 ?? 'polymarket'), b2 = String(f.buch ?? 'betfair');
@@ -220,7 +240,7 @@ Deno.serve(async (req) => {
      * Knapp-Bot, damit beide sich gleich verhalten. */
     const jePartie = new Map<string, Record<string, unknown>[]>();
     for (const f of kand as Record<string, unknown>[]) {
-      const t = String(f.titel ?? '');
+      const t = partieSchluessel(f.titel);
       const bisher = jePartie.get(t);
       if (bisher) bisher.push(f); else jePartie.set(t, [f]);
     }

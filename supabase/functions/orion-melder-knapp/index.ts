@@ -4,12 +4,13 @@
  * eigener Bot, eigenes Geheimnis, eigene Zielzeile, eigene
  * Markierungsspalte. Der Chancen-Bot bleibt unangetastet daneben.
  *
- * GEMESSEN am 20.8. (24-h-Fenster, gepruefte und 120 s bewaehrte Zeilen):
- *   Band -0,25..0 %:  1 Zeile   | Band -0,5..-0,25 %: 5 Zeilen
- *   Band -1..-0,5 %: 34 Zeilen  | 0..2 %: 0 Zeilen
- * Deshalb Band = RENDITE -0,5 BIS UNTER 2 (etwa 6 Meldungen am Tag).
- * Bis -1 waeren es 40 am Tag — Spam. Kleine positive Renditen unter der
- * 2-%-Meldeschwelle laufen mit, sie sind heute selten (0 in 24 h).
+ * BAND = RENDITE 0 BIS UNTER 2 (Stand 21.8.). Es war bis dahin
+ * -0,5 bis 2, gestuetzt auf die Messung vom 20.8. (Band -0,25..0: 1
+ * Zeile, -0,5..-0,25: 5, -1..-0,5: 34, 0..2: 0). Diese Messung sah aber
+ * nur die DATENBANK, nicht das Panel: dort blendet die Rauschgrenze
+ * (js/konfig.js, rauschGrenze: 0.0) alles unter null aus. Der Bot meldete
+ * damit Zeilen, die im Panel nirgends zu finden waren. Seit 21.8. gilt
+ * die Panel-Grenze auch hier. Einzelheiten am Abfragefilter unten.
  *
  * Gleiche Schutzgurte wie der Chancen-Bot v6: Wache-Urteil leer,
  * 120 s Bewaehrung, hoechstens einmal je Fund (Spalte knapp_gemeldet).
@@ -61,6 +62,25 @@ function db(pfad: string, opt: RequestInit = {}) {
 
 function esc(s: unknown): string {
   return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+/* WELCHE PARTIE IST DAS? (21.8., Karams Fund: "zwei Benachrichtigungen
+ * fuer eine Chance")
+ *
+ * Die Gruppierung von heute frueh verglich den Titel BUCHSTAEBLICH. Das
+ * genuegt nicht: dieselbe Partie laeuft unter zwei Titeln,
+ *     "Botafogo FR vs. CS Cienciano"
+ *     "Botafogo FR vs. CS Cienciano - More Markets"
+ * und wurde deshalb zweimal gemeldet. Gemessen ueber drei Tage: 164 von
+ * 453 Zeilen (36 %) tragen den Zusatz.
+ *
+ * Abgeschnitten wird NUR fuer den Vergleich. In der Nachricht steht
+ * weiter der volle Titel: er sagt, welcher Markt gemeint ist. */
+function partieSchluessel(titel: unknown): string {
+  return String(titel ?? '')
+    .replace(/\s*-\s*More Markets\s*$/i, '')
+    .trim()
+    .toLowerCase();
 }
 
 /* Ein knappes Paar als Telegram-HTML. Ehrlich: das ist KEINE Chance,
@@ -180,7 +200,9 @@ Deno.serve(async (req) => {
     }
 
     /* ---------- Kandidaten: das gemessene Band ----------
-     *   1. rendite -0,5 bis unter 2 (unterhalb faengt der Chancen-Bot)
+     *   1. rendite 0 bis unter 2 (darueber faengt der Chancen-Bot,
+     *      darunter zeigt das Panel nichts an, siehe Begruendung
+     *      direkt am Filter)
      *   2. pruefung LEER — kein Urteil steht gegen die Zeile
      *   3. buch_summe unter 1,02 oder ungemessen — wer weiter weg ist,
      *      ist nicht knapp
@@ -191,7 +213,25 @@ Deno.serve(async (req) => {
     const q = 'orion_funde?status=eq.live&knapp_gemeldet=eq.false' +
       '&pruefung=is.null' +
       '&or=(buch_summe.is.null,buch_summe.lt.1.02)' +
-      '&rendite=gte.-0.5&rendite=lt.2' +
+      /* UNTERGRENZE 0, NICHT -0,5 (21.8., Karams Fund: "davon war nix mehr
+       * in den Chancen und es war auch nix im Verlauf").
+       *
+       * Gemessen: das Panel blendet ueber die RAUSCHGRENZE (js/konfig.js,
+       * rauschGrenze: 0.0) alles unter null vollstaendig aus. Sichtbar
+       * bleibt nur, was aktuell bei mindestens 0 steht ODER je eine
+       * Chance war. Der Bot meldete aber ab -0,5 %.
+       *
+       * Ergebnis: eine Meldung ueber eine Zeile, die im Panel WEDER
+       * unter Chancen NOCH unter Knapp NOCH im Verlauf zu finden war.
+       * Genau die Fehlerklasse "zwei Wege mit zwei Massstaeben".
+       *
+       * Der Bot richtet sich jetzt nach dem Panel, nicht umgekehrt: eine
+       * Meldung ueber etwas Unauffindbares ist schlimmer als keine
+       * Meldung. PREIS, ehrlich: im 24-h-Fenster vom 20.8. lagen NULL
+       * Zeilen im Band 0..2 %. Der Knapp-Bot wird also selten melden.
+       * Wer das aendern will, senkt die rauschGrenze im Panel und zieht
+       * DIESE Zeile mit. Eine Zahl, zwei Stellen, immer gemeinsam. */
+      '&rendite=gte.0&rendite=lt.2' +
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null' +
       '&select=schluessel,nr,titel,mannschaft,rendite,max_einsatz,max_gewinn,buch,buch_1,' +
@@ -215,7 +255,7 @@ Deno.serve(async (req) => {
      * anderen Paarungen sehen will, findet sie auf der Beitragsseite. */
     const jePartie = new Map<string, Record<string, unknown>[]>();
     for (const f of kand as Record<string, unknown>[]) {
-      const t = String(f.titel ?? '');
+      const t = partieSchluessel(f.titel);
       const bisher = jePartie.get(t);
       if (bisher) bisher.push(f); else jePartie.set(t, [f]);
     }
