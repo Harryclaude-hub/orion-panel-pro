@@ -96,13 +96,13 @@
   }
 
   /* SEIT DEM BEREICHS-SCANNER (11.8. abends) gibt es nicht mehr DEN letzten
-   * Lauf, sondern einen je Bereich: orion-lauf-fussball alle 20 s,
+   * Lauf, sondern einen je Bereich: orion-lauf-fussball jede Minute,
    * orion-lauf-tennis jede Minute, und so weiter. Eine einzelne letzte
    * Zeile zeigte dann mal 700 Maerkte (Fussball), mal 40 (Tennis) — die
    * Tafel haette bei jedem Ablesen andere Zahlen behauptet.
    *
    * Deshalb: die juengste Zeile JE BEREICH holen und daraus aggregieren.
-   * 60 Zeilen reichen: der dichteste Takt ist 20 s, damit liegen selbst
+   * 60 Zeilen reichen: der dichteste Takt ist 60 s, damit liegen selbst
    * bei 20 Bereichen alle juengsten Laeufe in den letzten 60 Zeilen. */
   function holeLaeufe() {
     return db('orion_laeufe?select=bereich,gelaufen_am,pm_maerkte,bf_match_odds,paare,dauer_ms,fehler,bf_alter_s&order=gelaufen_am.desc&limit=60');
@@ -161,7 +161,13 @@
       });
     };
   }
-  var holeVerlaufG   = gepuffert(function () { return holeVerlauf(1000); }, 10000);
+  /* EGRESS-BREMSE 20.8. (Supabase-Limit, Drosselung angedroht): die
+   * Verlaufsantwort wog 2 MB und wurde alle 10 s geholt — 12 MB/min,
+   * bis 700 MB je Stunde Panelbetrieb, allein DAS riss das 5-GB-
+   * Monatslimit. Verlauf aendert sich nur, wenn etwas endet (Takte:
+   * minuetlich bis 5-minuetlich) — 60 s Puffer und 400 Zeilen (Anzeige
+   * zeigt ~160) verlieren NICHTS und kosten ein Fuenfzehntel. */
+  var holeVerlaufG   = gepuffert(function () { return holeVerlauf(400); }, 60000);
   var holeLaeufeG    = gepuffert(holeLaeufe, 6000);
   var holeUebersichtG = gepuffert(holeUebersicht, 6000);
   var holeKalshiG    = gepuffert(holeKalshi, 10000);
@@ -224,7 +230,7 @@
           if (name === 'betfair')  return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
           /* Polymarket wird bei JEDEM Lauf frisch geholt. Seine Frische ist
            * die Frische des Scanners — und zwar des Scanners im BEREICH
-           * dieser Zeile: der Fussball-Takt (20 s) sagt nichts darueber,
+           * dieser Zeile: der Fussball-Takt (60 s) sagt nichts darueber,
            * ob der Tennis-Lauf noch laeuft. */
           var a = laufAlterVon(f && f.bereich);
           return a === null || a > K.laufMaxAlterS;

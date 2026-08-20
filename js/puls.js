@@ -216,7 +216,7 @@
 
     if (werte) {
       werte.innerHTML =
-        '<span title="Wie lange der letzte Scanner-Lauf her ist. Fußball läuft alle 20 Sekunden.">' +
+        '<span title="Wie lange der letzte Scanner-Lauf her ist. Fußball läuft jede Minute.">' +
           'letzter Scan <b>' + (sAlter === null ? '—' : 'vor ' + sAlter + ' s') + '</b></span>' +
         '<span title="Paare = zwei Bücher, dieselbe Frage, gerade im Vergleich. Daraus entstehen die Chancen.">' +
           'Paare im Vergleich <b>' + (isFinite(paare) ? paare : '—') + '</b></span>' +

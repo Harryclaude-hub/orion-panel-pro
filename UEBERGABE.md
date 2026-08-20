@@ -2442,9 +2442,32 @@ Nachricht sagt ehrlich „noch keine Chance" und nennt den Abstand zur
 Gewinnzone. Ohne Geheimnis antwortet die Funktion ehrlich
 („TELEGRAM_BOT_TOKEN_KNAPP fehlt") — getestet.
 
-**OFFEN, wartet auf Karam:** Bot bei BotFather anlegen, Geheimnis
-TELEGRAM_BOT_TOKEN_KNAPP im Dashboard speichern, dem Bot eine
-Direktnachricht schicken, dann Bescheid geben. DANACH: einrichten
-(chat_id nach orion_telegram id=2, aktiv=true), Funkprobe, und erst
-dann Takt-Job **orion-knapp-takt** (minuetlich, wie Job 92) anlegen —
-vorher laeuft bewusst kein Takt.
+**ERLEDIGT (Nachmittagsphase):** Karam hat Bot (@OrionKnappBot) und
+Geheimnis angelegt; einrichten zeigte den Bot per getMe (v3 nennt jetzt
+den Bot hinter dem Schluessel — ein falscher Token fliegt sofort auf),
+chat_id 6795362180 nach orion_telegram id=2, Funkprobe zugestellt,
+Takt-Job 93 **orion-knapp-takt** laeuft `*/5 * * * *` (bewusst
+5-minuetlich, siehe Egress-Kapitel).
+
+### EGRESS-BREMSE: Supabase drohte Drosselung ab 21.8.
+
+Karams Meldung: ab 21.8. Drosselung des Kontos, Limits ueberschritten.
+GEMESSEN (Logs 24 h + Antwortgroessen): der Verlauf wog **2 MB je
+Abruf** und wurde bei offenem Panel **alle 10 s** geholt — 12 MB/min,
+bis 700 MB je Stunde Panelbetrieb; dazu Fussball-Takt alle 20 s mit
+85-KB-Marktlisten (orion_bf_maerkte) je Lauf. Das Free-Limit sind 5 GB
+Datenabfluss im Monat. Das zweite Projekt (orion-pruefstand) ist
+unschuldig: 7 Logzeilen in 24 h.
+
+Behoben, Funktion unangetastet:
+1. holeVerlauf: 1000 Zeilen alle 10 s -> **400 Zeilen alle 60 s**
+   (Anzeige zeigt ~160; Verlauf aendert sich nur, wenn etwas endet).
+2. Job 73 orion-lauf-fussball: `20 seconds` -> `* * * * *` (Bewaehrung
+   ist ohnehin 120 s, keine meldbare Chance geht verloren).
+   orion_bereiche.takt_sek = 60 nachgezogen, alle sechs
+   \"20-Sekunden\"-Textstellen (index/angaben/logik/start/puls/anzeige)
+   mitgezogen.
+3. Knapp-Takt bewusst */5 statt minuetlich.
+NICHT gebaut: Mail-Melder-Streckung (kein Beleg, dass Aufrufe das
+gerissene Limit sind; 344k/Monat von 500k). Der 2-s-Lesetakt der
+Live-Karten blieb (73 KB je Abruf, vertretbar).

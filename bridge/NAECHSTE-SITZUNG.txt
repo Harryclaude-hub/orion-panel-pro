@@ -43,11 +43,13 @@ STAND: ALLES LAEUFT (Einzelheiten in UEBERGABE 8l-8t)
   als js/anim.js weiter. Seite: Kopf, Kacheln, Sonar, Karten, Matrix.
 - Kartenstempel (20.8.): Funde von heute zeigen die Uhrzeit, aeltere
   NUR noch das Datum. Volle Angabe im Tooltip.
-- ZWEITER Bot orion-melder-knapp v1 (20.8.): knappste Paare, Band
-  rendite -0,5 bis unter 2 (gemessen ~6/Tag). Wartet auf Geheimnis
-  TELEGRAM_BOT_TOKEN_KNAPP + Ziel orion_telegram id=2; Takt-Job
-  orion-knapp-takt wird ERST danach angelegt. UEBERGABE 8t.
-- Cache-Version der Seite: v=72. Deploys der Edge-Funktionen gehen
+- ZWEITER Bot orion-melder-knapp v3 SCHARF (20.8.): knappste Paare
+  (@OrionKnappBot), Band rendite -0,5 bis unter 2 (gemessen ~6/Tag),
+  Takt-Job 93 alle 5 Minuten. UEBERGABE 8t.
+- EGRESS-BREMSE (20.8., Supabase drohte Drosselung ab 21.8.): Verlauf
+  400 Zeilen/60 s statt 2 MB/10 s, Fussball-Takt 60 s statt 20 s.
+  Freistufen-Limit 5 GB/Monat Datenabfluss war der Treiber. 8t.
+- Cache-Version der Seite: v=73. Deploys der Edge-Funktionen gehen
   auch ohne meinen Token (Supabase-MCP kann ausrollen); DEPLOY-JETZT.cmd
   bleibt der Normalweg fuer orion-lauf.
 

@@ -185,6 +185,15 @@ orion-rauschen-takt     */5 * * * *  löscht Minuszeilen im Verlauf
 > Gemessen: **beide Altlasten existieren nicht mehr** (0 Treffer in
 > `cron.job`), passend dazu ist `pm_snapshot` seit dem 11.8. 23:18 nicht mehr
 > beschrieben worden. Fußball läuft `* * * * *`, Smarkets `*/10`.
+
+**EGRESS-BREMSE 20.8.2026 (Supabase drohte Drosselung ab 21.8., Limits
+der Free-Stufe überschritten — Diagnose: Datenabfluss):** Job 73
+`orion-lauf-fussball` von `20 seconds` auf `* * * * *` gestellt (drittelt
+Aufrufe UND die 85-KB-Antworten von `orion_bf_maerkte` je Lauf); im
+Panel `holeVerlauf` von 2 MB alle 10 s auf 400 Zeilen alle 60 s gebremst
+(js/daten.js). `orion_bereiche.takt_sek` fussball = 60 nachgezogen.
+NEU Job 93 `orion-knapp-takt` (`*/5 * * * *`) für den zweiten Bot —
+bewusst 5-minütlich, nicht minütlich.
 >
 > Das ist genau die Drift, vor der diese Datei oben warnt — deshalb steht
 > jetzt hier: **im Zweifel `select jobname, schedule from cron.job` fragen,
@@ -231,7 +240,8 @@ erschöpft, erst ein Neustart durch den Betreiber half).
 > aber der Takt für die leeren Bereiche war viel zu eng.
 
 Die 19 leeren Bereiche laufen jetzt **alle 10 Minuten** statt jede ein bis
-zwei; `fussball` bleibt bei 20 Sekunden. Sie liefern strukturell nichts
+zwei; `fussball` lief bis 20.8. alle 20 Sekunden, seither **jede Minute**
+(Egress-Bremse, siehe unten). Sie liefern strukturell nichts
 (E-Sport-Fragearten fehlen bei Polymarket, Welt-Bereiche haben nur ein
 Buch), zehn Minuten genügen, um eine Änderung zu bemerken.
 
