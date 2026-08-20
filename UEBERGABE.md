@@ -2230,3 +2230,55 @@ WTI-Settlement (18 stabile Paare/2 Tage, dieselbe Frage, belegbare
 Stichzeit). Das waere ein eigener, kleiner, messbarer Bau — Tag
 `commodities` ins Register, Marktart "schwelle" nur fuer diesen Weg,
 Kalendertag-Zuordnung. Vorher Renditeprobe ueber ein paar Tage.
+
+---
+
+## 8r. TELEGRAM, WAEHRUNG, BEITRAGSSEITE, DESIGN-RUECKBAU (19.-20.8.)
+
+Kompakt — die Einzelheiten stehen in den Commits und in
+bridge/NAECHSTE-SITZUNG.txt.
+
+**TELEGRAM-MELDER** (orion-melder-telegram, Takt Job 92 minuetlich):
+Zwilling des Mail-Melders, Ziel = Karams Direktchat mit dem Bot
+(orion_telegram id=1, Geheimnis TELEGRAM_BOT_TOKEN). Nachricht mit
+Farbpunkten je Buch (Panel-Farben), Direktlinks zu beiden Anbietern,
+Minirechnung, Beitragslink. **v6 nach zwei Fehlalarmen in der ersten
+Nacht verschaerft** (Cincinnati, Buchsumme 1,0088 — der Melder pruefte
+das Wache-Urteil nicht): jetzt pruefung=leer PFLICHT, Buchsummen-
+Doppelgurt, Bewaehrung 120 s. {"einrichten":true} listet Chats,
+{"test":true} funkt ein Muster.
+
+**WAEHRUNG BEIDSEITIG** (Vorgabe: zwei Buecher fuehren Dollar, zwei
+Euro): geld() zeigt immer beide — "81,40 EUR ($ 94,00)". Dabei
+Bestandsfehler behoben: die Aufteilungszeile drehte die waehrungsfreien
+Anteile durch den Kurs (Summe 86 statt 100). UNGEMESSEN offen: die
+Waehrung der Betfair-MENGEN (bs/ls) aus der Bridge (= Kontowaehrung).
+
+**BEITRAGSSEITE + SPEICHER**: beitrag.html?fund=<schluessel> zeigt
+genau eine Karte (5-s-Takt, Zurueck-Knopf); der Telegram-Link fuehrt
+dorthin. Speichern-Knopf auf jeder Karte legt den SCHNAPPSCHUSS in
+orion_gespeichert (RLS, anon lesen/anlegen/loeschen); gespeichert.html
+zeigt den Bestand, Menuelink im Panel. js/speicher.js, Anzeige.setzeKurs
+exportiert.
+
+**DESIGN-RUECKBAU 20.8.** (Karams Vorgabe "viel schlichter, den
+Bloedsinn loeschen"): buehne.js + partikel.js GELOESCHT — Flanken samt
+Wacht/Jets/Raketen/Boom, Kino, Partikel, Scroll-Aufbau. 94 CSS-Regeln
++ 21 Keyframes raus (stil.css 2923 -> 2676 Zeilen). Der
+Animationsstufen-Schalter ueberlebte als js/anim.js (drosselt
+Radar/LED/Avatar — Funktion, keine Deko). ORANGE ist abgeschafft:
+Token --orange traegt Scanner-Tuerkis #7FC2B6 (Papier-Modus #2A6459),
+die Statistik-Ausnahme vom 18.8. ist aufgehoben. Bestandsfunde:
+zuordnung.test.js stand seit der Zeitpflicht rot (repariert);
+ein nie geschlossener CSS-Kommentar verschluckte eine Regel.
+
+**AUFRAEUM-TAKT** Job 91 (taeglich 03:20): cron-Protokoll 3 Tage,
+orion_laeufe/orion_wache 30 Tage. Datenbank 191 -> 98 MB von 500.
+
+**Bridge-Waechter** laeuft jede Minute UNSICHTBAR
+(Orion-Waechter-Leise.vbs; das minuetliche Terminal-Aufblitzen war
+der sichtbare cmd-Aufruf). Der Starter erzeugt die vbs selbst.
+
+**MORGEN (Karams Ansage vom 20.8. abends):** User Experience,
+Administratives, Promotion — eine LANDINGPAGE fuer das Programm und
+die Frage, wie alles angezeigt wird. Funktionsbau nur auf Ansage.

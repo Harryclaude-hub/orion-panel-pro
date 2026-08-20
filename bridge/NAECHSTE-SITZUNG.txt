@@ -7,7 +7,7 @@ Alles hineinkopieren, ab der Linie unten.
 ------------------------------ ab hier ---------------------------------
 
 Orion Panel Pro. Lies ZUERST C:\Users\Home\orion-panel-pro\UEBERGABE.md,
-die Abschnitte 8l bis 8q, dazu STRUKTUR.md. Danach erst anfangen.
+die Abschnitte 8l bis 8r, dazu STRUKTUR.md. Danach erst anfangen.
 
 Antworte auf Deutsch, militaerischer Ton, "Jawohl, Chef".
 
@@ -17,102 +17,61 @@ Betfair). Alles laeuft serverseitig auf Supabase noexklrgtqveiclijdwp
 (pg_cron ruft Edge Functions, die schreiben nach orion_funde, die
 Website liest nur ab). Nur Betfair braucht meinen Laptop, weil Betfair
 Rechenzentren mit 403 sperrt.
-Lokal: C:\Users\Home\orion-panel-pro
-Bridge: C:\Users\Home\Desktop\ORION-BRIDGE (Build 27)
+Lokal: C:\Users\Home\orion-panel-pro (Git, GitHub Harryclaude-hub,
+live auf harryclaude-hub.github.io/orion-panel-pro)
+Bridge: C:\Users\Home\Desktop\ORION-BRIDGE (Build 27, Waechter
+minuetlich und unsichtbar)
 
 WIE ICH ARBEITE
 Erst messen, dann bauen. Ungemessenes ausdruecklich kennzeichnen.
 Vor jedem Deploy: node pruefung\spiegel.test.js UND
 node pruefung\vollpruefung.test.js -- beide muessen gruen sein.
+Design ist eine EIGENE, loeschbare Schicht und fasst nie Funktion an.
 Klartext statt Beschoenigung. Ich finde Fehler zuverlaessig selbst.
 
-STAND: WAS FERTIG IST
-- Pruefung in zwei Stufen. Stufe 1 = pruefeSpiel() mit sieben Huerden
-  (Sportart, Mannschaftsklasse, Liga-Klasse, Datum als PFLICHT, Name
-  asymmetrisch, Name symmetrisch, Trennschaerfe). Stufe 2 =
-  orion_wache_stufe2() jede Minute, leitet alles neu aus der Zeile ab.
-- orion-lauf laeuft auf Version 22, Stufe 1 ist scharf.
-- Spitzenwerte tragen jetzt ihren Beleg (beste_buch_summe, beste_am).
-- Bridge Build 27: Golf ergaenzt, Nicht-Sport-eventTypes, Sperre
-  geraeteweit. Waechter im Minutentakt.
-- Kalshi-Sammler v4 (Serienweg), E-Sport in lol/valorant/esport
-  getrennt, Deadlocks behoben.
+STAND: ALLES LAEUFT (Einzelheiten in UEBERGABE 8l-8r)
+- Scanner orion-lauf v23 (Tennis-Matchsieger scharf), Wache zweistufig,
+  Kalshi v4, Aufraeum-Takt haelt die Datenbank im Free-Limit (98 MB).
+- Telegram-Melder v6 an meinen Direktchat: NUR verifizierte Chancen
+  (Wache-Urteil leer, Buchsumme unter 1, 120 s bewaehrt). Mail parallel.
+- Waehrung immer beidseitig: "81,40 EUR ($ 94,00)".
+- beitrag.html?fund=... (eigene Seite je Fund, Telegram-Link fuehrt
+  dorthin), Speichern-Knopf auf jeder Karte -> orion_gespeichert ->
+  gespeichert.html.
+- Design radikal verschlankt (20.8.): buehne.js/partikel.js GELOESCHT,
+  Orange abgeschafft (Scanner-Tuerkis #7FC2B6), Animationsstufen leben
+  als js/anim.js weiter. Seite: Kopf, Kacheln, Sonar, Karten, Matrix.
+- Cache-Version der Seite: v=71. Deploys der Edge-Funktionen gehen
+  auch ohne meinen Token (Supabase-MCP kann ausrollen); DEPLOY-JETZT.cmd
+  bleibt der Normalweg fuer orion-lauf.
 
-- TENNIS ist GEBAUT (19.8. abends, UEBERGABE 8q): marktArt kennt den
-  Matchsieger ("Turnier: A vs B", nur Bereich tennis), turnierRein()
-  schneidet das Turnierpraefix, orion-lauf setzt teil = outcomes[0].
-  Trockenlauf: 127 Sieger erkannt (vorher 0), 19 Paare gegen Betfair.
-  Alle vier Pruefstaende gruen (296 + 36 + 19896 + 195).
-- SCHWELLEN sind GEMESSEN und BEWUSST NICHT GEBAUT (8q): nur ~26 von
-  696 Kalshi-Schwellen haetten ein Polymarket-Gegenstueck, davon 8
-  fluechtige Krypto-Stundenpaare. Einziger tragfaehiger Kandidat, falls
-  doch gewollt: WTI-Tagessettlement (~18 Paare, Tag "commodities").
+HEUTE GEHT ES UM (meine Ansage vom 20.8. abends):
+User Experience, Administratives, Promotion. Konkret anfangen mit:
+1. LANDINGPAGE fuer das Programm (Promotion) -- wie wir alles anzeigen,
+   was das Panel kann. Oeffentlicher Auftritt bewusst zurueckhaltend
+   (vgl. Radar-Projekt: neutral auftreten).
+2. User-Experience-Durchgang durch die bestehenden Seiten.
+3. Administratives nach Bedarf.
+FUNKTIONS-/LOGIKBAU NUR AUF AUSDRUECKLICHE ANSAGE. Die Rechenwege,
+der Scanner, die Bridge und die Takte werden NICHT angefasst.
 
-- DEPLOY TENNIS IST DURCH (19.8. spaeter Abend): orion-lauf v23 aktiv,
-  Wache-SQL angewendet (6 Proben gruen), scharfer Lauf bewiesen:
-  68 Sieger erkannt, erstes Paar live (Shnaider/Rybakina, -0,52 %),
-  beginnt_am aus Betfair belegt, buch_summe nachgerechnet.
-- AUFRAEUM-TAKT NEU (Job 91, taeglich 03:20): cron-Protokoll 3 Tage,
-  orion_laeufe/orion_wache 30 Tage. Datenbank von 191 auf 98 MB
-  (Free-Limit 500 MB). Details in supabase/datenbank.md.
-
-- WAEHRUNG BEIDSEITIG (19.8. spaet): geld() zeigt immer beide Zeichen
-  ("81,40 EUR ($ 94,00)"); der Aufteilungs-Mischfehler (Anteile durch
-  den Kurs gedreht, Summe 86 statt 100) ist behoben. Gepusht.
-- TELEGRAM-MELDER gebaut und deployt (orion-melder-telegram, Takt
-  Job 92 minuetlich, Tabelle orion_telegram, Spalte telegram_gemeldet).
-  WARTET auf Karams TELEGRAM_BOT_TOKEN als Edge-Secret + chat_id in
-  orion_telegram. Einrichtungsmodus: {"einrichten":true}.
-
-- DESIGN-PHASE 20.8. (Karams Auftrag) UMGESETZT: eigene Beitragsseite
-  beitrag.html?fund=... (Telegram-Link fuehrt dorthin, Melder v5),
-  Speichern-Knopf auf jeder Karte + gespeichert.html + Tabelle
-  orion_gespeichert; Flanken fuellen den Rand (bis 300px) und tragen
-  DIE WACHT (Radarturm + Peilrose statt Planeten), Raketen mit
-  ehrlicher Physik (verlassen das Bild OBEN), Maus-Parallax nur in
-  Stufe 3; ORANGE KOMPLETT ERSETZT durch Scanner-Tuerkis #7FC2B6
-  (auch Papier-Modus + Statistik-Ausnahme aufgehoben). Cache v=70.
-
-- MORGENLAGE 20.8.: Telegram-Melder v6 VERSCHAERFT nach 2 Fehlalarmen
-  (Cincinnati, Buchsumme 1,0088, Wache-Urteil nicht geprueft): jetzt
-  pruefung=leer + Buchsummen-Doppelgurt + 120 s Bewaehrung.
-- RADIKALER DESIGN-RUECKBAU 20.8. (Karams Vorgabe "viel schlichter"):
-  buehne.js + partikel.js GELOESCHT (Flanken/Wacht/Jets/Raketen/Kino/
-  Partikel weg, 94 CSS-Regeln + 21 Keyframes raus, stil.css 2923->2676
-  Zeilen). Animationsstufen als js/anim.js gerettet (drosselt
-  Radar/LED/Avatar). Sonar/Puls und alle Funktionen unberuehrt,
-  Konsole fehlerfrei. Cache v=71.
-
-STAND: WAS OFFEN IST
-
-1. TELEGRAM IST SCHARF (19.8. spaet abends): Ziel = Karams DIREKTCHAT
-   mit dem Bot (orion_telegram id=1, aktiv), Funkprobe zugestellt,
-   Minutentakt Job 92 laeuft. Sein Kanal war fuer den Bot nie sichtbar
-   (vermutlich Community-Gruppe statt Kanal) - Direktchat erfuellt
-   denselben Zweck. Umtragen jederzeit: neue chat_id in orion_telegram.
-2. UNGEMESSEN: in welcher Waehrung liefert Betfair die MENGEN (bs/ls)
-   der Bridge? Kontowaehrung des Betfair-Kontos. Wenn EUR: max_einsatz/
-   max_gewinn der Betfair-Seite um den Kurs daneben (Rendite NICHT
-   betroffen, Quoten sind waehrungsfrei). Karam fragen, dann ggf.
-   kleine Scanner-Korrektur.
-
-DANACH BETRIEBSRUHE (Karams Ansage vom 19.8.): fuer eine Weile
-keine Updates an Bridge, Panel, PC oder Verwaltung, kein Design, kein
-UX. Nur beobachten und nachmessen, bauen NUR auf ausdrueckliche Ansage.
-
-RESTRISIKO Tennis kennen (8q, steht auch in logik.html): bei
-Aufgabe NACH Matchbeginn zahlt Polymarket den Weiterkommer aus,
-Betfair macht Match-Odds void -- die Absicherung zerfaellt dann.
-Das ist eine Eigenschaft der Regeln beider Buecher, kein Fehler.
+KLEINE OFFENE PUNKTE (nur wenn ich sie anspreche)
+- UNGEMESSEN: Waehrung der Betfair-MENGEN (bs/ls) aus der Bridge
+  (= Kontowaehrung meines Betfair-Kontos). Wenn EUR: max_einsatz/
+  max_gewinn der Betfair-Seite um den Kurs daneben; Rendite NIE
+  betroffen (Quoten sind waehrungsfrei).
+- Tennis-Restrisiko (8q, logik.html): Aufgabe NACH Matchbeginn ->
+  Polymarket zahlt den Weiterkommer, Betfair void.
 
 DEPLOY
-Ich rolle selbst aus, per Doppelklick auf DEPLOY-JETZT.cmd auf dem
-Desktop im Ordner ORION-BRIDGE. Du bekommst KEINEN Token, auch nicht
-im Chat. Sag mir einfach, wenn deployt werden muss.
+Ich rolle orion-lauf selbst aus, per Doppelklick auf DEPLOY-JETZT.cmd
+im Ordner ORION-BRIDGE. Du bekommst KEINEN Supabase-Access-Token, auch
+nicht im Chat. Edge-Melder kannst du ueber die Supabase-Verbindung
+selbst ausrollen. Website: git push auf Harryclaude-hub, Pages baut.
 
 ------------------------------ bis hier --------------------------------
 
 
 HINWEIS FUER MICH SELBST
-Nach jedem Deploy den Token wieder loeschen:
+Nach jedem Deploy per cmd den Token wieder loeschen:
 https://supabase.com/dashboard/account/tokens  ->  Revoke
