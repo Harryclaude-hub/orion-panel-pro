@@ -2696,3 +2696,105 @@ jetzt auch `Sperre.start()`.
 `<script src=...>` sieht nach Funktion aus und ist doch nur eine
 Lieferung. Wer `sperre.js` einbindet, ruft auch `Sperre.start()`.
 Dasselbe gilt fuer jede andere Schicht, die einen Startaufruf braucht.
+
+---
+
+## 8w. SCAN-DURCHSICHT 7 TAGE + EINE PARTIE, EINE MELDUNG (21.8.)
+
+### Wie gescannt wurde, gemessen
+
+| Tag | Funde | Partien | gesperrt | Spitze ueber 2 % | gemeldet |
+|---|---|---|---|---|---|
+| 18.8. | 2 | 1 | 100 % | 2 | 0 |
+| 19.8. | 220 | 46 | 100 % | 10 | 3 Chancen |
+| 20.8. | 228 | 63 | 90 % | 3 | 11 knapp |
+
+Zwoelf Paarungsrichtungen im Betrieb, alle vier Buecher kreuzen.
+
+### Die 90 bis 100 Prozent Sperrquote sind KEIN Fehler
+
+Erst sah es nach einem aus. Aufgeschluesselt nach Sperrgrund loest es
+sich auf: von 400 Sperren durch die Wache sind
+
+    186  "Anpfiff ist vorbei"          normale Alterung
+     87  "Anpfiff in unter N Minuten"  normale Alterung
+     74  "Anpfiff nicht belegt"        Zeitpflicht greift
+     30  "Widerspruch: Buchsumme"      echter Fang
+     15  "Widerlegt im Hoechststand"   echter Fang, mit Beleg
+      3  "Mannschaftsklasse ungleich"  echter Fang
+
+68 % sind schlicht der Lebenszyklus: eine Zeile lebt, das Spiel faengt
+an, sie wird geschlossen. Im Schnitt 17 Stunden nach dem ersten Sehen.
+**Die hohe Quote ist die Wache bei der Arbeit, nicht ein Fehler.**
+
+### Was daran WIRKLICH auffaellt
+
+Sieben Meldungen gingen an Zeilen raus, die die Wache SPAETER widerlegt
+hat: 4 bei "Anpfiff vorbei" (harmlos, das Spiel lief einfach an),
+**2 bei "Widerspruch Buchsumme" und 1 bei "Widerlegt im Hoechststand"**.
+Die drei letzten sind echte Fehlalarme: die Meldung behauptete einen
+Vorteil, den es nicht gab.
+
+OFFEN, nicht gebaut: ein WIDERRUF. Wird eine bereits gemeldete Zeile
+spaeter widerlegt, koennte der Bot eine zweite Nachricht schicken
+("die Chance von 21:04 war keine, Grund X"). Heute erfaehrt Karam es
+nie. Das waere der naechste ehrliche Schritt.
+
+### GEBAUT: eine Partie, eine Meldung
+
+Karams Beobachtung, woertlich: "immer die gleiche Benachrichtigung".
+Gemessen stimmte das genau:
+
+    Botafogo FR vs. CS Cienciano   5 Knapp-Meldungen fuer EIN Spiel
+      betfair>polymarket, kalshi>betfair, kalshi>smarkets,
+      polymarket>betfair, smarkets>betfair
+    LDU de Quito vs. Mirassol FC   3 Meldungen
+    FC Cincinnati vs. NYC FC       2 Meldungen
+
+Jede Zeile war fuer sich richtig. Als Nachricht war es dasselbe
+Ereignis, fuenfmal.
+
+Beide Bots gruppieren jetzt nach `titel` und melden die BESTE Zeile je
+Partie. Die uebrigen werden in der Nachricht genannt ("steht noch ueber
+N weitere Buchpaarungen im Panel") und MITMARKIERT, damit sie nicht im
+naechsten Takt einzeln nachkommen. Die Antwort meldet beides getrennt:
+`gemeldet` (Nachrichten) und `zeilen_markiert` (Zeilen).
+
+Geprueft mit fuenf Faellen gegen den echten Botafogo-Datensatz: aus 5
+wird 1, die beste (-0,13) gewinnt, 4 weitere werden genannt;
+verschiedene Partien fallen NICHT zusammen; Einzelfund bleibt
+unveraendert; leere Liste stuerzt nicht ab; bei gleicher Rendite
+gewinnt genau eine.
+
+    orion-melder-telegram   Version 8 -> 9
+    orion-melder-knapp      Version 4 -> 5
+    beide Funkproben zugestellt
+
+### NICHT gebaut, mit Begruendung
+
+**Die 0,05-Schwelle in `orion_verlauf_urteil`.** Sie steht auf
+`>= 0.05` und meint damit 0,05 Prozent, waehrend 8p ausdruecklich
+"ueber 5 %" sagt. Gemessen: 17 von 19 "zweifelhaft"-Urteilen betreffen
+Spitzen unter 5 %, 15 davon unter 1 %, die kleinste 0,064 %. Der Fund
+steht.
+
+Umgesetzt habe ich ihn NICHT: die Korrektur wuerde die Wache
+LOCKERER machen, und das ist keine Richtung, die ich ohne eigene
+Freigabe gehe. Eine zu strenge Wache kostet Aufmerksamkeit, eine zu
+milde kostet Geld.
+
+**Der offene Buchsummen-Gurt.** Beide Bots lassen `buch_summe IS NULL`
+durch, gedacht fuer die eine Minute vor der Messung. Gemessen bleiben
+Zeilen aber STUNDEN ohne Buchsumme (eine stand 199 min). Auch das ist
+eine Verschaerfungsfrage und wartet auf Ansage.
+
+### Ein Fehlalarm von mir, festgehalten
+
+Ich hatte 113 Zeilen mit "arithmetisch unmoeglicher Quote unter 1"
+gefunden und war dabei, das als schweren Fund zu melden. Falsch:
+`pm_preis` und `bf_quote` tragen nicht Polymarket und Betfair, sondern
+**buch_1 und buch**. Nachgemessen liegt alles im richtigen Bereich
+(polymarket 0,010-0,979 als Preis, smarkets 1,020-95,238 als Quote).
+
+Genau die Fehlerklasse, vor der dieses Projekt sonst warnt: einen
+Feldnamen fuer die Wahrheit halten, statt nachzusehen, was drinsteht.

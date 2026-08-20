@@ -84,6 +84,11 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string): st
       ? `\u{1F9EE} Bei 100 $ Einsatz kämen <b>${aus.toFixed(2)} $</b> zurück (${e1.toFixed(2)} $ auf ${n1}, ${e2.toFixed(2)} $ auf ${n2})`
       : ''),
     `\u{1F4B0} Platz bis <b>${geld(f.max_einsatz)}</b> Einsatz, falls es kippt`,
+    /* Ehrlich sagen, dass dieselbe Partie noch ueber andere Buchpaare
+     * gefunden wurde, statt dafuer eine zweite Nachricht zu schicken. */
+    (Number(f._weitere) > 0
+      ? `\u{1F517} Dieselbe Partie steht noch über <b>${Number(f._weitere)}</b> weitere Buchpaarung${Number(f._weitere) === 1 ? '' : 'en'} im Panel. Hier steht die beste davon.`
+      : ''),
     `\u{1F4CB} <a href="${beitrag}">Ganze Karte öffnen</a> · kippt der Kurs, meldet der Chancen-Bot. Alle Links dieser Meldung führen dorthin, der Absprung zum Anbieter steht auf der Seite.`
   ].filter(z => z !== '');
   return zeilen.join('\n');
@@ -196,7 +201,32 @@ Deno.serve(async (req) => {
       return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'kein knappes Paar' }), { headers: kopf });
     }
 
-    const text = kand.map((f: Record<string, unknown>) => meldung(f, geld)).join('\n\n────────\n\n');
+    /* EINE PARTIE, EINE MELDUNG (21.8., Karams Fund: "immer die gleiche
+     * Benachrichtigung"). Am 20.8. gingen FUENF Meldungen fuer EIN Spiel
+     * raus (Botafogo FR vs. CS Cienciano), weil dieselbe Partie ueber
+     * fuenf Buchpaarungen gefunden wurde: betfair>polymarket,
+     * kalshi>betfair, kalshi>smarkets, polymarket>betfair,
+     * smarkets>betfair. Jede Zeile war fuer sich richtig, als Nachricht
+     * war es fuenfmal dasselbe Ereignis.
+     *
+     * Gemeldet wird jetzt die BESTE Zeile je Partie. Die uebrigen werden
+     * mitgezaehlt (die Meldung nennt sie) und weiter unten mitmarkiert,
+     * damit sie nicht im naechsten Takt einzeln nachkommen. Wer die
+     * anderen Paarungen sehen will, findet sie auf der Beitragsseite. */
+    const jePartie = new Map<string, Record<string, unknown>[]>();
+    for (const f of kand as Record<string, unknown>[]) {
+      const t = String(f.titel ?? '');
+      const bisher = jePartie.get(t);
+      if (bisher) bisher.push(f); else jePartie.set(t, [f]);
+    }
+    const zuMelden = [...jePartie.values()].map((gruppe) => {
+      const beste = gruppe.reduce((a, b) =>
+        Number(b.rendite) > Number(a.rendite) ? b : a);
+      beste._weitere = gruppe.length - 1;
+      return beste;
+    });
+
+    const text = zuMelden.map((f: Record<string, unknown>) => meldung(f, geld)).join('\n\n────────\n\n');
     const tj = await sende(String(ziel.chat_id), text);
     if (!tj.ok) {
       return new Response(JSON.stringify({ ok: false, grund: 'Telegram: ' + JSON.stringify(tj).slice(0, 200) }), { headers: kopf });
