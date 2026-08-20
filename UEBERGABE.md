@@ -2798,3 +2798,57 @@ gefunden und war dabei, das als schweren Fund zu melden. Falsch:
 
 Genau die Fehlerklasse, vor der dieses Projekt sonst warnt: einen
 Feldnamen fuer die Wahrheit halten, statt nachzusehen, was drinsteht.
+
+---
+
+## 8x. CLAUDE.md UND DER FUENFTE PRUEFSTAND (21.8.)
+
+Karams Ansage: „Fueg alles hinzu, was du hinzufuegen kannst."
+
+### CLAUDE.md, neu
+
+Das Projekt hatte **keine** `CLAUDE.md`. Jede neue Sitzung musste sich
+die Regeln aus 110 KB `UEBERGABE.md` zusammensuchen, und was dabei
+untergeht, gilt in der naechsten Sitzung nicht mehr. Jetzt liegt eine
+Kurzfassung im Wurzelverzeichnis, die AUTOMATISCH in jeder Sitzung
+geladen wird: Tonfall, die vier eisernen Regeln, die fuenf Pruefstaende,
+die Deploy-Wege, die Cache-Marken-Regel, die Design-Regeln inklusive
+`elementFromPoint`, die sieben Fehlerklassen und die drei Stellen, an
+denen Vorsicht gilt (Egress, Betfair-Mengen, Tennis-Restrisiko).
+
+Sie ersetzt die Uebergabe nicht, sie ist der Einstieg dorthin.
+
+### Neu: Regel 3, aus der heutigen Erfahrung
+
+    Eine Aenderung, die eine Schutzschicht LOCKERER macht (Wache,
+    Melde-Filter, Sperren), braucht eine eigene Freigabe, auch wenn
+    allgemein "setz die Verbesserungen um" gesagt wurde.
+
+Anlass ist die 0,05-Schwelle: sachlich ein Fund, aber die Korrektur
+haette die Wache milder gemacht. Diese Richtung braucht immer eine
+ausdrueckliche Ansage.
+
+### pruefung/melder.test.js, der fuenfte Pruefstand
+
+Die Gruppierung von 8w war nur in einem Wegwerf-Skript geprueft. Jetzt
+liegt sie im Repo, mit ZWEI Teilen:
+
+  Teil A  VERHALTEN gegen echte Faelle (Botafogo 5 -> 1, verschiedene
+          Partien fallen nicht zusammen, Einzelfund, leere Liste,
+          Gleichstand)
+  Teil B  ABGLEICH: steht in BEIDEN Meldern derselbe Block, markieren
+          beide ALLE geholten Zeilen, melden beide die gruppierte Liste
+
+Teil B ist der wichtigere. Die Funktion im Test ist ein NACHBAU; ein
+Nachbau, den niemand gegen das Original haelt, ist genau die Drift
+zwischen zwei Fassungen. Ohne Teil B bliebe der Test gruen, waehrend
+der echte Melder etwas anderes tut.
+
+**Gegenprobe gelaufen** (die Lehre aus dem weggeworfenen Werkzeug von
+8u: ein Test, der nie rot wird, ist wertlos): kuenstliche Drift in
+orion-melder-knapp eingebaut, Test wird ROT mit Exit-Code 1 und nennt
+beide betroffenen Punkte; nach dem Zuruecksetzen wieder gruen mit
+Exit-Code 0, Datei Byte fuer Byte wiederhergestellt.
+
+    spiegel 19896 · vollpruefung 36 · zuordnung 296
+    rechnung 195 · melder 12 + Abgleich      alle gruen

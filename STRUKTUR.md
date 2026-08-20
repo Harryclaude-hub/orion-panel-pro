@@ -120,9 +120,25 @@ Dateiarray nicht an).
 
 ## Prüfstand (`pruefung/`)
 
-`spiegel.test.js` — **vor JEDEM Ausrollen**: Browser- und Server-Rechnung
-identisch (19.896 Prüfungen, gemessen 20.8.). Dazu `bereiche.js`, `nachschlagen.js`,
-`karte-probe.html` für Messläufe gegen echte Daten.
+**Fünf Prüfstände, alle vor JEDEM Ausrollen:**
+
+| Datei | prüft | Umfang |
+|---|---|---|
+| `spiegel.test.js` | Browser- und Server-Rechnung identisch | 19.896 |
+| `vollpruefung.test.js` | die sieben Hürden greifen | 36 Fälle |
+| `zuordnung.test.js` | Wortzerlegung, Paar-Belege | 296 |
+| `rechnung.test.js` | Effektivquoten, Aufteilung | 195 |
+| `melder.test.js` | Gruppierung „eine Partie, eine Meldung" (21.8.) | 12 + Abgleich |
+
+`melder.test.js` hat zwei Teile: das VERHALTEN gegen echte Fälle (der
+Botafogo-Fall vom 20.8.) und einen ABGLEICH, der prüft, ob in BEIDEN
+Meldern derselbe Block steht. Ohne Teil B wäre der geprüfte Code ein
+Nachbau, den niemand gegen das Original hält, und der Test bliebe grün,
+während der echte Melder etwas anderes tut. Gegenprobe ist gelaufen:
+künstliche Drift macht ihn rot (Exit 1), Zurücksetzen wieder grün.
+
+Dazu `bereiche.js`, `nachschlagen.js`, `karte-probe.html` für Messläufe
+gegen echte Daten.
 
 ## Was beim Aufräumen am 20.8. entfernt wurde (und warum)
 
