@@ -96,13 +96,13 @@
   }
 
   /* SEIT DEM BEREICHS-SCANNER (11.8. abends) gibt es nicht mehr DEN letzten
-   * Lauf, sondern einen je Bereich: orion-lauf-fussball jede Minute,
+   * Lauf, sondern einen je Bereich: orion-lauf-fussball alle 2 Minuten,
    * orion-lauf-tennis jede Minute, und so weiter. Eine einzelne letzte
    * Zeile zeigte dann mal 700 Maerkte (Fussball), mal 40 (Tennis) — die
    * Tafel haette bei jedem Ablesen andere Zahlen behauptet.
    *
    * Deshalb: die juengste Zeile JE BEREICH holen und daraus aggregieren.
-   * 60 Zeilen reichen: der dichteste Takt ist 60 s, damit liegen selbst
+   * 60 Zeilen reichen: der dichteste Takt ist 120 s, damit liegen selbst
    * bei 20 Bereichen alle juengsten Laeufe in den letzten 60 Zeilen. */
   function holeLaeufe() {
     return db('orion_laeufe?select=bereich,gelaufen_am,pm_maerkte,bf_match_odds,paare,dauer_ms,fehler,bf_alter_s&order=gelaufen_am.desc&limit=60');
@@ -149,8 +149,14 @@
    * wenn etwas endet; der Wechselkurs einmal am Tag). Die Alter-Anzeigen
    * rechnen ohnehin client-seitig aus den Zeitstempeln — sie bleiben
    * korrekt, auch wenn der Schnappschuss gepuffert ist. */
+  /* Alle Puffer lassen sich auf einen Schlag leeren — das braucht der
+   * Sofort-ablesen-Knopf: er verspricht einen FRISCHEN Lesevorgang und
+   * darf nicht aus dem Puffer bedient werden. */
+  var pufferLeerer = [];
+  function frisch() { for (var i = 0; i < pufferLeerer.length; i++) pufferLeerer[i](); }
   function gepuffert(hole, haltbarMs) {
     var p = { zeit: 0, daten: null, hat: false };
+    pufferLeerer.push(function () { p.hat = false; });
     return function () {
       if (p.hat && Date.now() - p.zeit < haltbarMs) return Promise.resolve(p.daten);
       return hole().then(function (d) {
@@ -161,6 +167,12 @@
       });
     };
   }
+  /* EGRESS-BREMSE 20.8., Teil 2: auch die LIVE-Funde in den Puffer.
+   * Der Scanner schreibt hoechstens alle 1-2 Minuten je Bereich — die
+   * 2-Sekunden-Schleife holte dieselben Bytes also vielfach neu.
+   * 15 s Puffer heisst: gleiche Anzeige, ein Achtel der Datenmenge.
+   * Die Alters-Anzeigen ("vor X s") rechnen client-seitig weiter. */
+  var holeLiveG      = gepuffert(holeLive, 15000);
   /* EGRESS-BREMSE 20.8. (Supabase-Limit, Drosselung angedroht): die
    * Verlaufsantwort wog 2 MB und wurde alle 10 s geholt — 12 MB/min,
    * bis 700 MB je Stunde Panelbetrieb, allein DAS riss das 5-GB-
@@ -176,7 +188,7 @@
   var kursG          = gepuffert(kurs, 300000);
 
   function ladeAlles() {
-    return Promise.all([holeLive(), holeVerlaufG(), holeLaeufeG(), holeKalshiG(), holeWacheG(),
+    return Promise.all([holeLiveG(), holeVerlaufG(), holeLaeufeG(), holeKalshiG(), holeWacheG(),
                         holeUebersichtG(), holeSmarketsG(), kursG(), holeScanstandG()])
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
@@ -230,7 +242,7 @@
           if (name === 'betfair')  return bfAlterS === null || bfAlterS > K.bridgeMaxAlterS;
           /* Polymarket wird bei JEDEM Lauf frisch geholt. Seine Frische ist
            * die Frische des Scanners — und zwar des Scanners im BEREICH
-           * dieser Zeile: der Fussball-Takt (60 s) sagt nichts darueber,
+           * dieser Zeile: der Fussball-Takt (120 s) sagt nichts darueber,
            * ob der Tennis-Lauf noch laeuft. */
           var a = laufAlterVon(f && f.bereich);
           return a === null || a > K.laufMaxAlterS;
@@ -841,7 +853,8 @@
     holeLive: holeLive,
     holeVerlauf: holeVerlauf,
     holeLauf: holeLauf,
-    ladeAlles: ladeAlles
+    ladeAlles: ladeAlles,
+    frisch: frisch
   };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);

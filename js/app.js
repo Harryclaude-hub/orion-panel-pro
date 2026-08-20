@@ -39,7 +39,12 @@
 
   function start() {
     var knopf = document.getElementById('neuladen');
-    if (knopf) knopf.addEventListener('click', function () { laden(false); });
+    if (knopf) knopf.addEventListener('click', function () {
+      /* Der Knopf verspricht FRISCHE Daten — also erst alle Puffer leeren,
+       * sonst wuerde er aus dem 15-s-Livepuffer bedient (Bremse vom 20.8.). */
+      if (welt.Daten.frisch) welt.Daten.frisch();
+      laden(false);
+    });
 
     /* Erst nach dem Entsperren: vorher gibt es die Knoepfe noch nicht. */
     if (welt.Filter) welt.Filter.start();

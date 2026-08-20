@@ -277,7 +277,14 @@ Deno.serve(async (req) => {
     const bfOu = bfImFenster.filter(m => Z.bfOuLinie(m.mt) !== null);
 
     // ---------- Kalshi: nur Serien DIESES Bereichs ----------
-    const kaAntwort = await fetch(`${URL_SUPA}/rest/v1/kalshi_snapshot?id=eq.1&select=maerkte,updated_at`, { headers: dbKopf() });
+    /* EGRESS-BREMSE 20.8.: vorher kam der GANZE Schnappschuss (208 KB) und
+     * ~90 % flogen hier weg. Jetzt filtert die Datenbank VOR dem Versand
+     * ueber denselben dritten Zuordnungsweg (orion_bereich_kalshi) — die
+     * Antwort traegt dieselbe Form ([{maerkte, updated_at}]), und der
+     * Filter unten bleibt als Gurt bestehen. */
+    const kaAntwort = await fetch(`${URL_SUPA}/rest/v1/rpc/orion_kalshi_maerkte`, {
+      method: 'POST', headers: dbKopf(), body: JSON.stringify({ bereich_p: bereich })
+    });
     const kaZeilen = kaAntwort.ok ? await kaAntwort.json() : [];
     const kaZeile = kaZeilen[0] || { maerkte: [], updated_at: null };
     const kaAlterS = kaZeile.updated_at ? Math.round((jetzt - Date.parse(kaZeile.updated_at)) / 1000) : null;
@@ -299,7 +306,12 @@ Deno.serve(async (req) => {
     let smAlle: any[] = [];
     let smAlterS: number | null = null;
     if (bereich === 'fussball') {
-      const smAntwort = await fetch(`${URL_SUPA}/rest/v1/smarkets_snapshot?id=eq.1&select=maerkte,updated_at`, { headers: dbKopf() });
+      /* EGRESS-BREMSE 20.8.: gleiche Daten, aber die Quoten kommen auf
+       * 6 Nachkommastellen gerundet statt mit 16 Gleitkomma-Stellen
+       * (orion_sm_maerkte) — Form der Antwort unveraendert. */
+      const smAntwort = await fetch(`${URL_SUPA}/rest/v1/rpc/orion_sm_maerkte`, {
+        method: 'POST', headers: dbKopf(), body: '{}'
+      });
       const smZeilen = smAntwort.ok ? await smAntwort.json() : [];
       const smZeile = smZeilen[0] || { maerkte: [], updated_at: null };
       smAlterS = smZeile.updated_at ? Math.round((jetzt - Date.parse(smZeile.updated_at)) / 1000) : null;

@@ -2462,12 +2462,48 @@ unschuldig: 7 Logzeilen in 24 h.
 Behoben, Funktion unangetastet:
 1. holeVerlauf: 1000 Zeilen alle 10 s -> **400 Zeilen alle 60 s**
    (Anzeige zeigt ~160; Verlauf aendert sich nur, wenn etwas endet).
-2. Job 73 orion-lauf-fussball: `20 seconds` -> `* * * * *` (Bewaehrung
-   ist ohnehin 120 s, keine meldbare Chance geht verloren).
-   orion_bereiche.takt_sek = 60 nachgezogen, alle sechs
-   \"20-Sekunden\"-Textstellen (index/angaben/logik/start/puls/anzeige)
-   mitgezogen.
+2. Job 73 orion-lauf-fussball: `20 seconds` -> zunaechst minuetlich.
 3. Knapp-Takt bewusst */5 statt minuetlich.
-NICHT gebaut: Mail-Melder-Streckung (kein Beleg, dass Aufrufe das
-gerissene Limit sind; 344k/Monat von 500k). Der 2-s-Lesetakt der
-Live-Karten blieb (73 KB je Abruf, vertretbar).
+
+### EGRESS-FELDZUG II (gleicher Tag, spaeter): der Zaehlerstand kam
+
+Karam lieferte die Zahlen: **Egress 16,9 von 5 GB = 339 %**, ALLE
+anderen Zaehler gruen (DB 24 %, Aufrufe 22 %). Sein Befehl: Gratis-Plan
+MUSS halten, gleiche Scan-Qualitaet, notfalls Verlauf nach einem Tag
+loeschen; Laptop/eigener Server nur als Zukunftsgedanke, Supabase hat
+Prioritaet.
+
+GEMESSEN: jeder Bereichslauf holte den GANZEN Kalshi-Schnappschuss
+(208 KB, ~90 % wurden im Edge-Code weggeworfen) und der Fussball-Lauf
+zusaetzlich den ganzen Smarkets-Schnappschuss (484 KB, Quoten mit 16
+Gleitkomma-Stellen). Alle 946 Smarkets-Maerkte liegen im Fenster, ein
+Zeitfilter braechte nichts.
+
+Gebaut (orion-lauf **v26**, Trockenlauf bestanden: Kalshi fussball
+36 = 36, Gurt meldet 0 Fremde, alle 9 Paarungsrichtungen liefern,
+Tennis laeuft):
+1. RPC **orion_kalshi_maerkte(bereich_p)**: Datenbank filtert je
+   Bereich VOR dem Versand, ueber den BESTEHENDEN dritten
+   Zuordnungsweg orion_bereich_kalshi — keine neue Logik, 11 statt
+   208 KB. TS-Gurt bleibt.
+2. RPC **orion_sm_maerkte()**: Quoten auf 6 Stellen gerundet
+   (484 -> 437 KB), Inhalt sonst identisch.
+3. Job 73 fussball auf **alle 2 Minuten** (Takt der Boersensammler
+   kalshi/smarkets */2 — dazwischen kaemen identische Boersendaten;
+   Bewaehrung ist 120 s, Wache minuetlich).
+4. Browser: holeLive in 15-s-Puffer (Scanner schreibt hoechstens alle
+   1-2 min); Sofort-ablesen-Knopf leert die Puffer ehrlich
+   (Daten.frisch()).
+5. **Verlauf-Loeschung nach 24 h** (Karams Freigabe) im Aufraeum-Takt
+   Job 91; Erstlauf sofort ausgefuehrt: 1367 Zeilen weg, Live und
+   orion_gespeichert unberuehrt.
+Textstellen (index/angaben/logik/start/puls/anzeige/daten) auf
+\"alle 2 Minuten\" nachgezogen, Cache v=74.
+
+EHRLICH OFFEN: der Monat ist schon gerissen — Supabase kann bis zum
+Zyklusende trotzdem drosseln, die Bremsen wirken auf die ZUKUNFT.
+Erwarteter Verbrauch nach Bremsen: grob 100-150 MB/Tag, also 3-4,5 GB/
+Monat — knapp unter der Grenze; naechste Tage am Zaehler NACHMESSEN.
+NOTFALLPLAN (nur dokumentiert, nicht gebaut): alles auf einen
+dauerlaufenden Laptop/Server umziehen, Preis: Geraet muss 24/7 an sein,
+und der Kernvorteil (laeuft bei ausgeschaltetem Geraet) faellt.

@@ -2049,7 +2049,7 @@
                'Der Wert hier ist ihr Alter: wann sie sich zuletzt gemeldet hat.' },
       /* --- Zeile 2: die vier Anbieter mit ihren Sekunden --- */
       { name: 'Polymarket', wert: dauer(s.lauf_alter_s), farbe: scannerLaeuft ? 'var(--pm)' : 'var(--rot)',
-        titel: 'Alter des jüngsten Scanner-Laufs — der Scanner holt Polymarket bei jedem Lauf direkt (Fußball jede Minute).' },
+        titel: 'Alter des jüngsten Scanner-Laufs — der Scanner holt Polymarket bei jedem Lauf direkt (Fußball alle 2 Minuten).' },
       { name: 'Kalshi', wert: dauer(s.kalshi_alter_s), farbe: kalshiLaeuft ? 'var(--ka)' : 'var(--rot)',
         titel: 'Alter des Kalshi-Schnappschusses — gesammelt alle 2 Minuten, öffentlich, ohne Konto.' },
       { name: 'Smarkets', wert: dauer(s.smarkets_alter_s), farbe: smarketsLaeuft ? 'var(--sm)' : 'var(--rot)',

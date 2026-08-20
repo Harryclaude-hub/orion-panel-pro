@@ -46,10 +46,15 @@ STAND: ALLES LAEUFT (Einzelheiten in UEBERGABE 8l-8t)
 - ZWEITER Bot orion-melder-knapp v3 SCHARF (20.8.): knappste Paare
   (@OrionKnappBot), Band rendite -0,5 bis unter 2 (gemessen ~6/Tag),
   Takt-Job 93 alle 5 Minuten. UEBERGABE 8t.
-- EGRESS-BREMSE (20.8., Supabase drohte Drosselung ab 21.8.): Verlauf
-  400 Zeilen/60 s statt 2 MB/10 s, Fussball-Takt 60 s statt 20 s.
-  Freistufen-Limit 5 GB/Monat Datenabfluss war der Treiber. 8t.
-- Cache-Version der Seite: v=73. Deploys der Edge-Funktionen gehen
+- EGRESS-BREMSE (20.8., Zaehler stand 16,9 von 5 GB = 339 %, alles
+  andere gruen): orion-lauf v26 holt Kalshi je Bereich gefiltert
+  (RPC orion_kalshi_maerkte, 11 statt 208 KB) und Smarkets gerundet
+  (orion_sm_maerkte); Fussball-Takt alle 2 min (Sammlertakt); Browser
+  Live 15-s-Puffer + Verlauf 400 Zeilen/60 s; beendete Funde werden
+  nach 24 h GELOESCHT (Karams Freigabe, Job 91). Details 8t/8u.
+  NACHMESSEN: Egress-Zaehler in den naechsten Tagen pruefen, Ziel
+  unter ~150 MB/Tag.
+- Cache-Version der Seite: v=74. Deploys der Edge-Funktionen gehen
   auch ohne meinen Token (Supabase-MCP kann ausrollen); DEPLOY-JETZT.cmd
   bleibt der Normalweg fuer orion-lauf.
 

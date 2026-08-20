@@ -186,14 +186,27 @@ orion-rauschen-takt     */5 * * * *  löscht Minuszeilen im Verlauf
 > `cron.job`), passend dazu ist `pm_snapshot` seit dem 11.8. 23:18 nicht mehr
 > beschrieben worden. Fußball läuft `* * * * *`, Smarkets `*/10`.
 
-**EGRESS-BREMSE 20.8.2026 (Supabase drohte Drosselung ab 21.8., Limits
-der Free-Stufe überschritten — Diagnose: Datenabfluss):** Job 73
-`orion-lauf-fussball` von `20 seconds` auf `* * * * *` gestellt (drittelt
-Aufrufe UND die 85-KB-Antworten von `orion_bf_maerkte` je Lauf); im
-Panel `holeVerlauf` von 2 MB alle 10 s auf 400 Zeilen alle 60 s gebremst
-(js/daten.js). `orion_bereiche.takt_sek` fussball = 60 nachgezogen.
-NEU Job 93 `orion-knapp-takt` (`*/5 * * * *`) für den zweiten Bot —
-bewusst 5-minütlich, nicht minütlich.
+**EGRESS-BREMSE 20.8.2026 (Supabase: Egress 16,9 von 5 GB = 339 %,
+Drosselung ab 21.8. angedroht; alle anderen Zähler grün):**
+- Job 73 `orion-lauf-fussball`: `20 seconds` → **`*/2 * * * *`** (Takt
+  der Börsensammler; dazwischen kämen identische Börsendaten).
+  `orion_bereiche.takt_sek` fussball = 60 nachgezogen (Anzeige).
+- **`orion_kalshi_maerkte(bereich_p)`** (NEU): liefert orion-lauf nur
+  die Kalshi-Märkte SEINES Bereichs über den bestehenden dritten
+  Zuordnungsweg `orion_bereich_kalshi(serie)` — 11 KB statt 208 KB je
+  Lauf, Trockenlauf-beweisbar identisch (fussball: 36 = 36). Der
+  Edge-Code prüft weiter nach (Gurt und Hosenträger).
+- **`orion_sm_maerkte()`** (NEU): Smarkets-Schnappschuss mit auf
+  6 Stellen gerundeten Quoten (16 Gleitkomma-Stellen waren Artefakte),
+  484 → 437 KB. orion-lauf v26 nutzt beide RPCs.
+- Panel: `holeVerlauf` 400 Zeilen alle 60 s statt 1000 alle 10 s
+  (2 MB je Abruf!); `holeLive` 15-s-Puffer; Sofort-ablesen-Knopf leert
+  die Puffer (`Daten.frisch()`).
+- Job 91 löscht zusätzlich **beendete Funde nach 24 h** (FREIGABE
+  Karam 20.8.; Erstlauf: 1367 Zeilen). Gespeicherte Schnappschüsse in
+  `orion_gespeichert` bleiben unberührt.
+- NEU Job 93 `orion-knapp-takt` (`*/5 * * * *`) für den zweiten Bot —
+  bewusst 5-minütlich, nicht minütlich.
 >
 > Das ist genau die Drift, vor der diese Datei oben warnt — deshalb steht
 > jetzt hier: **im Zweifel `select jobname, schedule from cron.job` fragen,

@@ -27,8 +27,8 @@ eine Rechnung.
 | `js/sperre.js` | das Passwort-Tor | startet app.js |
 
 **Server (Wahrheit in Supabase, dokumentiert in `supabase/datenbank.md`):**
-Scanner `orion-lauf` (je Bereich, Fußball 60 s seit der Egress-Bremse
-vom 20.8.) → `orion_funde`;
+Scanner `orion-lauf` (je Bereich, Fußball alle 2 min seit der
+Egress-Bremse vom 20.8.) → `orion_funde`;
 Wächter/Nachtwache minütlich; Prüfer 5-minütlich; Zeiten/Nummern/Sperren
 minütlich; Rauschen-Löscher 5-minütlich; `orion-melder-mail` minütlich
 (braucht `RESEND_API_KEY`). Sammler: Kalshi + Smarkets alle 2 min;

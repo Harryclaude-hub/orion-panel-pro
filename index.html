@@ -6,9 +6,9 @@
 <title>Orion Panel Pro</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="schrift/schrift.css?v=73">
-<link rel="stylesheet" href="css/stil.css?v=73">
-<link rel="stylesheet" href="css/hud.css?v=73">
+<link rel="stylesheet" href="schrift/schrift.css?v=74">
+<link rel="stylesheet" href="css/stil.css?v=74">
+<link rel="stylesheet" href="css/hud.css?v=74">
 </head>
 <body>
 
@@ -64,7 +64,7 @@
       <!-- "Sofort ablesen": die Seite liest OHNEHIN alle 2 Sekunden ab.
            Dieser Knopf erzwingt nur einen Lesevorgang JETZT - kein Neustart,
            kein F5. Er existiert für den Moment nach einem Netz-Aussetzer. -->
-      <button id="neuladen" class="haupt"><svg class="mil" viewBox="0 0 26 16" aria-hidden="true"><path d="M2 12 h20 l-2 3 h-16 z"/><circle cx="6" cy="13" r="1.4" fill="#070D18"/><circle cx="10" cy="13" r="1.4" fill="#070D18"/><circle cx="14" cy="13" r="1.4" fill="#070D18"/><circle cx="18" cy="13" r="1.4" fill="#070D18"/><path d="M7 8 h9 v4 h-11 z"/><path d="M10 5 h5 v3 h-5 z"/><path d="M15 6 h9 v1.6 h-9 z"/></svg><b>Sofort ablesen</b><small>liest eh alle 2 s — das erzwingt es jetzt</small></button>
+      <button id="neuladen" class="haupt"><svg class="mil" viewBox="0 0 26 16" aria-hidden="true"><path d="M2 12 h20 l-2 3 h-16 z"/><circle cx="6" cy="13" r="1.4" fill="#070D18"/><circle cx="10" cy="13" r="1.4" fill="#070D18"/><circle cx="14" cy="13" r="1.4" fill="#070D18"/><circle cx="18" cy="13" r="1.4" fill="#070D18"/><path d="M7 8 h9 v4 h-11 z"/><path d="M10 5 h5 v3 h-5 z"/><path d="M15 6 h9 v1.6 h-9 z"/></svg><b>Sofort ablesen</b><small>holt alle Daten JETZT frisch, ohne F5</small></button>
       <button id="filter-knopf" class="knopf"><svg class="mil" viewBox="0 0 26 16" aria-hidden="true"><path d="M2 11 q11 -5 22 0 l0 4 l-22 0 z"/><path d="M11 5 h2 v6 h-2 z"/><path d="M11 3 h6 v2 h-6 z"/></svg><b>Filter</b><small>blendet nur aus, sucht nie</small></button>
       <!-- Beschriftung setzt js/melder.js (AN / AUS / vom Browser gesperrt). -->
       <button id="melder-knopf" class="knopf"><svg class="mil" viewBox="0 0 26 16" aria-hidden="true"><path d="M12 2 l4 13 h-2 l-2 -6 l-2 6 h-2 z"/><path d="M17 4 q3 3 0 6" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M20 2 q5 5 0 10" fill="none" stroke="currentColor" stroke-width="1.4"/><path d="M7 4 q-3 3 0 6" fill="none" stroke="currentColor" stroke-width="1.4"/></svg><b id="melder-text">Meldungen</b><small id="melder-klein">Rechtsklick: E-Mail einrichten</small></button>
@@ -177,9 +177,10 @@
 
   <p class="leise" style="margin-top:28px">
     Gesucht wird auf dem Server: <code>orion-lauf</code> läuft für Fußball
-    <b>jede Minute</b> über <code>pg_cron</code> und legt jeden Fund in
+    <b>alle 2 Minuten</b> (im Takt der Börsensammler) über <code>pg_cron</code>
+    und legt jeden Fund in
     <code>orion_funde</code> ab, auch wenn kein Browser offen ist. Diese Seite
-    liest nur ab, alle zwei Sekunden. Was nicht mehr gilt, wandert in den
+    liest nur ab. Was nicht mehr gilt, wandert in den
     Verlauf statt zu verschwinden. Gesucht wird zwischen <b>vier Börsen</b> —
     Polymarket, Kalshi, Smarkets und Betfair (über die Bridge auf einem
     eigenen Rechner, gesetzt wird über Orbit). Eine Arbitrage besteht immer
@@ -191,22 +192,22 @@
 
 </div>
 
-<script defer src="js/konfig.js?v=73"></script>
-<script defer src="js/rechnung.js?v=73"></script>
-<script defer src="js/zuordnung.js?v=73"></script>
-<script defer src="js/daten.js?v=73"></script>
-<script defer src="js/filter.js?v=73"></script>
-<script defer src="js/puls.js?v=73"></script>
-<script defer src="js/melder.js?v=73"></script>
-<script defer src="js/musik.js?v=73"></script>
-<script defer src="js/anim.js?v=73"></script>
-<script defer src="js/stimme.js?v=73"></script>
-<script defer src="js/funker.js?v=73"></script>
-<script defer src="js/anzeige.js?v=73"></script>
-<script defer src="js/speicher.js?v=73"></script>
-<script defer src="js/zeitstatistik.js?v=73"></script>
-<script defer src="js/ruhe.js?v=73"></script>
-<script defer src="js/sperre.js?v=73"></script>
-<script defer src="js/app.js?v=73"></script>
+<script defer src="js/konfig.js?v=74"></script>
+<script defer src="js/rechnung.js?v=74"></script>
+<script defer src="js/zuordnung.js?v=74"></script>
+<script defer src="js/daten.js?v=74"></script>
+<script defer src="js/filter.js?v=74"></script>
+<script defer src="js/puls.js?v=74"></script>
+<script defer src="js/melder.js?v=74"></script>
+<script defer src="js/musik.js?v=74"></script>
+<script defer src="js/anim.js?v=74"></script>
+<script defer src="js/stimme.js?v=74"></script>
+<script defer src="js/funker.js?v=74"></script>
+<script defer src="js/anzeige.js?v=74"></script>
+<script defer src="js/speicher.js?v=74"></script>
+<script defer src="js/zeitstatistik.js?v=74"></script>
+<script defer src="js/ruhe.js?v=74"></script>
+<script defer src="js/sperre.js?v=74"></script>
+<script defer src="js/app.js?v=74"></script>
 </body>
 </html>
