@@ -2339,8 +2339,10 @@ Fassung von vor dem 19.8.
 Das ist genau die bekannte Fehlerklasse „Drift zwischen zwei Fassungen",
 nur diesmal nicht im Code, sondern in der Auslieferung.
 
-**Behoben:** alle Betriebsseiten stehen auf `v=71`. `muster-hud.html` bleibt
-auf `v=52` (Musterseite, nicht im Betrieb, nirgends verlinkt).
+**Behoben:** alle Betriebsseiten stehen auf einer gemeinsamen Marke.
+(Am selben Tag noch zweimal weitergezogen: 8t hob sie auf `v=72`, der
+Egress-Feldzug auf **`v=74`**, das ist der Stand beim Push.)
+`muster-hud.html` bleibt auf `v=52` (Musterseite, nicht im Betrieb, nirgends verlinkt).
 REGEL, jetzt in STRUKTUR.md: wird eine gemeinsame Datei geaendert, ziehen
 ALLE Seiten ihre Marke mit.
 

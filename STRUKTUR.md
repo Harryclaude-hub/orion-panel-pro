@@ -88,14 +88,14 @@ angaben/logik/knoepfe/regelwerk/einstellungen noch auf `v=54` (CSS) und
 diese Seiten schon einmal besucht hatte, bekam **stil.css und sperre.js
 aus dem alten Cache**: die Farbwelt von VOR dem Rückbau (also noch mit
 Orange) und eine alte Fassung des Tors. Alle Betriebsseiten stehen jetzt
-auf `v=72`. **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
+auf `v=74` (Stand nach der Egress-Bremse, 8t). **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
 Seiten ihre Marke mit**, sonst laufen wieder zwei Fassungen nebeneinander.
 (`muster-hud.html` bleibt auf `v=52`: Musterseite, nicht im Betrieb.)
 
 ## Prüfstand (`pruefung/`)
 
 `spiegel.test.js` — **vor JEDEM Ausrollen**: Browser- und Server-Rechnung
-identisch (15.133 Prüfungen). Dazu `bereiche.js`, `nachschlagen.js`,
+identisch (19.896 Prüfungen, gemessen 20.8.). Dazu `bereiche.js`, `nachschlagen.js`,
 `karte-probe.html` für Messläufe gegen echte Daten.
 
 ## Was beim Aufräumen am 20.8. entfernt wurde (und warum)
