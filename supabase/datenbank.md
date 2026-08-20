@@ -106,17 +106,29 @@ nach `orion_wache`. Ruft:
   oeffentlichen Schluessel). Bedient von js/speicher.js (Knopf auf jeder
   Karte), angezeigt von gespeichert.html; beitrag.html zeigt zu einem
   Schluessel den HEUTIGEN Stand.
-- **Telegram-Melder** (NEU 19.8.2026 spät): Edge-Funktion
-  `orion-melder-telegram` (Takt `orion-telegram-takt`, Job 92, minütlich) —
-  Zwilling des Mail-Melders mit GLEICHEM Maßstab (live, 2–5 %, 25 s
-  bewährt, Gewinn ≥ 5 $), eigener Markierungsspalte
-  `orion_funde.telegram_gemeldet` und eigenem Ziel `orion_telegram`
+- **Telegram-Melder** (NEU 19.8.2026 spät, VERSCHÄRFT 20.8. auf v6):
+  Edge-Funktion `orion-melder-telegram` (Takt `orion-telegram-takt`,
+  Job 92, minütlich) — Zwilling des Mail-Melders. Maßstab seit v6 (nach
+  zwei Fehlalarmen): live, 2–5 %, `pruefung` LEER, Buchsumme < 1 oder
+  ungemessen, **120 s** bewährt, Gewinn ≥ 5 $; eigene Markierungsspalte
+  `orion_funde.telegram_gemeldet`, eigenes Ziel `orion_telegram`
   (id=1: `chat_id`, `aktiv`; RLS an, keine Policies). Braucht das
   Geheimnis `TELEGRAM_BOT_TOKEN` (Edge Function Secrets); ohne meldet
   die Funktion das ehrlich und tut nichts. Einrichtung: Aufruf mit
   `{"einrichten":true}` listet die Chats des Bots samt chat_id.
   Geldbeträge in der Nachricht tragen BEIDE Währungen (€ zuerst,
   $-Ursprung in Klammern, Kurs aus `orion_kurse`).
+- **Knapp-Melder** (NEU 20.8.2026): Edge-Funktion `orion-melder-knapp` —
+  der ZWEITE Bot, meldet die knappsten Paare, die noch KEINE Chance
+  sind. Band **rendite −0,5 bis unter 2 %** (gemessen: ~6 Meldungen/Tag;
+  bis −1 wären 40 gewesen), `pruefung` LEER, Buchsummen-Deckel 1,02,
+  120 s bewährt, einmal je Fund über die eigene Spalte
+  `orion_funde.knapp_gemeldet`. Eigenes Geheimnis
+  `TELEGRAM_BOT_TOKEN_KNAPP`, eigenes Ziel `orion_telegram` **id=2**
+  (angelegt, `aktiv=false` bis zur Einrichtung). Takt-Job
+  `orion-knapp-takt` wird ERST angelegt, wenn Geheimnis und Ziel stehen —
+  bis dahin läuft bewusst kein Takt. Einrichtung wie beim Chancen-Bot
+  (`{"einrichten":true}` / `{"test":true}`).
 - **Aufräum-Takt `orion-protokoll-aufraeumen`** (Job 91, täglich 03:20 UTC,
   NEU 19.8.2026): löscht `cron.job_run_details` älter 3 Tage sowie
   `orion_laeufe`/`orion_wache` älter 30 Tage. ANLASS: das pg_cron-Protokoll

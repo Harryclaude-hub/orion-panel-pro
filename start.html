@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Orion Panel Pro</title>
+<!-- Bleibt gesperrt wie jede andere Seite des Programms. Die Landing ist
+     fuer Leute gedacht, denen der Link gegeben wurde, nicht fuer Suchmaschinen.
+     robots.txt (Disallow: /) bleibt unangetastet. -->
+<meta name="robots" content="noindex, nofollow">
+<meta name="description" content="Orion Panel Pro: laufender Kursabgleich zwischen vier Boersen.">
+<link rel="icon" type="image/svg+xml" href="favicon.svg">
+<link rel="stylesheet" href="schrift/schrift.css?v=72">
+<link rel="stylesheet" href="css/start.css?v=72">
+</head>
+<body>
+
+<!-- ===========================================================================
+     START.HTML, die Landingpage. Angelegt 20.08.2026.
+
+     VOLLSTAENDIG ADDITIV: diese Seite und css/start.css sind die einzigen
+     beiden Dateien, die dazugekommen sind. Am Panel wurde fuer sie NICHTS
+     geaendert, kein Menuepunkt, kein Skript, kein Takt. Wer beide loescht,
+     hat den Stand von vorher.
+
+     KEIN DATENZUGRIFF: die Seite spricht weder mit Supabase noch mit der
+     Bridge. Sie zeigt keine Funde, keine Kurse, keine Zahlen aus dem Betrieb.
+     Das ist Absicht: ein oeffentlich erreichbarer Auftritt soll nichts ueber
+     den laufenden Bestand verraten.
+     ======================================================================= -->
+
+<header class="kopf">
+  <div class="hof">
+
+    <div class="marke">
+      <!-- Dasselbe selbst gezeichnete Wappen wie im Panel, ohne die
+           drehenden Teile: hier steht es still. -->
+      <svg viewBox="0 0 96 96" aria-hidden="true">
+        <circle cx="48" cy="48" r="44" fill="none" stroke="var(--gold)" stroke-width="2.5"/>
+        <circle cx="48" cy="48" r="37" fill="none" stroke="var(--sonar)" stroke-width="1.2" stroke-dasharray="6 7" opacity=".7"/>
+        <circle cx="48" cy="48" r="28" fill="none" stroke="var(--sonar)" stroke-width="1" opacity=".45"/>
+        <path d="M48 2 v12 M48 82 v12 M2 48 h12 M82 48 h12" stroke="var(--gold)" stroke-width="2.5"/>
+        <path d="M48 24 L54.5 42 L73 42 L58.5 53 L64 71 L48 60 L32 71 L37.5 53 L23 42 L41.5 42 Z" fill="var(--sonar)"/>
+        <circle cx="66" cy="32" r="2.6" fill="var(--gold)"/>
+      </svg>
+      <h1>Orion Panel Pro
+        <span class="unter">Kursabgleich &middot; vier B&ouml;rsen &middot; Dauerbetrieb</span>
+      </h1>
+    </div>
+
+    <p class="aufschlag">
+      Zwei B&ouml;rsen k&ouml;nnen denselben Ausgang desselben Ereignisses
+      <b>unterschiedlich bepreisen</b>. Orion Panel Pro vergleicht die Kurse
+      laufend, rechnet jede Paarung durch und legt das Ergebnis ab, samt
+      Rechenweg. Gesucht wird rund um die Uhr auf einem Server, nicht im
+      Browser.
+    </p>
+
+    <div class="merkzeile">
+      <span class="merk">Vier <b>B&ouml;rsen</b></span>
+      <span class="merk">Takt <b>20 Sekunden</b></span>
+      <span class="merk"><b>Zwei</b> Pr&uuml;fstufen</span>
+      <span class="merk">Im Betrieb seit <b>09.08.2026</b></span>
+    </div>
+
+  </div>
+</header>
+
+<main>
+
+  <!-- ----------------------------------------------------------- DER GEGENSTAND -->
+  <section>
+    <div class="hof">
+      <h2>Der Gegenstand</h2>
+      <p class="satz">Ein Abgleich ist erst dann einer, wenn beide Seiten
+        wirklich dieselbe Frage meinen.</p>
+
+      <p>Der schwierige Teil ist nicht das Rechnen. Der schwierige Teil ist die
+        Frage, ob zwei Eintr&auml;ge aus zwei B&uuml;chern &uuml;berhaupt
+        dasselbe Ereignis bezeichnen. Dieselbe Mannschaft tr&auml;gt bei jedem
+        Anbieter einen anderen Namen, dieselbe Liga eine andere Kennung, und
+        dasselbe Zeitfeld bedeutet bei jedem Buch etwas anderes: mal den
+        Anpfiff, mal eine Abrechnungsfrist Tage sp&auml;ter, mal das
+        Turnierende.</p>
+
+      <p>Genau darauf liegt hier das Gewicht. Jede Paarung muss sieben
+        H&uuml;rden nehmen, bevor sie &uuml;berhaupt gerechnet wird, und eine
+        zweite, unabh&auml;ngige Stufe pr&uuml;ft sie danach jede Minute neu,
+        ohne der ersten zu glauben.</p>
+    </div>
+  </section>
+
+  <!-- -------------------------------------------------------------- DER BESTAND -->
+  <section>
+    <div class="hof">
+      <h2>Der Bestand</h2>
+      <p class="satz">Was das Programm kann, Punkt f&uuml;r Punkt.</p>
+
+      <div class="raster">
+
+        <div class="feld">
+          <span class="kennung">ORB_01</span>
+          <h3>Jedes Buch gegen jedes</h3>
+          <p>Vier B&ouml;rsen, alle Paarungen. Nicht nur gegen ein Leitbuch,
+            sondern <b>jedes gegen jedes</b>. Eine Absicherung besteht immer aus
+            genau zwei B&uuml;chern und genau zwei Ausg&auml;ngen derselben
+            Frage.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_02</span>
+          <h3>L&auml;uft ohne offenen Browser</h3>
+          <p>Gesucht wird <b>auf dem Server</b>, im festen Takt, auch nachts und
+            auch mit geschlossenem Laptop. Die Oberfl&auml;che liest nur ab.
+            F&auml;llt der Browser weg, l&auml;uft die Suche weiter.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_03</span>
+          <h3>Sieben H&uuml;rden beim Paaren</h3>
+          <p>Sportart, Mannschaftsklasse, Liga-Kennung, <b>Zeitpflicht</b>, Name
+            symmetrisch, Name beidseitig, Trennsch&auml;rfe. Eine fehlende Zeit
+            l&auml;sst nicht mehr durch: ungemessen z&auml;hlt hier als nicht
+            belegt.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_04</span>
+          <h3>Eine Wache, die nicht glaubt</h3>
+          <p>Die zweite Stufe leitet <b>jede H&uuml;rde neu</b> aus der
+            gespeicherten Zeile ab, jede Minute. Eine Stufe, die der anderen
+            glaubt, ist keine zweite Stufe, sondern eine Wiederholung.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_05</span>
+          <h3>Jede Zahl nachrechenbar</h3>
+          <p>Jede Karte zeigt ihren Rechenweg: Effektivquoten nach den <b>echten
+            Geb&uuml;hren des jeweiligen Buchs</b>, Kehrwertsumme, Aufteilung
+            des Einsatzes, alles auf 1.000 vorgerechnet.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_06</span>
+          <h3>Meldung nur nach Pr&uuml;fung</h3>
+          <p>Direktnachricht und E-Mail gehen erst raus, wenn das Urteil der
+            Wache leer ist, die Kurssumme unter eins liegt und der Fund eine
+            <b>Bew&auml;hrungszeit</b> &uuml;berstanden hat.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_07</span>
+          <h3>Beide W&auml;hrungen, immer</h3>
+          <p>Zwei B&uuml;cher f&uuml;hren Dollar, zwei Euro. Jeder Betrag steht
+            deshalb <b>in beiden W&auml;hrungen</b> nebeneinander, nie nur in
+            einer.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_08</span>
+          <h3>Absageregeln auf der Karte</h3>
+          <p>Was passiert, wenn ein Spiel ausf&auml;llt, abgebrochen oder verlegt
+            wird, steht <b>auf der Karte</b> und nicht im Kleingedruckten. Die
+            B&uuml;cher handhaben das unterschiedlich, und das ist der Punkt.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_09</span>
+          <h3>Verlauf statt Verschwinden</h3>
+          <p>Was nicht mehr gilt, wandert in den Verlauf statt zu verschwinden.
+            Im Moment des H&ouml;chststands werden <b>beide Kurse
+            eingefroren</b>, damit ein Spitzenwert sp&auml;ter belegbar
+            bleibt.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_10</span>
+          <h3>Eigene Pr&uuml;fst&auml;nde</h3>
+          <p>Zwei Pr&uuml;fl&auml;ufe vor jedem Ausrollen: der eine beweist, dass
+            Browser und Server <b>identisch rechnen</b>, der andere pr&uuml;ft
+            jede H&uuml;rde an echten Schadensf&auml;llen aus dem Betrieb.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_11</span>
+          <h3>Ehrlicher Scanstand</h3>
+          <p>Jeder Bereich zeigt seinen <b>tats&auml;chlichen</b> Zustand. Ein
+            Bereich ohne Daten meldet das, statt gr&uuml;n zu leuchten. Ein
+            stiller Ausfall ist schlimmer als ein lauter.</p>
+        </div>
+
+        <div class="feld">
+          <span class="kennung">ORB_12</span>
+          <h3>Jedes Wort erkl&auml;rt</h3>
+          <p>Zu jeder Angabe auf einer Karte, zu jeder Schwelle und zu jedem
+            Knopf gibt es eine eigene Seite, die sagt, <b>was er wirklich
+            tut</b>. Auch dann, wenn die Antwort unbequem ist.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------- DIE PRUEFKETTE -->
+  <section>
+    <div class="hof">
+      <h2>Der Weg eines Fundes</h2>
+      <p class="satz">F&uuml;nf Stufen, von der Quelle bis zur Meldung.</p>
+
+      <ol class="kette">
+        <li>
+          <b>Sammeln</b>
+          <span>Jede B&ouml;rse hat ihren eigenen Takt und ihre eigene
+            Schnittstelle. Eine davon sperrt Rechenzentren aus und wird deshalb
+            &uuml;ber einen Rechner zuhause angebunden.</span>
+        </li>
+        <li>
+          <b>Paaren</b>
+          <span>Sieben H&uuml;rden, an einer einzigen Stelle im Code. Zwei Wege
+            mit zwei Ma&szlig;st&auml;ben w&auml;ren genau die Drift, die hier
+            schon Geld gekostet hat.</span>
+        </li>
+        <li>
+          <b>Rechnen</b>
+          <span>Effektivquoten nach den echten Geb&uuml;hren, Kehrwertsumme,
+            Aufteilung. Browser und Server f&uuml;hren dieselbe Rechnung, und ein
+            Pr&uuml;flauf beweist regelm&auml;&szlig;ig, dass sie gleich
+            bleibt.</span>
+        </li>
+        <li>
+          <b>Nachpr&uuml;fen</b>
+          <span>Jede Minute, unabh&auml;ngig, aus der gespeicherten Zeile heraus.
+            Auch eine beim Paaren saubere Zeile kann inzwischen faul sein: der
+            Anpfiff ist vorbei, die Kurse sind weitergelaufen.</span>
+        </li>
+        <li>
+          <b>Melden</b>
+          <span>Erst danach, und nur mit leerem Urteil, gepr&uuml;fter Kurssumme
+            und &uuml;berstandener Bew&auml;hrungszeit. Lieber eine Meldung
+            weniger als eine falsche.</span>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <!-- ----------------------------------------------------------------- KLARTEXT -->
+  <section>
+    <div class="hof">
+      <h2>Klartext</h2>
+      <p class="satz">Was das Programm ausdr&uuml;cklich nicht tut.</p>
+
+      <div class="klartext">
+        <ul>
+          <li><b>Es setzt nichts.</b> Es bewegt kein Geld, f&uuml;hrt keine
+            Auftr&auml;ge aus und hat keinen schreibenden Zugang zu irgendeinem
+            Konto. Es liest Kurse und rechnet.</li>
+          <li><b>Es verspricht nichts.</b> Eine Zahl auf einer Karte ist eine
+            Rechnung zum Kursstand von jetzt, kein Ergebnis. Kurse laufen weiter,
+            oft w&auml;hrend man hinsieht.</li>
+          <li><b>Es verschweigt keinen Rest.</b> Wo eine Absicherung zerfallen
+            kann, weil zwei B&uuml;cher denselben Abbruch verschieden werten,
+            steht das auf der Karte und nicht in einer Fu&szlig;note.</li>
+          <li><b>Es behauptet nicht, alles gemessen zu haben.</b> Was ungemessen
+            ist, wird als ungemessen gekennzeichnet. Eine Ursache gilt erst dann
+            als belegt, wenn die Reparatur nachweislich wirkt.</li>
+          <li><b>Es ist kein Angebot und keine Beratung.</b> Das Programm ist ein
+            Werkzeug f&uuml;r den eigenen Gebrauch seines Betreibers.</li>
+        </ul>
+      </div>
+    </div>
+  </section>
+
+  <!-- ------------------------------------------------------------------- ZUGANG -->
+  <section>
+    <div class="hof">
+      <h2>Zugang</h2>
+      <p class="satz">Der Gefechtsstand selbst ist verschlossen.</p>
+
+      <p class="leise">Das Panel mit den lebenden Funden steht hinter einem
+        Kennwort. Offen einsehbar sind nur die beiden Seiten, die erkl&auml;ren,
+        was die Angaben bedeuten und wer bei einer Absage zur&uuml;ckzahlt.</p>
+
+      <div class="zugang">
+        <a class="tor" href="index.html">Zum Panel</a>
+        <a class="tor leise" href="angaben.html">Was die Angaben bedeuten</a>
+        <a class="tor leise" href="regelwerk.html">Regelwerk der B&uuml;cher</a>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="fuss">
+  <div class="hof">
+    <p>Orion Panel Pro. Die Suche l&auml;uft serverseitig; diese Seite hier ist
+      statisch und fragt <b>keine</b> Betriebsdaten ab.</p>
+    <p>Stand <code>20.08.2026</code> &middot; Diese Seite ist f&uuml;r
+      Suchmaschinen gesperrt und nur &uuml;ber den Link erreichbar, der
+      weitergegeben wurde.</p>
+  </div>
+</footer>
+
+</body>
+</html>

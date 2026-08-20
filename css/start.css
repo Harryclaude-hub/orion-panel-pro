@@ -1,0 +1,189 @@
+/* ============================================================================
+ * START.CSS, die Landingpage. REINE DESIGN-SCHICHT, VOLLSTAENDIG LOESCHBAR.
+ * ============================================================================
+ *
+ * Angelegt 20.08.2026. Diese Datei gehoert AUSSCHLIESSLICH zu start.html.
+ * Sie wird von keiner anderen Seite geladen und laedt selbst nichts nach.
+ * Wer start.html und css/start.css loescht, hat das Programm vollstaendig
+ * zurueckgebaut: keine Rechnung, kein Takt, keine Zeile im Panel haengt daran.
+ *
+ * Die Farbwerte sind bewusst KOPIERT (nicht importiert) aus css/stil.css,
+ * Stand 20.08.2026 nach dem Rueckbau. Grund: die Landing darf nicht 124 KB
+ * Panel-CSS laden, nur um sechs Farben zu kennen. Preis dieser Entscheidung:
+ * wer die Farbwelt aendert, aendert sie an ZWEI Stellen. Das steht hier, damit
+ * niemand es suchen muss.
+ *
+ * KEINE ANIMATION. Vorgabe vom 20.8.: schlicht. Die einzige Bewegung auf der
+ * Seite ist der Hoverzustand von Knoepfen.
+ */
+
+:root{
+  --grund:      #0A1220;
+  --karte:      #0E1B2A;
+  --karte-2:    #14243A;
+  --rand:       #1E3650;
+  --text:       #E8F2FC;
+  --text-leise: #85A0BD;
+  --gold:       #7FD4FF;   /* Akzent, Eisblau */
+  --sonar:      #3CC9F5;
+  --gruen:      #2FD3A7;
+  --tuerkis:    #7FC2B6;   /* der Ton, der am 20.8. das Orange abloeste */
+  --rot:        #FF6B85;
+  --breite:     980px;
+}
+
+*{ box-sizing:border-box; }
+
+html,body{ margin:0; padding:0; }
+
+body{
+  background:var(--grund);
+  color:var(--text);
+  font-family:'Rajdhani', system-ui, -apple-system, Segoe UI, sans-serif;
+  font-size:17px;
+  line-height:1.62;
+  -webkit-font-smoothing:antialiased;
+}
+
+.hof{ max-width:var(--breite); margin:0 auto; padding:0 22px; }
+
+/* ---------------------------------------------------------------- KOPF -- */
+
+.kopf{
+  border-bottom:1px solid var(--rand);
+  background:linear-gradient(180deg, #0C1626 0%, var(--grund) 100%);
+  padding:54px 0 42px;
+}
+
+.marke{ display:flex; align-items:center; gap:18px; margin-bottom:26px; }
+.marke svg{ width:62px; height:62px; flex:0 0 62px; }
+.marke h1{
+  font-size:34px; letter-spacing:.055em; margin:0; font-weight:700;
+  text-transform:uppercase;
+}
+.marke .unter{
+  display:block; font-family:'Share Tech Mono', ui-monospace, monospace;
+  font-size:12.5px; letter-spacing:.19em; color:var(--sonar);
+  text-transform:uppercase; margin-top:3px; font-weight:400;
+}
+
+.aufschlag{ font-size:20.5px; line-height:1.55; max-width:70ch; margin:0 0 22px; }
+.aufschlag b{ color:var(--gold); font-weight:600; }
+
+/* Die Merkzeile: vier nackte Tatsachen, keine Werbung. */
+.merkzeile{ display:flex; flex-wrap:wrap; gap:9px; margin-top:26px; }
+.merk{
+  font-family:'Share Tech Mono', ui-monospace, monospace;
+  font-size:12px; letter-spacing:.09em; text-transform:uppercase;
+  color:var(--text-leise);
+  border:1px solid var(--rand); border-radius:3px;
+  padding:6px 11px; background:rgba(20,36,58,.5);
+}
+.merk b{ color:var(--text); font-weight:400; }
+
+/* -------------------------------------------------------------- BLOECKE -- */
+
+section{ padding:44px 0; border-bottom:1px solid rgba(30,54,80,.6); }
+section:last-of-type{ border-bottom:0; }
+
+h2{
+  font-size:13px; letter-spacing:.2em; text-transform:uppercase;
+  color:var(--sonar); font-family:'Share Tech Mono', ui-monospace, monospace;
+  font-weight:400; margin:0 0 6px;
+}
+h2 + .satz{ font-size:23px; line-height:1.4; margin:0 0 26px; max-width:64ch; font-weight:600; }
+
+p{ margin:0 0 15px; max-width:74ch; }
+p.leise{ color:var(--text-leise); font-size:15.5px; }
+
+/* Das Raster der Faehigkeiten. */
+.raster{ display:grid; grid-template-columns:repeat(auto-fit, minmax(268px, 1fr)); gap:14px; margin-top:8px; }
+
+.feld{
+  background:var(--karte); border:1px solid var(--rand); border-radius:6px;
+  padding:19px 20px 20px;
+}
+.feld .kennung{
+  font-family:'Share Tech Mono', ui-monospace, monospace;
+  font-size:11px; letter-spacing:.14em; color:var(--sonar); opacity:.75;
+  display:block; margin-bottom:7px;
+}
+.feld h3{ font-size:18px; margin:0 0 7px; font-weight:600; letter-spacing:.01em; }
+.feld p{ margin:0; font-size:15.5px; color:var(--text-leise); line-height:1.55; }
+.feld p b{ color:var(--text); font-weight:600; }
+
+/* Die Pruefkette: nummerierte Stufen, keine Kaesten. */
+.kette{ list-style:none; padding:0; margin:22px 0 0; counter-reset:k; }
+.kette li{
+  counter-increment:k; position:relative; padding:0 0 18px 46px;
+  border-left:1px solid var(--rand); margin-left:15px;
+}
+.kette li:last-child{ border-left-color:transparent; padding-bottom:0; }
+.kette li::before{
+  content:counter(k, decimal-leading-zero);
+  position:absolute; left:-15px; top:0;
+  width:30px; height:30px; border-radius:50%;
+  background:var(--karte-2); border:1px solid var(--sonar);
+  color:var(--sonar); font-family:'Share Tech Mono', ui-monospace, monospace;
+  font-size:12px; display:flex; align-items:center; justify-content:center;
+}
+.kette b{ display:block; font-size:17.5px; margin-bottom:2px; color:var(--text); }
+.kette span{ color:var(--text-leise); font-size:15.5px; }
+
+/* Der Ehrlichkeitsblock: was das Programm NICHT tut. */
+.klartext{
+  background:var(--karte); border:1px solid var(--rand);
+  border-left:3px solid var(--tuerkis);
+  border-radius:6px; padding:22px 24px;
+}
+.klartext ul{ margin:0; padding-left:20px; }
+.klartext li{ margin-bottom:9px; color:var(--text-leise); font-size:16px; }
+.klartext li:last-child{ margin-bottom:0; }
+.klartext li b{ color:var(--text); font-weight:600; }
+
+/* ------------------------------------------------------------- ZUGANG --- */
+
+.zugang{
+  display:flex; flex-wrap:wrap; gap:12px; align-items:center; margin-top:22px;
+}
+.tor{
+  display:inline-block; text-decoration:none;
+  background:var(--karte-2); color:var(--text);
+  border:1px solid var(--sonar); border-radius:5px;
+  padding:12px 22px; font-size:16px; font-weight:600; letter-spacing:.02em;
+  transition:background .16s ease, border-color .16s ease;
+}
+.tor:hover{ background:#1B3049; border-color:var(--gold); }
+.tor.leise{ border-color:var(--rand); color:var(--text-leise); font-weight:400; }
+.tor.leise:hover{ border-color:var(--sonar); color:var(--text); }
+
+/* ---------------------------------------------------------------- FUSS -- */
+
+.fuss{
+  border-top:1px solid var(--rand); padding:26px 0 40px;
+  color:var(--text-leise); font-size:14px;
+}
+.fuss p{ margin:0 0 8px; max-width:82ch; }
+.fuss code{
+  font-family:'Share Tech Mono', ui-monospace, monospace;
+  color:var(--sonar); font-size:13px;
+}
+
+/* --------------------------------------------------------- KLEINE GERAETE */
+
+@media (max-width:640px){
+  body{ font-size:16px; }
+  .kopf{ padding:36px 0 30px; }
+  .marke{ gap:13px; }
+  .marke svg{ width:48px; height:48px; flex-basis:48px; }
+  .marke h1{ font-size:25px; }
+  .aufschlag{ font-size:18px; }
+  h2 + .satz{ font-size:20px; }
+  section{ padding:34px 0; }
+}
+
+/* Wer den Kontrast hochdreht oder Papier druckt, soll lesbares bekommen. */
+@media print{
+  body{ background:#fff; color:#000; }
+  .feld, .klartext{ border-color:#999; background:#fff; }
+}

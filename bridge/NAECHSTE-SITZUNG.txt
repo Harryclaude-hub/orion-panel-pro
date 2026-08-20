@@ -7,7 +7,7 @@ Alles hineinkopieren, ab der Linie unten.
 ------------------------------ ab hier ---------------------------------
 
 Orion Panel Pro. Lies ZUERST C:\Users\Home\orion-panel-pro\UEBERGABE.md,
-die Abschnitte 8l bis 8r, dazu STRUKTUR.md. Danach erst anfangen.
+die Abschnitte 8l bis 8t, dazu STRUKTUR.md. Danach erst anfangen.
 
 Antworte auf Deutsch, militaerischer Ton, "Jawohl, Chef".
 
@@ -29,7 +29,7 @@ node pruefung\vollpruefung.test.js -- beide muessen gruen sein.
 Design ist eine EIGENE, loeschbare Schicht und fasst nie Funktion an.
 Klartext statt Beschoenigung. Ich finde Fehler zuverlaessig selbst.
 
-STAND: ALLES LAEUFT (Einzelheiten in UEBERGABE 8l-8r)
+STAND: ALLES LAEUFT (Einzelheiten in UEBERGABE 8l-8t)
 - Scanner orion-lauf v23 (Tennis-Matchsieger scharf), Wache zweistufig,
   Kalshi v4, Aufraeum-Takt haelt die Datenbank im Free-Limit (98 MB).
 - Telegram-Melder v6 an meinen Direktchat: NUR verifizierte Chancen
@@ -41,7 +41,13 @@ STAND: ALLES LAEUFT (Einzelheiten in UEBERGABE 8l-8r)
 - Design radikal verschlankt (20.8.): buehne.js/partikel.js GELOESCHT,
   Orange abgeschafft (Scanner-Tuerkis #7FC2B6), Animationsstufen leben
   als js/anim.js weiter. Seite: Kopf, Kacheln, Sonar, Karten, Matrix.
-- Cache-Version der Seite: v=71. Deploys der Edge-Funktionen gehen
+- Kartenstempel (20.8.): Funde von heute zeigen die Uhrzeit, aeltere
+  NUR noch das Datum. Volle Angabe im Tooltip.
+- ZWEITER Bot orion-melder-knapp v1 (20.8.): knappste Paare, Band
+  rendite -0,5 bis unter 2 (gemessen ~6/Tag). Wartet auf Geheimnis
+  TELEGRAM_BOT_TOKEN_KNAPP + Ziel orion_telegram id=2; Takt-Job
+  orion-knapp-takt wird ERST danach angelegt. UEBERGABE 8t.
+- Cache-Version der Seite: v=72. Deploys der Edge-Funktionen gehen
   auch ohne meinen Token (Supabase-MCP kann ausrollen); DEPLOY-JETZT.cmd
   bleibt der Normalweg fuer orion-lauf.
 

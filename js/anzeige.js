@@ -221,9 +221,10 @@
            '</div>';
   }
 
-  /* Nur die Uhrzeit, gross und oben rechts. Datum kommt dazu, wenn der
-   * Eintrag nicht von heute ist — sonst liest man 23:14 und denkt \"gerade
-   * eben\", obwohl es von vorgestern ist. */
+  /* Heute: nur die Uhrzeit, gross und oben rechts. Aelter als heute: NUR
+   * noch das Datum (Vorgabe 20.8.) — sonst liest man 23:14 und denkt
+   * \"gerade eben\", obwohl es von vorgestern ist. Die volle Angabe mit
+   * Uhrzeit steht weiter im Tooltip (zeitpunkt). */
   function uhrzeit(iso) {
     var t = Date.parse(iso);
     if (isNaN(t)) return '?';
@@ -233,8 +234,8 @@
     var gleicherTag = d.getDate() === heute.getDate() &&
                       d.getMonth() === heute.getMonth() &&
                       d.getFullYear() === heute.getFullYear();
-    var uhr = zwei(d.getHours()) + ':' + zwei(d.getMinutes());
-    return gleicherTag ? uhr : zwei(d.getDate()) + '.' + zwei(d.getMonth() + 1) + '. ' + uhr;
+    return gleicherTag ? zwei(d.getHours()) + ':' + zwei(d.getMinutes())
+                       : zwei(d.getDate()) + '.' + zwei(d.getMonth() + 1) + '.';
   }
 
   function zeitpunkt(iso) {

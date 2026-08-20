@@ -39,6 +39,7 @@ niemals umbenennen.**
 | Datei | Aufgabe |
 |---|---|
 | `css/stil.css` | ALLE Farben als Tokens ganz oben; darunter gewachsene Schichten (spätere Regeln überstimmen frühere — Absicht) |
+| `css/start.css` | gehört **nur** zu `start.html` (Landingpage), 189 Zeilen, keine Animation. Die Farbwerte sind aus `stil.css` **kopiert, nicht importiert** (die Landing soll nicht 124 KB Panel-CSS laden). Preis: Farbwelt ändern heißt an ZWEI Stellen ändern. Steht auch im Kopf der Datei |
 | `schrift/` | selbst gehostete Schriften (Black Ops One / Rajdhani / Share Tech Mono, OFL) |
 | `js/anim.js` | Animationsstufen-Schalter (1/2/3 + Geraete-Empfehlung) — am 20.8. aus der GELOESCHTEN buehne.js gerettet, weil er Radar/LED/Avatar drosselt und damit Funktion ist |
 | `js/puls.js` | Radar + Gefechtsstand-HUD |
@@ -56,9 +57,39 @@ Funker-Chat hat zusätzlich seinen eigenen 🔊/🔇 im Fenster.
 `index.html` (Übersicht ↔ Listen-Seite) · `angaben.html` (Wörterbuch) ·
 `logik.html` (Suchlogik, **bei Logik-Änderungen mitziehen!**) ·
 `knoepfe.html` (jeder Knopf erklärt) · `regelwerk.html` (Absage-Regeln) ·
-`einstellungen.html` · `bridge-setup.html` (Bridge-Einrichtung).
+`einstellungen.html` · `bridge-setup.html` (Bridge-Einrichtung) ·
+`beitrag.html?fund=…` (eine einzelne Karte, Ziel der Telegram-Links) ·
+`gespeichert.html` (gemerkte Funde).
 `funktionen.html` wurde am 15.8. GELÖSCHT — sie beschrieb einen Stand,
 den es nie gab (Login/Adminbereich), und war nirgends verlinkt.
+
+**`start.html` (20.8., LANDINGPAGE, Schicht 2)** ist der öffentliche
+Auftritt. Sie ist **vollständig additiv**: sie und `css/start.css` sind
+die einzigen beiden Dateien, die dazugekommen sind, am Panel wurde für
+sie nichts geändert. Sie spricht **weder mit Supabase noch mit der
+Bridge** und zeigt keine Betriebsdaten. Sie ist nirgends aus dem Panel
+verlinkt (der Weg führt nur von der Landing zum Panel, nicht zurück) und
+trägt wie alle anderen Seiten `noindex`; `robots.txt` bleibt
+`Disallow: /`. Verlinkt sind von dort aus nur die **ohne Kennwort
+erreichbaren** Seiten (`angaben.html`, `regelwerk.html`) plus das Panel.
+**Löschbar:** beide Dateien weg = Stand von vorher.
+
+**Kennwort-Tor, gemessen 20.8.:** `sperre.js` laden index, logik,
+knoepfe, einstellungen, gespeichert und beitrag. **OHNE Tor** sind
+`angaben.html`, `regelwerk.html`, `bridge-setup.html` und
+`muster-hud.html`. Wer von einer offenen Seite nach `logik.html`
+verlinkt, schickt den Leser in die Kennwortwand (so steht es in
+bridge-setup).
+
+**Cache-Marken (`?v=`) gehören zusammen.** Am 20.8. standen
+angaben/logik/knoepfe/regelwerk/einstellungen noch auf `v=54` (CSS) und
+`v=22` (JS), während index/beitrag/gespeichert auf `v=71` liefen. Wer
+diese Seiten schon einmal besucht hatte, bekam **stil.css und sperre.js
+aus dem alten Cache**: die Farbwelt von VOR dem Rückbau (also noch mit
+Orange) und eine alte Fassung des Tors. Alle Betriebsseiten stehen jetzt
+auf `v=72`. **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
+Seiten ihre Marke mit**, sonst laufen wieder zwei Fassungen nebeneinander.
+(`muster-hud.html` bleibt auf `v=52`: Musterseite, nicht im Betrieb.)
 
 ## Prüfstand (`pruefung/`)
 

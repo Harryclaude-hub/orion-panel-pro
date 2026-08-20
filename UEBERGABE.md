@@ -2282,3 +2282,169 @@ der sichtbare cmd-Aufruf). Der Starter erzeugt die vbs selbst.
 **MORGEN (Karams Ansage vom 20.8. abends):** User Experience,
 Administratives, Promotion — eine LANDINGPAGE fuer das Programm und
 die Frage, wie alles angezeigt wird. Funktionsbau nur auf Ansage.
+
+---
+
+## 8s. LANDINGPAGE, UX-DURCHGANG, ZWEI BESTANDSFUNDE (20.8., Abendphase)
+
+Auftrag: „User Experience, Administratives, Promotion", anfangen mit einer
+Landingpage; Funktionsbau nur auf Ansage. Gemessen wurde vor dem Bau, und
+was Funktion ist, wurde NICHT angefasst, sondern belegt und gemeldet.
+
+### Gebaut: start.html + css/start.css
+
+Vollstaendig additiv, zwei neue Dateien, am Panel **null Aenderungen** dafuer.
+Die Seite spricht weder mit Supabase noch mit der Bridge (im Browser
+nachgemessen: ausser der eigenen CSS-Datei und den Hausschriften stellt sie
+KEINE einzige Netzanfrage), traegt `noindex` wie alle anderen Seiten,
+`robots.txt` bleibt `Disallow: /`.
+
+Aufbau: Kopf mit Wappen und vier nackten Merkzahlen, dann „Der Gegenstand"
+(warum das Paaren und nicht das Rechnen der schwierige Teil ist), „Der
+Bestand" (zwoelf Faehigkeiten als Raster), „Der Weg eines Fundes"
+(Sammeln, Paaren, Rechnen, Nachpruefen, Melden), „Klartext" (fuenf Punkte,
+was das Programm ausdruecklich NICHT tut) und „Zugang".
+
+Bewusste Festlegungen, weil auf die drei Rueckfragen keine Antwort kam:
+- **Ort:** eigene `start.html`, das Panel bleibt unangetastet auf
+  `index.html`. Nichts bricht: keine Telegram-Links, keine Lesezeichen,
+  keine Bridge-Pruefung.
+- **Ton:** die Sache wird sachlich benannt, **die vier Anbieter aber nicht**.
+  Es steht „vier Boersen", nirgends ein Anbietername, nirgends ein Logo,
+  nirgends eine Renditezahl. Wer Klartext will, sagt es; das sind
+  Textzeilen, keine Struktur.
+- **Sichtbarkeit:** alles bleibt gesperrt. Die Landing ist nur ueber den
+  Link erreichbar, den Karam selbst weitergibt.
+- **Kein Rueckweg ins Menue:** die Landing verlinkt zum Panel, das Panel
+  nicht zur Landing. Sonst haette der Gefechtsstand einen dreizehnten Knopf
+  fuer etwas, das im Betrieb niemand braucht.
+- **Verlinkt sind nur kennwortfreie Seiten** (angaben, regelwerk). `logik.html`
+  bewusst nicht: sie laedt `sperre.js`, der Leser waere in die Kennwortwand
+  gelaufen.
+
+Gegengeprueft im Browser: Farben identisch mit den Panel-Tokens
+(#0A1220 / #0E1B2A / #7FD4FF), 12 Felder, 5 Stufen, drei Links, alle intern,
+kein Querscrollen, bei 375 px steht kein einziges Element ueber.
+
+### UX repariert: die Cache-Marken liefen auseinander
+
+**Gemessen:** index/beitrag/gespeichert standen auf `v=71`, aber
+angaben/logik/knoepfe/regelwerk/einstellungen auf `v=54` (CSS) und `v=22`
+(JS). Wirkung: wer eine dieser Seiten schon einmal besucht hatte, bekam
+`stil.css` **aus dem alten Cache**, also die Farbwelt von VOR dem Rueckbau
+vom 20.8. Das abgeschaffte Orange lebte dort weiter. Schlimmer noch bei
+`js/sperre.js?v=22`: das ist das Kennwort-Tor, ausgeliefert in einer
+Fassung von vor dem 19.8.
+
+Das ist genau die bekannte Fehlerklasse „Drift zwischen zwei Fassungen",
+nur diesmal nicht im Code, sondern in der Auslieferung.
+
+**Behoben:** alle Betriebsseiten stehen auf `v=71`. `muster-hud.html` bleibt
+auf `v=52` (Musterseite, nicht im Betrieb, nirgends verlinkt).
+REGEL, jetzt in STRUKTUR.md: wird eine gemeinsame Datei geaendert, ziehen
+ALLE Seiten ihre Marke mit.
+
+### UX repariert: toter Doppel-Link
+
+`bridge-setup.html` trug in der Kopfleiste zwei Links auf dasselbe Ziel,
+einer davon unter dem Namen „Alle Funktionen" -- Rest der am 15.8.
+geloeschten `funktionen.html`. Entfernt.
+
+### BESTANDSFUND 1, NICHT REPARIERT (Funktion, wartet auf Ansage)
+
+**`bridge-setup.html` kann das Bridge-Token nicht mehr anzeigen.**
+
+Belegt im Browser, nicht vermutet:
+
+    GET /config.js?v=22            -> 404 File not found
+    Uncaught TypeError: window.arRequireAuth is not a function
+                                      (bridge-setup.html:340)
+    tokIn   = "…wird geladen…"     (steht dauerhaft so da)
+    tokShow = "…"
+
+`config.js` gibt es im ganzen Repo nicht; `arRequireAuth` kommt genau
+einmal vor, naemlich beim Aufruf. Beides ist Altlast aus dem
+Vorgaenger-Repo. Der Statusteil derselben Seite laeuft einwandfrei (er
+meldete im Test korrekt „Bridge laeuft, Fassung 27, aktuell") -- nur die
+Anmeldung und damit `SB.rpc('my_bridge_token')` laufen nie.
+
+**Wirkung:** wer die Bridge nach der eigenen Anleitung einrichten will,
+kommt beim Schritt „Dein persoenliches Bridge-Token" nicht weiter. Fuer
+Karam selbst folgenlos, solange sein Token im bestehenden
+`bridge-config.json` steht.
+
+**Vorschlag (nicht ausgefuehrt):** die Anmeldung dort auf denselben Weg
+legen, den `sperre.js` ohnehin geht, statt eine Datei zu laden, die es
+nicht gibt. Das ist Funktion und wartet auf ausdrueckliche Ansage.
+
+### BESTANDSFUND 2, NICHT REPARIERT (beruehrt die laufende Bridge)
+
+**`version.json` hinkt acht Builds hinterher.**
+
+    version.json:  bridgeBuild 19, bridgeVersion "3.8",
+                   exe -> Release bridge-v19
+    Laptop:        Orion-Bridge-Pro-27.js, VERSION '4.0', BUILD 27
+
+Die Datei ist die Stelle, gegen die sich **Website UND Bridge beide
+pruefen** (steht so in ihrem eigenen Hinweistext). Zwei Folgen: eine
+Bridge mit Build 20 bekaeme faelschlich „aktuell" gemeldet, und der
+Herunterladen-Knopf liefert eine exe von Build 19.
+
+**Nicht angefasst**, weil die harte Regel gilt: laufende Bridges duerfen
+bei Updates nie brechen. Das gehoert gemeinsam entschieden -- entweder
+Datei nachziehen UND ein Release bridge-v27 hochladen, oder den
+exe-Knopf ausbauen, falls der Node-Weg jetzt der einzige ist.
+
+### Beide Pflichtpruefungen vor der Abgabe
+
+    node pruefung/spiegel.test.js       19896 von 19896   gruen
+    node pruefung/vollpruefung.test.js  36 von 36         gruen
+
+Erwartungsgemaess unveraendert: an Logik wurde nichts angefasst. Gelaufen
+sind sie trotzdem, weil die Regel keine Ausnahme fuer „ist ja nur Design"
+kennt.
+
+---
+
+## 8t. DATUMSSTEMPEL + ZWEITER BOT „KNAPPE PAARE" (20.8., Mittagsphase)
+
+### Nachtbilanz, gemessen
+
+Karams Frage „war ueber Nacht wirklich nichts?" aus den Buechern
+beantwortet: Melder lief 720 von 720 Laeufen fehlerfrei, null Meldungen
+seit der v6-Verschaerfung (die 3 markierten Zeilen sind die bekannten
+Cincinnati-Fehlalarme von VOR der Verschaerfung). 260 neue Zeilen, 66 mit
+Spitze ueber 2 % — 64 davon ueber 5 % (Messlehre: falsch), die zwei
+plausiblen (4,91 % / 3,07 %) hat die Wache mit Buchsumme ueber 1
+ueberfuehrt. Die Stille war das korrekte Ergebnis.
+
+### Datumsstempel (Vorgabe Karam)
+
+`uhrzeit()` in js/anzeige.js: Eintraege von HEUTE zeigen die Uhrzeit,
+aeltere zeigen NUR noch das Datum („19.08.") statt Datum+Uhrzeit. Volle
+Angabe bleibt im Tooltip (`zeitpunkt()`), ebenso in den „Gefunden:"-Zeilen.
+Cache-Marke aller Betriebsseiten: v=71 -> **v=72**.
+
+### Zweiter Telegram-Bot: orion-melder-knapp v1
+
+Auftrag: „ein Bot fuer die Chance und ein Bot fuer die knappsten Paare".
+GEMESSEN vor dem Bau (24 h, gepruefte und 120 s bewaehrte Zeilen):
+Band -0,25..0 %: 1 | -0,5..-0,25 %: 5 | -1..-0,5 %: 34 | 0..2 %: 0.
+Deshalb Band **rendite -0,5 bis unter 2** (~6 Meldungen/Tag); bis -1
+waeren 40/Tag gewesen — Spam, bewusst nicht gebaut.
+
+Bauweise: Drilling von orion-melder-telegram v6 mit eigenem Geheimnis
+(TELEGRAM_BOT_TOKEN_KNAPP), eigener Zielzeile (orion_telegram id=2,
+angelegt, aktiv=false) und eigener Markierungsspalte
+(orion_funde.knapp_gemeldet, angelegt). Gleiche Schutzgurte: pruefung
+leer, 120 s Bewaehrung, einmal je Fund; Buchsummen-Deckel 1,02. Die
+Nachricht sagt ehrlich „noch keine Chance" und nennt den Abstand zur
+Gewinnzone. Ohne Geheimnis antwortet die Funktion ehrlich
+(„TELEGRAM_BOT_TOKEN_KNAPP fehlt") — getestet.
+
+**OFFEN, wartet auf Karam:** Bot bei BotFather anlegen, Geheimnis
+TELEGRAM_BOT_TOKEN_KNAPP im Dashboard speichern, dem Bot eine
+Direktnachricht schicken, dann Bescheid geben. DANACH: einrichten
+(chat_id nach orion_telegram id=2, aktiv=true), Funkprobe, und erst
+dann Takt-Job **orion-knapp-takt** (minuetlich, wie Job 92) anlegen —
+vorher laeuft bewusst kein Takt.
