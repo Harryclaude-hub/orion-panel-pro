@@ -2509,3 +2509,105 @@ Monat — knapp unter der Grenze; naechste Tage am Zaehler NACHMESSEN.
 NOTFALLPLAN (nur dokumentiert, nicht gebaut): alles auf einen
 dauerlaufenden Laptop/Server umziehen, Preis: Geraet muss 24/7 an sein,
 und der Kernvorteil (laeuft bei ausgeschaltetem Geraet) faellt.
+
+---
+
+## 8u. JEDER LINK INS EIGENE HAUS + EIGENE SEITE JE KARTE (20.8., Abend)
+
+Karams Ansage: „kannst du bitte so machen, dass diese Links, die verlinkt
+werden, nicht die von den Anbietern, sondern die von Pro sind, dass du
+direkt zu diesem Angebot kommst und es einfach so ein eigener Bereich
+ist. Und wenn man auf eine Chance drueckt, dass man auf eine eigene Page
+kommt, dass man sich nicht dafuer durchscrollen muss."
+
+### Was vorher war, gemessen
+
+Beide Telegram-Bots schickten drei Links je Meldung. **Zwei davon fuehrten
+direkt zum Anbieter** (`pm_link`, `bf_link`), nur der dritte auf
+beitrag.html. Damit landete der Leser mit einem Klick bei Polymarket oder
+Smarkets, ohne dass irgendjemand den Kurs nochmal angesehen hatte.
+
+Das ist die gefaehrliche Richtung: der Kurs in der Telegram-Nachricht ist
+**eingefroren im Moment des Versands**, der auf der Seite laeuft weiter.
+Zwischen Meldung und Klick koennen Minuten liegen. Wer direkt beim
+Anbieter landet, setzt gegen eine Zahl, die niemand mehr geprueft hat.
+
+### Gebaut
+
+1. **Beide Bots**: die zwei Buchzeilen zeigen jetzt auf
+   `beitrag.html?fund=<schluessel>&zu=1` bzw. `&zu=2` statt auf den
+   Anbieter. Beschriftung „ansehen" statt „oeffnen", sie tut jetzt auch
+   etwas anderes. Die Schlusszeile sagt ausdruecklich, dass alle Links
+   dorthin fuehren und der Absprung auf der Seite steht.
+2. **beitrag.html** versteht `?zu=1` / `?zu=2` und zeichnet darueber einen
+   ZIELBLOCK: welches Buch gemeint war, welche Seite (JA/Lay/Back/UNTER),
+   und der Absprung zum Anbieter als **eigener Klick**, mit der Warnung,
+   dass die Kurse darunter der Stand von jetzt sind. Alles andere im
+   `zu`-Feld wird ignoriert statt geraten (geprueft mit `zu=9`).
+3. **Jede Karte im Panel** traegt als ersten Knopf „▤ Eigene Seite" und
+   fuehrt auf beitrag.html. Damit ist Karams zweiter Punkt erledigt: man
+   scrollt nicht mehr durch eine Liste bildschirmhoher Karten. Auf
+   beitrag.html selbst faellt der Knopf weg (Pfaderkennung, keine Fahne,
+   die jemand zu setzen vergisst).
+4. `buch1`/`buch2` aus anzeige.js **exportiert**, damit der Zielblock
+   denselben Buchnamen und denselben Broker-Umweg nennt wie die Karte.
+   Eine zweite Namenstabelle waere genau die Doppelwahrheit, gegen die
+   hier sonst gearbeitet wird. Belegt: Betfair-Fall zeigt korrekt
+   „Betfair ueber Orbit oeffnen".
+
+### Bestandsfund: der Knapp-Bot lag NICHT im Repo
+
+`orion-melder-knapp` existierte nur als ausgerollte Edge-Funktion auf dem
+Server. Im Repo fehlte er ganz. Ein Neuaufsetzen haette ihn verloren, und
+niemand haette es gemerkt, weil er weiterlaeuft. Jetzt liegt er unter
+`supabase/functions/orion-melder-knapp/index.ts`.
+
+### DEPLOY STEHT AUS, Karam muss ihn ausloesen
+
+Der Supabase-MCP-Weg konnte die Melder diesmal **nicht** ausrollen: das
+Werkzeug nimmt das Dateiarray nicht an (es kommt als Text an, Zod lehnt
+ab). Einen `sbp_`-Token gibt es hier nicht.
+
+Deshalb neu: **`DEPLOY-MELDER.cmd`**, Schwesterdatei zu DEPLOY-JETZT.cmd,
+im Repo unter `bridge/` und als Arbeitskopie in `Desktop\ORION-BRIDGE`.
+Doppelklick, Token einfuegen, rollt BEIDE Bots aus und schickt danach
+beide Funkproben. Schlaegt er fehl, aendert sich nichts.
+
+**Bis zum Doppelklick melden beide Bots weiter mit Anbieterlinks.** Das
+Panel ist davon unabhaengig und schon scharf.
+
+### Zwei eigene Fehler, festgehalten
+
+- Im Kopfkommentar des Knapp-Bots stand die Cron-Schreibweise im
+  Klartext. Der Stern-Schraegstrich darin **schliesst den
+  Blockkommentar** mitten im Satz, die Datei waere beim Deploy
+  gescheitert. Selbst gefunden und behoben, aber es zeigt: auch ein
+  Kommentar ist Code.
+- Danach ein Pruefwerkzeug gebaut, das genau diese Klasse fangen sollte.
+  Es taugte nichts: die Gegenprobe blieb gruen (der Fehler erzeugt keinen
+  unbalancierten Zustand, sondern gueltigen Unsinn), und an den echten
+  Dateien meldete es drei Falsch-Positive, weil es Regex-Literale wie
+  `/"/g` fuer Zeichenketten hielt. **Weggeworfen statt geflickt.** Ein
+  Werkzeug, das mehr Fehlalarme erzeugt als es faengt, ist schlimmer als
+  keines, man gewoehnt sich an rote Meldungen.
+
+### Nachgemessen
+
+    spiegel.test.js       19896 / 19896   gruen
+    vollpruefung.test.js  36 / 36         gruen
+    zuordnung.test.js     296 / 296       gruen
+    rechnung.test.js      195 / 195       gruen
+
+Am lebenden Panel gegen echte Funde geprueft: `zu=1` Polymarket,
+`zu=2` Smarkets und Polymarket (je nach Buchreihenfolge des Funds),
+ohne `zu` kein Block, `zu=9` kein Block. Cache-Marke **v=74 -> v=75**
+auf allen neun Betriebsseiten (anzeige.js ist eine gemeinsame Datei).
+
+### AUCH KORRIGIERT: das Gedaechtnis stand auf Build 21
+
+Der Eintrag `orion-bridge-betrieb` nannte Bridge-Build **21** und den
+laengst geloeschten Ordner `C:\Users\Home\OrionBridge`, waehrend
+`orion-bridge-ordner` den richtigen Desktop-Pfad fuehrte. Zwei
+Gedaechtniseintraege ueber dieselbe Sache mit verschiedenen Staenden
+sind schlimmer als einer. In der Programmdatei nachgesehen und auf
+**4.0 / Build 27** richtiggestellt.

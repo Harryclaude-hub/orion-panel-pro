@@ -59,7 +59,8 @@ Funker-Chat hat zusätzlich seinen eigenen 🔊/🔇 im Fenster.
 `logik.html` (Suchlogik, **bei Logik-Änderungen mitziehen!**) ·
 `knoepfe.html` (jeder Knopf erklärt) · `regelwerk.html` (Absage-Regeln) ·
 `einstellungen.html` · `bridge-setup.html` (Bridge-Einrichtung) ·
-`beitrag.html?fund=…` (eine einzelne Karte, Ziel der Telegram-Links) ·
+`beitrag.html?fund=…[&zu=1|2]` (eine einzelne Karte, Ziel **aller** Telegram-Links;
+`zu=1`/`zu=2` zeichnet den Zielblock mit dem Absprung zum gemeinten Buch) ·
 `gespeichert.html` (gemerkte Funde).
 `funktionen.html` wurde am 15.8. GELÖSCHT — sie beschrieb einen Stand,
 den es nie gab (Login/Adminbereich), und war nirgends verlinkt.
@@ -88,9 +89,26 @@ angaben/logik/knoepfe/regelwerk/einstellungen noch auf `v=54` (CSS) und
 diese Seiten schon einmal besucht hatte, bekam **stil.css und sperre.js
 aus dem alten Cache**: die Farbwelt von VOR dem Rückbau (also noch mit
 Orange) und eine alte Fassung des Tors. Alle Betriebsseiten stehen jetzt
-auf `v=74` (Stand nach der Egress-Bremse, 8t). **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
+auf `v=75` (Stand nach dem Link-Umbau, 8u). **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
 Seiten ihre Marke mit**, sonst laufen wieder zwei Fassungen nebeneinander.
 (`muster-hud.html` bleibt auf `v=52`: Musterseite, nicht im Betrieb.)
+
+## Server-Funktionen im Repo (`supabase/functions/`)
+
+`orion-lauf` (Scanner) · `orion-kalshi` · `orion-smarkets` · `bf-bridge` ·
+`pm-scan` · `lm-proxy` · `ob-proxy` · **`orion-melder-telegram`** (Chancen-Bot,
+minütlich) · **`orion-melder-knapp`** (Knapp-Bot, alle fünf Minuten).
+
+**Der Knapp-Bot fehlte bis zum 20.8. im Repo** und lebte nur als
+ausgerollte Funktion auf dem Server — ein Neuaufsetzen hätte ihn verloren,
+ohne dass es jemand gemerkt hätte. Regel: was auf dem Server läuft, liegt
+auch hier.
+
+**Ausrollen:** `bridge/DEPLOY-MELDER.cmd` (Doppelklick, Token, rollt BEIDE
+Bots aus und funkt danach beide Proben). Der Scanner geht weiter über
+`DEPLOY-JETZT.cmd`. Beide brauchen einen `sbp_`-Token; der Supabase-MCP-Weg
+kann Edge-Funktionen derzeit NICHT ausrollen (das Werkzeug nimmt das
+Dateiarray nicht an).
 
 ## Prüfstand (`pruefung/`)
 

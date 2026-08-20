@@ -22,7 +22,15 @@
  *     Polymarket blau, Kalshi tealgruen (Quadrat), Smarkets gruen,
  *     Betfair gelb — Name steht immer dabei, die Farbe ist nur die
  *     Schnellerkennung
- *   - DIREKTLINK zu beiden Anbietern (dieselben Links wie auf der Karte)
+ *   - JEDER LINK FUEHRT INS EIGENE HAUS (v7, 20.8., Karams Vorgabe:
+ *     "nicht die von den Anbietern, sondern die von Pro"). Die beiden
+ *     Buchzeilen zeigen NICHT mehr direkt auf polymarket.com bzw.
+ *     smarkets.com, sondern auf beitrag.html?fund=<schluessel>&zu=1
+ *     bzw. &zu=2. Dort steht der Absprung zum Anbieter als eigener
+ *     Klick, mit dem aktuellen Kurs daneben. Grund: zwischen Meldung
+ *     und Klick koennen Minuten liegen, und der Kurs in der Meldung ist
+ *     eingefroren, der auf der Seite nicht. Wer aus Telegram direkt beim
+ *     Anbieter landet, setzt gegen eine Zahl, die niemand mehr prueft.
  *   - MINIRECHNUNG: Aufteilung bei 100 $ und Auszahlung — die Anteile
  *     sind prozentual und waehrungsfrei, deshalb dort KEINE Kursdrehung
  *   - BEITRAGSLINK auf die eigene Seite beitrag.html?fund=<schluessel>:
@@ -81,13 +89,13 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string): st
   const zeilen = [
     `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} %</b>`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
-    `${p1} ${n1}: <b>${esc(f.pm_seite)}</b> zu ${Number(f.pm_preis).toFixed(3)} → <a href="${esc(f.pm_link)}">öffnen</a>`,
-    `${p2} ${n2}: <b>${esc(f.bf_seite)}</b> ${f.bf_name ? 'auf ' + esc(f.bf_name) + ' ' : ''}zu ${Number(f.bf_quote).toFixed(3)} → <a href="${esc(f.bf_link)}">öffnen</a>`,
+    `${p1} ${n1}: <b>${esc(f.pm_seite)}</b> zu ${Number(f.pm_preis).toFixed(3)} → <a href="${beitrag}&amp;zu=1">ansehen</a>`,
+    `${p2} ${n2}: <b>${esc(f.bf_seite)}</b> ${f.bf_name ? 'auf ' + esc(f.bf_name) + ' ' : ''}zu ${Number(f.bf_quote).toFixed(3)} → <a href="${beitrag}&amp;zu=2">ansehen</a>`,
     (isFinite(e1) && isFinite(e2) && isFinite(aus)
       ? `\u{1F9EE} Bei 100 $ Einsatz: <b>${e1.toFixed(2)} $</b> auf ${n1}, <b>${e2.toFixed(2)} $</b> auf ${n2} → <b>${aus.toFixed(2)} $</b> zurück, egal wie es endet (Aufteilung prozentual, gilt in € genauso)`
       : ''),
     `\u{1F4B0} Einsatz bis <b>${geld(f.max_einsatz)}</b> · holbar ~<b>${geld(f.max_gewinn)}</b>`,
-    `\u{1F4CB} <a href="${beitrag}">Beitrag öffnen</a> (eigene Seite: genau diese Karte — Gebühren, Absage-Ausgang, Fristen, Speichern)`
+    `\u{1F4CB} <a href="${beitrag}">Ganze Karte öffnen</a> (Gebühren, Absage-Ausgang, Fristen, Speichern). Alle Links dieser Meldung führen dorthin, der Absprung zum Anbieter steht auf der Seite.`
   ].filter(z => z !== '');
   return zeilen.join('\n');
 }

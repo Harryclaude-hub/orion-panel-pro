@@ -214,8 +214,28 @@
              '" title="' + txt(info.name) + '-Link kopieren">Link kopieren</button>';
   }
 
+  /* EIGENE SEITE JE FUND (20.8., Karams Vorgabe: "dass man auf eine eigene
+   * Page kommt, dass man sich nicht dafuer durchscrollen muss"). Eine Karte
+   * fuellt eine Bildschirmhoehe; in einer Liste von zwanzig verliert man
+   * die Zeile, die man ansehen wollte. Der Knopf fuehrt auf beitrag.html,
+   * die GENAU diese eine Karte zeigt, mit Zurueck-Knopf.
+   *
+   * Auf beitrag.html selbst ist er sinnlos (man ist schon dort) und faellt
+   * weg. Die Erkennung laeuft ueber den Pfad, nicht ueber eine Fahne, die
+   * jemand zu setzen vergessen kann. */
+  var AUF_BEITRAG = /beitrag\.html$/i.test(String(location.pathname || ''));
+
+  function eigeneSeite(f) {
+    if (AUF_BEITRAG) return '';
+    return '<a class="knopf eigen" href="beitrag.html?fund=' +
+             encodeURIComponent(String(f.schluessel || '')) + '"' +
+             ' title="Öffnet genau diese Karte auf ihrer eigenen Seite: kein Scrollen, kein Suchen, mit Zurück-Knopf.">' +
+             '▤ Eigene Seite</a>';
+  }
+
   function aktionen(f) {
     return '<div class="aktionen">' +
+             eigeneSeite(f) +
              linkKnopf(f.pm_link, buch1(f)) +
              linkKnopf(f.bf_link, buch2(f)) +
            '</div>';
@@ -2579,8 +2599,14 @@
    * gespeichert.html zeichnen einzelne Karten ausserhalb von zeichne()
    * und muessen den EZB-Kurs selbst setzen, sonst stuenden dort nur
    * Dollar-Betraege, waehrend das Panel beide Waehrungen zeigt. */
+  /* buch1/buch2 mit herausgereicht (20.8.): beitrag.html braucht denselben
+   * Buchnamen und dieselbe Broker-Angabe wie die Karte, wenn sie den
+   * Telegram-Besucher zu seinem Anbieter weiterleitet. Zweimal dieselbe
+   * Namenstabelle waere genau die Doppelwahrheit, gegen die hier sonst
+   * gearbeitet wird. */
   welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt,
                    setzeWennAnders: setzeWennAnders, karte: karte, setzeKurs: setzeKurs,
-                   absageBilanz: absageBilanz, istGedeckt: istGedeckt };
+                   absageBilanz: absageBilanz, istGedeckt: istGedeckt,
+                   buch1: buch1, buch2: buch2 };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);

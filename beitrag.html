@@ -6,9 +6,9 @@
 <title>Orion Panel Pro — Beitrag</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="schrift/schrift.css?v=74">
-<link rel="stylesheet" href="css/stil.css?v=74">
-<link rel="stylesheet" href="css/hud.css?v=74">
+<link rel="stylesheet" href="schrift/schrift.css?v=75">
+<link rel="stylesheet" href="css/stil.css?v=75">
+<link rel="stylesheet" href="css/hud.css?v=75">
 <style>
   /* Die Beitragsseite zeigt GENAU EINE Karte — der Link aus der
    * Telegram-Meldung landet hier, ohne Suchen, ohne Reiter. */
@@ -19,6 +19,18 @@
   .beitrag-stand { border: 1px solid var(--rand); border-radius: 10px; padding: 12px 14px;
                    margin-bottom: 16px; font-size: 14px; color: var(--text-leise); }
   .beitrag-stand b { color: var(--text); }
+
+  /* DER ZIELBLOCK (20.8.): wer aus einer Telegram-Meldung kommt, hat dort
+   * auf ein bestimmtes Buch gedrueckt (?zu=1 oder ?zu=2). Statt ihn
+   * ungefragt auf die Anbieterseite zu werfen, landet er HIER und bekommt
+   * den Absprung als bewussten Klick, mit dem Kurs daneben, gegen den er
+   * gerade prueft. Ohne ?zu bleibt der Block unsichtbar. */
+  .zielblock { border: 1px solid var(--sonar); border-left: 3px solid var(--sonar);
+               border-radius: 10px; padding: 14px 16px; margin-bottom: 16px;
+               background: var(--karte); }
+  .zielblock .ziel-kopf { font-size: 14px; color: var(--text-leise); margin-bottom: 10px; }
+  .zielblock .ziel-kopf b { color: var(--text); }
+  .zielblock .ziel-warn { font-size: 13px; color: var(--text-leise); margin-top: 10px; }
 </style>
 </head>
 <body>
@@ -41,16 +53,18 @@
   </header>
 
   <div id="stand" class="beitrag-stand">wird geladen …</div>
+  <!-- Nur befuellt, wenn der Aufruf ein ?zu=1 / ?zu=2 mitbringt. -->
+  <div id="zielblock"></div>
   <div id="karte"></div>
 </div>
 
-<script src="js/konfig.js?v=74"></script>
-<script src="js/sperre.js?v=74"></script>
-<script src="js/rechnung.js?v=74"></script>
-<script src="js/zuordnung.js?v=74"></script>
-<script src="js/filter.js?v=74"></script>
-<script src="js/anzeige.js?v=74"></script>
-<script src="js/speicher.js?v=74"></script>
+<script src="js/konfig.js?v=75"></script>
+<script src="js/sperre.js?v=75"></script>
+<script src="js/rechnung.js?v=75"></script>
+<script src="js/zuordnung.js?v=75"></script>
+<script src="js/filter.js?v=75"></script>
+<script src="js/anzeige.js?v=75"></script>
+<script src="js/speicher.js?v=75"></script>
 <script>
 (function () {
   'use strict';
@@ -83,8 +97,15 @@
 
   /* Welcher Fund? ?fund=<schluessel> — derselbe Schluessel wie in der
    * Telegram-Meldung und in orion_funde. */
-  var schluessel = null;
-  try { schluessel = new URLSearchParams(location.search).get('fund'); } catch (e) { /* alt */ }
+  var schluessel = null, zuBuch = null;
+  try {
+    var frage = new URLSearchParams(location.search);
+    schluessel = frage.get('fund');
+    /* ?zu=1 / ?zu=2 (20.8.): welches Buch wollte der Leser sehen, als er in
+     * Telegram gedrueckt hat. Alles andere wird ignoriert statt geraten. */
+    var z = frage.get('zu');
+    if (z === '1' || z === '2') zuBuch = z;
+  } catch (e) { /* alt */ }
   if (!schluessel) {
     stand('<b>Kein Fund angegeben.</b> Diese Seite erwartet ?fund=… — der Link aus der ' +
           'Telegram-Meldung bringt ihn mit. <a href="index.html">Zurück zum Panel</a>.');
@@ -95,6 +116,47 @@
   hole('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle&limit=1').then(function (z) {
     if (z && z[0]) window.Anzeige.setzeKurs(z[0]);
   }).catch(function () { /* ohne Kurs ehrlich in $ */ });
+
+  /* DER ZIELBLOCK. Nutzt buch1/buch2 aus anzeige.js, damit Buchname und
+   * Broker-Umweg dieselbe Wahrheit tragen wie die Karte darunter. Zahlen
+   * stehen bewusst NICHT hier drin: sie stehen zwei Zentimeter tiefer auf
+   * der Karte, und zweimal dieselbe Zahl an zwei Stellen ist genau die
+   * Sorte Doppelwahrheit, die hier schon Geld gekostet hat. */
+  var zielGezeichnet = '';
+  function zeichneZiel(f) {
+    var kasten = document.getElementById('zielblock');
+    if (!zuBuch) { if (zielGezeichnet !== '') { kasten.innerHTML = ''; zielGezeichnet = ''; } return; }
+
+    var A = window.Anzeige || {};
+    var info = (zuBuch === '1' ? A.buch1 : A.buch2);
+    info = typeof info === 'function' ? info(f) : { name: zuBuch === '1' ? 'Buch 1' : 'Buch 2' };
+    var url   = zuBuch === '1' ? f.pm_link  : f.bf_link;
+    var seite = zuBuch === '1' ? f.pm_seite : f.bf_seite;
+    var name  = String(info.name || '?');
+    function sicher(s) {
+      return String(s === null || s === undefined ? '' : s)
+        .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+    }
+
+    var html = '<div class="zielblock">' +
+      '<div class="ziel-kopf">Aus der Meldung gekommen: du wolltest zu <b>' + sicher(name) + '</b>' +
+        (seite ? ', Seite <b>' + sicher(seite) + '</b>' : '') + '.</div>';
+
+    if (url) {
+      html += '<a class="knopf" target="_blank" rel="noopener" href="' + sicher(url) + '">' +
+                sicher(info.ueberBroker ? (name + ' über Orbit öffnen') : (name + ' öffnen')) +
+              '</a>';
+    } else {
+      html += '<span class="knopf gesperrt">' + sicher(name) + '-Link fehlt in diesem Fund</span>';
+    }
+
+    html += '<div class="ziel-warn">Der Absprung zum Anbieter ist bewusst ein eigener Klick: ' +
+              'die Kurse unten sind der Stand von <b>jetzt</b> und laufen weiter. ' +
+              'Erst hier prüfen, dann drüben setzen.</div>' +
+            '</div>';
+
+    if (html !== zielGezeichnet) { kasten.innerHTML = html; zielGezeichnet = html; }
+  }
 
   var zuletzt = '';
   function lade() {
@@ -110,6 +172,7 @@
                   : '<b>Vorbei</b> — dieser Fund ist beendet (' + (f.vorbei_grund || 'kein Grund vermerkt') +
                     '). Die Karte zeigt den letzten Stand.') +
             ' &nbsp;·&nbsp; Schlüssel: <b>' + String(f.schluessel).replace(/</g, '&lt;') + '</b>');
+      zeichneZiel(f);
       var neu = window.Anzeige.karte(f, !live);
       if (neu !== zuletzt) {
         document.getElementById('karte').innerHTML = neu;
