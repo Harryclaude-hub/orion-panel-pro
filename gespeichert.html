@@ -81,10 +81,23 @@
     return f;
   }
 
-  hole('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle&limit=1').then(function (z) {
-    if (z && z[0]) window.Anzeige.setzeKurs(z[0]);
-    lade();
-  }).catch(function () { lade(); });
+  /* DAS KENNWORT-TOR STARTEN (21.8., Karams Fund).
+   *
+   * Diese Seite LUD sperre.js, rief aber nie Sperre.start() auf. Ohne den
+   * Aufruf bekommt der Oeffnen-Knopf keinen Horcher: man tippt das Wort,
+   * drueckt, und es passiert NICHTS. Das Overlay liegt dabei mit
+   * z-index 2147483647 ueber allem und schluckt jeden Klick.
+   *
+   * Dieselbe Luecke hatte beitrag.html, dort teurer: seit dem 20.8.
+   * fuehren ALLE Telegram-Links dorthin. LEHRE: eine Datei zu LADEN
+   * heisst nicht, sie zu BENUTZEN. Wer sperre.js einbindet, ruft auch
+   * Sperre.start(). */
+  window.Sperre.start(function () {
+    hole('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle&limit=1').then(function (z) {
+      if (z && z[0]) window.Anzeige.setzeKurs(z[0]);
+      lade();
+    }).catch(function () { lade(); });
+  });
 
   function lade() {
     window.Speicher.liste().then(function (eintraege) {

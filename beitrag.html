@@ -112,10 +112,15 @@
     return;
   }
 
-  /* EZB-Kurs setzen, damit die Betraege beide Waehrungen zeigen. */
-  hole('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle&limit=1').then(function (z) {
-    if (z && z[0]) window.Anzeige.setzeKurs(z[0]);
-  }).catch(function () { /* ohne Kurs ehrlich in $ */ });
+  /* EZB-Kurs setzen, damit die Betraege beide Waehrungen zeigen.
+   * Laeuft erst NACH dem Entsperren (siehe ganz unten): vorher hat die
+   * Seite nichts anzuzeigen, und eine Datenabfrage fuer jemanden ohne
+   * Wort waere obendrein verschenkter Datenabfluss. */
+  function holeKurs() {
+    hole('orion_kurse?paar=eq.USD_EUR&select=kurs,stand,quelle&limit=1').then(function (z) {
+      if (z && z[0]) window.Anzeige.setzeKurs(z[0]);
+    }).catch(function () { /* ohne Kurs ehrlich in $ */ });
+  }
 
   /* DER ZIELBLOCK. Nutzt buch1/buch2 aus anzeige.js, damit Buchname und
    * Broker-Umweg dieselbe Wahrheit tragen wie die Karte darunter. Zahlen
@@ -182,10 +187,30 @@
       stand('<b>Nicht geladen:</b> ' + e.message + ' — <a href="index.html">zurück zum Panel</a>.');
     });
   }
-  lade();
-  /* 5-Sekunden-Takt fuer EINE Zeile — bewusst langsamer als das Panel
-   * (2 s fuer alles): eine Einzelseite braucht keine Gefechtstakte. */
-  setInterval(lade, 5000);
+  /* DAS KENNWORT-TOR STARTEN (21.8., Karams Fund).
+   *
+   * Diese Seite LUD sperre.js, rief aber nie Sperre.start() auf. Ohne den
+   * Aufruf bekommt der Oeffnen-Knopf keinen Horcher: man tippt das Wort,
+   * drueckt, und es passiert NICHTS. Kein Fehler, keine Meldung, keine
+   * Reaktion. Das Overlay liegt dabei mit z-index 2147483647 ueber der
+   * ganzen Seite und schluckt jeden Klick, auch den auf den Absprung
+   * zum Anbieter.
+   *
+   * Besonders teuer war das hier, weil seit dem 20.8. JEDER Link aus
+   * beiden Telegram-Bots auf diese Seite fuehrt. Der ganze Umbau lief
+   * gegen eine verschlossene Tuer.
+   *
+   * Dieselbe Luecke hatte gespeichert.html. Vier Seiten (index ueber
+   * app.js, einstellungen ueber einstellungen.js, knoepfe, logik) riefen
+   * korrekt auf, zwei nicht. LEHRE: eine Datei zu LADEN heisst nicht,
+   * sie zu BENUTZEN. Wer sperre.js einbindet, ruft auch Sperre.start(). */
+  window.Sperre.start(function () {
+    holeKurs();
+    lade();
+    /* 5-Sekunden-Takt fuer EINE Zeile — bewusst langsamer als das Panel
+     * (2 s fuer alles): eine Einzelseite braucht keine Gefechtstakte. */
+    setInterval(lade, 5000);
+  });
 })();
 </script>
 </body>

@@ -2626,3 +2626,73 @@ laengst geloeschten Ordner `C:\Users\Home\OrionBridge`, waehrend
 Gedaechtniseintraege ueber dieselbe Sache mit verschiedenen Staenden
 sind schlimmer als einer. In der Programmdatei nachgesehen und auf
 **4.0 / Build 27** richtiggestellt.
+
+---
+
+## 8v. DAS TOR WAR NIE ANGESCHALTET (21.8., Karams Fund)
+
+Karams Meldung: „wenn man den Link bei der Nachricht oeffnet, dass man
+diesen Code eingeben kann, den normalen Code fuer das Programm, aber es
+funktioniert irgendwie nicht."
+
+### Der Befund
+
+`beitrag.html` und `gespeichert.html` **luden** `sperre.js`, riefen aber
+nie `Sperre.start()` auf. Ohne diesen Aufruf bekommt der Oeffnen-Knopf
+keinen Horcher: man tippt das Wort, drueckt, und es passiert **nichts**.
+Keine Meldung, kein Fehler, keine Reaktion.
+
+Gemessen am lebenden Objekt:
+
+    Overlay vorhanden      ja
+    position               fixed
+    z-index                2147483647
+    was unter dem Mauszeiger liegt, wo der Absprung-Knopf steht:  "sperre"
+
+Das Overlay deckt die ganze Seite und schluckt jeden Klick. Der Inhalt
+darunter wurde korrekt gezeichnet, war aber unerreichbar.
+
+Sechs Seiten laden `sperre.js`. Vier riefen richtig auf (index ueber
+app.js, einstellungen ueber einstellungen.js, knoepfe und logik direkt),
+**zwei nicht**.
+
+### Warum das besonders teuer war
+
+Seit dem 20.8. (8u) fuehrt **jeder Link aus beiden Telegram-Bots** auf
+`beitrag.html`. Der ganze Link-Umbau lief also gegen eine verschlossene
+Tuer. Der Umbau selbst war richtig, nur kam niemand dahinter.
+
+### Mein Anteil daran, klar benannt
+
+Ich habe den Umbau am 20.8. fuer geprueft erklaert. Geprueft hatte ich
+aber nur DOM-Werte im iframe: Zielblock da, Karte da, Buchname richtig.
+Alles stimmte auch. Was ich nicht geprueft habe: ob die Seite
+**bedienbar** ist. Ein Blick auf die Seite haette das Overlay sofort
+gezeigt.
+
+LEHRE: „das Element ist im DOM" ist nicht „der Nutzer kommt dran".
+Bei einer Seite, die ein Overlay kennt, gehoert die Frage dazu, was
+ueber dem Inhalt liegt, nicht nur ob der Inhalt existiert.
+
+### Repariert und nachgewiesen
+
+Beide Seiten starten das Tor jetzt und laden ihre Daten ERST danach
+(vorher hat die Seite nichts anzuzeigen, und eine Abfrage fuer jemanden
+ohne Wort ist obendrein verschenkter Datenabfluss).
+
+    falsches Wort eingetippt   -> Overlay bleibt, Meldung "Falsch."
+    Zugang im Speicher, beitrag -> Overlay weg, Karte UND Zielblock da
+    Zugang im Speicher, gespeichert -> Overlay weg, Bestand geladen
+
+Kontrolle ueber alle sechs Seiten: jede, die `sperre.js` laedt, ruft
+jetzt auch `Sperre.start()`.
+
+    spiegel 19896/19896 · vollpruefung 36/36 · zuordnung 296/296
+    rechnung 195/195   alle gruen
+
+### Die allgemeine Regel daraus
+
+**Eine Datei zu LADEN heisst nicht, sie zu BENUTZEN.** Ein
+`<script src=...>` sieht nach Funktion aus und ist doch nur eine
+Lieferung. Wer `sperre.js` einbindet, ruft auch `Sperre.start()`.
+Dasselbe gilt fuer jede andere Schicht, die einen Startaufruf braucht.

@@ -76,12 +76,20 @@ trägt wie alle anderen Seiten `noindex`; `robots.txt` bleibt
 erreichbaren** Seiten (`angaben.html`, `regelwerk.html`) plus das Panel.
 **Löschbar:** beide Dateien weg = Stand von vorher.
 
-**Kennwort-Tor, gemessen 20.8.:** `sperre.js` laden index, logik,
-knoepfe, einstellungen, gespeichert und beitrag. **OHNE Tor** sind
-`angaben.html`, `regelwerk.html`, `bridge-setup.html` und
+**Kennwort-Tor, gemessen 20.8., korrigiert 21.8.:** `sperre.js` laden
+index, logik, knoepfe, einstellungen, gespeichert und beitrag. **OHNE
+Tor** sind `angaben.html`, `regelwerk.html`, `bridge-setup.html` und
 `muster-hud.html`. Wer von einer offenen Seite nach `logik.html`
 verlinkt, schickt den Leser in die Kennwortwand (so steht es in
 bridge-setup).
+
+**Laden ist nicht Benutzen (Fund 21.8., 8v):** `beitrag.html` und
+`gespeichert.html` luden `sperre.js`, riefen aber nie `Sperre.start()`.
+Das Overlay blieb liegen (`z-index: 2147483647`), der Öffnen-Knopf hatte
+keinen Horcher, und weil seit dem 20.8. alle Telegram-Links auf
+`beitrag.html` führen, lief der ganze Link-Umbau gegen eine verschlossene
+Tür. **Regel: wer `sperre.js` einbindet, ruft auch `Sperre.start()`** und
+lädt seine Daten erst im Erfolgs-Rückruf.
 
 **Cache-Marken (`?v=`) gehören zusammen.** Am 20.8. standen
 angaben/logik/knoepfe/regelwerk/einstellungen noch auf `v=54` (CSS) und
