@@ -73,6 +73,16 @@ STAND: WAS FERTIG IST
   Stufe 3; ORANGE KOMPLETT ERSETZT durch Scanner-Tuerkis #7FC2B6
   (auch Papier-Modus + Statistik-Ausnahme aufgehoben). Cache v=70.
 
+- MORGENLAGE 20.8.: Telegram-Melder v6 VERSCHAERFT nach 2 Fehlalarmen
+  (Cincinnati, Buchsumme 1,0088, Wache-Urteil nicht geprueft): jetzt
+  pruefung=leer + Buchsummen-Doppelgurt + 120 s Bewaehrung.
+- RADIKALER DESIGN-RUECKBAU 20.8. (Karams Vorgabe "viel schlichter"):
+  buehne.js + partikel.js GELOESCHT (Flanken/Wacht/Jets/Raketen/Kino/
+  Partikel weg, 94 CSS-Regeln + 21 Keyframes raus, stil.css 2923->2676
+  Zeilen). Animationsstufen als js/anim.js gerettet (drosselt
+  Radar/LED/Avatar). Sonar/Puls und alle Funktionen unberuehrt,
+  Konsole fehlerfrei. Cache v=71.
+
 STAND: WAS OFFEN IST
 
 1. TELEGRAM IST SCHARF (19.8. spaet abends): Ziel = Karams DIREKTCHAT

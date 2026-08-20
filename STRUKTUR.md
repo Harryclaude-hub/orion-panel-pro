@@ -40,9 +40,8 @@ niemals umbenennen.**
 |---|---|
 | `css/stil.css` | ALLE Farben als Tokens ganz oben; darunter gewachsene Schichten (spätere Regeln überstimmen frühere — Absicht) |
 | `schrift/` | selbst gehostete Schriften (Black Ops One / Rajdhani / Share Tech Mono, OFL) |
-| `js/buehne.js` | Flanken (Luftwaffe, Panzer, Funkzeilen links, Motivationsfunk), Kino, Animationsstufen-Schalter |
+| `js/anim.js` | Animationsstufen-Schalter (1/2/3 + Geraete-Empfehlung) — am 20.8. aus der GELOESCHTEN buehne.js gerettet, weil er Radar/LED/Avatar drosselt und damit Funktion ist |
 | `js/puls.js` | Radar + Gefechtsstand-HUD |
-| `js/partikel.js` | Aufbau: Titel-Teilchen, Puzzle-Staffel, Scroll-Aufbau |
 | `js/stimme.js` | echte Sprecher-Aufnahmen (audio/ + sprueche.json), Avatar, Gemütslagen, TON-HAUPTSCHALTER |
 | `js/musik.js` | Hintergrund-Ambiente (synthetisiert), Rechtsklick auf Ton |
 | `js/melder.js` | Windows-Push (lautlos, stapelt nie) + E-Mail-Einrichtung (Rechtsklick) |
@@ -66,6 +65,16 @@ den es nie gab (Login/Adminbereich), und war nirgends verlinkt.
 `spiegel.test.js` — **vor JEDEM Ausrollen**: Browser- und Server-Rechnung
 identisch (15.133 Prüfungen). Dazu `bereiche.js`, `nachschlagen.js`,
 `karte-probe.html` für Messläufe gegen echte Daten.
+
+## Was beim Aufräumen am 20.8. entfernt wurde (und warum)
+
+- **buehne.js und partikel.js GELOESCHT** (Karams Vorgabe: "Seitendesign
+  viel schlichter, den Blödsinn löschen"): Flanken samt Wacht, Jets,
+  Raketen, Boom, das Kino und alle Partikel-/Aufbau-Effekte. Dazu 94
+  CSS-Regeln und 21 @keyframes aus stil.css. Der Animationsstufen-
+  Schalter überlebte als js/anim.js (er drosselt Radar/LED/Avatar).
+- Bestandsfund dabei: ein nie geschlossener CSS-Kommentar (nur `*`)
+  hatte die will-change-Regel der Flanken-Flieger seit jeher verschluckt.
 
 ## Was beim Aufräumen am 15.8. entfernt wurde (und warum)
 

@@ -11,8 +11,8 @@
  * ehrlich und tut nichts.
  *
  * "Chance" heisst hier die SERVERSEITIGE Naeherung der sieben
- * Bedingungen: live, Rendite zwischen Mindest- und Plausibel-Schwelle,
- * mindestens 25 s bewaehrt, Menge bekannt, Gewinn ueber 5 USD. Die
+ * Bedingungen — seit 20.8. VERSCHAERFT um Wache-Urteil, Buchsummen-
+ * Doppelgurt und 120 s Bewaehrung (siehe Kandidaten-Block). Die
  * Feinheiten (Absage-Form, Deckung) prueft die Website — die Nachricht
  * ist der Wecker, nicht das Urteil. Jeder Fund wird hoechstens EINMAL
  * gemeldet (Spalte telegram_gemeldet).
@@ -169,10 +169,25 @@ Deno.serve(async (req) => {
         : { ok: false, grund: 'Telegram: ' + JSON.stringify(tj).slice(0, 200) }), { headers: kopf });
     }
 
-    /* ---------- Kandidaten: EXAKT der Massstab des Mail-Melders ---------- */
+    /* ---------- Kandidaten ----------
+     * VERSCHAERFT am 20.8. nach zwei Fehlalarmen in der ersten Nacht:
+     * gemeldet wurde dreimal dieselbe Cincinnati-Partie, die die Wache
+     * kurz darauf als "Widerspruch: Buchsumme 1,0088" ueberfuehrte —
+     * ein klebender Kurs, keine Chance. Der Melder pruefte das
+     * Wache-Urteil nicht und wartete nur 25 s. Jetzt gilt (Vorgabe:
+     * "nur verifizierte Chancen, die laenger halten"):
+     *   1. pruefung LEER — kein Urteil von Wache, Kennungs-, Zeit-
+     *      oder Plausibilitaetssperre steht gegen die Zeile
+     *   2. Buchsummen-DOPPELGURT: buch_summe unter 1,00 oder (noch)
+     *      ungemessen — faengt den Widerspruchsfall auch in der Minute,
+     *      BEVOR die Wache ihn urteilt
+     *   3. Bewaehrung 120 s statt 25 — in der Zeit war die Wache
+     *      mindestens zweimal ueber der Zeile */
     const jetzt = Date.now();
-    const bewaehrtVor = new Date(jetzt - 25_000).toISOString();
+    const bewaehrtVor = new Date(jetzt - 120_000).toISOString();
     const q = 'orion_funde?status=eq.live&telegram_gemeldet=eq.false' +
+      '&pruefung=is.null' +
+      '&or=(buch_summe.is.null,buch_summe.lt.1)' +
       '&rendite=gte.2&rendite=lte.5' +
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null&max_gewinn=gte.5' +
