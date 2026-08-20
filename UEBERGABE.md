@@ -2940,3 +2940,74 @@ Minuten frisch sind. Das Feld wird bei der Rueckkehr einer Zeile nicht
 geleert und erzaehlt deshalb eine falsche Geschichte. Ausgewertet wird
 es derzeit nur bei `status='vorbei'`, ein Schaden entsteht also nicht.
 Aufraeumen waere ein eigener kleiner Bau.
+
+---
+
+## 8z. WAS GEMELDET WURDE, VERSCHWINDET NIE (21.8., Karams Kernforderung)
+
+Karams Ansage, woertlich: „Die Chancen muessen immer angezeigt werden,
+und wenn ich mich neu einlogge ... dann soll sie angezeigt werden oder in
+den Verlauf getan werden. Das ist die erste Wichtigkeit der App."
+
+Er hatte drei Meldungen bekommen; der Verlauf war nicht gewachsen und in
+den Chancen stand nichts.
+
+### Gemessen: von acht gemeldeten Zeilen waren ACHT unsichtbar
+
+Nicht eine war irgendwo auffindbar. DREI unabhaengige Loecher, die alle
+dasselbe bewirkten:
+
+**1. Die Loeschregel (das schwerste).** `orion_rauschen_loeschen` laeuft
+alle FUENF MINUTEN und loeschte jede beendete Zeile mit Spitze unter 0
+ohne `falsch`-Urteil. Gemeldete Zeilen fielen genau darunter: beim
+Versand knapp ueber der Grenze, danach gesunken, beendet, und fuenf
+Minuten spaeter aus der Datenbank verschwunden. Der Telegram-Link zeigte
+dann auf „Diesen Fund gibt es nicht mehr in der Datenbank".
+
+**2. Die Verlaufs-Abfrage.** `holeVerlauf` holte nur `pruefung=falsch`
+oder `beste_rendite >= 0`. Eine gemeldete Zeile mit negativer Spitze
+wurde gar nicht erst geladen.
+
+**3. Die Anzeige-Filter.** In der Live-Ansicht blendete die Rauschgrenze
+sie aus; im Verlauf warf `beste < 0 && pruefung !== 'falsch'` sie weg.
+
+### Gebaut: eine Regel, an allen vier Stellen
+
+    Was gemeldet wurde, verschwindet nie.
+
+  - `orion_rauschen_loeschen` verschont gemeldete Zeilen (Migration
+    `gemeldete_funde_nie_loeschen`, bereits angewendet)
+  - `holeVerlauf` holt gemeldete Zeilen immer mit
+  - der Live-Filter zeigt sie vor allen Grenzen
+  - der Verlaufs-Filter behaelt sie
+
+Die Loeschregel und der Anzeige-Filter sind bewusst GEKOPPELT: im Code
+steht an beiden Stellen der Verweis auf die andere. Sonst zeigt das
+Panel etwas an, das die Datenbank fuenf Minuten spaeter wegwirft.
+
+### Nachgemessen am echten Bestand
+
+    vorher:   0 von 8 gemeldeten Zeilen sichtbar
+    nachher:  15 von 15 sichtbar
+
+      7 unter Knappste Paare
+      7 unter Falsche Rechnungen (die mit Urteil)
+      1 im Knapp-Archiv
+
+Und: eine gemeldete Zeile stand beim Messen bereits auf der Loeschliste
+des naechsten Takts. Sie ist jetzt geschuetzt.
+
+    spiegel 19896 · vollpruefung 36 · zuordnung 296
+    rechnung 195 · melder alle       gruen
+    Cache-Marke v=75 -> v=76
+
+### Was das kostet, ehrlich
+
+Gemeldete Zeilen bleiben in der Datenbank, bis der 24-Stunden-Takt
+(Job 91) sie mitnimmt. Das ist eine Handvoll Zeilen am Tag, also
+praktisch nichts. Der Egress-Feldzug bleibt davon unberuehrt.
+
+**Der 24-Stunden-Takt greift weiter auch bei gemeldeten Zeilen.** Fuer
+„ich logge mich neu ein" reicht das; wer laenger zurueckblaettern will,
+muss Job 91 anfassen. Das ist Karams Freigabe vom 20.8. und bleibt, bis
+er etwas anderes sagt.

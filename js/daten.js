@@ -36,10 +36,18 @@
    * SCHOBEN echte Verlaufszeilen ueber das Limit hinaus — der Verlauf
    * sprang von 160 auf 2 und wieder zurueck. Deshalb laedt diese Abfrage
    * nur, was in einen der drei Reiter gehoert: nachgewiesen falsch, oder
-   * je ueber 0 % gewesen. */
+   * je ueber 0 % gewesen.
+   *
+   * DAZU SEIT 21.8.: was per Telegram GEMELDET wurde, wird IMMER geholt,
+   * auch mit negativer Spitze. Karams Vorgabe: eine gemeldete Zeile muss
+   * entweder in den Chancen stehen oder im Verlauf, nie im Nichts.
+   * Gemessen an dem Abend: acht gemeldete Zeilen, keine davon irgendwo
+   * auffindbar. Zwei davon hatten eine negative Spitze und wurden von
+   * dieser Abfrage nicht einmal geladen. */
   function holeVerlauf(grenze) {
     return db('orion_funde?status=eq.vorbei' +
-      '&or=(pruefung.eq.falsch,beste_rendite.gte.0,and(beste_rendite.is.null,rendite.gte.0))' +
+      '&or=(pruefung.eq.falsch,beste_rendite.gte.0,and(beste_rendite.is.null,rendite.gte.0),' +
+      'telegram_gemeldet.is.true,knapp_gemeldet.is.true)' +
       '&order=vorbei_seit.desc&limit=' + (grenze || 1000));
   }
 
@@ -482,8 +490,17 @@
           /* Rauschen: war nie eine Arbitrage UND ist nicht als falsch
            * nachgewiesen. Nur DAS faellt weg — und genau das loescht auch
            * die Datenbank binnen 5 Minuten. Anzeige und Loeschregel sagen
-           * damit dasselbe. */
-          if (beste < 0 && f.pruefung !== 'falsch') { vorbeiRauschen++; return false; }
+           * damit dasselbe.
+           *
+           * AUSNAHME SEIT 21.8.: was per Telegram GEMELDET wurde, bleibt
+           * hier stehen. Karams Vorgabe: eine gemeldete Zeile gehoert in
+           * die Chancen ODER in den Verlauf, nie ins Nichts. Die
+           * Loeschregel orion_rauschen_loeschen wurde am selben Tag um
+           * genau dieselbe Ausnahme erweitert — die beiden bleiben
+           * gekoppelt, sonst zeigt das Panel etwas an, das die Datenbank
+           * fuenf Minuten spaeter wegwirft, oder umgekehrt. */
+          if (beste < 0 && f.pruefung !== 'falsch' &&
+              !f.telegram_gemeldet && !f.knapp_gemeldet) { vorbeiRauschen++; return false; }
 
           /* Nachgewiesen oder rechnerisch falsch -> nur MARKIEREN; getrennt
            * wird erst nach den Schmuckschleifen unten, damit auch diese
@@ -705,6 +722,23 @@
                 (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K.bewaehrungS * 1000) return true;
             return false;
           }
+          /* WAS GEMELDET WURDE, VERSCHWINDET NIE (21.8., Karams Vorgabe:
+           * "die Chancen muessen immer angezeigt werden, und wenn ich mich
+           * neu einlogge ... dann soll sie angezeigt werden oder in den
+           * Verlauf getan werden. Das ist die erste Wichtigkeit").
+           *
+           * Gemessen an diesem Abend: von ACHT per Telegram gemeldeten
+           * Zeilen waren ALLE ACHT im Panel unsichtbar. Sie standen beim
+           * Versand ueber der Grenze und fielen danach darunter; die
+           * Rauschgrenze blendete sie aus, und weil sie nie 2 % erreicht
+           * hatten, griff die Ex-Chance-Regel darunter auch nicht.
+           *
+           * Eine Nachricht, die auf etwas Unauffindbares zeigt, ist die
+           * schlimmste Form des stillen Fehlschlags: sie behauptet einen
+           * Fund und laesst den Leser suchen. Deshalb steht diese Regel
+           * VOR allen Grenzen. Sie kostet hoechstens ein paar Zeilen
+           * Anzeige und nimmt dem Panel seine gefaehrlichste Luecke. */
+          if (f.telegram_gemeldet || f.knapp_gemeldet) return true;
           /* WAR es je eine Chance (beste >= Schwelle), bleibt es sichtbar,
            * auch wenn die Rendite unter die Rauschgrenze gestuerzt ist -
            * eine Ex-Chance darf nie im Nichts verschwinden. */
