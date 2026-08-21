@@ -105,12 +105,25 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string): st
   /* Seit 20.8. die EIGENE Beitragsseite: zeigt genau diese eine Karte,
    * ohne Suchen, mit Zurueck-Knopf. Der alte #fund-Sprung im Panel
    * bleibt als Zweitweg bestehen. */
-  const beitrag = PANEL + 'beitrag.html?fund=' + encodeURIComponent(String(f.schluessel ?? ''));
+  /* FUNKPROBEN ZEIGEN AUFS PANEL, NICHT AUF EINEN ERFUNDENEN SCHLUESSEL
+   * (21.8.). Die Probe baute ihren Link aus 'pm>bf:MUSTER'; beitrag.html
+   * antwortete darauf ehrlich mit "Diesen Fund gibt es nicht mehr in der
+   * Datenbank". Fuer den Leser sah das aus wie eine echte Meldung, deren
+   * Fund verschwunden ist. Genau das hat Karam am 21.8. gemeldet, und die
+   * Proben kamen von mir. Eine Testnachricht darf nie wie ein Fehler des
+   * Betriebs aussehen. */
+  const probe = f._probe === true;
+  const beitrag = probe
+    ? PANEL
+    : PANEL + 'beitrag.html?fund=' + encodeURIComponent(String(f.schluessel ?? ''));
+  /* Bei einer Probe haengt kein &zu an: PANEL traegt kein '?', ein
+   * angehaengtes '&zu=1' ergaebe einen kaputten Link. */
+  const zuLink = (n: number) => probe ? PANEL : beitrag + '&amp;zu=' + n;
   const zeilen = [
     `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} %</b>`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
-    `${p1} ${n1}: <b>${esc(f.pm_seite)}</b> zu ${Number(f.pm_preis).toFixed(3)} → <a href="${beitrag}&amp;zu=1">ansehen</a>`,
-    `${p2} ${n2}: <b>${esc(f.bf_seite)}</b> ${f.bf_name ? 'auf ' + esc(f.bf_name) + ' ' : ''}zu ${Number(f.bf_quote).toFixed(3)} → <a href="${beitrag}&amp;zu=2">ansehen</a>`,
+    `${p1} ${n1}: <b>${esc(f.pm_seite)}</b> zu ${Number(f.pm_preis).toFixed(3)} → <a href="${zuLink(1)}">ansehen</a>`,
+    `${p2} ${n2}: <b>${esc(f.bf_seite)}</b> ${f.bf_name ? 'auf ' + esc(f.bf_name) + ' ' : ''}zu ${Number(f.bf_quote).toFixed(3)} → <a href="${zuLink(2)}">ansehen</a>`,
     (isFinite(e1) && isFinite(e2) && isFinite(aus)
       ? `\u{1F9EE} Bei 100 $ Einsatz: <b>${e1.toFixed(2)} $</b> auf ${n1}, <b>${e2.toFixed(2)} $</b> auf ${n2} → <b>${aus.toFixed(2)} $</b> zurück, egal wie es endet (Aufteilung prozentual, gilt in € genauso)`
       : ''),
@@ -187,7 +200,7 @@ Deno.serve(async (req) => {
     /* ---------- Funkprobe: MUSTER-Meldung im echten Format ---------- */
     if (body.test === true) {
       const muster = meldung({
-        schluessel: 'pm>bf:MUSTER', rendite: 2.34,
+        schluessel: 'pm>bf:MUSTER', _probe: true, rendite: 2.34,
         titel: 'Cincinnati Open: Iga Swiatek vs Diane Parry', mannschaft: 'Iga Swiatek',
         buch_1: 'polymarket', buch: 'betfair',
         pm_seite: 'JA', pm_preis: 0.44, pm_link: PANEL,
