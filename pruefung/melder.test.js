@@ -156,9 +156,35 @@ for (const rel of MELDER) {
   const markiertAlle = /const schluessel = kand\.map/.test(inhalt);
   pruefe(rel.split('/')[2] + ': markiert ALLE geholten Zeilen', markiertAlle, markiertAlle);
 
-  /* Gemeldet werden muss die gruppierte Liste, nicht die rohe. */
-  const meldetGruppiert = /const text = zuMelden\.map/.test(inhalt);
-  pruefe(rel.split('/')[2] + ': meldet die gruppierte Liste', meldetGruppiert, meldetGruppiert);
+  /* Gemeldet werden muss die GRUPPIERTE Liste, nie die rohe. Geprueft
+   * wird beides: dass zuMelden verwendet wird UND dass kand nicht direkt
+   * in die Nachricht laeuft. Sonst faellt die Gruppierung still weg. */
+  const meldetGruppiert = /zuMelden\.map\(/.test(inhalt);
+  const meldetRoh = /kand\.map\([^)]*=>\s*meldung\(/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': meldet die gruppierte Liste', meldetGruppiert && !meldetRoh,
+         { gruppiert: meldetGruppiert, rohVerwendet: meldetRoh });
+
+  /* ---- Verteiler (21.8., Karams Vorgabe "beides") ---- */
+  const nimmtListe = /orion_telegram_empfaenger\?bot=eq\.'\s*\+\s*BOT_NR/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': liest die Empfaengerliste', nimmtListe, nimmtListe);
+
+  const altesEinzelziel = /orion_telegram\?id=eq\.\d/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': KEIN Einzelziel mehr', !altesEinzelziel, altesEinzelziel);
+
+  const bremse = /setTimeout\(\s*\(?r\)?\s*=>\s*setTimeout|await new Promise\(\(r\) => setTimeout\(r, 150\)\)/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': Ratenbremse beim Versand', bremse, bremse);
+
+  const legtStill = /code === 403 \|\| code === 400/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': legt blockierte Empfaenger still', legtStill, legtStill);
+
+  /* Ein Fund darf NIE als gemeldet gelten, wenn ihn niemand bekommen hat. */
+  const nurWennZugestellt = /if \(bericht\.zugestellt === 0\)/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': markiert erst nach Zustellung', nurWennZugestellt, nurWennZugestellt);
+
+  /* Der Beitragslink haengt am Empfaenger, weil beitrag.html hinter dem
+   * Kennwort liegt. Fremde duerfen nicht an die Wand geschickt werden. */
+  const linkJeEmpfaenger = /mit_beitragslink === true/.test(inhalt);
+  pruefe(rel.split('/')[2] + ': Beitragslink je Empfaenger', linkJeEmpfaenger, linkJeEmpfaenger);
 
   /* Die Titel-Normalisierung muss in BEIDEN Dateien definiert sein,
    * sonst ruft die Gruppierung eine Funktion auf, die es nicht gibt. */
