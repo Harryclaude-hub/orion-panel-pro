@@ -3836,3 +3836,65 @@ OFFEN und ehrlich benannt: bei einer DAUERstoerung meldet Job 94 alle
 zwei Stunden erneut. Eine Wiederholungssperre gibt es nicht. Sie waere
 sinnvoll, sobald die erste echte Dauerstoerung zeigt, wie laestig das
 wirklich ist - vorher waere sie ungemessen gebaut.
+
+---
+
+## 9k. GEMELDETES WIRD NICHT MEHR WEGGEPUTZT (22.8.)
+
+### Karams Bedingung
+
+"Solange eine Chance abläuft und in den Verlauf geht, eine knappe Chance
+bei den knappen Chancen bleibt, und es keinen Salat gibt oder Chancen
+irgendwie in die Luft verschwinden - dann passt das."
+
+### Der Fund
+
+Job 91 loeschte stur nach 36 Stunden:
+
+    delete from orion_funde
+     where status = 'vorbei' and vorbei_seit < now() - interval '36 hours';
+
+Ohne jede Ausnahme fuer Gemeldetes. Jede Telegram-Nachricht traegt aber
+einen Link auf `beitrag.html?fund=<schluessel>`. Nach anderthalb Tagen
+haette dieser Link ins Leere gezeigt: die Nachricht steht noch im
+Telefon, der Fund dahinter ist verschwunden. Genau der Fall, den Karam
+ausschliesst.
+
+Eingetreten war er noch nie - gemessen 0 gemeldete Zeilen in 7 Tagen,
+weil es noch keine echte Meldung gab. Er waere bei der ERSTEN echten
+Meldung eingetreten.
+
+### Die Aenderung (Job 91 -> Job 96)
+
+Zwei getrennte Loeschungen statt einer:
+
+    ungemeldet   raus nach 36 Stunden   (wie bisher)
+    gemeldet     raus nach 30 Tagen
+
+Preis: bei 10 Meldungen am Tag waeren das nach 30 Tagen 300 Zeilen -
+gegen 223 Zeilen, die die Tabelle heute insgesamt traegt. Vernachlaessig-
+bar. Bei starkem Anstieg ist die Frist nachzujustieren.
+
+### Gegenprobe
+
+Drei Pruefzeilen angelegt, alle 'vorbei' und drei Tage alt, dann die
+Loeschbefehle des Jobs Wort fuer Wort ausgefuehrt:
+
+    TEST>loesch:ungemeldet   GELOESCHT   richtig
+    TEST>loesch:chance       UEBERLEBT   richtig
+    TEST>loesch:knapp        UEBERLEBT   richtig
+
+Danach restlos entfernt (Gegenprobe 0).
+
+### Die Anzeige haelt schon fest
+
+In js/daten.js sichern drei Stellen, dass Gemeldetes sichtbar bleibt:
+
+    Zeile  50  Verlaufsabruf holt telegram_gemeldet/knapp_gemeldet mit
+    Zeile 503  Verlaufsfilter wirft Gemeldetes nie als Rauschen weg
+    Zeile 741  Sichtbarkeitsregel laesst Gemeldetes immer durch
+
+Damit greift die Kette lueckenlos: gemeldet -> bleibt sichtbar ->
+laeuft ab -> steht im Verlauf -> wird 30 Tage nicht angeruehrt ->
+und wer es dauerhaft will, speichert es in orion_gespeichert, wo es
+ueberhaupt nie angefasst wird.
