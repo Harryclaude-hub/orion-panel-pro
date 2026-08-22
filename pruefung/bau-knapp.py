@@ -54,8 +54,7 @@ TAUSCH = [
     (r"const TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN') ?? '';",
      r"const TOKEN = Deno.env.get('TELEGRAM_BOT_TOKEN_KNAPP') ?? '';"),
     (r"const BOT_NR = 1;", r"const BOT_NR = 2;"),
-    (r"TELEGRAM_BOT_TOKEN fehlt als Geheimnis",
-     r"TELEGRAM_BOT_TOKEN_KNAPP fehlt als Geheimnis"),
+    (r"TELEGRAM_BOT_TOKEN fehlt", r"TELEGRAM_BOT_TOKEN_KNAPP fehlt"),
     (r"telegram_gemeldet", r"knapp_gemeldet"),
 
     # Kandidatenband
@@ -70,7 +69,7 @@ TAUSCH = [
     # Nachrichtentext
     (r"    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} %</b>`,",
      r"    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} %</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,"),
-    (r"      ? `\u{1F9EE} Bei 100 $ Einsatz: <b>${e1.toFixed(2)} $</b> auf ${n1}, <b>${e2.toFixed(2)} $</b> auf ${n2} → <b>${aus.toFixed(2)} $</b> zurück, egal wie es endet (Aufteilung prozentual, gilt in € genauso)`",
+    (r"      ? `\u{1F9EE} Bei 100 $ Einsatz: <b>${e1.toFixed(2)} $</b> auf ${n1}, <b>${e2.toFixed(2)} $</b> auf ${n2} → <b>${aus.toFixed(2)} $</b> zurück, egal wie es endet`",
      r"      ? `\u{1F9EE} Bei 100 $ Einsatz kämen <b>${aus.toFixed(2)} $</b> zurück (${e1.toFixed(2)} $ auf ${n1}, ${e2.toFixed(2)} $ auf ${n2})`"),
     (r"    `\u{1F4B0} Einsatz bis <b>${geld(f.max_einsatz)}</b> · holbar ~<b>${geld(f.max_gewinn)}</b>`,",
      r"    `\u{1F4B0} Platz bis <b>${geld(f.max_einsatz)}</b> Einsatz, falls es kippt`,"),
@@ -89,10 +88,10 @@ TAUSCH = [
      r"max_einsatz: 120, max_gewinn: 0.5, _weitere: 4"),
 
     # Verweise
-    (r"'kein aktiver Empfaenger in orion_telegram_empfaenger'",
-     r"'kein aktiver Empfaenger in orion_telegram_empfaenger (bot 2)'"),
-    (r"SPIEGEL: dieselbe Funktion in orion-melder-knapp.",
-     r"SPIEGEL: dieselbe Funktion in orion-melder-telegram."),
+    (r"'kein aktiver Empfaenger'",
+     r"'kein aktiver Empfaenger (bot 2)'"),
+    (r"SPIEGEL: gleiche Funktion in orion-melder-knapp.",
+     r"SPIEGEL: gleiche Funktion in orion-melder-telegram."),
 ]
 
 fehlend = []
