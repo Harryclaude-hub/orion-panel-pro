@@ -3011,3 +3011,92 @@ praktisch nichts. Der Egress-Feldzug bleibt davon unberuehrt.
 „ich logge mich neu ein" reicht das; wer laenger zurueckblaettern will,
 muss Job 91 anfassen. Das ist Karams Freigabe vom 20.8. und bleibt, bis
 er etwas anderes sagt.
+
+---
+
+## 9a. VERTEILER: NICHT MEHR NUR EIN EMPFAENGER (21.8.)
+
+Karams Meldung: „nur ich bekomm das. Jeder, der diesem Bot beigetreten
+ist, kriegt die nicht." Auf Nachfrage: Kanal UND Abonnenten, und
+„stell sicher, dass jeder Community-Teilnehmer die Meldungen bekommt".
+
+### Der Befund
+
+`orion_telegram` trug GENAU EINE Zeile je Bot, beide mit Karams
+chat_id. Der Code holte `id=eq.1` und sendete an diese eine Adresse.
+Ein Verteiler existierte nicht.
+
+Beweis aus dem Betrieb: beide Bots kannten den Chat **6921758376
+(„Felix_2044")**. Er hatte beiden geschrieben und bekam nie etwas.
+
+### Gebaut
+
+**Neue Tabelle `orion_telegram_empfaenger`** (Migration
+`telegram_empfaengerliste`, angewendet). Je Bot beliebig viele Zeilen:
+
+    art='direkt'   Karams eigener Chat
+    art='kanal'    ein Telegram-Kanal, in dem der Bot Admin ist
+    art='abo'      jemand, der dem Bot selbst geschrieben hat
+
+Die alte Tabelle bleibt unangetastet stehen. Sie zu loeschen waere ein
+unnoetiges Risiko an einer laufenden Kette.
+
+**Beide Melder** senden an alle aktiven Empfaenger, mit vier
+Vorkehrungen, die ein Verteiler zwingend braucht:
+
+  1. **Ratenbremse** 150 ms (Telegram nimmt rund 30 je Sekunde)
+  2. **Stilllegen** bei 403/400 mit Grund und Zeit. Voruebergehende
+     Fehler (429, 500) kosten den Empfaenger NICHT
+  3. **Markierung erst nach Zustellung** an mindestens einen. Sonst
+     gilt ein Fund als gemeldet, den niemand gesehen hat
+  4. **Beitragslink je Empfaenger** (`mit_beitragslink`): beitrag.html
+     liegt hinter dem Kennwort, Fremde liefen dort an die Wand. Sie
+     bekommen die volle Information, nur ohne Verweise
+
+Neu: `{"abholen": true}` traegt alle, die dem Bot geschrieben haben, als
+`abo` ein. `{"einrichten": true}` nennt jetzt ausdruecklich, WER nichts
+bekommt.
+
+### Der Knapp-Bot wird ERZEUGT, nicht gepflegt
+
+`pruefung/bau-knapp.py` baut ihn aus dem Chancen-Bot und aendert nur die
+Unterschiede (Botnummer, Geheimnis, Band, Markierungsspalte, Muster).
+Zwei handgepflegte Drillinge laufen auseinander; jetzt steht an EINER
+Stelle, worin sie sich unterscheiden duerfen. Das Skript bricht ab, wenn
+eine erwartete Stelle in der Quelle fehlt.
+
+### Pruefstand
+
+`melder.test.js` prueft jetzt zusaetzlich je Melder: liest die
+Empfaengerliste, KEIN Einzelziel mehr, Ratenbremse, Stilllegen,
+Markierung erst nach Zustellung, Beitragslink je Empfaenger. Er hat den
+Umbau selbst gefangen: „meldet die gruppierte Liste" wurde rot, weil
+sich die Zeile geaendert hatte. Genau sein Zweck.
+
+### OFFEN: der Deploy braucht Karams Doppelklick
+
+Der Supabase-MCP-Deploy scheitert bei diesen Dateien reproduzierbar
+(dreimal versucht): ab etwa 15 KB kommt das Dateiarray als Text an und
+Zod lehnt ab. Kleinere Dateien gingen vorher durch, diese nicht mehr.
+
+**`DEPLOY-MELDER.cmd` erledigt jetzt alles in einem Durchgang:** beide
+Bots ausrollen, danach `abholen` (traegt neue Abonnenten ein) und
+`einrichten` (zeigt, wer noch nichts bekommt). Die Funkprobe wurde
+BEWUSST entfernt, siehe 8y.
+
+Bereits eingetragen und wartend:
+
+    Bot 1  6795362180  direkt  Karam        mit Beitragslink
+    Bot 1  6921758376  abo     Felix_2044   ohne Beitragslink
+    Bot 2  6795362180  direkt  Karam        mit Beitragslink
+    Bot 2  6921758376  abo     Felix_2044   ohne Beitragslink
+
+Bis zum Doppelklick lesen die laufenden Fassungen weiter die ALTE
+Tabelle und senden nur an Karam.
+
+### Fuer den Kanal
+
+Kanal anlegen, beide Bots als Admin hinzufuegen, EINE Nachricht in den
+Kanal schreiben (sonst sieht getUpdates ihn nicht), dann
+DEPLOY-MELDER.cmd erneut doppelklicken. Der Kanal wird als `art='kanal'`
+automatisch eingetragen.

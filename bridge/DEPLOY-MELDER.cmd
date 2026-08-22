@@ -52,7 +52,7 @@ if "%TOKEN%"=="" (
 )
 
 echo.
-echo   [1/4] Node pruefen ...
+echo   [1/5] Node pruefen ...
 where node >nul 2>nul
 if errorlevel 1 (
   echo         FEHLER: Node fehlt. Einmalig holen:
@@ -65,13 +65,13 @@ echo         in Ordnung.
 
 set "SUPABASE_ACCESS_TOKEN=%TOKEN%"
 
-echo   [2/4] Chancen-Bot ausrollen ...
+echo   [2/5] Chancen-Bot ausrollen ...
 echo.
 call npx --yes supabase@latest functions deploy orion-melder-telegram --project-ref noexklrgtqveiclijdwp --no-verify-jwt
 set ERG1=%errorlevel%
 
 echo.
-echo   [3/4] Knapp-Bot ausrollen ...
+echo   [3/5] Knapp-Bot ausrollen ...
 echo.
 call npx --yes supabase@latest functions deploy orion-melder-knapp --project-ref noexklrgtqveiclijdwp --no-verify-jwt
 set ERG2=%errorlevel%
@@ -83,18 +83,36 @@ echo.
 if not "%ERG1%"=="0" goto :schiefgegangen
 if not "%ERG2%"=="0" goto :schiefgegangen
 
-echo   [4/4] FUNKPROBE - beide Bots schicken ein MUSTER in deinen Chat.
-echo         Pruefe dort: die zwei Buchzeilen muessen "ansehen" heissen
-echo         und auf harryclaude-hub.github.io zeigen, NICHT auf
-echo         polymarket.com / smarkets.com / betfair.
+echo   [4/5] ABONNENTEN ABHOLEN - jeder, der einem Bot geschrieben hat,
+echo         wird als Empfaenger eingetragen. Ohne Beitragslink, weil
+echo         beitrag.html hinter dem Kennwort liegt.
 echo.
-curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-telegram" -H "content-type: application/json" -d "{\"test\":true}"
+curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-telegram" -H "content-type: application/json" -d "{\"abholen\":true}"
 echo.
-curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-knapp" -H "content-type: application/json" -d "{\"test\":true}"
+curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-knapp" -H "content-type: application/json" -d "{\"abholen\":true}"
+echo.
+echo.
+echo   [5/5] WER BEKOMMT WAS - Liste beider Bots.
+echo         Steht unter BEKOMMEN_NICHTS noch jemand, hat er dem Bot
+echo         geschrieben, ist aber nicht eingetragen.
+echo.
+curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-telegram" -H "content-type: application/json" -d "{\"einrichten\":true}"
+echo.
+curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-knapp" -H "content-type: application/json" -d "{\"einrichten\":true}"
 echo.
 echo.
 echo   ============================================================
-echo   FERTIG. Beide Bots stehen auf dem neuen Stand.
+echo   FERTIG. Beide Bots stehen auf dem neuen Stand und senden an
+echo   ALLE eingetragenen Empfaenger.
+echo.
+echo   ABSICHTLICH KEINE FUNKPROBE: Testnachrichten sahen zuletzt wie
+echo   echte Funde aus und haben verwirrt. Wer eine will, ruft
+echo   {"test":true} von Hand auf (Befehl in BEFEHLE.txt).
+echo.
+echo   KANAL NACHTRAGEN: Kanal anlegen, beide Bots als Admin
+echo   hinzufuegen, EINE Nachricht in den Kanal schreiben, dann diese
+echo   Datei nochmal doppelklicken. Der Kanal wird dann automatisch
+echo   als Empfaenger eingetragen.
 echo   ============================================================
 echo.
 pause
