@@ -3100,3 +3100,96 @@ Kanal anlegen, beide Bots als Admin hinzufuegen, EINE Nachricht in den
 Kanal schreiben (sonst sieht getUpdates ihn nicht), dann
 DEPLOY-MELDER.cmd erneut doppelklicken. Der Kanal wird als `art='kanal'`
 automatisch eingetragen.
+
+---
+
+## 9b. FUSSBALL-SCANNER TOT, ELF STUNDEN LANG (22.8.)
+
+Karams Meldung: „warum ist alles in den knappsten Paaren und Verlauf weg
+und es nichts gekommen oder verschwunden."
+
+### Zwei Ursachen, eine davon mein Versaeumnis
+
+**1. Der Aufraeum-Takt loeschte die gemeldeten Zeilen.**
+Job 91 lief um 05:20 und nahm alle beendeten Funde aelter als 24 h mit,
+AUCH die gemeldeten. Von 456 Zeilen blieben 56, gemeldete: **null**.
+Damit fuehrte jeder aeltere Telegram-Link ins Leere.
+
+Ich hatte diese Luecke in 8z selbst benannt und offen gelassen. Karams
+Regel „was gemeldet wurde, verschwindet nie" galt an drei von vier
+Stellen. Eine Regel, die nicht ueberall gilt, ist keine Regel.
+
+BEHOBEN: Job 91 verschont gemeldete Zeilen und haelt sie **sieben Tage**.
+Nachgeprueft, die Ausnahme steht im Job und er ist aktiv. Die bereits
+geloeschten Zeilen sind unwiederbringlich weg.
+
+**2. Der Fussball-Scanner starb an WORKER_RESOURCE_LIMIT.**
+
+    letzter erfolgreicher Fussball-Lauf   21.08. 23:36
+    Befund beim Probelauf                 WORKER_RESOURCE_LIMIT
+    andere Bereiche (Tennis/Baseball/     laufen in 361-660 ms durch
+    Football/Golf)
+
+**Das Perfide: pg_cron meldete durchgehend „succeeded"**, 30 Laeufe in
+60 Minuten, null Fehler. Der Job setzt den Aufruf nur ab; die Funktion
+stirbt danach. Elf Stunden ohne einen einzigen Fussball-Fund, und kein
+Takt, kein Fehlerzaehler, kein Waechter hat es gezeigt. Die
+Fehlerklasse „stiller Fehlschlag" in Reinform, diesmal eine Ebene
+hoeher als sonst: nicht im Code, sondern zwischen Cron und Funktion.
+
+Gefunden nur, weil der Probelauf von Hand aufgerufen wurde. LEHRE: ein
+gruener Takt beweist, dass der ANRUF ging, nicht dass jemand abgehoben
+hat.
+
+### Warum ausgerechnet Fussball
+
+Fussball ist der groesste Datensatz UND der einzige Bereich, der
+zusaetzlich den Smarkets-Schnappschuss laedt (rund 900 Maerkte) und
+einen zweiten Paarungsdurchgang faehrt. Gemessen im letzten geglueckten
+Lauf: 1014 Polymarket-Maerkte, 512 von der Bridge, dazu Kalshi und
+Smarkets. Der Kopfkommentar der Datei kennt den Fehler schon von
+frueher: die Bereichstrennung vom 11.8. war die damalige Antwort
+darauf. Jetzt ist Fussball allein zu gross geworden.
+
+### Gebaut: stueckweise statt alles auf einmal (Karams Wahl)
+
+1. **Orderbuecher blockweise.** Vorher: erst eine vollstaendige
+   Token-Liste (ueber 2000 Eintraege), daraus je Block eine slice-Kopie,
+   daraus nochmal ein Objekt-Array — drei Haltungen derselben Daten.
+   Jetzt wird Block fuer Block direkt aus `maerkte` gefuellt, ein Rumpf
+   von hoechstens 250 Eintraegen lebt zur Zeit und wird sofort
+   freigegeben. Ergebnis identisch, Spitzenbedarf faellt.
+2. **Betfair-Rohliste freigeben.** `bfSieger` und `bfOu` sind eigene
+   Kopien; die Rohliste danebenliegen zu lassen war bei Fussball eine
+   Doppelhaltung von ueber 500 Maerkten. Zahl gemerkt, Liste geleert.
+3. **Smarkets-Rohliste freigeben.** Dasselbe mit rund 900 Maerkten,
+   ausgerechnet im Bereich, der ohnehin am meisten laedt.
+
+An den Rechenwegen, an der Paarung und an den Schwellen **keine Zeile**.
+
+### Noch nicht bewiesen
+
+Ob die Entlastung reicht, zeigt erst der Trockenlauf nach dem Deploy.
+**DEPLOY-JETZT.cmd prueft jetzt FUSSBALL statt Tennis** — genau den
+Bereich, der gestorben ist. Kommt dort „ok": true mit pm_maerkte, ist
+es weg; kommt wieder WORKER_RESOURCE_LIMIT, reicht es nicht und der
+naechste Schritt waere, das Zeitfenster fuer Fussball zu verengen.
+
+**Nicht ausgeschlossen:** Supabase kann die Rechenleistung gedrosselt
+haben, weil das Egress-Limit im August gerissen wurde (339 %). Dann
+hilft kein Umbau, sondern nur der Zaehler. Das ist UNGEMESSEN.
+
+    spiegel 19896 · vollpruefung 36 · zuordnung 296
+    rechnung 195 · melder alle        gruen
+    Klammernbalance der geaenderten Datei geprueft: ausgeglichen
+
+### Telegram: gleiche Nachricht fuer alle
+
+Karams Vorgabe: „ich will, dass jeder die gleiche Nachricht bekommt,
+auch mit allen Links." Umgesetzt ohne Deploy, reine Datenaenderung:
+alle vier Empfaengerzeilen auf `mit_beitragslink = true`, und der
+Standard fuer neue Abonnenten steht jetzt ebenfalls auf true.
+
+Damit landen Fremde beim Klick auf die Kennwortwand von beitrag.html.
+Das ist Karams bewusste Entscheidung; wer die Links nutzen soll,
+braucht das Kennwort von ihm.

@@ -233,28 +233,62 @@ Deno.serve(async (req) => {
     const maerkte = [...nachId.values()];
     nachId.clear();
 
-    // ---------- Orderbuecher, mit MENGEN ----------
-    const alleTokens: string[] = [];
-    for (const m of maerkte) for (const t of m.tokens) alleTokens.push(t);
+    /* ---------- Orderbuecher, mit MENGEN ----------
+     *
+     * STUECKWEISE STATT ALLES AUF EINMAL (22.8.2026, Karams Wahl).
+     *
+     * ANLASS: der Fussball-Lauf starb ab 21.8. 23:36 an
+     * WORKER_RESOURCE_LIMIT. Alle anderen Bereiche liefen weiter in unter
+     * einer Sekunde durch — Fussball ist der groesste Datensatz und der
+     * einzige, der zusaetzlich Smarkets laedt. Der Cron-Job meldete dabei
+     * "succeeded", weil er den Aufruf nur absetzt; die Funktion starb
+     * danach. Elf Stunden ohne einen einzigen Fussball-Fund, ohne dass
+     * ein Takt oder ein Fehlerzaehler es gezeigt haette.
+     *
+     * VORHER wurde erst eine vollstaendige Token-Liste aufgebaut
+     * (alleTokens, bei Fussball ueber 2000 Eintraege), daraus je Block
+     * eine Kopie mit slice() gezogen und daraus nochmal ein Array von
+     * Objekten fuer den Rumpf. Drei Haltungen derselben Daten
+     * nebeneinander, zusaetzlich zu den Maerkten.
+     *
+     * JETZT wird Block fuer Block direkt aus `maerkte` gefuellt: ein
+     * Rumpf von hoechstens 250 Eintraegen lebt zur Zeit, danach ist er
+     * weg. Behalten wird nur, was gebraucht wird — bester Preis und
+     * Menge je Token. Das Ergebnis ist identisch, nur der Spitzenbedarf
+     * faellt. */
     const preise = new Map<string, { p: number; menge: number }>();
-    for (let i = 0; i < alleTokens.length; i += 250) {
-      const r = await wiederholt('https://clob.polymarket.com/books', {
-        method: 'POST', headers: { 'content-type': 'application/json' },
-        body: JSON.stringify(alleTokens.slice(i, i + 250).map(t => ({ token_id: t })))
-      });
-      if (!r || !r.ok) continue;
-      const buecher = await r.json();
-      if (!Array.isArray(buecher)) continue;
-      for (const b of buecher) {
-        const id = String(b.asset_id || b.market || '');
-        if (!Array.isArray(b.asks) || !b.asks.length) continue;
-        let min = Infinity, menge = 0;
-        for (const a of b.asks) {
-          const p = parseFloat(a.price);
-          if (p > 0 && p < min) { min = p; menge = parseFloat(a.size) || 0; }
+    {
+      let rumpf: { token_id: string }[] = [];
+
+      const blockHolen = async () => {
+        if (rumpf.length === 0) return;
+        const r = await wiederholt('https://clob.polymarket.com/books', {
+          method: 'POST', headers: { 'content-type': 'application/json' },
+          body: JSON.stringify(rumpf)
+        });
+        rumpf = [];                    // Rumpf sofort freigeben
+        if (!r || !r.ok) return;
+        const buecher = await r.json();
+        if (!Array.isArray(buecher)) return;
+        for (const b of buecher) {
+          const id = String(b.asset_id || b.market || '');
+          if (!Array.isArray(b.asks) || !b.asks.length) continue;
+          let min = Infinity, menge = 0;
+          for (const a of b.asks) {
+            const p = parseFloat(a.price);
+            if (p > 0 && p < min) { min = p; menge = parseFloat(a.size) || 0; }
+          }
+          if (min < Infinity) preise.set(id, { p: min, menge });
         }
-        if (min < Infinity) preise.set(id, { p: min, menge });
+      };
+
+      for (const m of maerkte) {
+        for (const t of m.tokens) {
+          rumpf.push({ token_id: t });
+          if (rumpf.length >= 250) await blockHolen();
+        }
       }
+      await blockHolen();              // der letzte, unvollstaendige Block
     }
 
     // ---------- Betfair: nur Maerkte DIESES Bereichs ----------
@@ -275,6 +309,13 @@ Deno.serve(async (req) => {
     }
     const bfSieger = bfImFenster.filter(m => m.mt === 'MATCH_ODDS');
     const bfOu = bfImFenster.filter(m => Z.bfOuLinie(m.mt) !== null);
+    /* Ab hier wird von der ROHEN Betfair-Liste nur noch die ANZAHL
+     * gebraucht (Bericht unten). bfSieger und bfOu sind eigene Kopien;
+     * die Rohliste daneben liegen zu lassen ist bei Fussball eine
+     * vermeidbare Doppelhaltung von ueber 500 Maerkten. Zahl merken,
+     * Liste freigeben. */
+    const bfAnzahl = bfImFenster.length;
+    bfImFenster = [];
 
     // ---------- Kalshi: nur Serien DIESES Bereichs ----------
     /* EGRESS-BREMSE 20.8.: vorher kam der GANZE Schnappschuss (208 KB) und
@@ -319,6 +360,12 @@ Deno.serve(async (req) => {
     }
     const smNachArt: Record<string, any[]> = {};
     for (const m of smAlle) (smNachArt[m.art] = smNachArt[m.art] || []).push(m);
+    /* Wie bei Betfair: smNachArt haelt die Maerkte bereits, die Rohliste
+     * daneben ist eine Doppelhaltung von rund 900 Eintraegen — und das
+     * ausgerechnet im einzigen Bereich, der ohnehin am meisten laedt.
+     * Zahl merken, Liste freigeben. */
+    const smAnzahl = smAlle.length;
+    smAlle = [];
     const smSieger = smNachArt['sieger'] || [];
     const smHalbzeit = smNachArt['halbzeit'] || [];
     const smBtts = smNachArt['btts'] || [];
@@ -786,7 +833,7 @@ Deno.serve(async (req) => {
         pm_maerkte: maerkte.length, je_art: jeArt,
         sieger_ohne_ausgang: siegerOhneAusgang,
         kalshi_maerkte: kalshi.length, kalshi_anderer_bereich: kaAnderesFach,
-        betfair_maerkte: bfImFenster.length, smarkets_maerkte: smAlle.length,
+        betfair_maerkte: bfAnzahl, smarkets_maerkte: smAnzahl,
         karte_ok: karteOk,
         paare: zeilen.length,
         zuordnungen: zeilen.slice(0, 200).map(z => ({
@@ -848,13 +895,13 @@ Deno.serve(async (req) => {
     return new Response(JSON.stringify({
       ok: true, bereich, dauer_ms: Date.now() - t0,
       betfair_aktiv: BETFAIR_AKTIV,
-      betfair: { geladen: bfImFenster.length, sieger: bfSieger.length,
+      betfair: { geladen: bfAnzahl, sieger: bfSieger.length,
                  ueber_unter: bfOu.length, alter_s: bfAlterS },
       pm_maerkte: maerkte.length, je_art: jeArt,
       sieger_ohne_ausgang: siegerOhneAusgang,
       kalshi_maerkte: kalshi.length, kalshi_alter_s: kaAlterS,
       kalshi_anderer_bereich: kaAnderesFach,
-      smarkets_maerkte: smAlle.length, smarkets_alter_s: smAlterS,
+      smarkets_maerkte: smAnzahl, smarkets_alter_s: smAlterS,
       smarkets_je_art: smJeArt,
       bereich_verworfen: bereichVerworfen,
       karte_ok: karteOk,
