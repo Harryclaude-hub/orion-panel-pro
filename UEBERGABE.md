@@ -3414,3 +3414,76 @@ Scanner-Absturz aus 9b.
 
 NICHT von hier aus geaendert: die Bridge ist Karams Laufzeit, ein
 Eingriff waehrend des Betriebs braucht seine Ansage.
+
+---
+
+## 9f. REINIGUNG DER WEBSITE (22.8., Karams Auftrag)
+
+Karams Ansage: „Tu alle unnoetigen ueberfluessigen Codezeilen rausnehmen,
+behalt dein Design gleich, behalt die Logik gleich." Dazu: Loeschung auf
+36 Stunden.
+
+### Neu: pruefung/totes-finden.js
+
+Ein Werkzeug, das toten Code sucht und **nie etwas aendert**. Es meldet
+CSS-Klassen ohne Fundstelle, unbenutzte und doppelte Keyframes, Seiten
+ohne eingehenden Link und Funktionen ohne Aufruf.
+
+Warum nur melden: ein Selektor, der dynamisch zusammengesetzt wird
+(`'bk-' + name`), sieht tot aus und ist es nicht. Jeder Fund gehoert von
+Hand geprueft. Genau das hat sich sofort ausgezahlt, siehe unten.
+
+### Entfernt, jedes Stueck einzeln nachgewiesen
+
+**Die alte Ring-Optik des Pulses, 58 Zeilen.** `p-ring`, `p-bogen`,
+`p-led`, `p-punkt`, `p-welle` und ihre vier Keyframes. Das Sonar hat sie
+laengst ersetzt; `puls.js` schreibt seither ausschliesslich `s`-Klassen.
+Mit Wortgrenzen gegen alle HTML- und JS-Dateien geprueft: keine einzige
+Fundstelle. Am lebenden Panel nachgemessen: **0 Elemente mit p-Klasse,
+59 mit s-Klasse.**
+
+**`.rendite-gut` und `.rendite-schlecht`** — tot, zwei Zeilen.
+
+**`@keyframes flug-rauf` und `flug-runter`** — Reste der am 20.8.
+geloeschten buehne.js.
+
+**Zwei doppelte Keyframes** (`hero-scan-zug`, `kachel-streif`): die
+ERSTE Definition faellt, die spaetere gewann ohnehin. Nachgeprueft, dass
+beide jetzt genau einmal dastehen.
+
+**`muster-hud.html`, 30 KB.** Musterseite, nirgends verlinkt, nicht im
+Betrieb.
+
+    stil.css   124 565 -> 121 039 Bytes
+    Dateien    eine weniger
+
+### NICHT entfernt, mit Begruendung
+
+**`fu-log` und `fu-eingabe`** sahen tot aus. Sie gehoeren zum lebenden
+Funker-Chat, den `stimme.js` baut (`fu-zeile`, `fu-kopf`, `fu-stumm`,
+`fu-zu` sind dort nachweisbar). Sechs Zeilen Gewinn sind das Risiko
+nicht wert, ein laufendes Fenster zu zerlegen.
+
+**`w3`** war ein Falsch-Positiv: es stammt aus `www.w3.org` in einer
+eingebetteten SVG-Grafik, nicht aus einem Klassennamen.
+
+**`.marker`** steht in einer Regel zusammen mit `.urteil.rot`. Nur den
+toten Selektor herauszuschneiden waere Feinarbeit an einer lebenden
+Regel, fuer eine halbe Zeile Gewinn.
+
+**Die beiden `.puls`-Definitionen** bleiben beide stehen. Die zweite
+(Sonar) ueberschreibt die erste, aber ob sie WIRKLICH jede Eigenschaft
+neu setzt, ist ungeprueft. Karams Vorgabe war „Design gleich lassen".
+
+### Nachgewiesen
+
+    spiegel 19896 · vollpruefung 36 · zuordnung 296
+    rechnung 195 · melder alle                       gruen
+    Panel geladen: Puls, Kopf, Kacheln, Bereichskarten, Statistik,
+                   Fuss - alle sichtbar, Hoehen unveraendert
+    Konsole: keine Fehler
+
+### Aufraeumtakt jetzt 36 Stunden
+
+    Funde         vorbei + 36 h  (war 24 h)
+    Gespeichertes wird nie angefasst, geprueft ueber das Kommando selbst

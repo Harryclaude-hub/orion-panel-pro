@@ -78,8 +78,7 @@ erreichbaren** Seiten (`angaben.html`, `regelwerk.html`) plus das Panel.
 
 **Kennwort-Tor, gemessen 20.8., korrigiert 21.8.:** `sperre.js` laden
 index, logik, knoepfe, einstellungen, gespeichert und beitrag. **OHNE
-Tor** sind `angaben.html`, `regelwerk.html`, `bridge-setup.html` und
-`muster-hud.html`. Wer von einer offenen Seite nach `logik.html`
+Tor** sind `angaben.html`, `regelwerk.html` und `bridge-setup.html`. Wer von einer offenen Seite nach `logik.html`
 verlinkt, schickt den Leser in die Kennwortwand (so steht es in
 bridge-setup).
 
@@ -97,9 +96,9 @@ angaben/logik/knoepfe/regelwerk/einstellungen noch auf `v=54` (CSS) und
 diese Seiten schon einmal besucht hatte, bekam **stil.css und sperre.js
 aus dem alten Cache**: die Farbwelt von VOR dem Rückbau (also noch mit
 Orange) und eine alte Fassung des Tors. Alle Betriebsseiten stehen jetzt
-auf `v=75` (Stand nach dem Link-Umbau, 8u). **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
+auf `v=76`. **Regel: wird eine gemeinsame Datei geändert, ziehen ALLE
 Seiten ihre Marke mit**, sonst laufen wieder zwei Fassungen nebeneinander.
-(`muster-hud.html` bleibt auf `v=52`: Musterseite, nicht im Betrieb.)
+(`muster-hud.html` wurde am 22.8. entfernt: Musterseite, nirgends verlinkt.)
 
 ## Server-Funktionen im Repo (`supabase/functions/`)
 

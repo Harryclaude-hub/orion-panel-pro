@@ -176,8 +176,6 @@ button.gesperrt { opacity: .5; }
 /* Aktionsspalte NIE mit fester Breite und overflow:hidden (Fehlerklasse 9) */
 .fund .aktionen a.knopf { text-decoration: none; display: inline-flex; align-items: center; }
 
-.rendite-gut { color: var(--gruen); }
-.rendite-schlecht { color: var(--text-leise); }
 
 .leise { color: var(--text-leise); font-size: 14px; }
 .warnung {
@@ -484,64 +482,12 @@ h2 {
     rgba(255,255,255,.02);
   overflow: hidden; position: relative;
 }
-.p-ring { position: relative; width: 132px; height: 132px; flex: 0 0 132px; }
-.p-svg { width: 100%; height: 100%; transform: rotate(-90deg); }
-.p-bahn  { fill: none; stroke: rgba(255,255,255,.07); stroke-width: 6; }
-.p-bogen { fill: none; stroke: url(#p-lauf); stroke-width: 6; stroke-linecap: round;
-           stroke-dasharray: 90 240; opacity: .95; }
-.p-bogen2{ fill: none; stroke: rgba(255,255,255,.16); stroke-width: 2; stroke-linecap: round;
-           stroke-dasharray: 30 220; }
-
-/* Der Ring dreht sich NUR, wenn der Scanner frisch gelaufen ist. */
-.puls.p-an  .p-bogen  { animation: p-dreh 2.4s linear infinite; }
-.puls.p-an  .p-bogen2 { animation: p-dreh 3.6s linear infinite reverse; }
-.puls.p-tot .p-bogen  { stroke: #FF6B85; opacity: .5; }
-.puls.p-tot .p-bogen2 { stroke: rgba(239,68,68,.35); }
-@keyframes p-dreh { to { transform: rotate(360deg); } }
-.p-bogen, .p-bogen2 { transform-origin: 60px 60px; }
-
-.p-mitte { position: absolute; inset: 0; display: flex; flex-direction: column;
-           align-items: center; justify-content: center; pointer-events: none; }
-.p-zahl { font-size: 30px; font-weight: 700; letter-spacing: -.5px; line-height: 1; }
-.p-wort { font-size: 11px; opacity: .55; margin-top: 3px; }
-
-/* Ein Schlag, wenn ein NEUER Lauf angekommen ist. */
-.p-welle { position: absolute; inset: 0; border-radius: 50%; pointer-events: none; }
-.p-welle.p-schlag { animation: p-schlag 1s ease-out 1; }
-@keyframes p-schlag {
-  0%   { box-shadow: 0 0 0 0 rgba(0,196,140,.45); }
-  100% { box-shadow: 0 0 0 28px rgba(0,196,140,0); }
-}
-
-.p-seite { flex: 1; min-width: 0; }
-.p-kopf { display: flex; align-items: center; gap: 9px; font-size: 15px; margin-bottom: 10px; }
-.p-led { width: 10px; height: 10px; border-radius: 50%; background: var(--tot); flex: 0 0 10px; }
-.p-led.p-gruen { background: var(--gut); box-shadow: 0 0 12px var(--gut); animation: p-blink 1.6s ease-in-out infinite; }
-.p-led.p-rot   { background: #FF6B85; box-shadow: 0 0 12px #FF6B85; }
-.p-led.p-grau  { background: var(--tot); }
-@keyframes p-blink { 0%,100% { opacity: 1; } 50% { opacity: .35; } }
-
-.p-punkte { display: flex; gap: 10px; margin-bottom: 9px; }
-.p-punkt { width: 13px; height: 13px; border-radius: 50%; opacity: .22;
-           transition: opacity .3s, box-shadow .3s; }
-.p-punkt.pm { background: var(--pm); }
-.p-punkt.ka { background: var(--ka); }
-.p-punkt.sm { background: var(--sm); }
-.p-punkt.bf { background: var(--bf); }
-.p-punkt.p-frisch { opacity: 1; }
-.puls.p-an .p-punkt.p-frisch { animation: p-atmen 2.2s ease-in-out infinite; }
-.p-punkt.p-alt { opacity: .45; }
-/* Abgeschaltet heisst KEINE Aktualitaet - der Punkt bleibt stumm und blass. */
-.p-punkt.p-aus { opacity: .12; filter: grayscale(1); animation: none !important; }
-@keyframes p-atmen { 0%,100% { transform: scale(1); } 50% { transform: scale(1.28); } }
-
-.p-fuss { font-size: 12px; opacity: .6; }
-
-/* Wer Bewegung abgestellt hat, bekommt keine. Der Zustand bleibt lesbar,
-   er wird nur nicht animiert. */
-@media (prefers-reduced-motion: reduce) {
-  .p-bogen, .p-bogen2, .p-led, .p-punkt, .p-welle { animation: none !important; }
-}
+/* HIER LAG DIE ALTE RING-OPTIK DES PULSES (p-ring, p-bogen, p-led,
+ * p-punkt und ihre Keyframes p-dreh/p-schlag/p-blink/p-atmen).
+ * Das Sonar weiter unten hat sie ersetzt; puls.js schreibt seither
+ * ausschliesslich s-Klassen. Am 22.8.2026 mit Wortgrenzen-Pruefung
+ * gegen alle HTML- und JS-Dateien als tot nachgewiesen und entfernt:
+ * 58 Zeilen, keine davon hatte noch eine Fundstelle. */
 @media (max-width: 640px) {
   .puls { flex-direction: column; align-items: flex-start; gap: 16px; }
 }
@@ -1516,8 +1462,6 @@ header.kopf.hero > * { position: relative; z-index: 2; }
   background: linear-gradient(180deg, transparent, rgba(var(--sonar-rgb), .05), transparent);
   animation: hero-scan-zug 7s linear infinite;
 }
-@keyframes hero-scan-zug { to { transform: translateY(260px); } }
-
 /* Eckwinkel wie auf der Zieloptik. */
 .hero-eck { position: absolute; width: 16px; height: 16px; border: 2px solid rgba(var(--sonar-rgb), .5); }
 .hero-eck.e1 { left: 6px;  top: 6px;    border-right: 0; border-bottom: 0; }
@@ -1779,8 +1723,6 @@ body:has(#funker.offen) #funker-knopf .avatar svg { width: 74px; height: 74px; }
   background-size: 300% 100%;
   animation: kachel-streif 9s linear infinite;
 }
-@keyframes kachel-streif { 0% { background-position: 120% 0; } 100% { background-position: -60% 0; } }
-
 /* Stufen-Drossel: Streif nur im vollen Kino, Puls ab Standard. */
 html.anim-1 #kacheln::after, html.anim-2 #kacheln::after { animation: none; opacity: 0; }
 html.anim-1 .kachel .wert.frisch { animation: none; }
@@ -1886,19 +1828,7 @@ body.ansicht-listen #orion-puls { display: none; }
 /* Links fliegt die Staffel ABWAERTS — Nase nach unten. */
 
 
-@keyframes flug-runter {
-  0%   { transform: translateY(0); opacity: 0; }
-  6%   { opacity: .5; }
-  90%  { opacity: .5; }
-  100% { transform: translateY(115vh); opacity: 0; }
-}
-@keyframes flug-rauf {
-  0%   { transform: translateY(0); opacity: 0; }
-  6%   { opacity: .5; }
-  90%  { opacity: .5; }
-  100% { transform: translateY(-115vh); opacity: 0; }
-}
-   /* B-2: schwer, langsam */
+/* B-2: schwer, langsam */
    /* Jaeger: schnell */
   /* Delta */
    /* Drohne: zieht ruhig */
