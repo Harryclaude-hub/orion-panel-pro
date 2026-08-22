@@ -3193,3 +3193,101 @@ Standard fuer neue Abonnenten steht jetzt ebenfalls auf true.
 Damit landen Fremde beim Klick auf die Kennwortwand von beitrag.html.
 Das ist Karams bewusste Entscheidung; wer die Links nutzen soll,
 braucht das Kennwort von ihm.
+
+---
+
+## 9c. DIE EGRESS-RECHNUNG, ENDLICH AUSGERECHNET (22.8.)
+
+Karams Auftrag: alles nach 24 h loeschen ausser Gespeichertem, Takte so
+hoch wie moeglich, solange das Free-Abo haelt. Dazu die Frage, ob ein
+eigener Server Grenzen haette.
+
+### Erste Erkenntnis: SPEICHER ist nicht das Problem
+
+    Datenbank gesamt   99 MB von 500 MB Free-Limit
+      orion_funde       7,3 MB   (56 Zeilen)
+      orion_laeufe       13 MB   Protokoll
+      orion_wache       9,8 MB   Protokoll
+      orion_gespeichert  32 kB   (bleibt immer)
+
+Die PROTOKOLLE sind groesser als die Funde. Loeschen der Funde bringt
+also fast nichts fuer den Speicher. Trotzdem umgesetzt, weil Karam es
+so will und es die Datenbank schlank haelt.
+
+### Umgesetzt: Job 91, stuendlich statt nachts
+
+    Takt          03:20 taeglich  ->  jede Stunde (Minute 7)
+    orion_funde   vorbei + 24 h, OHNE Ausnahme
+    orion_laeufe  30 Tage -> 3 Tage
+    orion_wache   30 Tage -> 3 Tage
+    cron-Protokoll 3 Tage -> 2 Tage
+    orion_gespeichert   wird NIE angefasst
+
+Stuendlich, weil bei einem Lauf um 03:20 eine Zeile, die um 03:30
+endete, fast 48 Stunden herumlag. Erst stuendlich macht die
+24-Stunden-Grenze scharf.
+
+**Damit faellt die 7-Tage-Schonung fuer gemeldete Zeilen von heute
+frueh.** Sie war meine Idee, nicht Karams. FOLGE, die er kennt: ein
+Telegram-Link zeigt nach 24 h auf „gibt es nicht mehr". Wer eine
+Meldung behalten will, drueckt auf der Karte Speichern.
+
+### Zweite Erkenntnis: der Takt kann NICHT hoch, er ist schon zu hoch
+
+GEMESSEN, was EIN Fussball-Lauf aus der Datenbank holt:
+
+    orion_sm_maerkte   851 KB
+    orion_kalshi_maerkte 93 KB
+    ------------------------
+    Summe              944 KB je Lauf
+
+    Takt alle 2 min  =  720 Laeufe am Tag
+    944 KB x 720     =  680 MB PRO TAG, nur Fussball
+
+    Free-Limit 5 GB/Monat = 171 MB pro Tag Budget
+
+**Fussball allein verbraucht das Vierfache des gesamten Budgets.** Dazu
+kommen die anderen Bereiche und das offene Panel. Das erklaert die
+339 % vom 20.8. vollstaendig, und es heisst: der Takt kann nicht hoch,
+er muesste runter.
+
+Nachgesehen, ob sich das wegoptimieren laesst:
+
+    Zeitfilter auf 72 h   bringt NICHTS (alle 1851 Maerkte liegen drin)
+    Quoten-Rundung        wirkt bereits (941 KB roh -> 851 KB)
+    link-Feld             221 KB (23 %), waere der groesste Einzelposten
+    r-Feld (Laeufer)      446 KB (47 %), wird gebraucht
+
+Selbst wenn man den Link ganz einspart, bleiben ueber 400 MB am Tag.
+**Mit Feintuning ist das nicht zu retten.**
+
+KORREKTUR meiner eigenen Zwischenmeldung: ich hatte behauptet, die
+Quoten-Rundung wirke nicht. Falsch — ich hatte die Rohtabelle gemessen
+statt die Funktion. Sie rundet.
+
+### Die drei ehrlichen Wege
+
+1. **Takt senken.** Fussball von 2 auf 10 Minuten bringt 680 -> 136 MB
+   am Tag. Passt ins Budget, kostet aber Reaktionszeit: eine Chance,
+   die drei Minuten lebt, wird verpasst.
+2. **Smarkets serverseitig paaren**, statt 851 KB je Lauf zu holen. Die
+   Datenbank wuerde die Zuordnung machen und nur Treffer zurueckgeben.
+   Grosser Bau, aber er trifft die Ursache.
+3. **Eigener Server.** Kein Egress-Limit, kein WORKER_RESOURCE_LIMIT,
+   Takt frei waehlbar. Siehe unten.
+
+### Zur Frage nach dem eigenen Server
+
+Supabase-seitig faellt jede Grenze weg, die heute weh tut: kein
+Datenabfluss-Limit, kein Speicherlimit der Edge Functions, kein
+Rechenzeit-Deckel. Der Scanner koennte im Sekundentakt laufen.
+
+Was BLEIBT:
+  - Die Boersen selbst haben Ratenlimits. Polymarket, Kalshi und
+    Smarkets vertragen keinen Sekundentakt ohne Sperre. UNGEMESSEN,
+    wo genau ihre Grenzen liegen.
+  - Das Geraet muss 24/7 laufen. Faellt es aus, faellt alles aus.
+  - Der Kernvorteil des heutigen Aufbaus faellt weg: dass gesucht wird,
+    waehrend Karams Geraete AUS sind. Betfair braucht ohnehin schon
+    einen laufenden Rechner, ein zweiter Dienst dort ist also kein
+    grundsaetzlich neuer Nachteil.
