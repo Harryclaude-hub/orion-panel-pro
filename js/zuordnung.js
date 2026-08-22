@@ -769,7 +769,22 @@
     economics: 'wirtschaft', inflation: 'wirtschaft', fed: 'wirtschaft',
     world: 'welt', weather: 'wetter',
     tech: 'tech', ai: 'tech', science: 'tech',
-    'pop-culture': 'kultur'
+    'pop-culture': 'kultur',
+    /* NACHGETRAGEN 22.8.2026, gemessen gegen die Polymarket-Tagliste.
+     * Aufgenommen wurde nur, was EINDEUTIG zu genau einem Bereich
+     * gehoert. Bewusst NICHT aufgenommen: der Sammeltag 'sports' (1887
+     * Maerkte) sowie 'baseball', 'basketball' und 'football' - das sind
+     * Oberkategorien, die Maerkte mehrerer Bereiche mischen wuerden. Die
+     * Bereichstrennung ist Schutz, kein Formalismus (Fehlpaarung vom
+     * 11.8.: Eintracht Frankfurt im Fussball gegen Eintracht Frankfurt
+     * in League of Legends). */
+    dota2: 'esport',            /* 204 Maerkte; 'dota' liefert 0 */
+    hockey: 'eishockey',        /* 101 */
+    movies: 'kultur',           /* 1289 */
+    music: 'kultur',            /* 1207 */
+    awards: 'kultur',           /* 2827 */
+    business: 'wirtschaft',     /* 965 */
+    stocks: 'wirtschaft'        /* 908 */
   };
 
   function bereichKalshi(serie) {

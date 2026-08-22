@@ -3567,3 +3567,107 @@ Karam will „mehr Bereiche, mehr Maerkte". Zwei Wege stehen bereit:
    Was Polymarket sonst noch fuehrt, ist ungemessen.
 
 Beides ist ein eigener, messbarer Bau und wartet auf Ansage.
+
+---
+
+## 9h. AUF 80 PROZENT + MEHR MAERKTE (22.8. spaet)
+
+Karams Ansage: 80 % fuellen, 20 % fuer andere Miniprojekte, und beides
+bauen (mehr Bereiche, mehr Maerkte).
+
+Sein Puffergedanke ist richtig: das Kontingent gilt fuer die ganze
+ORGANISATION, nicht je Projekt. Der Pruefstand teilt es mit.
+
+### Gesetzt
+
+    orion-lauf-fussball        15 seconds
+    alle 19 anderen Bereiche   33 seconds
+
+    Egress   61 %    Aufrufe  83 %
+
+### Warum der Abfluss NICHT auf 80 % geht
+
+Erst standen 12 s / 35 s (76 % / 81 %). Nach drei Minuten gemessen:
+
+    Fussball-Lauf im Schnitt   4554 ms
+    LANGSAMSTER Lauf           9721 ms
+    Takt                      12000 ms   ->  2,3 s Puffer, 19 %
+
+Ein Lauf, der den naechsten einholt, laesst zwei Faelle gleichzeitig auf
+orion_funde schreiben — genau die Lage, aus der am 19.8. die vier
+Deadlocks kamen. Deshalb zurueck auf 15 s (5,3 s Puffer beim
+langsamsten Lauf) und die kurzen Bereiche dafuer enger auf 33 s.
+
+**Der Engpass ist die LAUFZEIT des Fussball-Scanners, nicht das
+Kontingent.** Wer den Abfluss wirklich auf 80 % bringen will, muss die
+851 KB Smarkets je Lauf angehen (serverseitig paaren statt holen), nicht
+den Takt. Das ist der naechste sinnvolle Bau.
+
+### Mehr Maerkte: gemessen, was es ueberhaupt gibt
+
+Alle Polymarket-Tags des Registers gegen die API geprueft. Ergebnis:
+
+**SOFORT scharf, ohne Deploy:** der esport-Bereich stand auf
+`rocket-league` und `dota`, die beide NULL Maerkte liefern. Der Tag
+`esports` fuehrt 1154 und stand bereits in BEIDEN Spiegeln — er fehlte
+nur im Register. Probelauf danach: **87 Maerkte statt 0**, karte_ok true.
+
+**Vorbereitet, wartet auf den naechsten Deploy** (in beiden Spiegeln
+eingetragen):
+
+    dota2    -> esport        204 Maerkte  ('dota' liefert 0)
+    hockey   -> eishockey     101
+    movies   -> kultur       1289
+    music    -> kultur       1207
+    awards   -> kultur       2827
+    business -> wirtschaft    965
+    stocks   -> wirtschaft    908
+
+**BEWUSST NICHT aufgenommen:** der Sammeltag `sports` (1887) sowie
+`baseball`, `basketball`, `football`. Das sind Oberkategorien, die
+Maerkte mehrerer Bereiche mischen. Die Bereichstrennung ist Schutz, kein
+Formalismus — die Fehlpaarung vom 11.8. (Eintracht Frankfurt im Fussball
+gegen Eintracht Frankfurt in League of Legends) kam genau daher.
+
+**`spielerwetten`:** kein passender Polymarket-Tag gefunden. Geprueft
+wurden player-props, props, nba-player-props, nfl-player-props und
+sports-betting — alle leer. Der Bereich bleibt ein leerer Eintrag.
+
+### FEHLER, den ich dabei gemacht und sofort zurueckgenommen habe
+
+Ich habe die neuen Tags ins Register eingetragen, BEVOR die
+Zuordnungstabelle ausgerollt war. Ergebnis, sofort gemessen:
+
+    kultur / wirtschaft / eishockey:  karte_ok FALSE, pm-Maerkte 0
+
+Ein Tag im Register, den die ausgerollte `zuordnung.ts` nicht kennt,
+setzt karteOk auf false UND kostet die Maerkte des ganzen Bereichs. Die
+Bereiche waren schlechter dran als vorher. Zurueckgenommen, danach alle
+wieder karte_ok true.
+
+**REGEL: Register und Zuordnungstabelle wandern GEMEINSAM.** Erst
+deployen, dann die Tags eintragen.
+
+### Neuer Pruefstand: pruefung/tagtabelle.test.js
+
+Beim Nachtragen traf meine Ersetzung nur `js/zuordnung.js`, die
+Server-Fassung hatte einen anderen Wortlaut — **und spiegel.test.js
+blieb GRUEN.** Er prueft `bereichPm` mit einem einzigen Beispiel
+('soccer'); die ganze Tabelle war ungeprueft.
+
+Der neue Stand vergleicht beide Tabellen Eintrag fuer Eintrag, in beide
+Richtungen. Gegenprobe gelaufen: kuenstliche Drift (hockey -> fussball)
+wird rot mit Exit 1, Zuruecksetzen gruen.
+
+    Tagtabelle: 42 von 42 Eintraegen identisch
+
+### Nach dem naechsten Deploy zu tun
+
+1. `DEPLOY-JETZT.cmd` (rollt zuordnung.ts mit den sieben neuen Tags aus)
+2. Danach die Tags ins Register:
+   esport `{esports,cs2,dota2}`, eishockey `{nhl,hockey}`,
+   kultur `{pop-culture,movies,music,awards}`,
+   wirtschaft `{economics,inflation,fed,business,stocks}`
+3. Je Bereich einen Probelauf: karte_ok MUSS true bleiben
+4. kultur bekommt dadurch rund 5300 Maerkte statt 964 — Laufzeit
+   beobachten, sonst droht dort WORKER_RESOURCE_LIMIT wie bei Fussball
