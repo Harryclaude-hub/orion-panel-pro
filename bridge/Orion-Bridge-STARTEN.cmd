@@ -103,10 +103,21 @@ echo   [4/4] Waechter einrichten ...
 rem  Warum: Am 19.08. stand die Bridge still, ohne dass es jemand meldete.
 rem  Die Aufgabenplanung merkt das nicht - wird der Prozess von aussen
 rem  beendet, sieht sie nur "Aufgabe fertig". Der Waechter ruft DIESE Datei
-rem  alle 5 Minuten mit /waechter auf.
-schtasks /create /tn "Orion Bridge Waechter" /f /rl limited /sc minute /mo 5 ^
-  /tr "\"%HIER%\Orion-Bridge-STARTEN.cmd\" /waechter" >nul 2>&1
-if errorlevel 1 ( echo         konnte nicht eingerichtet werden - nicht schlimm. ) else ( echo         eingerichtet: alle 5 Minuten. )
+rem  JEDE MINUTE mit /waechter auf (19.08. mittags: 5 Minuten waren bis zu
+rem  12 Minuten Luecke; 19.08. abends: der direkte cmd-Aufruf riss dabei
+rem  jedes Mal ein sichtbares Konsolenfenster auf - deshalb laeuft der
+rem  Aufruf jetzt durch Orion-Waechter-Leise.vbs, Fenster versteckt.
+rem  Die vbs wird hier bei jedem Start frisch geschrieben, damit das Paket
+rem  aus EINER cmd besteht und nichts von Hand kopiert werden muss.
+> "%HIER%\Orion-Waechter-Leise.vbs" echo ' Orion-Waechter-Leise.vbs - startet den Waechter-Lauf OHNE Fenster.
+>>"%HIER%\Orion-Waechter-Leise.vbs" echo ' Wird von Orion-Bridge-STARTEN.cmd erzeugt - Aenderungen DORT machen.
+>>"%HIER%\Orion-Waechter-Leise.vbs" echo Dim fso, ordner
+>>"%HIER%\Orion-Waechter-Leise.vbs" echo Set fso = CreateObject("Scripting.FileSystemObject")
+>>"%HIER%\Orion-Waechter-Leise.vbs" echo ordner = fso.GetParentFolderName(WScript.ScriptFullName)
+>>"%HIER%\Orion-Waechter-Leise.vbs" echo CreateObject("Wscript.Shell").Run """" ^& ordner ^& "\Orion-Bridge-STARTEN.cmd"" /waechter", 0, False
+schtasks /create /tn "Orion Bridge Waechter" /f /rl limited /sc minute /mo 1 ^
+  /tr "wscript.exe \"%HIER%\Orion-Waechter-Leise.vbs\"" >nul 2>&1
+if errorlevel 1 ( echo         konnte nicht eingerichtet werden - nicht schlimm. ) else ( echo         eingerichtet: jede Minute, ohne Fenster. )
 
 echo.
 echo   Fertig. Du kannst den Deckel jetzt zuklappen.

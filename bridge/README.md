@@ -44,7 +44,7 @@ Fertig. Der Starter macht den Rest:
 [1/4] Standby abschalten        Deckel zuklappen: nichts unternehmen
 [2/4] Dateien prüfen            alles vorhanden
 [3/4] Bridge starten            Gestartet (PID 24944)
-[4/4] Wächter einrichten        alle 5 Minuten
+[4/4] Wächter einrichten        jede Minute, ohne Fenster
 ```
 
 Bei einer Neueinrichtung die `bridge-config.json` ausfüllen. Das
@@ -59,9 +59,16 @@ Am 19.08. stand die Bridge still, ohne dass es jemand meldete. Die
 Aufgabenplanung merkt das **nicht**: Wird der Prozess von außen beendet oder
 das Fenster geschlossen, sieht sie nur „Aufgabe fertig".
 
-Deshalb ruft eine Aufgabe alle 5 Minuten dieselbe Starter-Datei mit dem
+Deshalb ruft eine Aufgabe **jede Minute** dieselbe Starter-Datei mit dem
 Zusatz `/waechter` auf. Sie startet die Bridge **nur**, wenn keine läuft.
 Zweimal geprüft: läuft → nichts passiert; beendet → binnen Sekunden zurück.
+
+**Seit 19.08. abends ohne Fenster:** Vorher rief die Aufgabe die cmd-Datei
+direkt auf — jeder Lauf riss ein sichtbares Konsolenfenster auf, im
+Minutentakt ein dauerndes Aufblitzen. Jetzt läuft der Aufruf durch
+`Orion-Waechter-Leise.vbs` (startet dasselbe, nur mit verstecktem
+Fenster). Die vbs wird vom Starter bei jedem vollen Start frisch erzeugt —
+Änderungen also immer in der cmd machen, nie in der vbs.
 
 ---
 

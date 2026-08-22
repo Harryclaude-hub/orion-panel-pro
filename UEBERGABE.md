@@ -3671,3 +3671,66 @@ wird rot mit Exit 1, Zuruecksetzen gruen.
 3. Je Bereich einen Probelauf: karte_ok MUSS true bleiben
 4. kultur bekommt dadurch rund 5300 Maerkte statt 964 — Laufzeit
    beobachten, sonst droht dort WORKER_RESOURCE_LIMIT wie bei Fussball
+
+---
+
+## 9i. BRIDGE-ORDNER AUFGERAEUMT + WARUM DER TAKT BLEIBT (22.8.)
+
+### Frage 1: Bridge auf die neue Geschwindigkeit anpassen? NEIN.
+
+Die Bridge laeuft mit `intervalSeconds`, Standard **30 s**; die
+Zugangsdatei setzt den Wert nicht. Der Scanner liest jetzt alle 15 s,
+sieht also jede Betfair-Lieferung zweimal.
+
+Trotzdem bleibt der Takt, und zwar aus einem harten Grund:
+
+    orion-lauf, Kopfkommentar Zeile 39:
+    "App-Key DELAYED (Kurse ~1 min alt)"
+
+**Betfair liefert mit diesem Schluessel ohnehin nur Kurse, die rund eine
+Minute alt sind.** Ein 15-Sekunden-Takt holt dieselben veralteten Zahlen
+nur oefter ab. Er wuerde Karams Laptop mehr belasten und die
+Betfair-Ratenlimits naeher ruecken, ohne einen einzigen frischeren Kurs
+zu liefern. Der 30-Sekunden-Takt ist bereits doppelt so schnell wie die
+Quelle.
+
+UNGEMESSEN geblieben: wie alt die Kurse WIRKLICH sind. Die eine Minute
+steht als Notiz im Code, nachgemessen wurde sie nie. Wer den Takt je
+aendern will, misst zuerst das.
+
+### Frage 2: Ordner aufgeraeumt
+
+VORHER 12 Dateien. Zuerst gesichert, was nur auf dem Laptop lag oder
+dort neuer war — Loeschen ohne Sicherung waere der teuerste Fehler
+gewesen:
+
+    DEPLOY-JETZT.cmd           war GAR NICHT im Repo
+    Orion-Waechter-Leise.vbs   war GAR NICHT im Repo
+    Orion-Bridge-STARTEN.cmd   lokal neuer (19.08. 20:13 gegen 03:55)
+    README.md                  lokal neuer
+
+Danach geloescht:
+
+    UEBERGABE.md (90 KB)   Kopie vom 19.08.; die gueltige liegt im Repo
+                           und ist inzwischen 170 KB gross. ZWEI
+                           Uebergaben nebeneinander sind schlimmer als
+                           eine - man liest die falsche.
+    DEPLOY-ANLEITUNG.txt   identisch im Repo; DEPLOY-JETZT.cmd erklaert
+                           sich beim Doppelklick ohnehin selbst
+    NAECHSTE-SITZUNG.txt   Stand 19.08., im Repo liegt der vom 20.08.
+
+NACHHER 9 Dateien, und **alle acht Programm- und Anleitungsdateien sind
+jetzt Byte fuer Byte identisch mit dem Repo**. `bridge-config.json`
+bleibt wie immer unberuehrt und ungetrackt.
+
+### Kontrolle: laeuft nur EINE Bridge?
+
+Die Prozessliste zeigte drei `node.exe`. Nach der Regel vom 19.08. NICHT
+nach dem Namen gegangen, sondern die Befehlszeilen gelesen:
+
+    12744  node.exe Orion-Bridge-Pro-27.js      <- die Bridge
+    16472  npx-cli.js                            Werkzeugumgebung
+     2476  npm-cache/_npx/...                    Werkzeugumgebung
+
+Genau eine Bridge. Haette man nach dem Namen abgeschossen, waere die
+Werkzeugumgebung mitgegangen.
