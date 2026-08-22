@@ -3734,3 +3734,105 @@ nach dem Namen gegangen, sondern die Befehlszeilen gelesen:
 
 Genau eine Bridge. Haette man nach dem Namen abgeschossen, waere die
 Werkzeugumgebung mitgegangen.
+
+---
+
+## 9j. WARUM NICHTS KAM - UND DER WAECHTER DAGEGEN (22.8. abends)
+
+### Karams Frage
+
+"Du hast zwei Nachrichten verschickt, aber danach ist nichts mehr
+gekommen. Ich will wissen, warum nichts kam."
+
+### Die Antwort, gemessen statt geraten
+
+Beide Bots wurden mit einer erfundenen Zeile durch die ganze Kette
+geschickt. Ergebnis:
+
+    Chancen-Bot  gemeldet 1, zugestellt an 2 Empfaenger
+    Knapp-Bot    gemeldet 1, zugestellt an 2 Empfaenger
+
+Beide funktionieren. Danach kam nichts, weil es NICHTS GAB:
+
+    letzte 24 h: 198 Zeilen geprueft
+    beste Rendite ueberhaupt:            1,76 %
+    Zeilen ueber der 2-%-Schwelle:       0
+    von der Wache verurteilt:          166 von 169 (98 %)
+
+Die Verurteilungsgruende sind zu 88 % zeitlich - nicht rechnerisch:
+
+     66  Anpfiff ist vorbei
+     53  Anpfiff nicht belegt
+     27  Anpfiff in unter 5 Minuten
+      8  Summe der Back-Preise verletzt
+     12  Buchsummen-Widersprueche
+
+Es gab also an diesem Tag keine einzige echte Chance. Der hoechste Wert
+lag mit 1,76 % unter der Meldeschwelle.
+
+### Vier Wege geprueft, auf denen ein Fund haette durchrutschen koennen
+
+    A) >= 2 %, sauber, nie gemeldet                    0
+    B) davon: lebte kuerzer als die 120-s-Bewaehrung   0
+    C) >= 2 %, sauber, aber max_einsatz fehlte         0
+    D) 0-2 %, sauber, nie als knapp gemeldet           0
+
+Kein einziger Fund ist durchgerutscht. Beide Bots haben zwei aktive
+Empfaenger, keiner ist stillgelegt.
+
+### Der Fund aus dem Test: zwei Wege, zwei Massstaebe
+
+Die erste Pruefzeile trug Buchsumme 1,0040 bei +0,42 % Rendite. Die
+Wache hat sie sofort ueberfuehrt - zu Recht, das ist arithmetisch
+unmoeglich. Dabei fiel auf:
+
+    Knapp-Bot liess durch:  buch_summe < 1,02
+    Wache sperrt ab:        buch_summe >= 1,00 bei positiver Rendite
+
+Seit das Knapp-Band bei 0 statt bei -0,5 beginnt, sind ALLE Kandidaten
+positiv. Jede Zeile zwischen 1,00 und 1,02 waere gemeldet und Sekunden
+spaeter von der Wache kassiert worden - eine Meldung ueber einen Fund,
+der im Panel schon als falsch dasteht. Beim Test war die Wache
+schneller. Sie muss es nicht immer sein.
+
+Der Deckel steht jetzt bei 1,00, wie beim Chancen-Bot. Geaendert in
+pruefung/bau-knapp.py, die Bot-Datei ist daraus erzeugt.
+
+### NEU: orion-lebenszeichen
+
+Das eigentliche Problem war nicht die Technik, sondern die STILLE. Ein
+stummer Bot und ein kaputter Bot sehen von aussen genau gleich aus.
+Deshalb gibt es jetzt einen Waechter, der den Unterschied sichtbar
+macht.
+
+Er schlaegt Alarm bei:
+  - einem Fund im Band, sauber, ueber 5 Minuten alt und NICHT gemeldet
+  - Scanner ueber 20 Minuten ohne Lauf
+  - Bridge ueber 10 Minuten ohne Lieferung
+  - keinem aktiven Empfaenger bei einem der beiden Bots
+
+Zwei Takte:
+
+    Job 94  alle 2 Stunden   nur bei Stoerung, sonst schweigt er
+    Job 95  taeglich 07:00 UTC (09:00 Salzburg)  IMMER, auch bei Ruhe
+
+Der Tagesbericht ist der Kern: er belegt die Stille, statt sie zu
+behaupten. Beispiel vom 22.8.:
+
+    ORION laeuft
+    Letzte 24 h: 198 Zeilen geprueft, beste Rendite 1,76 %.
+    Gemeldet: 0 Chancen, 0 knappe Paare.
+    Scanner vor 1 min gelaufen, Bridge vor 1 min geliefert.
+    Keine Meldung heisst hier: es gab nichts ueber 2 %.
+    Nicht: der Bot ist kaputt.
+
+WICHTIG - Empfaengerkreis: Betriebsmeldungen gehen NUR an art='direkt',
+also an Karam. Der erste Entwurf grenzte ueber mit_beitragslink ab, aber
+das Feld steht auch bei Felix_2044 auf true. Ob Karams Laptop laeuft,
+geht einen Abonnenten nichts an. Gegenprobe beim Echtversand:
+zugestellt 1, nicht 2.
+
+OFFEN und ehrlich benannt: bei einer DAUERstoerung meldet Job 94 alle
+zwei Stunden erneut. Eine Wiederholungssperre gibt es nicht. Sie waere
+sinnvoll, sobald die erste echte Dauerstoerung zeigt, wie laestig das
+wirklich ist - vorher waere sie ungemessen gebaut.

@@ -37,8 +37,12 @@ KOPF = r'''/* orion-melder-knapp — der ZWEITE Telegram-Bot: meldet die KNAPPST
  * `mit_beitragslink`, weil beitrag.html hinter dem Kennwort liegt.
  *
  * Schutzgurte wie beim Chancen-Bot: Wache-Urteil leer, 120 s Bewaehrung,
- * hoechstens einmal je Fund. Buchsummen-Gurt hier als Deckel 1,02 —
- * knappe Paare LIEGEN ueber 1, aber wer weiter weg ist, ist nicht knapp.
+ * hoechstens einmal je Fund. Buchsummen-Gurt seit 22.8. bei 1,00 statt
+ * 1,02: die Wache verurteilt JEDE Zeile ab 1,00 bei positiver Rendite,
+ * und seit das Band bei 0 beginnt, sind alle Kandidaten positiv. Der
+ * weitere Deckel haette nur Zeilen durchgelassen, die die Wache Sekunden
+ * spaeter kassiert - eine Meldung ueber einen Fund, der im Panel schon
+ * als falsch dasteht. Bot und Wache messen jetzt mit demselben Mass.
  *
  * BEDIENUNG: {"einrichten": true} listet, wer nichts bekommt.
  *            {"abholen": true} traegt neue Chats ein.
@@ -58,8 +62,12 @@ TAUSCH = [
     (r"telegram_gemeldet", r"knapp_gemeldet"),
 
     # Kandidatenband
-    (r"'&or=(buch_summe.is.null,buch_summe.lt.1)' +",
-     r"'&or=(buch_summe.is.null,buch_summe.lt.1.02)' +"),
+    # DECKEL 1,00 STATT 1,02 (22.8.): die Wache sperrt jede Zeile mit
+    # Buchsumme ab 1,00 bei positiver Rendite. Seit das Band bei 0
+    # beginnt, sind alle Kandidaten positiv - ein Deckel von 1,02 haette
+    # nur Zeilen durchgelassen, die die Wache Sekunden spaeter kassiert.
+    # Bot und Wache messen jetzt mit demselben Mass. Damit ist die Zeile
+    # identisch zum Chancen-Bot und faellt aus der Tauschliste heraus.
     (r"'&rendite=gte.2&rendite=lte.5' +",
      r"'&rendite=gte.0&rendite=lt.2' +"),
     (r"'&max_einsatz=not.is.null&max_gewinn=gte.5' +",
