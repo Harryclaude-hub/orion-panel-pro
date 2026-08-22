@@ -3291,3 +3291,65 @@ Was BLEIBT:
     waehrend Karams Geraete AUS sind. Betfair braucht ohnehin schon
     einen laufenden Rechner, ein zweiter Dienst dort ist also kein
     grundsaetzlich neuer Nachteil.
+
+---
+
+## 9d. WIE SCHNELL GEHT ES MIT PRO? (22.8., gemessen)
+
+Karams Frage: „Wie schnell können wir mit dem Pro-Abo bei allen
+Bereichen gehen, weil so langsam wird nichts gefunden."
+
+### Die Limits, aus der Supabase-Doku nachgeschlagen
+
+    Free   5 GB Egress im Monat   =   171 MB am Tag
+    Pro  250 GB Egress im Monat   =  8533 MB am Tag   (50-fach)
+    Pro kostet 25 $/Monat (25 Plan + 10 Compute - 10 Compute-Credits)
+    Ueber 250 GB: 0,09 $ je GB, mit Spend Cap wird stattdessen gedrosselt
+
+### Was eine Runde ueber ALLE Bereiche kostet, gemessen
+
+    komplette Runde   981 KB
+      davon Fussball  924 KB  = 94 Prozent
+      alle 19 anderen  57 KB  = 6 Prozent
+
+**Fussball ist praktisch die ganze Last**, weil er als einziger den
+Smarkets-Schnappschuss holt (847 KB). Kalshi steuert 77 KB bei, die
+uebrigen Bereiche zusammen nur 57 KB.
+
+### Die Antwort
+
+| Takt (alle Bereiche) | Verbrauch/Tag | Free | Pro |
+|---|---|---|---|
+| 10 Sekunden | 8277 MB | 4850 % | **97 %** knapp |
+| 20 Sekunden | 4139 MB | 2425 % | **48 %** |
+| 30 Sekunden | 2759 MB | 1617 % | **32 %** |
+| 1 Minute | 1380 MB | 808 % | 16 % |
+| 2 Minuten (heute) | 690 MB | 404 % | 8 % |
+| 10 Minuten | 138 MB | **81 %** | 2 % |
+
+**Mit Free ist nur der 10-Minuten-Takt tragbar.** Alles darunter
+sprengt das Limit, der heutige 2-Minuten-Takt um das Vierfache.
+
+**Mit Pro sind 20 Sekunden fuer ALLE Bereiche der sichere Punkt**
+(48 % Auslastung). Das waere sechsmal schneller als heute. 10 Sekunden
+gingen rechnerisch auch, lassen aber keinen Puffer fuer das Panel und
+kuenftiges Wachstum.
+
+### WICHTIG: Pro loest den Speicherfehler NICHT automatisch
+
+`WORKER_RESOURCE_LIMIT` ist ein Limit der Edge Function, nicht des
+Egress-Kontingents. Ob Pro dort mehr gibt, ist UNGEMESSEN. Der Umbau
+aus 9b (stueckweise Verarbeitung) zielt genau darauf und muss ohnehin
+ausgerollt werden — ein schneller Takt nuetzt nichts, solange der Lauf
+gar nicht durchkommt.
+
+### Empfehlung
+
+1. Erst `DEPLOY-JETZT.cmd` — sehen, ob der Fussball-Lauf wieder
+   durchlaeuft.
+2. Dann Pro buchen, **Spend Cap ANLASSEN** (dann drosselt Supabase,
+   statt still Kosten zu machen).
+3. Dann Takte auf 20 Sekunden fuer alle Bereiche.
+4. Nach zwei Tagen den Zaehler nachsehen und gegen diese Rechnung
+   halten. Die 981 KB sind eine Momentaufnahme; an einem vollen
+   Fussballabend liegt Smarkets hoeher.
