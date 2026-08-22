@@ -3487,3 +3487,83 @@ neu setzt, ist ungeprueft. Karams Vorgabe war „Design gleich lassen".
 
     Funde         vorbei + 36 h  (war 24 h)
     Gespeichertes wird nie angefasst, geprueft ueber das Kommando selbst
+
+---
+
+## 9g. PRO IST AKTIV, TAKTE HOCHGESETZT (22.8. abends)
+
+Bestaetigt ueber die Verwaltungsschnittstelle: `plan: "pro"`.
+
+### Vorher gepruefte Voraussetzungen
+
+Bevor irgendein Takt hochging, beide Blockierer nachgemessen:
+
+    Fussball-Probelauf   ok: true, 3615 ms, 536 pm, 211 Betfair,
+                         1840 Smarkets, 61 Paare
+    Bridge               358 Fussball-Maerkte mit Anpfiff in der ZUKUNFT
+                         (vorher 0, siehe 9e)
+
+Beides repariert. Einen kaputten Scanner schneller zu takten haette
+nichts gebracht.
+
+### DER FUND, der die Rechnung geaendert hat: ZWEI Limits
+
+Bis hierher hatte ich nur den Egress gerechnet. Pro hat aber auch ein
+**Aufruflimit: 2 Millionen Edge-Function-Aufrufe im Monat**, danach
+2 $ je Million.
+
+Karams Wunsch war „alle paar Sekunden". Gerechnet:
+
+    19 Bereiche alle 3 s  =  16,4 Mio Aufrufe/Monat  gegen 2 Mio frei
+                          =  28 $ Aufpreis
+
+**Der Sekundentakt scheitert nicht am Abfluss, sondern an den
+Aufrufen.** Fussball ist teuer im Abfluss (900 KB je Lauf) und billig
+in Aufrufen; die 19 anderen sind zusammen billig im Abfluss (53 KB),
+kosten aber je Bereich einen eigenen Aufruf. Deshalb muessen die beiden
+Gruppen unterschiedlich getaktet werden.
+
+### Gesetzt
+
+    orion-lauf-fussball        15 seconds   (war 2 min)
+    alle 19 anderen Bereiche   40 seconds   (waren stuendlich)
+
+    Egress   5174 MB/Tag  =  61 % von 250 GB
+    Aufrufe  46800/Tag    =  70 % von 2 Mio
+
+Fussball 8-mal haeufiger als vorher, alle anderen **90-mal haeufiger**.
+Genau die 18 Bereiche, die in sieben Tagen null Funde hatten.
+
+Warum nicht enger: der Fussball-Lauf dauert gemessen 3,6 bis 4,4 s. Bei
+15 s bleiben knapp vier Takte Puffer, und an vollen Abenden waechst
+Smarkets weiter.
+
+### Nachgemessen, drei Minuten nach der Umstellung
+
+    Laeufe in 3 Minuten          87
+    davon Fussball               11
+    verschiedene Bereiche        20 von 20
+    Cron-Fehlschlaege             0
+    live-Zeilen                  62   (vorher 0)
+    neue Zeilen in 5 Minuten     21
+    Betfair im letzten Lauf     211 Maerkte
+    Dauer letzter Fussball-Lauf 4383 ms
+
+### Was NICHT die Ursache war
+
+Karams Vermutung, die Datenbank sei voll gewesen: nein. Sie lag bei
+99 von 500 MB. Die Funde blieben aus, weil der Scanner an
+WORKER_RESOURCE_LIMIT starb (9b) und Betfair nur tote Maerkte lieferte
+(9e). Beide Ursachen sind behoben.
+
+### Offen, fuer mehr Maerkte
+
+Karam will „mehr Bereiche, mehr Maerkte". Zwei Wege stehen bereit:
+
+1. **`spielerwetten`** steht im Register auf `aktiv=false` mit NULL
+   Polymarket-Tags. Der Bereich existiert nur als leerer Eintrag. Er
+   braucht Tags und einen Trockenlauf.
+2. **Weitere Tags je Bereich.** Fussball hat heute `soccer` und `ucl`.
+   Was Polymarket sonst noch fuehrt, ist ungemessen.
+
+Beides ist ein eigener, messbarer Bau und wartet auf Ansage.
