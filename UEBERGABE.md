@@ -3353,3 +3353,64 @@ gar nicht durchkommt.
 4. Nach zwei Tagen den Zaehler nachsehen und gegen diese Rechnung
    halten. Die 981 KB sind eine Momentaufnahme; an einem vollen
    Fussballabend liegt Smarkets hoeher.
+
+---
+
+## 9e. BETFAIR-FUSSBALL LIEFERT NUR TOTE MAERKTE (22.8., schwerer Fund)
+
+Beim Durchrechnen der Takte aufgefallen: `orion_bf_maerkte(12,'fussball')`
+liefert ein LEERES Array, obwohl die Bridge 569 Maerkte haelt.
+
+### Die Kette, Schritt fuer Schritt nachgemessen
+
+    Bridge haelt insgesamt              569 Maerkte
+    davon Marktart passend              569
+    davon mit Zeitangabe                569
+    Zuordnung auf Bereich klappt        461 ergeben "fussball"
+    davon im 12-h-Fenster                 0
+    davon im 24-h-Fenster                 0
+
+Die Zuordnung ist also in Ordnung. Der Grund liegt woanders:
+
+    Bereich      Maerkte   Anpfiff vorbei   Anpfiff kommt
+    fussball        461         461               0
+    tennis           25           9              16
+    cricket          25          16               9
+    mma              18           0              18
+    football         13           0              13
+    lol              13           1              12
+
+**Alle 461 Fussball-Maerkte haben ihren Anpfiff in der VERGANGENHEIT**
+(11:30 bis 13:30, gemessen um 16:55). Kein einziges kommendes Spiel.
+Andere Sportarten haben sehr wohl kommende Partien.
+
+An einem Samstagnachmittag muss es kommende Fussballspiele geben. Die
+Bridge laedt sie nicht.
+
+### Verdacht, NICHT bewiesen
+
+Die Bridge hat eine Verfallsregel (Orion-Bridge-Pro-27.js, Zeile 418):
+
+    NACH_ANPFIFF_STD = 3    Anpfiff mehr als 3 h her  -> raus
+    VERFALL_MIN     = 30    30 min nicht gesehen      -> raus
+
+Maerkte mit Anpfiff 11:30 haetten um 14:30 verfallen muessen. Um 16:55
+liegen sie noch da. **Die zuAlt-Regel greift offenbar nicht.** Moeglich
+waere, dass `Date.parse(m.start)` fehlschlaegt und NaN jeden Vergleich
+false macht — das ist ein VERDACHT, nicht gemessen. Der Speicher der
+Bridge ist von hier aus nicht einsehbar, sie laeuft auf Karams Laptop.
+
+**Folge, sicher:** Betfair faellt fuer Fussball komplett aus. Von vier
+Buechern bleiben im wichtigsten Bereich drei. Das erklaert einen
+grossen Teil von „es wird nichts gefunden" — zusammen mit dem
+Scanner-Absturz aus 9b.
+
+### Zu pruefen, wenn Karam die Bridge anfasst
+
+1. Startbild der Bridge lesen: wieviele Fussball-Maerkte holt sie je
+   Runde, und mit welchem Fenster?
+2. `aufraeumen()` beobachten: wieviele fliegen je Lauf raus?
+3. Ob `start` beim Aktualisieren erhalten bleibt.
+
+NICHT von hier aus geaendert: die Bridge ist Karams Laufzeit, ein
+Eingriff waehrend des Betriebs braucht seine Ansage.
