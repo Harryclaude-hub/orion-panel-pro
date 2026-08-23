@@ -100,6 +100,14 @@ function anweisung(buch: string, seite: unknown, roh: number, usd: number): stri
   return `<b>${usd.toFixed(2)} $</b> Back zur Quote min. ${roh.toFixed(2)}`;
 }
 
+/* Die Zahl NACH Gebuehren im Kopf jeder Meldung (23.8., zweiter Teil):
+ * ohne sie sieht "+0,42 % vor Gebuehren" besser aus, als es ist. */
+function nettoText(f: Record<string, unknown>): string {
+  const rn = Number(f.rendite_netto);
+  if (f.rendite_netto === null || f.rendite_netto === undefined || !isFinite(rn)) return '';
+  return ` · nach Gebühren ${rn >= 0 ? '+' : ''}${rn.toFixed(2)} %`;
+}
+
 /* mitLinks=false laesst alle Panel-Verweise weg, die Information bleibt
  * vollstaendig. _probe=true zeigt aufs Panel statt auf einen erfundenen
  * Schluessel: eine Testnachricht darf nie wie ein Betriebsfehler
@@ -122,7 +130,7 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string, mit
   }
 
   const zeilen = [
-    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} % vor Gebühren</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,
+    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} % vor Gebühren</b>${nettoText(f)}, unter der 2-%-Meldeschwelle (noch keine Chance)`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
     buchZeile(p1, n1, f.pm_seite, Number(f.pm_preis), null, 1),
     buchZeile(p2, n2, f.bf_seite, Number(f.bf_quote), f.bf_name, 2),
@@ -285,6 +293,7 @@ Deno.serve(async (req) => {
         titel: 'Mjällby v Red Bull Salzburg', mannschaft: 'Mjällby',
         buch_1: 'smarkets', buch: 'betfair',
         pm_seite: 'JA', pm_preis: 0.62, bf_seite: 'Lay', bf_quote: 1.62, bf_name: 'Mjällby',
+        rendite_netto: 1.02,
         einsatz_1: 48.2, einsatz_2: 51.8, auszahlung: 100.42,
         max_einsatz: 120, max_gewinn: 0.5, _weitere: 4
       };
@@ -316,17 +325,19 @@ Deno.serve(async (req) => {
      * Charlton). Eine Marge von 103 % hat kein gesundes Buch, das ist ein
      * Datenfehler. Ohne Deckel waere sie ab jetzt meldefaehig. Soll der
      * Deckel weg, ist es diese eine Zahl. */
-    /* BAND 2 bis 6,5 seit 23.8.: rendite ist VOR Gebuehren gerechnet
-     * (Karams Vorgabe), und der Plausibilitaetsdeckel wanderte von 5
-     * (netto gemessen) auf 6,5 (roh). Dieselbe Zahl wie KONFIG
-     * .maxPlausibel, orion_verlauf_urteil und orion_verdacht. */
+    /* BAND SEIT 23.8. ABENDS: rendite_netto >= 0 UND rendite < 2.
+     * Die rohe Null fing seit der Vor-Gebuehren-Umstellung Buecher, die
+     * schlicht gleich stehen: gemessen 24 Meldungen, Schnitt -1,0 %
+     * netto, nur 1 von 24 im Plus. Netto >= 0 ist die ALTE Bedeutung
+     * der Untergrenze; die rohe Rendite liegt nie darunter, also bleibt
+     * jede Meldung auch ueber der Panel-Rauschgrenze auffindbar. */
     const q = 'orion_funde?status=eq.live&knapp_gemeldet=eq.false' +
       '&pruefung=is.null' +
       '&or=(buch_summe.is.null,and(buch_summe.gte.1,buch_summe.lte.1.3))' +
-      '&rendite=gte.0&rendite=lt.2' +
+      '&rendite_netto=gte.0&rendite=lt.2' +
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null' +
-      '&select=schluessel,nr,titel,mannschaft,rendite,max_einsatz,max_gewinn,buch,buch_1,' +
+      '&select=schluessel,nr,titel,mannschaft,rendite,rendite_netto,max_einsatz,max_gewinn,buch,buch_1,' +
       'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung&limit=5';
     const kand = await (await db(q)).json();
     if (!Array.isArray(kand) || kand.length === 0) {

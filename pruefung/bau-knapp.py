@@ -71,15 +71,18 @@ TAUSCH = [
     # nur Zeilen durchgelassen, die die Wache Sekunden spaeter kassiert.
     # Bot und Wache messen jetzt mit demselben Mass. Damit ist die Zeile
     # identisch zum Chancen-Bot und faellt aus der Tauschliste heraus.
+    # Der Band-Kommentar erklaert im Knapp-Bot das eigene Band.
+    ("    /* BAND 2 bis 6,5 seit 23.8.: rendite ist VOR Gebuehren gerechnet\n     * (Karams Vorgabe), und der Plausibilitaetsdeckel wanderte von 5\n     * (netto gemessen) auf 6,5 (roh). Dieselbe Zahl wie KONFIG\n     * .maxPlausibel, orion_verlauf_urteil und orion_verdacht. */",
+     "    /* BAND SEIT 23.8. ABENDS: rendite_netto >= 0 UND rendite < 2.\n     * Die rohe Null fing seit der Vor-Gebuehren-Umstellung Buecher, die\n     * schlicht gleich stehen: gemessen 24 Meldungen, Schnitt -1,0 %\n     * netto, nur 1 von 24 im Plus. Netto >= 0 ist die ALTE Bedeutung\n     * der Untergrenze; die rohe Rendite liegt nie darunter, also bleibt\n     * jede Meldung auch ueber der Panel-Rauschgrenze auffindbar. */"),
     (r"'&rendite=gte.2&rendite=lte.6.5' +",
-     r"'&rendite=gte.0&rendite=lt.2' +"),
+     r"'&rendite_netto=gte.0&rendite=lt.2' +"),
     (r"'&max_einsatz=not.is.null&max_gewinn=gte.5' +",
      r"'&max_einsatz=not.is.null' +"),
     (r"grund: 'keine neue Chance'", r"grund: 'kein knappes Paar'"),
 
     # Nachrichtentext
-    (r"    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} % vor Gebühren</b>`,",
-     r"    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} % vor Gebühren</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,"),
+    (r"    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} % vor Gebühren</b>${nettoText(f)}`,",
+     r"    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} % vor Gebühren</b>${nettoText(f)}, unter der 2-%-Meldeschwelle (noch keine Chance)`,"),
     # Die genaue Setz-Anweisung (23.8.) bleibt im Knapp-Bot erhalten;
     # nur Kopf und Schluss sagen ehrlich, dass es (noch) keine Chance ist.
     (r"<b>So setzt du</b>", r"<b>So sähe der Einsatz aus</b>"),

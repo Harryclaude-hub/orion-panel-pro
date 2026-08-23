@@ -120,8 +120,10 @@ nach `orion_wache`. Ruft:
   $-Ursprung in Klammern, Kurs aus `orion_kurse`).
 - **Knapp-Melder** (NEU 20.8.2026): Edge-Funktion `orion-melder-knapp` —
   der ZWEITE Bot, meldet die knappsten Paare, die noch KEINE Chance
-  sind. Band **rendite −0,5 bis unter 2 %** (gemessen: ~6 Meldungen/Tag;
-  bis −1 wären 40 gewesen), `pruefung` LEER, Buchsummen-Deckel 1,02,
+  sind. Band seit 23.8. abends: **rendite_netto ≥ 0 UND rendite < 2 %**
+  (die rohe Null fing nach der Vor-Gebühren-Umstellung Bücher, die
+  schlicht gleich stehen: 24 Meldungen, Schnitt −1,0 % netto, nur 1 im
+  Plus; davor −0,5..2, dann 0..2 netto gemessen ~6 Meldungen/Tag), `pruefung` LEER, Buchsummen-Deckel 1,02,
   120 s bewährt, einmal je Fund über die eigene Spalte
   `orion_funde.knapp_gemeldet`. Eigenes Geheimnis
   `TELEGRAM_BOT_TOKEN_KNAPP`, eigenes Ziel `orion_telegram` **id=2**

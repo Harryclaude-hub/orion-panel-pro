@@ -80,6 +80,14 @@ function anweisung(buch: string, seite: unknown, roh: number, usd: number): stri
   return `<b>${usd.toFixed(2)} $</b> Back zur Quote min. ${roh.toFixed(2)}`;
 }
 
+/* Die Zahl NACH Gebuehren im Kopf jeder Meldung (23.8., zweiter Teil):
+ * ohne sie sieht "+0,42 % vor Gebuehren" besser aus, als es ist. */
+function nettoText(f: Record<string, unknown>): string {
+  const rn = Number(f.rendite_netto);
+  if (f.rendite_netto === null || f.rendite_netto === undefined || !isFinite(rn)) return '';
+  return ` · nach Gebühren ${rn >= 0 ? '+' : ''}${rn.toFixed(2)} %`;
+}
+
 /* mitLinks=false laesst alle Panel-Verweise weg, die Information bleibt
  * vollstaendig. _probe=true zeigt aufs Panel statt auf einen erfundenen
  * Schluessel: eine Testnachricht darf nie wie ein Betriebsfehler
@@ -102,7 +110,7 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string, mit
   }
 
   const zeilen = [
-    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} % vor Gebühren</b>`,
+    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} % vor Gebühren</b>${nettoText(f)}`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
     buchZeile(p1, n1, f.pm_seite, Number(f.pm_preis), null, 1),
     buchZeile(p2, n2, f.bf_seite, Number(f.bf_quote), f.bf_name, 2),
@@ -265,6 +273,7 @@ Deno.serve(async (req) => {
         titel: 'Cincinnati Open: Iga Swiatek vs Diane Parry', mannschaft: 'Iga Swiatek',
         buch_1: 'polymarket', buch: 'betfair',
         pm_seite: 'JA', pm_preis: 0.44, bf_seite: 'Lay', bf_quote: 1.8, bf_name: 'Iga Swiatek',
+        rendite_netto: 1.02,
         einsatz_1: 45.1, einsatz_2: 54.9, auszahlung: 102.34,
         max_einsatz: 94, max_gewinn: 5.2, _weitere: 2
       };
@@ -306,7 +315,7 @@ Deno.serve(async (req) => {
       '&rendite=gte.2&rendite=lte.6.5' +
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null&max_gewinn=gte.5' +
-      '&select=schluessel,nr,titel,mannschaft,rendite,max_einsatz,max_gewinn,buch,buch_1,' +
+      '&select=schluessel,nr,titel,mannschaft,rendite,rendite_netto,max_einsatz,max_gewinn,buch,buch_1,' +
       'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung&limit=5';
     const kand = await (await db(q)).json();
     if (!Array.isArray(kand) || kand.length === 0) {

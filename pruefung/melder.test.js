@@ -210,12 +210,18 @@ const grenze = mGrenze ? Number(mGrenze[1]) : null;
 pruefe('rauschGrenze in konfig.js gefunden', grenze !== null, grenze);
 
 const knapp = fs.readFileSync(path.join(WURZEL, MELDER[1]), 'utf8');
-const mBand = knapp.match(/rendite=gte\.(-?[\d.]+)/);
+/* SEIT 23.8. filtert der Knapp-Bot auf rendite_netto >= 0 (die alte
+ * Bedeutung der Null: nach Gebuehren nicht im Minus). Die rohe Rendite
+ * liegt nie UNTER der Netto-Rendite (Gebuehren sind nie negativ) - eine
+ * Zeile mit netto >= 0 steht also immer auch ueber der Panel-
+ * Rauschgrenze und ist im Panel auffindbar. Genau das prueft dieser
+ * Teil: der Bot darf nichts melden, was das Panel verschluckt. */
+const mBand = knapp.match(/rendite_netto=gte\.(-?[\d.]+)/);
 const untergrenze = mBand ? Number(mBand[1]) : null;
-pruefe('Untergrenze im Knapp-Bot gefunden', untergrenze !== null, untergrenze);
+pruefe('Netto-Untergrenze im Knapp-Bot gefunden', untergrenze !== null, untergrenze);
 pruefe('Bot meldet nichts unter der Rauschgrenze (' + grenze + ')',
        untergrenze !== null && grenze !== null && untergrenze >= grenze,
-       'Bot ab ' + untergrenze + ', Panel zeigt ab ' + grenze);
+       'Bot ab netto ' + untergrenze + ', Panel zeigt ab ' + grenze);
 
 pruefe('beide Melder tragen denselben Block',
        gefunden.length === 2 && gefunden[0] && gefunden[1],

@@ -4263,3 +4263,49 @@ inkl. Lay-Feld-Betrag und Stueckzahl. bau-knapp.py-Anker nachgezogen
                                 Beweis aus dem Betrieb, nicht aus dem Test
     melder.test.js              gruen (beide Melder tragen denselben Block)
     node --check anzeige.js     ok, Cache-Marken aller Seiten v77 -> v78
+
+## 9p. DIE 0,00-%-FLUT DES KNAPP-BOTS (23.8. abends, Karams Fund)
+
+### Karams Meldung
+
+"Es kommen so viele Meldungen mit 0,00 Prozent. Ist es die Anzeige, der
+Telegram-Text oder ein Fehler?"
+
+### Gemessen: weder Anzeige- noch Textfehler, sondern ein Eichfehler
+
+Alle bis dahin verschickten Knapp-Meldungen gezaehlt:
+
+    gemeldet gesamt        24
+    davon roh unter 0,1 %  16   (das sind die "+0,00 %")
+    Schnitt nach Gebuehren -1,0 %
+    nach Gebuehren im Plus  1 von 24
+
+Die Zahlen waren ECHT. Ursache war die Vor-Gebuehren-Umstellung vom
+Vormittag (9n): die Untergrenze 0 des Knapp-Bots war am NETTO-Wert
+geeicht. Zwei Buecher, die schlicht gleich notieren, stehen roh bei
+~0,00 % (frueher: netto ~-1 %, fiel unters Band). Der Bot hielt
+Gleichstand fuer "knapp daneben". Mein Fehler beim Nachziehen der
+Schwellen: den 5-%-Deckel habe ich umgerechnet, die Knapp-Untergrenze
+nicht.
+
+### Die Reparatur (Bot v11, Chancen-Bot v15)
+
+    Knapp-Band neu     rendite_netto >= 0  UND  rendite < 2
+                       (die ALTE Bedeutung der Null: nach Gebuehren
+                       nicht im Minus; roh liegt nie unter netto, also
+                       bleibt jede Meldung im Panel auffindbar)
+    Beide Bot-Koepfe   tragen jetzt zusaetzlich "nach Gebuehren X %" -
+                       eine 0,00-roh-Zeile haette sich selbst entlarvt
+    bau-knapp.py       Band-, Kopf- und Kommentar-Tausch nachgezogen,
+                       Knapp-Bot daraus neu erzeugt (kein Hand-Edit)
+    melder.test.js     Teil C prueft jetzt die NETTO-Untergrenze gegen
+                       die Rauschgrenze (roh >= netto, strukturell safe)
+
+### Gegenprobe, sofort
+
+    altes Band roh 0..2      6 Kandidaten  (die naechste Flut stand bereit)
+    neues Band netto>=0      0 Kandidaten
+    beide Bots mit {}        "keine neue Chance" / "kein knappes Paar"
+
+Die schon verschickten 24 Meldungen bleiben im Panel sichtbar
+(gemeldet verschwindet nie) und fallen mit der 24-h-Regel heraus.
