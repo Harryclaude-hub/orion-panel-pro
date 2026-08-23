@@ -128,8 +128,11 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string, mit
               (isFinite(max) && max > 0
                 ? (max < 1000 ? ' (mehr passt zu diesen Kursen nicht hinein)' : '')
                 : ' (Menge im Buch unbekannt, vorher pruefen)') + ':',
-            `1⃣ ${n1}: ${anweisung(b1, f.pm_seite, Number(f.pm_preis), e1 * skala)}`,
-            `2⃣ ${n2}: ${anweisung(b2, f.bf_seite, Number(f.bf_quote), e2 * skala)}`,
+            /* Die Prozent-Aufteilung IMMER dazu (Karams Vorgabe 23.8.
+             * abends): e1/e2 sind die Aufteilung von 100, also direkt
+             * die Prozente vom Gesamteinsatz - bei jedem Betrag gleich. */
+            `1⃣ ${n1} (<b>${e1.toFixed(1)} %</b> vom Gesamt): ${anweisung(b1, f.pm_seite, Number(f.pm_preis), e1 * skala)}`,
+            `2⃣ ${n2} (<b>${e2.toFixed(1)} %</b> vom Gesamt): ${anweisung(b2, f.bf_seite, Number(f.bf_quote), e2 * skala)}`,
             `→ beide Ausgänge zahlen <b>${(aus * skala).toFixed(2)} $</b> zurück: <b>${g >= 0 ? '+' : ''}${g.toFixed(2)} $</b> sicher, vor Gebühren`
           ].join('\n');
         })()

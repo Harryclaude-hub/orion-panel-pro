@@ -768,6 +768,9 @@ h2 {
   border-top: 1px dashed var(--rand); padding-top: 6px;
 }
 .fund .setz-detail b { color: var(--text); }
+/* Der Prozentanteil am Gesamteinsatz, direkt neben dem Betrag (23.8. abends,
+ * Karams Vorgabe: die Aufteilung muss IMMER sichtbar sein). */
+.fund .setz-anteil { font-size: 12px; font-weight: 400; color: var(--text-leise); white-space: nowrap; }
 .fund .setz-summe {
   font-size: 15px; padding: 9px 12px;
   border: 1px solid rgba(var(--akzent-rgb),.35); border-radius: 10px;

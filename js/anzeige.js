@@ -815,6 +815,14 @@
     return '<div class="analyse">' +
       '<span title="Seit dem 23.8. die ROHE Rechnung (1/q1 + 1/q2), von Hand nachrechenbar. Die Gebühren stehen getrennt im Gebühren-Block und werden erst dort abgezogen."><b>' +
         Number(f.rendite).toFixed(2) + ' %</b> Rendite vor Gebühren</span>' +
+      /* Die Aufteilung IMMER sichtbar, ohne Aufklappen (Karams Vorgabe
+       * 23.8. abends): einsatz_1/2 sind die Prozente vom Gesamteinsatz. */
+      (isFinite(Number(f.einsatz_1)) && isFinite(Number(f.einsatz_2))
+        ? '<span title="So teilst du JEDEN Gesamteinsatz auf: Seite 1 bekommt ' +
+          Number(f.einsatz_1).toFixed(1) + ' %, Seite 2 bekommt ' + Number(f.einsatz_2).toFixed(1) +
+          ' %. Die genauen Beträge und Felder stehen unter So setzt du.">Aufteilung <b>' +
+          Number(f.einsatz_1).toFixed(1) + ' % / ' + Number(f.einsatz_2).toFixed(1) + ' %</b></span>'
+        : '') +
       menge(f) +
       /* DIE ZAHL, DIE ZAEHLT. Eine Rendite ist ein Verhaeltnis, ausgezahlt
        * wird ein Betrag. "+1,03 %" und "3 Cent" sind beide wahr — aber nur
@@ -1174,23 +1182,34 @@
     var netto = renditeNachGebuehren(f);
     var nettoGewinnUsd = netto === null ? null : empfUsd * netto / 100;
 
+    /* DIE PROZENT-AUFTEILUNG IMMER DAZU (Karams Vorgabe 23.8. abends):
+     * einsatz_1/einsatz_2 SIND die Aufteilung von 100 — also direkt die
+     * Prozente vom Gesamteinsatz, gueltig bei JEDEM Betrag. Wer selbst
+     * einen anderen Gesamteinsatz waehlt, rechnet nur Prozent mal Summe. */
+    var ant1 = e1.toFixed(1), ant2 = e2.toFixed(1);
+    var anteilTitel = 'Anteil am Gesamteinsatz. Die Aufteilung ist bei jedem Betrag dieselbe: ' +
+      'dein Gesamteinsatz mal diesen Prozentsatz ergibt den Betrag dieser Seite.';
+
     return '<div class="setz">' +
       '<div class="setz-schritt">' +
         '<span class="setz-nr">1</span>' +
         '<span class="setz-buch ' + txt(b1.chip) + '">' + txt(b1.name) + '</span>' +
-        '<span class="setz-geld">' + betrag(e1) + '</span>' +
+        '<span class="setz-geld">' + betrag(e1) +
+          ' <span class="setz-anteil" title="' + anteilTitel + '">= ' + ant1 + ' % vom Gesamt</span></span>' +
         '<span class="setz-text">' + tuWas(b1, f.pm_seite, f.mannschaft) + '</span>' +
         setzDetail(b1, f.buch_1 || 'polymarket', f.pm_seite, f.pm_preis, usd1, f.pm_link) +
       '</div>' +
       '<div class="setz-schritt">' +
         '<span class="setz-nr">2</span>' +
         '<span class="setz-buch ' + txt(b2.chip) + '">' + txt(b2.name) + '</span>' +
-        '<span class="setz-geld">' + betrag(e2) + '</span>' +
+        '<span class="setz-geld">' + betrag(e2) +
+          ' <span class="setz-anteil" title="' + anteilTitel + '">= ' + ant2 + ' % vom Gesamt</span></span>' +
         '<span class="setz-text">' + tuWas(b2, f.bf_seite, f.bf_name) + '</span>' +
         setzDetail(b2, f.buch || 'betfair', f.bf_seite, f.bf_quote, usd2, f.bf_link) +
       '</div>' +
       '<div class="setz-summe">' +
-        'Zusammen <b>' + betrag(100) + '</b> Einsatz. Es gibt genau <b>zwei</b> Ausgänge, ' +
+        'Zusammen <b>' + betrag(100) + '</b> Einsatz, aufgeteilt <b>' + ant1 + ' % / ' + ant2 + ' %</b> — ' +
+        'diese Aufteilung gilt bei JEDEM Gesamteinsatz. Es gibt genau <b>zwei</b> Ausgänge, ' +
         'und beide zahlen dasselbe: <b>' + betrag(aus) + '</b> zurück — also ' +
         '<b class="' + (gewinn > 0 ? 'gut' : 'rot') + '">' +
         (gewinn >= 0 ? '+' : '−') + geld(Math.abs(gewinnUsd)) + '</b> sicher, vor Gebühren' +
@@ -1558,9 +1577,10 @@
      * dieses Projekt sonst warnt: Basis in der einen, Teile in der anderen
      * Waehrung. Jetzt konsequent in $ (der Waehrung der Datenbank), mit dem
      * ausdruecklichen Hinweis, dass die Aufteilung prozentual ist. */
-    zeile('  Aufteilung bei 100 $ Einsatz: ' + Number(f.einsatz_1).toFixed(2) + ' $ auf ' + b1.name +
-          ', ' + Number(f.einsatz_2).toFixed(2) + ' $ auf ' + b2.name +
-          ' (prozentual, gilt in € genauso)');
+    zeile('  Aufteilung: ' + Number(f.einsatz_1).toFixed(1) + ' % auf ' + b1.name +
+          ', ' + Number(f.einsatz_2).toFixed(1) + ' % auf ' + b2.name +
+          ' — von JEDEM Gesamteinsatz (bei 100 $ also ' + Number(f.einsatz_1).toFixed(2) +
+          ' $ und ' + Number(f.einsatz_2).toFixed(2) + ' $; gilt in € genauso)');
     zeile('  Auszahlung bei BEIDEN Ausgängen: ' + Number(f.auszahlung).toFixed(2) + ' $ je 100 $ Einsatz');
     zeile('  Max. Einsatz (beide Seiten zusammen): ' + (f.max_einsatz == null ? 'unbekannt' : geld(f.max_einsatz)) +
           ' · tatsächlicher Gewinn: ' + (f.echter_gewinn == null ? 'unbekannt' : geld(f.echter_gewinn)));

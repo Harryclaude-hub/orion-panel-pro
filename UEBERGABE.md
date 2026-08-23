@@ -4309,3 +4309,38 @@ nicht.
 
 Die schon verschickten 24 Meldungen bleiben im Panel sichtbar
 (gemeldet verschwindet nie) und fallen mit der 24-h-Regel heraus.
+
+## 9q. DIE PROZENT-AUFTEILUNG IMMER SICHTBAR (23.8. abends, Karams Nachschlag)
+
+### Der Auftrag
+
+"Nicht nur das Geld: gib immer an, wie viel Prozent vom Gesamteinsatz auf
+welche Seite gehoert (60 dort, 40 da)."
+
+### Umgesetzt
+
+einsatz_1/einsatz_2 SIND die Aufteilung von 100, also direkt die
+Prozente. Sie stehen jetzt ausdruecklich an vier Stellen:
+
+    Karte, Analyse-Zeile     "Aufteilung 60,3 % / 39,7 %" - immer
+                             sichtbar, ohne Aufklappen
+    So setzt du, je Schritt  neben dem Betrag "= 60,3 % vom Gesamt"
+                             (neue Klasse setz-anteil in stil.css)
+    So setzt du, Summenzeile "aufgeteilt 60,3 % / 39,7 % - gilt bei
+                             JEDEM Gesamteinsatz"
+    Kopiertext               "Aufteilung: 60,3 % auf X, 39,7 % auf Y -
+                             von JEDEM Gesamteinsatz"
+    Telegram, beide Bots     "1. Polymarket (60,3 % vom Gesamt): ..."
+
+Cache-Marken v79. Chancen-Bot v16 ausgerollt und traegt die Prozente.
+
+### OFFEN: Knapp-Bot v12 wartet auf einen Doppelklick
+
+Der Supabase-MCP-Weg nahm nach einem Neuverbinden mitten in der Arbeit
+ploetzlich keine strukturierten Parameter mehr an (ZodError: files als
+String statt Array) - zweimal identisch fehlgeschlagen, nicht weiter
+wiederholt. Der fertige Knapp-Bot-Stand (Prozent-Zeilen) liegt korrekt
+erzeugt im Repo; deployt ist v11 (Band-Fix und Netto-Text sind also
+LIVE, nur die Prozent-Zeilen fehlen dort noch). Ausrollen:
+bridge/DEPLOY-MELDER.cmd doppelklicken (rollt beide Bots) - oder der
+MCP-Weg beim naechsten Versuch.
