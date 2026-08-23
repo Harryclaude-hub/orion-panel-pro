@@ -332,10 +332,21 @@
       ? 1 + (1 - s) / (x - 1)
       : 1 + (x - 1) * (1 - s);
   }
+  /* SEIT 23.8.2026 (Karams Vorgabe): die HAUPTRECHNUNG ist VOR Gebuehren.
+   * qeEinsWert/qeZweiWert liefern deshalb die ROHE Quote (1/p, q, L/(L-1)),
+   * genau das, was in rendite/inv/einsatz_1/einsatz_2 gespeichert ist und
+   * was Karam von Hand nachrechnet. Die NETTO-Quote (mit Gebuehr) bleibt
+   * als eigener Weg fuer den Gebuehren-Block erhalten. */
   function qeEinsWert(f) {
-    return qeSeiteWert(f.buch_1 || 'polymarket', buch1(f), f.pm_preis, f.pm_gebuehr, f.pm_seite);
+    return qeOhneGebuehr(buch1(f), f.pm_preis, f.pm_seite);
   }
   function qeZweiWert(f) {
+    return qeOhneGebuehr(buch2(f), f.bf_quote, f.bf_seite);
+  }
+  function qeEinsNetto(f) {
+    return qeSeiteWert(f.buch_1 || 'polymarket', buch1(f), f.pm_preis, f.pm_gebuehr, f.pm_seite);
+  }
+  function qeZweiNetto(f) {
     return qeSeiteWert(f.buch || 'betfair', buch2(f), f.bf_quote, f.bf_gebuehr, f.bf_seite);
   }
   function qeEins(f) { var x = qeEinsWert(f); return x === null ? '?' : x.toFixed(3); }
@@ -368,23 +379,25 @@
     var qeNoetig = 1 / rest;                // ... also mindestens diese Effektivquote
 
     var grenze, richtung;
+    /* SEIT 23.8. auf ROHEN Quoten gerechnet (die Hauptrechnung ist vor
+     * Gebuehren). Die Umkehrungen sind damit exakt statt genaehert —
+     * die alte Preis-Umkehrung stammte noch aus der widerlegten
+     * min(p,1-p)-Gebuehrenformel. */
     if (info.art === 'preis') {
       if (!(x > 0 && x < 1)) return null;
-      /* qe = (1 - s*min(p,1-p))/p. Unterhalb 0,5 ist min(p,1-p) = p, also
-       * qe = 1/p - s  ->  p = 1/(qe+s). */
-      grenze = 1 / (qeNoetig + s);
+      /* qe = 1/p  ->  p = 1/qe */
+      grenze = 1 / qeNoetig;
       richtung = 'steigen';
     } else if (String(f.pm_seite || '').toLowerCase() === 'lay') {
       if (!(x > 1)) return null;
-      /* qe = 1 + (1-s)/(q-1)  ->  q = 1 + (1-s)/(qe-1) */
+      /* qe = 1 + 1/(q-1)  ->  q = 1 + 1/(qe-1) */
       if (!(qeNoetig > 1)) return null;
-      grenze = 1 + (1 - s) / (qeNoetig - 1);
+      grenze = 1 + 1 / (qeNoetig - 1);
       richtung = 'steigen';
     } else {
       if (!(x > 1)) return null;
-      /* qe = 1 + (q-1)(1-s)  ->  q = 1 + (qe-1)/(1-s) */
-      if (!(1 - s > 0)) return null;
-      grenze = 1 + (qeNoetig - 1) / (1 - s);
+      /* qe = q */
+      grenze = qeNoetig;
       richtung = 'fallen';
     }
     if (!(grenze > 0)) return null;
@@ -533,47 +546,34 @@
   }
 
   /* Die Rendite in Worten. Eine Zahl mit Minus davor beantwortet die Frage
-   * nicht, die man beim Hinsehen hat: lohnt sich das oder nicht. */
+   * nicht, die man beim Hinsehen hat: lohnt sich das oder nicht.
+   *
+   * SEIT 23.8. ist rendite VOR Gebuehren (Karams Vorgabe: erst die rohe
+   * Rechnung, Gebuehren spaeter abziehen). Die Netto-Zahl steht als
+   * Zusatz dabei, damit niemand die Gebuehr doppelt abzieht. */
   function renditeText(f) {
     var r = Number(f.rendite);
     var inv = Number(f.inv);
     var schwelle = welt.KONFIG.mindestRendite;
-    var pmG = (Number(f.pm_gebuehr) * 100).toFixed(1);
-    var ggG = (Number(f.bf_gebuehr) * 100).toFixed(1);
+    var netto = renditeNachGebuehren(f);
+    var nettoText = netto === null
+      ? ' Nach Abzug der Gebühren: nicht ausrechenbar.'
+      : ' Nach Abzug der Gebühren blieben ' + (netto >= 0 ? '+' : '') + netto.toFixed(2) + ' %.';
 
     if (r >= schwelle) {
-      return '<div class="urteil gut"><b>Lohnt sich: +' + r.toFixed(2) + ' %.</b> ' +
+      return '<div class="urteil gut"><b>Lohnt sich: +' + r.toFixed(2) + ' % vor Gebühren.</b> ' +
         'Beide Seiten zusammen kosten ' + (inv * 100).toFixed(2) + ' % dessen, was sie zurückzahlen. ' +
-        'Der Rest ist Gewinn, egal wie es ausgeht.</div>';
+        'Der Rest ist Gewinn, egal wie es ausgeht.' + nettoText + '</div>';
     }
     if (r >= 0) {
-      return '<div class="urteil"><b>Zu knapp: +' + r.toFixed(2) + ' %.</b> ' +
+      return '<div class="urteil"><b>Zu knapp: +' + r.toFixed(2) + ' % vor Gebühren.</b> ' +
         'Rechnerisch über null, aber unter ' + schwelle.toFixed(2) + ' %. ' +
-        'Bis beide Seiten gesetzt sind, ist so ein Vorsprung meist weg.</div>';
+        'Bis beide Seiten gesetzt sind, ist so ein Vorsprung meist weg.' + nettoText + '</div>';
     }
-    /* Wie viel davon sind die Gebuehren? Ausgerechnet, nicht behauptet.
-     * Dieselben Formeln ohne Gebuehrensatz, dann vergleichen. */
-    var ohne = renditeOhneGebuehren(f);
-    var schuld;
-    if (ohne === null) schuld = null;
-    else if (ohne > 0.005) {
-      schuld = 'Ohne Gebühren wären es +' + ohne.toFixed(2) + ' % — die Gebühren allein ' +
-               'machen aus einem Gewinn einen Verlust.';
-    } else if (ohne > -0.005) {
-      /* Genau null ist kein Gewinn. Beide Buecher stehen exakt gleich, und
-       * dann kostet jede Gebuehr unmittelbar Geld. */
-      schuld = 'Ohne Gebühren stünde es genau bei null — beide Bücher sind sich einig. ' +
-               'Was die Gebühren kosten, ist damit direkt der Verlust.';
-    } else {
-      schuld = 'Auch ohne Gebühren wären es ' + ohne.toFixed(2) + ' % — hier liegen die ' +
-               'beiden Bücher schlicht zu nah beieinander.';
-    }
-
-    return '<div class="urteil"><b>Lohnt sich nicht: ' + r.toFixed(2) + ' %.</b> ' +
+    return '<div class="urteil"><b>Lohnt sich nicht: ' + r.toFixed(2) + ' % vor Gebühren.</b> ' +
       'Beide Seiten zusammen kosten ' + (inv * 100).toFixed(2) + ' % dessen, was sie zurückzahlen — ' +
-      'also mehr als sie einbringen. Gebühren: ' +
-      pmG + ' % bei ' + buch1(f).name + ', ' + ggG + ' % bei ' + buch2(f).name + '. ' +
-      (schuld || '') + '</div>';
+      'die beiden Bücher liegen schlicht zu nah beieinander, noch ohne jede Gebühr.' +
+      nettoText + '</div>';
   }
 
   /* Was bliebe ohne jede Gebühr? Nur so laesst sich sagen, ob die Gebuehren
@@ -597,6 +597,21 @@
   function renditeOhneGebuehren(f) {
     var qe1 = qeOhneGebuehr(buch1(f), f.pm_preis, f.pm_seite);
     var qe2 = qeOhneGebuehr(buch2(f), f.bf_quote, f.bf_seite);
+    if (qe1 === null || qe2 === null) return null;
+    var inv = 1 / qe1 + 1 / qe2;
+    if (!(inv > 0)) return null;
+    return (1 / inv - 1) * 100;
+  }
+
+  /* Und andersherum: was BLIEBE nach Gebuehren? Seit dem 23.8. ist das die
+   * ZWEITZAHL (die Hauptrechnung ist roh). Vorrang hat der gespeicherte
+   * Wert des Scanners (rendite_netto); fuer aeltere Zeilen wird aus den
+   * Netto-Quoten nachgerechnet — dieselben Formeln wie immer. */
+  function renditeNachGebuehren(f) {
+    var g = Number(f.rendite_netto);
+    if (f.rendite_netto !== null && f.rendite_netto !== undefined && isFinite(g)) return g;
+    var qe1 = qeEinsNetto(f);
+    var qe2 = qeZweiNetto(f);
     if (qe1 === null || qe2 === null) return null;
     var inv = 1 / qe1 + 1 / qe2;
     if (!(inv > 0)) return null;
@@ -639,7 +654,9 @@
     var roh     = welcheSeite === 1 ? f.pm_preis : f.bf_quote;
     var seite   = welcheSeite === 1 ? f.pm_seite : f.bf_seite;
     var einsatz = Number(welcheSeite === 1 ? f.einsatz_1 : f.einsatz_2);
-    var qe      = welcheSeite === 1 ? qeEinsWert(f) : qeZweiWert(f);
+    /* Fuer den BETRAG zaehlt die NETTO-Quote: der Betrag ist genau die
+     * Differenz zwischen roher und Netto-Auszahlung. */
+    var qe      = welcheSeite === 1 ? qeEinsNetto(f) : qeZweiNetto(f);
     if (qe === null || !isFinite(einsatz)) return null;
     return welt.Rechnung.gebuehrBetrag(gebuehrForm(info, name, seite), einsatz, Number(roh), qe);
   }
@@ -691,29 +708,30 @@
     var summe = (g1 === null || g2 === null) ? null : g1 + g2;
 
     /* Was die Gebühren die Rendite kosten. Ohne diese Zahl bleibt der Betrag
-     * eine Nebenbemerkung; mit ihr sieht man, ob die Gebühr der Grund ist,
-     * dass sich etwas nicht lohnt. */
-    var ohne = renditeOhneGebuehren(f);
+     * eine Nebenbemerkung; mit ihr sieht man, was nach dem Abzug bleibt.
+     * SEIT 23.8.: rendite ist VOR Gebühren, der Abzug kommt HIER. */
     var r = Number(f.rendite);
-    var kostet = (ohne === null || !isFinite(r)) ? null : ohne - r;
+    var netto = renditeNachGebuehren(f);
+    var kostet = (netto === null || !isFinite(r)) ? null : r - netto;
 
     /* Hochrechnung auf das, was wirklich hineinpasst. */
     var max = f.max_einsatz;
     var hoch = '';
     if (summe !== null && max !== null && max !== undefined && isFinite(Number(max)) && Number(max) > 0) {
       var faktor = Number(max) / 100;
-      /* ACHTUNG bei der Beschriftung: `rendite` ist bereits NACH Gebühr.
-       * Der Gewinn hier ist also das, was ÜBRIG BLEIBT — nicht der Ertrag,
-       * von dem die Gebühr noch abginge. Wer das verwechselt, zieht die
-       * Gebühr zweimal ab und hält gute Funde für schlechte. */
-      var gewinnNach = Number(max) * r / 100;
+      /* BESCHRIFTUNG: `rendite` ist VOR Gebühr (seit 23.8.). Der Gewinn
+       * nach Abzug rechnet deshalb mit der NETTO-Rendite — wer stattdessen
+       * die rohe nimmt und die Gebühr nochmal abzieht, zieht sie doppelt. */
+      var gewinnNach = netto === null ? null : Number(max) * netto / 100;
       var gebuehrEcht = summe * faktor;
       hoch = '<div class="gp-fuss">Auf den handelbaren Einsatz von ' + geld(max) +
              ' hochgerechnet: <b>' + geld(gebuehrEcht, 3) + '</b> Gebühr &middot; ' +
-             '<b>' + (gewinnNach >= 0 ? '+' : '') + geld(gewinnNach, 3) + '</b> Gewinn, ' +
-             'der davon übrig bleibt' +
-             (gewinnNach > 0 && gebuehrEcht > gewinnNach
-               ? ' — die Gebühr ist damit <b>größer als der Gewinn</b>.'
+             (gewinnNach === null
+               ? 'Gewinn nach Abzug <b>nicht ausrechenbar</b>'
+               : '<b>' + (gewinnNach >= 0 ? '+' : '') + geld(gewinnNach, 3) + '</b> Gewinn, ' +
+                 'der nach dem Abzug übrig bleibt') +
+             (gewinnNach !== null && gewinnNach <= 0
+               ? ' — die Gebühr ist damit <b>größer als der rohe Gewinn</b>.'
                : '.') +
              '</div>';
     } else if (summe !== null) {
@@ -724,7 +742,8 @@
 
     return '<div class="gegenprobe">' +
       '<div class="gp-fuss" style="margin:0 0 6px">Was die <b>Gebühren</b> kosten — ' +
-        'jedes Buch nimmt anders, und der Satz steckt bereits in beiden Effektivquoten:</div>' +
+        'jedes Buch nimmt anders. Die Rendite oben ist <b>vor</b> Gebühren; ' +
+        'hier steht, was beim Abziehen wegginge:</div>' +
       eine(b1, s1, g1, f.pm_gebuehr_echt, f.pm_seite,
            gebuehrForm(b1, f.buch_1 || 'polymarket', f.pm_seite), Number(f.einsatz_1)) +
       eine(b2, s2, g2, f.bf_gebuehr_echt, f.bf_seite,
@@ -794,7 +813,8 @@
   function analyse(f, imVerlauf) {
     var gewinn = Number(f.auszahlung) - 100;
     return '<div class="analyse">' +
-      '<span><b>' + Number(f.rendite).toFixed(2) + ' %</b> Rendite</span>' +
+      '<span title="Seit dem 23.8. die ROHE Rechnung (1/q1 + 1/q2), von Hand nachrechenbar. Die Gebühren stehen getrennt im Gebühren-Block und werden erst dort abgezogen."><b>' +
+        Number(f.rendite).toFixed(2) + ' %</b> Rendite vor Gebühren</span>' +
       menge(f) +
       /* DIE ZAHL, DIE ZAEHLT. Eine Rendite ist ein Verhaeltnis, ausgezahlt
        * wird ein Betrag. "+1,03 %" und "3 Cent" sind beide wahr — aber nur
@@ -804,9 +824,9 @@
         ? '<span class="acht" title="Im Orderbuch steht keine Menge. Unbekannt heisst nicht unbegrenzt — es heisst, dass niemand weiss, ob hier 3 Cent oder 300 Euro zu holen sind.">Gewinn <b>unbekannt</b> — keine Menge im Buch</span>'
         : '<span' + (f.echter_gewinn >= welt.KONFIG.mindestGewinn ? ' class="gut"' : ' class="acht"') +
           '><b>' + (f.echter_gewinn >= 0 ? '+' : '') + geld(f.echter_gewinn) +
-          '</b> tatsächlicher Gewinn' +
+          '</b> Gewinn vor Gebühren' +
           (f.echter_gewinn < welt.KONFIG.mindestGewinn
-            ? ' — unter ' + geld(welt.KONFIG.mindestGewinn) + ', keine Chance'
+            ? ' — unter der Geldschwelle von ' + geld(welt.KONFIG.mindestGewinn)
             : '') + '</span>') +
       (f.max_einsatz === null || f.max_einsatz === undefined
         ? '<span class="acht">Liquidität nicht messbar</span>'
@@ -1295,7 +1315,7 @@
         'UNPLAUSIBEL HOCH — Bücher widersprechen sich, eines klebt</span>');
     }
     if (f.zu_duenn) {
-      w.push('<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Rendite ohne Menge ist keine Chance.">zu dünn — max. ' +
+      w.push('<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Seit dem 23.8. bleibt die Zeile trotzdem in ihrem Rendite-Reiter (Karams Aufteilung) - aber wer hier setzt, bekommt nur Cent-Betraege unter.">zu dünn — max. ' +
         (f.max_einsatz == null ? '?' : Number(f.max_einsatz).toFixed(2)) + ' Einsatz</span>');
     }
     /* Stimmigkeitsprobe des Gegenbuchs, seit 13.8.2026. Siehe die Erklaerung
@@ -1315,7 +1335,7 @@
     var ab = f.absage;
     if (ab && ab.art === 'verlust') {
       w.push('<span class="chip rot" title="Wird die Partie abgesagt oder abgebrochen, kostet diese Zeile rechnerisch Geld - die Rueckzahlungsregeln der beiden Buecher passen nicht zusammen. Details im Abschnitt So setzt du.">' +
-        'Bei Absage VERLUST — keine Chance</span>');
+        'Bei Absage VERLUST — vor dem Setzen die Regeln lesen</span>');
     } else if (ab && ab.art === 'unbekannt') {
       w.push('<span class="chip acht" title="Eine Seite hat keine belegte Rueckzahlungsregel. Vor dem Setzen die Regel dieses Marktes lesen - Details im Abschnitt So setzt du.">' +
         'Absage-Regel je Markt prüfen</span>');
@@ -1323,7 +1343,7 @@
     if (K1.bewaehrungS && Number(f.rendite) >= K1.mindestRendite &&
         (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K1.bewaehrungS * 1000 &&
         f.status !== 'vorbei') {
-      w.push('<span class="chip acht" title="Frisch gefunden - die Zeile muss erst mehrere Scanner-Laeufe ueberleben, bevor sie Chance heisst. Kleber sterben binnen Sekunden; was die Bewaehrung uebersteht, ist belastbar.">IN PRÜFUNG — ' +
+      w.push('<span class="chip acht" title="Frisch gefunden - erst wenn die Zeile mehrere Scanner-Laeufe ueberlebt hat, ist sie belastbar; Kleber sterben binnen Sekunden. Seit dem 23.8. steht sie trotzdem schon in ihrem Rendite-Reiter (Karams Aufteilung); die Telegram-Meldung wartet die Bewaehrung weiter ab.">IN PRÜFUNG — ' +
         Math.max(0, Math.ceil((K1.bewaehrungS * 1000 - (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen))) / 1000)) + ' s Bewährung offen</span>');
     }
     if (!w.length) return '';
@@ -1367,25 +1387,25 @@
    * Ohne Gebühr ist das exakt seine Form „1/Risikofaktor + 1". Die
    * Effektivquote selbst kommt weiter aus rechnung.js — hier wird nur
    * ihr Weg gezeigt, nichts Neues entschieden. */
+  /* SEIT 23.8. die ROHEN Formeln (Karams Vorgabe: Hauptrechnung vor
+   * Gebühren, von Hand nachrechenbar):
+   *   Anteilspreis   qE = 1 ÷ Preis
+   *   Back           qE = Quote
+   *   Lay            qE = 1 + 1 ÷ Risikofaktor,  Risikofaktor = Quote − 1
+   * Die Gebühr taucht erst im Gebühren-Block auf, nicht mehr hier. */
   function formelSeite(info, seiteText, roh, satz, qeText) {
-    var s = Number(satz); if (!isFinite(s) || s < 0) s = 0;
     var st = String(seiteText || '').toUpperCase();
     var n = Number(roh);
     if (info.art === 'preis') {
       if (!(n > 0 && n < 1)) return '';
-      var anteil = s * n * (1 - n);
-      return 'Gebührenanteil = Satz × Preis × (1 − Preis) = ' + (s * 100).toFixed(1) + ' % × ' +
-             n.toFixed(3) + ' × ' + (1 - n).toFixed(3) + ' = ' + anteil.toFixed(4) +
-             ' → Effektivquote = (1 − ' + anteil.toFixed(4) + ') ÷ ' + n.toFixed(3) + ' = ' + qeText;
+      return 'Effektivquote = 1 ÷ Preis = 1 ÷ ' + n.toFixed(3) + ' = ' + qeText;
     }
     if (!(n > 1)) return '';
     if (st === 'LAY') {
       return 'Risikofaktor = Quote − 1 = ' + (n - 1).toFixed(2) +
-             ' → Effektivquote = 1 + (1 − Gebühr) ÷ Risikofaktor = 1 + ' + (1 - s).toFixed(2) +
-             ' ÷ ' + (n - 1).toFixed(2) + ' = ' + qeText;
+             ' → Effektivquote = 1 + 1 ÷ Risikofaktor = 1 + 1 ÷ ' + (n - 1).toFixed(2) + ' = ' + qeText;
     }
-    return 'Effektivquote = 1 + (Quote − 1) × (1 − Gebühr) = 1 + ' + (n - 1).toFixed(2) +
-           ' × ' + (1 - s).toFixed(2) + ' = ' + qeText;
+    return 'Effektivquote = Quote = ' + qeText;
   }
 
   function rechenweg(f) {
@@ -1398,15 +1418,22 @@
     var f2 = formelSeite(b2, f.bf_seite, f.bf_quote, f.bf_gebuehr, qe2);
     var z = '<ol class="leise rechenweg">';
     z += '<li>' + txt(b1.name) + ' — ' + wertName(b1) + ' <b>' + wertText(b1, f.pm_preis) + '</b>' +
-         ', Gebühr <b>' + (isFinite(g1) ? g1.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe1 + '</b>' +
+         ' → Effektivquote <b>' + qe1 + '</b> (roh, ohne Gebühr)' +
          (f1 ? '<br><span class="formel">' + f1 + '</span>' : '') + '</li>';
     z += '<li>' + txt(b2.name) + ' — ' + wertName(b2) + ' <b>' + wertText(b2, f.bf_quote) + '</b>' +
-         ', Gebühr <b>' + (isFinite(g2) ? g2.toFixed(1) : '?') + ' %</b> → Effektivquote <b>' + qe2 + '</b>' +
+         ' → Effektivquote <b>' + qe2 + '</b> (roh, ohne Gebühr)' +
          (f2 ? '<br><span class="formel">' + f2 + '</span>' : '') + '</li>';
     z += '<li>Kehrwertsumme: 1/' + qe1 + ' + 1/' + qe2 + ' = <b>' +
-         (isFinite(inv) ? inv.toFixed(4) : '?') + '</b></li>';
+         (isFinite(inv) ? inv.toFixed(4) : '?') + '</b> — unter 1 heißt Arbitrage</li>';
     z += '<li>Rendite: (1 / ' + (isFinite(inv) ? inv.toFixed(4) : '?') + ' − 1) × 100 = <b>' +
-         (isFinite(r) ? ((r >= 0 ? '+' : '') + r.toFixed(2)) : '?') + ' %</b> — nach allen Gebühren</li>';
+         (isFinite(r) ? ((r >= 0 ? '+' : '') + r.toFixed(2)) : '?') + ' %</b> — <b>vor</b> Gebühren</li>';
+    (function () {
+      var netto = renditeNachGebuehren(f);
+      z += '<li>Gebühren (' + (isFinite(g1) ? g1.toFixed(1) : '?') + ' % ' + txt(b1.name) + ', ' +
+           (isFinite(g2) ? g2.toFixed(1) : '?') + ' % ' + txt(b2.name) + ') abziehen → <b>' +
+           (netto === null ? 'nicht ausrechenbar' : (netto >= 0 ? '+' : '') + netto.toFixed(2) + ' %') +
+           '</b> nach Gebühren. Der Abzug kommt ZULETZT, nie doppelt.</li>';
+    })();
     if (fxKurs) {
       z += '<li>Geldbeträge: immer BEIDE Währungen — Euro zuerst (EZB-Kurs <b>' +
            Number(fxKurs.kurs).toFixed(4) + '</b>, Stand ' + txt(fxKurs.stand) +
@@ -1418,8 +1445,9 @@
     z += '</ol>';
     if (K2.externerRechner) {
       z += '<div class="unter leise">Extern gegenprüfen: <a href="' + txt(K2.externerRechner) +
-           '" target="_blank" rel="noopener">Surebet-Rechner (BetBurger)</a> — dort die beiden Effektivquoten ' +
-           qe1 + ' und ' + qe2 + ' als Quoten eintragen und die Gebühr auf 0 stellen (sie steckt hier schon drin).</div>';
+           '" target="_blank" rel="noopener">Surebet-Rechner (BetBurger)</a> — dort die beiden rohen Effektivquoten ' +
+           qe1 + ' und ' + qe2 + ' als Quoten eintragen, Gebühr 0 (die Rechnung ist vor Gebühren) — ' +
+           'es muss exakt dieselbe Rendite herauskommen.</div>';
     }
     return z;
   }
@@ -1448,8 +1476,9 @@
             wertName(info) + ' ' + wertText(info, roh));
       if (laeuferName) zeile('  Ausgang: ' + laeuferName);
       zeile('  Gebühr: ' + (Number(satz) * 100).toFixed(1) + ' % ' +
-            (satzEcht === true ? '(vom Buch gemessen)' : '(dokumentierter Standardtarif, nicht am Konto gemessen)'));
-      zeile('  Effektivquote (nach Gebühr): ' + qeText);
+            (satzEcht === true ? '(vom Buch gemessen)' : '(dokumentierter Standardtarif, nicht am Konto gemessen)') +
+            ' — steckt NICHT in der Effektivquote, wird erst am Ende abgezogen');
+      zeile('  Effektivquote (roh, vor Gebühr): ' + qeText);
       var fo = formelSeite(info, seiteText, roh, satz, qeText);
       if (fo) zeile('  Formel: ' + fo);
       zeile('  Kurs unverändert seit: ' + (kursSeit ? seit(kursSeit) : 'nicht hinterlegt'));
@@ -1462,7 +1491,12 @@
     zeile('DIE RECHNUNG (so kam das Ergebnis zustande):');
     zeile('  Kehrwertsumme = 1/' + qeEins(f) + ' + 1/' + qeZwei(f) + ' = ' + Number(f.inv).toFixed(4));
     zeile('  Rendite = (1 / ' + Number(f.inv).toFixed(4) + ' - 1) x 100 = ' +
-          (Number(f.rendite) >= 0 ? '+' : '') + Number(f.rendite).toFixed(2) + ' % — nach allen Gebühren');
+          (Number(f.rendite) >= 0 ? '+' : '') + Number(f.rendite).toFixed(2) + ' % — VOR Gebühren');
+    (function () {
+      var netto = renditeNachGebuehren(f);
+      zeile('  Nach Abzug der Gebühren: ' + (netto === null ? 'nicht ausrechenbar'
+            : (netto >= 0 ? '+' : '') + netto.toFixed(2) + ' %'));
+    })();
     /* AUFTEILUNG OHNE KURSDREHUNG (19.8.): einsatz_1/_2 sind ANTEILE einer
      * 100er-Basis und damit waehrungsfrei. Vorher lief geld() darueber und
      * drehte die Anteile durch den Wechselkurs — "bei 100 € Einsatz:
@@ -2393,7 +2427,8 @@
       gKnappA.sichtbar.length + ')</h2>' +
       '<p class="leise"><b>Diese Liste kann nur wachsen.</b> Beendete Funde, die je über ' +
       '0 % lagen — rechnerisch eine Arbitrage —, aber nie über die Chancen-Schwelle von ' +
-      K.mindestRendite.toFixed(2) + ' % kamen: nach Gebühren zu wenig. Genau diese Zahl ' +
+      K.mindestRendite.toFixed(2) + ' % kamen (vor Gebühren gerechnet): zu wenig Abstand ' +
+      'zwischen den Büchern. Genau diese Zahl ' +
       'steht im Reiter.</p>';
     if (gKnappA.sichtbar.length) {
       knappHtml += gKnappA.sichtbar.map(function (f) { return karte(f, true); }).join('');

@@ -4094,3 +4094,128 @@ Urteil.
 
 Spiegel gruen, Vollpruefung gruen (alle sieben Huerden), Melder,
 Rechnung und Zuordnung ohne Beanstandung.
+
+## 9n. RENDITE VOR GEBUEHREN + 24-STUNDEN-REGEL (23.8., Karams Pruefauftrag)
+
+### Der Auftrag
+
+Karam rechnet jede Zeile von Hand nach (1/q1 + 1/q2) und bekommt andere
+Zahlen als das Panel. Sein Befehl: erst die Formeln recherchieren, dann
+gegen das Panel halten, Fehler direkt beheben. Und: "Beachte erst mal
+die Gebuehr nicht. Ich will, dass diese Rechnung noch richtig ist, weil
+dann kann man spaeter die Gebuehren abziehen."
+
+### Die Recherche (extern, drei Quellen-Klassen)
+
+Standard-Arbitrage-Formeln, gegengeprueft bei Surebet-Rechnern,
+Boersen-Hilfen (Smarkets Back-Lay) und Prediction-Market-Anleitungen:
+
+    Zwei-Wege-Arbitrage    1/q1 + 1/q2 < 1;  Gewinn = (1/Summe - 1) * 100
+    Einsatzaufteilung      S_i = S * (1/q_i) / Summe  (beide zahlen gleich aus)
+    Lay als Back           qE = 1 + (1 - Kommission)/(L - 1);  roh: L/(L-1)
+    Binaermarkt (PM/Kalshi) Preis = Wahrscheinlichkeit, Auszahlung 1;  qE = 1/p
+    PM-Arbitrage           JA-Preis + NEIN-Preis < 1 (dasselbe in Preisform)
+
+BEFUND: rechnung.js/rechnung.ts rechnen exakt diese Formeln. Der
+Rechenweg des Panels war RICHTIG. Was Karams Handrechnung widersprach,
+waren die GEBUEHREN, die in jeder Effektivquote steckten.
+
+### Umgesetzt: die Hauptrechnung ist jetzt VOR Gebuehren
+
+An der Wurzel (Scanner v27), nicht in der Anzeige:
+
+    qe je Seite     = ROHE Quote (1/p, q, L/(L-1))
+    rendite/inv/einsatz_1/einsatz_2/auszahlung = rohe Rechnung
+    qe_netto        = Quote nach Gebuehr, je Seite mitgefuehrt
+    rendite_netto/inv_netto = NEUE Spalten, die Zahl nach Gebuehren
+    Gebuehren-Betraege wie gehabt (Differenz roh/netto auf die Aufteilung)
+
+Anzeige, Funker, Rechenweg, Kopiertext: ueberall "vor Gebuehren"
+beschriftet, die Netto-Zahl als eigene Zeile ("Der Abzug kommt ZULETZT,
+nie doppelt"). Externer Rechner: rohe Quoten, Gebuehr 0, Ergebnis muss
+exakt stimmen. Puffer-Rechnung auf rohe Umkehrungen umgestellt (die alte
+Preis-Umkehrung stammte noch aus der widerlegten min(p,1-p)-Formel).
+
+### ZWEI ECHTE FEHLER dabei gefunden und behoben
+
+1. **orion-pruefer (nur in der Datenbank, NICHT im Repo — Drift!)
+   rechnete die PM-Gebuehr noch mit `satz * min(p, 1-p)`** — der am
+   11.8. widerlegten Formel. Die "unabhaengige Nachrechnung" widersprach
+   damit systematisch der richtigen Rechnung. v8 rechnet roh nach
+   (Uebergangsregel: alte Netto-Zeilen gelten als richtig) und liegt
+   jetzt als supabase/functions/orion-pruefer/ im Repo.
+   Gegenprobe nach Deploy: 523 von 523 richtig, 0 falsch.
+
+2. **orion_verlauf_urteil hatte einen 100x-Einheitenfehler:**
+   `beste >= 0.05` sollte "ab 5 %" heissen, beste_rendite steht aber in
+   PROZENT — verurteilt wurde ab 0,05 %, also praktisch JEDER
+   Verlaufsfund als 'zweifelhaft' (der "11 von 11 zweifelhaft"-Befund
+   aus 9m war genau das). Dazu der schon bekannte "*100"-Meldetext.
+   Beides repariert; falsche Stempel zurueckgenommen.
+
+### Karams Aufteilung: 2 % ist DIE Trennlinie
+
+    unter 2 % (vor Gebuehren)  =  knappes Paar
+    ab 2 %                     =  Chance
+    faellt die Arbitrage weg   =  Verlauf (Scanner prueft alle 15-33 s,
+                                  jeder Lauf setzt Verschwundenes sofort
+                                  auf 'vorbei'; Waechter nach 3 min,
+                                  Pruefer nach 60 min als Fangnetze)
+
+Reiter entscheiden nur noch die Beweisfragen: nachgewiesen falsch /
+Fehlpaarung -> Falsch-Reiter, veraltete Kurse -> Veraltet-Block,
+Kennung/Anpfiff/Deckung/Plausibilitaet verletzt -> knappe Paare MIT
+Marke (vorher fielen Kennung- und Anpfiff-Faelle ueber 2 % STILL ins
+unsichtbare Rauschen — auch das ist zu). Menge, Geldschwelle, Absage
+und Bewaehrung sind nur noch WARNMARKEN auf der Karte; die
+Telegram-Melder behalten ihre eigenen, strengeren Gurte (120 s
+Bewaehrung, Gewinn >= 5 $) unveraendert.
+
+### Plausibilitaetsdeckel mitgezogen: 5,0 -> 6,5
+
+Die 5-%-Marke war am NETTO-Wert gemessen (13.8.). Gebuehrenlast gemessen
+~1,1-1,5 Punkte (9l: roh 8,58 % gegen netto 7,43 %). Unveraendert haette
+der Deckel echte Funde gekappt. 6,5 an allen vier Stellen: KONFIG
+.maxPlausibel, orion_verlauf_urteil, orion_verdacht, Chancen-Bot-Band
+(rendite lte 6.5, siehe unten).
+
+### Die 24-Stunden-Regel (Karams Befehl)
+
+"Alles, was vor laenger als ein Tag her ist, aus der Datenbank loeschen.
+Es darf nur Sachen angezeigt werden, die seit gestern gefunden wurden."
+
+    Job 96 (stuendlich)   loescht vorbei-Zeilen aelter 24 h
+                          (vorbei_seit ODER zuerst_gesehen) — OHNE
+                          Gemeldet-Ausnahme; ersetzt 36 h/30 Tage
+    holeVerlauf           laedt nur zuerst_gesehen >= jetzt - 24 h
+    orion_gespeichert     bleibt unangetastet (der Weg zum Aufheben)
+    Erstlauf              sofort ausgefuehrt
+
+ACHTUNG, bewusste Abweichung von 9k: der Beitragslink einer
+Telegram-Nachricht findet den Fund nur noch am selben Tag. Karams
+24-h-Befehl ist juenger und eindeutig ("alles"); wer eine Meldung
+dauerhaft braucht, speichert sie (orion_gespeichert). Wenn das stoert:
+die Gemeldet-Ausnahme in Job 96 wieder eintragen, eine Stelle.
+
+### Uebergang
+
+Alte Zeilen (rendite noch netto) leben hoechstens 24 h weiter; der
+Pruefer erkennt sie an der Netto-Rechnung und beanstandet sie nicht.
+beste_rendite mischt fuer diese Frist alte Netto- mit neuen Roh-Spitzen.
+Nach einem Tag ist der Bestand sortenrein.
+
+### Ausgerollt und gemessen
+
+    orion-lauf v27 (MCP-Deploy)   schreibt roh + rendite_netto; Handprobe:
+                                  Back 5,2002 gegen Lay 5,40 -> inv 1,00712
+                                  -> -0,706 %, stimmt auf 3 Stellen
+    orion-pruefer v8              523/523 richtig, 0 falsch, 4,2 s
+    SQL                           verlauf_urteil, wache_stufe2-Text,
+                                  verdacht 6,5, Job 96, Stempel-Ruecknahme
+    Pruefstaende                  Spiegel 19896/19896, Rechnung 195/195,
+                                  Vollpruefung 36/36, Zuordnung 296/296,
+                                  Melder gruen, Tagtabelle 42/42
+    Cache-Marken                  alle Betriebsseiten v76 -> v77
+
+Chancen-Bot: Band-Obergrenze 2-5 auf 2-6,5 nachgezogen (siehe
+orion-melder-telegram im Repo), Text nennt "vor Gebuehren".

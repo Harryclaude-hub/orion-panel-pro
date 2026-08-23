@@ -38,8 +38,9 @@
     /* Externer Kontroll-Rechner (Vorgabe 17.8.): der kostenlose
      * Surebet-Rechner von BetBurger. Karte und Funker verlinken ihn,
      * damit sich jede Zeile AUSSERHALB unseres eigenen Codes nachrechnen
-     * laesst. Wichtig beim Eintragen: unsere Effektivquoten enthalten
-     * die Gebuehren bereits — dort also Gebuehr 0 einstellen. */
+     * laesst. SEIT 23.8. (Karams Vorgabe) ist die Hauptrechnung VOR
+     * Gebuehren — dort Gebuehr 0 einstellen und die rohen Quoten
+     * eintragen, dann muss exakt dieselbe Rendite herauskommen. */
     externerRechner: 'https://www.betburger.com/de/surebet-calculator',
 
     /* BETFAIR-SEITE = ORBIT-SATZ, belegt am 11.8.2026 spät abends.
@@ -84,8 +85,13 @@
      * da war. Genau dafuer ist die Schwelle da, und deshalb wandert sie.
      *
      * Was weiter gilt: die Buecher liegen im Schnitt 1,3 % auseinander,
-     * und JEDE Zeile ueber 5 % war bisher eine Fehlpaarung, nie eine
-     * Chance — der Waechter markiert ab 5 % weiterhin als unplausibel. */
+     * und JEDE Zeile weit ueber der Plausibilitaetsgrenze war bisher eine
+     * Fehlpaarung, nie eine Chance.
+     *
+     * SEIT 23.8.2026 (Karams Aufteilung): rendite ist VOR Gebuehren
+     * gerechnet. Unter 2 % = knappes Paar, ab 2 % = Chance, Wegfall =
+     * Verlauf. Die Gebuehren stehen als eigene Zahl auf der Karte
+     * (rendite_netto) und werden SPAETER abgezogen, nicht vorher. */
     mindestRendite: 2.0,
 
     /* Ab welchem handelbaren Betrag ein Fund ueberhaupt als Chance zaehlt.
@@ -307,8 +313,15 @@
      *
      * Solche Zeilen zaehlen NICHT als Chance und loesen weder Kino noch
      * Meldung aus. Sie wandern zu den knappen Paaren mit Begruendung —
-     * verschwinden waere schlimmer, denn an ihnen sieht man die Kleber. */
-    maxPlausibel: 5.0,
+     * verschwinden waere schlimmer, denn an ihnen sieht man die Kleber.
+     *
+     * ANGEHOBEN 5,0 -> 6,5 am 23.8.2026: rendite ist seither VOR
+     * Gebuehren gerechnet, und die gemessene Gebuehrenlast liegt bei
+     * rund 1,1 bis 1,5 Prozentpunkten (UEBERGABE 9l: roh 8,58 % gegen
+     * netto 7,43 %). Die alte 5-%-Marke war am NETTO-Wert gemessen —
+     * unveraendert uebernommen haette sie echte Funde gekappt. Dieselbe
+     * Zahl steht in orion_verlauf_urteil und orion_verdacht. */
+    maxPlausibel: 6.5,
 
     /* BEWAEHRUNGSZEIT (14.8. frueh, siebte Chancen-Bedingung).
      *

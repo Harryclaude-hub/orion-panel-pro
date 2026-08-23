@@ -79,7 +79,7 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string, mit
   }
 
   const zeilen = [
-    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} %</b>`,
+    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} % vor Gebühren</b>`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
     buchZeile(p1, n1, f.pm_seite, Number(f.pm_preis), null, 1),
     buchZeile(p2, n2, f.bf_seite, Number(f.bf_quote), f.bf_name, 2),
@@ -256,10 +256,14 @@ Deno.serve(async (req) => {
      * Charlton). Eine Marge von 103 % hat kein gesundes Buch, das ist ein
      * Datenfehler. Ohne Deckel waere sie ab jetzt meldefaehig. Soll der
      * Deckel weg, ist es diese eine Zahl. */
+    /* BAND 2 bis 6,5 seit 23.8.: rendite ist VOR Gebuehren gerechnet
+     * (Karams Vorgabe), und der Plausibilitaetsdeckel wanderte von 5
+     * (netto gemessen) auf 6,5 (roh). Dieselbe Zahl wie KONFIG
+     * .maxPlausibel, orion_verlauf_urteil und orion_verdacht. */
     const q = 'orion_funde?status=eq.live&telegram_gemeldet=eq.false' +
       '&pruefung=is.null' +
       '&or=(buch_summe.is.null,and(buch_summe.gte.1,buch_summe.lte.1.3))' +
-      '&rendite=gte.2&rendite=lte.5' +
+      '&rendite=gte.2&rendite=lte.6.5' +
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null&max_gewinn=gte.5' +
       '&select=schluessel,nr,titel,mannschaft,rendite,max_einsatz,max_gewinn,buch,buch_1,' +

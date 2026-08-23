@@ -27,19 +27,25 @@
   var R = welt.Rechnung;
   var STRICH = '────────────────';
 
-  /* ---------- Nachrechnen: dieselben Formeln wie der Scanner ---------- */
+  /* ---------- Nachrechnen: dieselben Formeln wie der Scanner ----------
+   *
+   * SEIT 23.8.2026 (Karams Vorgabe) ist die gespeicherte rendite die ROHE
+   * Rechnung VOR Gebuehren. Nachgerechnet wird deshalb mit Satz 0 —
+   * dieselben Bibliotheksfunktionen, nur ohne Abzug. Die NETTO-Zahl
+   * (Satz eingerechnet) wird zusaetzlich mitgeliefert und gegen die
+   * gespeicherte rendite_netto gehalten. */
   function qeVon(buch, seiteText, roh, satz) {
     var s = String(seiteText || '').toUpperCase();
-    if (buch === 'polymarket') return { qe: R.qePm(Number(roh), Number(satz)), form: 'Anteil ' + s };
-    if (buch === 'kalshi') return { qe: R.qeKalshi(Number(roh), Number(satz)), form: 'Kontrakt ' + s };
-    if (s === 'BACK') return { qe: R.qeBack(Number(roh), Number(satz)), form: 'Back' };
-    if (s === 'LAY') return { qe: R.qeLay(Number(roh), Number(satz)), form: 'Lay' };
+    if (buch === 'polymarket') return { qe: R.qePm(Number(roh), satz), form: 'Anteil ' + s };
+    if (buch === 'kalshi') return { qe: R.qeKalshi(Number(roh), satz), form: 'Kontrakt ' + s };
+    if (s === 'BACK') return { qe: R.qeBack(Number(roh), satz), form: 'Back' };
+    if (s === 'LAY') return { qe: R.qeLay(Number(roh), satz), form: 'Lay' };
     return { qe: null, form: '?' };
   }
 
   function nachrechnen(f) {
-    var s1 = qeVon(f.buch_1 || 'polymarket', f.pm_seite, f.pm_preis, f.pm_gebuehr);
-    var s2 = qeVon(f.buch || 'betfair', f.bf_seite, f.bf_quote, f.bf_gebuehr);
+    var s1 = qeVon(f.buch_1 || 'polymarket', f.pm_seite, f.pm_preis, 0);
+    var s2 = qeVon(f.buch || 'betfair', f.bf_seite, f.bf_quote, 0);
     if (s1.qe === null || s2.qe === null) {
       return { pruefbar: false, s1: s1, s2: s2,
                text: 'Nicht nachrechenbar: eine Seite liefert keine gültige Effektivquote (' +
@@ -52,12 +58,20 @@
       if (!isFinite(b)) return;
       if (Math.abs(a - b) > 0.005) abw.push(name + ': ich rechne ' + a.toFixed(4) + ', gespeichert ist ' + b.toFixed(4));
     }
-    vgl('Rendite', e.rendite, f.rendite);
+    vgl('Rendite (vor Gebühren)', e.rendite, f.rendite);
     vgl('Kehrwertsumme', e.inv, f.inv);
     vgl('Einsatz Seite 1', e.s1, f.einsatz_1);
     vgl('Einsatz Seite 2', e.s2, f.einsatz_2);
     vgl('Auszahlung', e.auszahlung, f.auszahlung);
-    return { pruefbar: true, s1: s1, s2: s2, ergebnis: e, abweichungen: abw };
+
+    /* Zweitrechnung NACH Gebuehren, gegen rendite_netto (wenn gespeichert). */
+    var n1 = qeVon(f.buch_1 || 'polymarket', f.pm_seite, f.pm_preis, Number(f.pm_gebuehr));
+    var n2 = qeVon(f.buch || 'betfair', f.bf_seite, f.bf_quote, Number(f.bf_gebuehr));
+    var eN = (n1.qe !== null && n2.qe !== null) ? R.pruefe(n1.qe, n2.qe) : null;
+    if (eN && f.rendite_netto !== null && f.rendite_netto !== undefined) {
+      vgl('Rendite nach Gebühren', eN.rendite, f.rendite_netto);
+    }
+    return { pruefbar: true, s1: s1, s2: s2, ergebnis: e, netto: eN, abweichungen: abw };
   }
 
   /* Die sechs Bedingungen, einzeln abgehakt — dieselbe Reihenfolge wie in
@@ -70,7 +84,7 @@
     function b(nr, name, wert) {
       z.push((wert === true ? '✓' : wert === false ? '✗' : '?') + ' ' + nr + '. ' + name);
     }
-    b(1, 'Rendite über ' + K.mindestRendite + ' %', Number(f.rendite) >= K.mindestRendite);
+    b(1, 'Rendite über ' + K.mindestRendite + ' % (vor Gebühren) - DIE Trennlinie seit 23.8.', Number(f.rendite) >= K.mindestRendite);
     b(2, 'Menge bekannt', f.max_einsatz !== null && f.max_einsatz !== undefined);
     b(3, 'Gewinn über ' + K.mindestGewinn + ' USD', f.echter_gewinn == null ? null : f.echter_gewinn >= K.mindestGewinn);
     b(4, 'Absage kostet nichts', !f.absage ? null : (f.absage.art === 'sicher' ? true : f.absage.art === 'verlust' ? false : null));
@@ -85,24 +99,28 @@
     var z = 'BEFEHL ERHALTEN — PRÜFUNG #' + (f.nr || '?') + '\n' +
             'Ziel: „' + (f.titel || '?') + '“\n' + STRICH + '\n' +
             'Seite 1: ' + (f.buch_1 || '?') + ' ' + (f.pm_seite || '') + ' ' + Number(f.pm_preis).toFixed(4) +
-            ' · Gebühr ' + (Number(f.pm_gebuehr) * 100).toFixed(1) + ' % (' + n.s1.form + ')' +
-            (n.s1.qe === null ? ' → keine gültige Effektivquote' : ' → Effektivquote ' + n.s1.qe.toFixed(4)) + '\n' +
+            ' (' + n.s1.form + ')' +
+            (n.s1.qe === null ? ' → keine gültige Effektivquote' : ' → rohe Effektivquote ' + n.s1.qe.toFixed(4)) + '\n' +
             'Seite 2: ' + (f.buch || '?') + ' ' + (f.bf_seite || '') + ' ' + Number(f.bf_quote).toFixed(4) +
-            ' · Gebühr ' + (Number(f.bf_gebuehr) * 100).toFixed(1) + ' % (' + n.s2.form + ')' +
-            (n.s2.qe === null ? ' → keine gültige Effektivquote' : ' → Effektivquote ' + n.s2.qe.toFixed(4)) + '\n';
+            ' (' + n.s2.form + ')' +
+            (n.s2.qe === null ? ' → keine gültige Effektivquote' : ' → rohe Effektivquote ' + n.s2.qe.toFixed(4)) + '\n';
     if (!n.pruefbar) {
       return z + STRICH + '\nMELDUNG: ' + n.text + '\nEnde der Meldung.';
     }
-    z += 'Kehrwertsumme ' + n.ergebnis.inv.toFixed(4) + ' → Rendite ' + n.ergebnis.rendite.toFixed(4) + ' %\n' +
+    z += 'Kehrwertsumme ' + n.ergebnis.inv.toFixed(4) + ' → Rendite ' + n.ergebnis.rendite.toFixed(4) + ' % VOR Gebühren\n' +
          'Aufteilung ' + n.ergebnis.s1.toFixed(2) + ' / ' + n.ergebnis.s2.toFixed(2) +
          ' je 100 → Auszahlung ' + n.ergebnis.auszahlung.toFixed(2) + ' bei BEIDEN Ausgängen\n' +
+         (n.netto
+           ? 'Nach Abzug der Gebühren (' + (Number(f.pm_gebuehr) * 100).toFixed(1) + ' % / ' +
+             (Number(f.bf_gebuehr) * 100).toFixed(1) + ' %): ' + n.netto.rendite.toFixed(4) + ' %\n'
+           : 'Nach Abzug der Gebühren: nicht ausrechenbar\n') +
          STRICH + '\nAbgleich mit der gespeicherten Zeile:\n';
     if (n.abweichungen.length) {
       z += '✗ ABWEICHUNG:\n– ' + n.abweichungen.join('\n– ') + '\n';
     } else {
       z += '✓ Rendite, Kehrwertsumme, beide Einsätze und Auszahlung decken sich (Toleranz 0,005).\n';
     }
-    z += STRICH + '\nDie sieben Bedingungen:\n' + bedingungen(f).join('\n') + '\n';
+    z += STRICH + '\nDie sieben Bedingungen (1, 5, 6 entscheiden den Reiter; 2, 3, 4, 7 sind seit 23.8. Warnmarken):\n' + bedingungen(f).join('\n') + '\n';
     if (f.buch_summe != null) {
       z += 'Buchprobe Gegenbuch: ' + Number(f.buch_summe).toFixed(4) +
            (Number(f.buch_summe) < 1 ? ' — UNSTIMMIG, ein Kurs klebt' : ' — stimmig') + '\n';
@@ -118,8 +136,8 @@
      * FREMDEN Rechner — wer uns misstraut, soll uns pruefen koennen. */
     if (welt.KONFIG && welt.KONFIG.externerRechner) {
       z += 'Extern gegenprüfen: ' + welt.KONFIG.externerRechner + '\n' +
-           '  → Effektivquoten ' + n.s1.qe.toFixed(4) + ' und ' + n.s2.qe.toFixed(4) +
-           ' dort als Quoten eintragen, Gebühr auf 0 (steckt schon drin).\n';
+           '  → rohe Effektivquoten ' + n.s1.qe.toFixed(4) + ' und ' + n.s2.qe.toFixed(4) +
+           ' dort als Quoten eintragen, Gebühr 0 (die Rechnung ist vor Gebühren).\n';
     }
     z += 'Ende der Meldung.';
     return z;
@@ -127,13 +145,13 @@
 
   /* ---------- Das Woerterbuch ---------- */
   var BEGRIFFE = {
-    rendite: 'RENDITE = was diese Zeile GERADE JETZT brächte, in Prozent des Einsatzes, nach allen Gebühren: (1/Kehrwertsumme − 1) × 100. Gilt nur für die zwei gespeicherten Kurse in diesem Moment.',
+    rendite: 'RENDITE = was diese Zeile GERADE JETZT brächte, in Prozent des Einsatzes, VOR Gebühren (seit 23.8., Karams Vorgabe): (1/Kehrwertsumme − 1) × 100 mit den ROHEN Quoten. Die Gebühren stehen getrennt auf der Karte und werden erst am Ende abgezogen. Gilt nur für die zwei gespeicherten Kurse in diesem Moment.',
     beste: 'BESTE = die höchste Rendite, die diese Zeile JE hatte. Im Verlauf ist das die Zahl, die zählt — sie beantwortet „hätte sich das gelohnt?“. Live kann BESTE über der RENDITE liegen, wenn der Vorsprung schon geschrumpft ist.',
     holbar: 'HOLBAR = Geld, nicht Prozent: handelbare Menge × Rendite. Die Menge ist das Geld auf der BESTEN Preisstufe beider Bücher — dahinter liegt mehr, aber zu schlechteren Kursen. +2 % bei 140 € Menge sind 2,80 € holbar.',
     kehrwertsumme: 'KEHRWERTSUMME = 1/Effektivquote1 + 1/Effektivquote2. Unter 1,0000 ist es eine Arbitrage: beide Seiten zusammen kosten weniger, als jeder Ausgang zurückzahlt.',
     zuordnung: 'ZUORDNUNG = wie sicher beide Bücher dieselbe Partie und denselben Ausgang meinen (1,00 = wortgleich belegt). Achtung: alle bekannten FEHLpaarungen trugen ebenfalls 1,00 — deshalb prüft der Wächter unabhängig nach.',
     buchprobe: 'BUCHPROBE = Summe der Gegenwahrscheinlichkeiten aller Ausgänge EINES Marktes. Unter 1,00 könnte man bei diesem einen Buch alle Ausgänge kaufen und sicher gewinnen — gibt es nicht, also klebt dort ein Kurs. Solche Zeilen werden automatisch aussortiert.',
-    rechner: 'EXTERNER RECHNER = der kostenlose Surebet-Rechner von BetBurger: https://www.betburger.com/de/surebet-calculator — beide Effektivquoten als Quoten eintragen, Gebühr dort auf 0 (unsere Effektivquoten enthalten sie schon). Sag „prüfe #<Nummer>“, dann liefere ich dir die zwei Zahlen zum Eintragen gleich mit.',
+    rechner: 'EXTERNER RECHNER = der kostenlose Surebet-Rechner von BetBurger: https://www.betburger.com/de/surebet-calculator — beide rohen Effektivquoten als Quoten eintragen, Gebühr dort auf 0 (die Rechnung ist vor Gebühren). Sag „prüfe #<Nummer>“, dann liefere ich dir die zwei Zahlen zum Eintragen gleich mit.',
     absage: 'ABSAGE = der dritte Ausgang, der in keiner Rendite steht. Jede Karte rechnet ihn in Geld aus: Smarkets zahlt zurück (belegt), Polymarket löst oft 50/50 auf (hängt vom Kaufpreis ab!), Kalshi wertet zum letzten Kurs, Betfair unbelegt. Kostet die Absage rechnerisch Geld, zählt die Zeile nicht als Chance.',
     plausibel: 'PLAUSIBILITÄT = Bedingung 6: über ' + ((welt.KONFIG || {}).maxPlausibel || 5) + ' % Rendite ist keine Chance. Gemessen: richtig war 2,07 bis 3,27 %, falsch alles über 4,48 — über 5 % war es IMMER ein klebender Kurs oder eine Fehlpaarung.',
     gedeckt: 'GEDECKT = beide Seiten decken nachweislich GEGENSÄTZLICHE Ausgänge derselben Frage. Ein Unentschieden ist kein dritter Verlustfall: „X gewinnt nicht“ schließt es mit ein.',
@@ -202,7 +220,7 @@
     /* Warum keine Chance? */
     if (/warum.*(keine|nicht).*chance|warum.*knapp/.test(q)) {
       return 'Eine Zeile ist nur dann eine Chance, wenn ALLE sieben Bedingungen stimmen: ' +
-             '1) Rendite über 2 %, 2) Menge bekannt, 3) Gewinn in Geld über 5 USD, 4) Absage ' +
+             '1) Rendite über 2 % vor Gebühren, 2) Menge bekannt (Warnmarke), 3) Gewinn über 5 USD (Warnmarke), 4) Absage ' +
              'kostet nichts, 5) beide Ausgänge gedeckt, 6) höchstens ' +
              ((welt.KONFIG || {}).maxPlausibel || 5) + ' % (darüber war es bisher immer ein ' +
              'klebender Kurs). Welche fehlt, sage ich dir bei „prüfe #<Nummer>“.';

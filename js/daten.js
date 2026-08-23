@@ -45,7 +45,13 @@
    * auffindbar. Zwei davon hatten eine negative Spitze und wurden von
    * dieser Abfrage nicht einmal geladen. */
   function holeVerlauf(grenze) {
+    /* NUR SEIT GESTERN (Karams Vorgabe 23.8.): angezeigt wird, was in den
+     * letzten 24 Stunden GEFUNDEN wurde. Die Datenbank loescht aeltere
+     * Vorbei-Zeilen ohnehin stuendlich (Job 96); dieser Filter schliesst
+     * die Luecke zwischen zwei Loeschlaeufen. */
+    var seitGestern = new Date(Date.now() - 24 * 3600000).toISOString();
     return db('orion_funde?status=eq.vorbei' +
+      '&zuerst_gesehen=gte.' + encodeURIComponent(seitGestern) +
       '&or=(pruefung.eq.falsch,beste_rendite.gte.0,and(beste_rendite.is.null,rendite.gte.0),' +
       'telegram_gemeldet.is.true,knapp_gemeldet.is.true)' +
       '&order=vorbei_seit.desc&limit=' + (grenze || 1000));
@@ -641,6 +647,24 @@
         /* Deckung (5. Bedingung, 13.8.): beide Seiten muessen nachweislich
          * GEGENSAETZLICHE Ausgaenge decken. Zwei Wetten auf denselben
          * Ausgang sehen in der Rechnung gut aus und sind doppeltes Risiko. */
+        /* ---------- KARAMS AUFTEILUNG (23.8.2026) ----------
+         *
+         * "Knappe Paare sind immer alles, was unter zwei Prozent ist;
+         * ueber zwei Prozent Rendite ist dann Chance." Die Trennlinie ist
+         * die RENDITE (vor Gebuehren), sonst nichts Wirtschaftliches.
+         *
+         * Was BLEIBT, sind die Beweisfragen — eine nachweislich falsche
+         * Paarung ist gar kein Fund, egal welche Zahl dransteht:
+         *   nachgewiesen falsch / Fehlpaarung  -> Falsch-Reiter
+         *   Kurse veraltet                     -> Veraltet-Block
+         *   Mannschaftsklasse/Anpfiff/Deckung  -> knappe Paare, mit Marke
+         *   unplausibel hoch (Kleber)          -> knappe Paare, mit Marke
+         *
+         * Was NICHT mehr aussperrt, sondern nur noch als Marke auf der
+         * Karte steht: duenne Menge, unbekannte Menge, Gewinn unter der
+         * Geldschwelle, Absage-Risiko, Bewaehrungszeit. Diese Warnungen
+         * trug die Karte schon immer — jetzt entscheiden sie nicht mehr
+         * ueber den Reiter. */
         var chancen = live.filter(function (f) {
           /* Nachgewiesen oder rechnerisch falsch ist NIE eine Chance —
            * egal wie gut die Zahlen aussehen. Ohne diese Zeile konnte ein
@@ -648,7 +672,7 @@
            * den Markt weiter und macht ihn wieder live) mit 2–5 % als
            * Chance erscheinen. Entdeckt 14.8. an 10 pendelnden Zeilen. */
           if (f.fehlpaarung) return false;
-          if (f.veraltet || f.zu_duenn) return false;
+          if (f.veraltet) return false;
           /* ACHTE BEDINGUNG (18.8.): dieselbe Mannschaftsklasse und dieselbe
            * Anstosszeit — im BROWSER nachgerechnet, nicht nur geglaubt.
            *
@@ -675,15 +699,15 @@
           if (!f.beginnt_am || !f.endet_am) return false;
           if (Zu && Zu.zeitPasst && !Zu.zeitPasst(f.endet_am, f.beginnt_am)) return false;
           if (f.rendite < K.mindestRendite) return false;
-          /* Bedingung 6: unplausibel hoch ist KEINE Chance (siehe KONFIG). */
+          /* Unplausibel hoch ist KEINE Chance (siehe KONFIG, jetzt 6,5 %
+           * vor Gebuehren) — das ist eine Beweisfrage: Kleber, kein Fund. */
           if (K.maxPlausibel && f.rendite > K.maxPlausibel) return false;
-          if (K.nurMitBekannterMenge && f.echter_gewinn === null) return false;
-          if (f.echter_gewinn !== null && f.echter_gewinn < K.mindestGewinn) return false;
-          if (K.absageStreng && f.absage && f.absage.art === 'verlust') return false;
+          /* Deckung bleibt Pflicht: zwei Wetten auf DENSELBEN Ausgang sind
+           * keine Arbitrage, sondern doppeltes Risiko. */
           if (G && !G(f)) return false;
-          /* Bedingung 7: Bewaehrung - erst von mehreren Laeufen bestaetigt. */
-          if (K.bewaehrungS &&
-              (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K.bewaehrungS * 1000) return false;
+          /* Menge, Geldschwelle, Absage und Bewaehrung sperren seit dem
+           * 23.8. NICHT mehr aus (Karams Aufteilung) — sie stehen als
+           * Marken auf der Karte. */
           return true;
         });
         function besteVon(f) { return Number(f.beste_rendite == null ? f.rendite : f.beste_rendite); }
@@ -708,18 +732,22 @@
            * Geldschwelle. Es darf auf keinen Fall verschwinden — ein Filter,
            * der stillschweigend schluckt, ist eine Falle. */
           if (f.rendite >= K.mindestRendite) {
-            /* Wort-Fehlpaarung ueber der Schwelle: aus den Chancen
-             * verbannt, aber sichtbar HIER mit ihrer Marke — nicht im
-             * unsichtbaren Rauschen. */
+            /* Ueber der Schwelle, aber an einer BEWEISFRAGE gescheitert:
+             * aus den Chancen verbannt, aber sichtbar HIER mit Marke —
+             * nicht im unsichtbaren Rauschen. Seit 23.8. landen die
+             * frueher stillen Faelle (Mannschaftsklasse, Anpfiff) auch
+             * hier statt im Nichts. */
             if (f.fehlpaarung) return true;
             if (K.maxPlausibel && f.rendite > K.maxPlausibel) return true;
-            if (f.zu_duenn) return true;
-            if (f.echter_gewinn === null) return true;
-            if (f.echter_gewinn < K.mindestGewinn) return true;
-            if (K.absageStreng && f.absage && f.absage.art === 'verlust') return true;
+            var Zu3 = welt.Zuordnung;
+            if (Zu3 && Zu3.kennungGleich && f.bf_partie &&
+                !Zu3.kennungGleich(f.titel, f.bf_partie)) return true;
+            if (!f.beginnt_am || !f.endet_am) return true;
+            if (Zu3 && Zu3.zeitPasst && !Zu3.zeitPasst(f.endet_am, f.beginnt_am)) return true;
             if (G && !G(f)) return true;
-            if (K.bewaehrungS &&
-                (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) < K.bewaehrungS * 1000) return true;
+            /* Alles Uebrige ueber 2 % IST eine Chance (Karams Aufteilung),
+             * auch mit duenner Menge oder in der Bewaehrung — die Marken
+             * stehen auf der Karte. */
             return false;
           }
           /* WAS GEMELDET WURDE, VERSCHWINDET NIE (21.8., Karams Vorgabe:

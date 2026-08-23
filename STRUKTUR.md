@@ -104,7 +104,9 @@ Seiten ihre Marke mit**, sonst laufen wieder zwei Fassungen nebeneinander.
 
 `orion-lauf` (Scanner) · `orion-kalshi` · `orion-smarkets` · `bf-bridge` ·
 `pm-scan` · `lm-proxy` · `ob-proxy` · **`orion-melder-telegram`** (Chancen-Bot,
-minütlich) · **`orion-melder-knapp`** (Knapp-Bot, alle fünf Minuten).
+minütlich) · **`orion-melder-knapp`** (Knapp-Bot, alle fünf Minuten) ·
+**`orion-pruefer`** (Nachkontrolle, alle fünf Minuten — seit 23.8. im Repo;
+bis dahin lebte er nur auf dem Server, mit veralteter Gebuehrenformel).
 
 **Der Knapp-Bot fehlte bis zum 20.8. im Repo** und lebte nur als
 ausgerollte Funktion auf dem Server — ein Neuaufsetzen hätte ihn verloren,
@@ -113,9 +115,10 @@ auch hier.
 
 **Ausrollen:** `bridge/DEPLOY-MELDER.cmd` (Doppelklick, Token, rollt BEIDE
 Bots aus und funkt danach beide Proben). Der Scanner geht weiter über
-`DEPLOY-JETZT.cmd`. Beide brauchen einen `sbp_`-Token; der Supabase-MCP-Weg
-kann Edge-Funktionen derzeit NICHT ausrollen (das Werkzeug nimmt das
-Dateiarray nicht an).
+`DEPLOY-JETZT.cmd`. Beide brauchen einen `sbp_`-Token. Der Supabase-MCP-Weg FUNKTIONIERT
+ebenfalls (23.8. belegt: orion-lauf v27, orion-pruefer v8 und
+orion-melder-telegram v13 wurden so ausgerollt) — `files` als echtes
+Array uebergeben.
 
 ## Prüfstand (`pruefung/`)
 

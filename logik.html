@@ -6,9 +6,9 @@
 <title>Orion Panel Pro — Suchlogik</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="schrift/schrift.css?v=76">
-<link rel="stylesheet" href="css/stil.css?v=76">
-<link rel="stylesheet" href="css/hud.css?v=76">
+<link rel="stylesheet" href="schrift/schrift.css?v=77">
+<link rel="stylesheet" href="css/stil.css?v=77">
+<link rel="stylesheet" href="css/hud.css?v=77">
 <style>
   .doku { max-width: 860px; }
   .doku h2 { margin-top: 34px; }
@@ -221,16 +221,29 @@ fc · cf · sc · ac · afc · ss · as · fk · cd · sk · club · city · uni
 
   <h2>5. Die Rechnung</h2>
 
-  <pre>Effektivquote nach Gebühr:   qE  = 1 + (q − 1) · (1 − Gebühr)
-Dagegenhalten (Lay):         qE  = 1 + (1 − Gebühr) / (L − 1)
-Polymarket:                  Gebühr = Satz · p · (1−p)   je Anteil, KEIN Exponent
-                             qE  = (1 − Gebühr) / p    (belegt 11.08., Anbieterdoku)
+  <p><b>Seit dem 23.08.2026 (Karams Vorgabe) ist die Hauptrechnung VOR Gebühren.</b>
+    Die angezeigte Rendite ist die rohe Arbitrage-Rechnung — von Hand nachrechenbar,
+    extern nachrechenbar, ohne einen einzigen Satz kennen zu müssen. Die Gebühren
+    stehen als eigene Zahl auf jeder Karte und werden ERST AM ENDE abgezogen, nie vorher
+    und nie doppelt.</p>
+
+  <pre>ROHE Effektivquote (das, was gerechnet wird):
+  Anteilspreis (Polymarket, Kalshi):   qE = 1 / p
+  Börse Back (Betfair, Smarkets):      qE = q
+  Börse Lay (dagegenhalten):           qE = 1 + 1 / (L − 1)  =  L / (L − 1)
 
 Summe der Kehrwerte:         inv = 1/qE₁ + 1/qE₂
 Arbitrage, wenn              inv &lt; 1
 Aufteilung von Einsatz S:    S₁  = S · (1/qE₁)/inv,   S₂ = S − S₁
 Auszahlung (bei BEIDEN Ausgängen gleich):  S/inv
-Rendite:                     (1/inv − 1) · 100 %</pre>
+Rendite (VOR Gebühren):      (1/inv − 1) · 100 %
+
+DANACH, als eigener Schritt, die NETTO-Zahl (rendite_netto):
+  Börse Back:    qE = 1 + (q − 1) · (1 − Gebühr)
+  Börse Lay:     qE = 1 + (1 − Gebühr) / (L − 1)
+  Polymarket:    Gebühr = Satz · p · (1−p) je Anteil, KEIN Exponent (belegt 11.08.)
+                 qE = (1 − Gebühr) / p     — Kalshi rechnet gleich
+  dieselbe Kehrwertsummen-Rechnung mit diesen Quoten ergibt die Rendite NACH Gebühren.</pre>
 
   <p>
     <b>Ausdrücklich nicht 50/50.</b> Die Aufteilung ist so gewählt, dass beide Ausgänge
@@ -303,7 +316,7 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
   <h2>6. Wann ein Fund gemeldet wird</h2>
   <table>
     <tr><th>Regel</th><th>Wert</th></tr>
-    <tr><td>gilt als Chance ab (Live und Verlauf)</td><td>2,00 % Rendite <span class="leise">(bis 12.08. 3,00 % — gesenkt, weil die erste volle Nacht vier Funde zwischen 2 und 2,66 % brachte und keinen einzigen darüber)</span></td></tr>
+    <tr><td>gilt als Chance ab (Live und Verlauf)</td><td>2,00 % Rendite <b>vor Gebühren</b> <span class="leise">(Karams Aufteilung 23.08.: unter 2 % = knappes Paar, ab 2 % = Chance, Wegfall = Verlauf)</span></td></tr>
     <tr><td>darunter</td><td>erscheint als „knappstes Paar", mit beiden Links</td></tr>
     <tr><td>Betfair-Daten gelten als veraltet ab</td><td>5 Minuten</td></tr>
     <tr><td>Scanner gilt als stehengeblieben ab</td><td>3 Minuten je Bereich</td></tr>
@@ -314,15 +327,15 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
     ein solcher Vorsprung weg.
   </p>
   <p class="leise">
-    Die Schwelle steht seit dem 12.8.2026 bei 2 %. Gemessen dazu (13.8.): alle als richtig geprüften Funde lagen zwischen 2,07 und 3,27 %, alle falschen über 4,48 % — jede Zeile über 5 % war bisher eine Fehlpaarung oder ein klebender Kurs, der Wächter markiert sie. Alles zwischen 0 % und 2 % steht unter „Knappste Paare"; was nie über 0 % lag, ist Rauschen und wird gelöscht.
+    Die Schwelle steht seit dem 12.8.2026 bei 2 %. Gemessen dazu (13.8.): alle als richtig geprüften Funde lagen zwischen 2,07 und 3,27 %, alle falschen über 4,48 % — jede Zeile über 5 % war bisher eine Fehlpaarung oder ein klebender Kurs, der Wächter markiert sie. Alles zwischen 0 % und 2 % steht unter „Knappste Paare"; was nie über 0 % lag, ist Rauschen und wird gelöscht. Seit dem 23.08. gilt der Plausibilitätsdeckel bei 6,5 % (vor Gebühren gerechnet; die alte 5-%-Marke war am Netto-Wert gemessen).
   </p>
 
   <h3>Jede beendete Zeile bekommt GENAU EINE Klasse (Stand 14.08.2026)</h3>
   <table>
     <tr><th>Klasse</th><th>Regel</th><th>Verhalten der Zahl</th></tr>
     <tr><td><b>Verlauf</b></td><td>war eine echte Chance: beste Rendite je über 2 %, nicht falsch</td><td>wächst nur</td></tr>
-    <tr><td><b>Knapp-Archiv</b></td><td>war eine Arbitrage (über 0 %), kam aber nie über 2 % — nach Gebühren zu wenig</td><td>wächst nur</td></tr>
-    <tr><td><b>Falsche Rechnung</b></td><td>nachgewiesen falsch: geprüftes Urteil, Buchprobe, Fehlpaarung, oder unplausibel über 5 %</td><td>wächst nur (leer werden soll er durch bessere Regeln, nicht durch Löschen)</td></tr>
+    <tr><td><b>Knapp-Archiv</b></td><td>war eine Arbitrage (über 0 %), kam aber nie über 2 % vor Gebühren — zu wenig Abstand zwischen den Büchern</td><td>wächst nur</td></tr>
+    <tr><td><b>Falsche Rechnung</b></td><td>nachgewiesen falsch: geprüftes Urteil, Buchprobe, Fehlpaarung, oder unplausibel über 6,5 %</td><td>wächst nur (leer werden soll er durch bessere Regeln, nicht durch Löschen)</td></tr>
     <tr><td>Rauschen</td><td>lag nie über 0 % — war nie etwas wert</td><td>zählt nirgends; die Datenbank löscht es binnen 5 Minuten (nachgewiesen Falsches wird dabei ausdrücklich verschont)</td></tr>
   </table>
   <p class="leise">
@@ -336,22 +349,22 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
     (die Seite sagt beides ausdrücklich an).
   </p>
 
-  <h3>Die sieben Bedingungen einer Chance (Stand 14.08.2026, früh)</h3>
+  <h3>Die sieben Bedingungen (Stand 23.08.2026: 1, 5 und 6 entscheiden den Reiter — 2, 3, 4 und 7 sind Warnmarken auf der Karte)</h3>
   <table>
     <tr><th>Bedingung</th><th>warum</th></tr>
-    <tr><td>1. Rendite ≥ 2 %</td><td>das Verhältnis stimmt</td></tr>
-    <tr><td>2. Menge bekannt</td><td>unbekannt heißt nicht unbegrenzt</td></tr>
-    <tr><td>3. Gewinn in Geld ≥ 5 USD</td><td>+1 % auf 3 € sind 3 Cent, keine Chance</td></tr>
-    <tr><td>4. Absage kostet nichts</td><td>der dritte Ausgang (Absage, Abbruch) wird mit den
-      echten Einsätzen ausgerechnet; kostet er Geld, fliegt die Zeile — ein Absage-Verlust
+    <tr><td>1. Rendite ≥ 2 % (vor Gebühren)</td><td>DIE Trennlinie: darunter knappes Paar, darüber Chance (Karams Aufteilung 23.08.)</td></tr>
+    <tr><td>2. Menge bekannt <span class="leise">(seit 23.08. Warnmarke)</span></td><td>unbekannt heißt nicht unbegrenzt</td></tr>
+    <tr><td>3. Gewinn in Geld ≥ 5 USD <span class="leise">(seit 23.08. Warnmarke)</span></td><td>+1 % auf 3 € sind 3 Cent</td></tr>
+    <tr><td>4. Absage kostet nichts <span class="leise">(seit 23.08. Warnmarke)</span></td><td>der dritte Ausgang (Absage, Abbruch) wird mit den
+      echten Einsätzen ausgerechnet; kostet er Geld, warnt die Karte laut — ein Absage-Verlust
       von 20 % frisst zwanzig gewonnene Wetten</td></tr>
     <tr><td>5. Beide Ausgänge gedeckt</td><td>dieselbe Frage, einmal FÜR, einmal GEGEN —
       nie zwei Wetten in dieselbe Richtung</td></tr>
-    <tr><td>6. Rendite ≤ 5 %</td><td>gemessen: alle richtigen Funde lagen zwischen 2,07 und
+    <tr><td>6. Rendite ≤ 6,5 % (vor Gebühren; bis 23.08.: 5 % netto)</td><td>gemessen: alle richtigen Funde lagen zwischen 2,07 und
       3,27 %, alle falschen über 4,48 — jede Zeile über 5 % war ein stehengebliebener Kurs
       oder eine Fehlpaarung. Zwei Börsen mit echten Teilnehmern liegen nicht 20 % auseinander;
       solche Zeilen wandern mit Begründung zu den knappen Paaren</td></tr>
-    <tr><td>7. Bewährung überstanden</td><td>mindestens 25 Sekunden von mehreren Läufen bestätigt — Kleber sterben binnen Sekunden, echte Chancen standen gemessen 44 Minuten. Bis dahin steht die Zeile mit der Marke IN PRÜFUNG bei den knappen Paaren; Kino und Meldung feuern erst nach der Bewährung</td></tr>
+    <tr><td>7. Bewährung überstanden <span class="leise">(seit 23.08. Warnmarke)</span></td><td>mindestens 25 Sekunden von mehreren Läufen bestätigt — Kleber sterben binnen Sekunden, echte Chancen standen gemessen 44 Minuten. Bis dahin trägt die Zeile die Marke IN PRÜFUNG; Kino und Meldung feuern weiterhin erst nach der Bewährung</td></tr>
   </table>
   <p class="leise">
     Dazu laufen serverseitig jede Minute die Nachkontrollen: die <b>Buchprobe</b>
@@ -376,7 +389,7 @@ Immer dieselbe Frage, beide Antworten — nie A-gewinnt gegen B-gewinnt.</pre>
     <tr><th>Was sie prüft (Auszug aus über 20 Mustern)</th><th>Was sie tut, wenn es zutrifft</th></tr>
     <tr><td>Zuordnung stimmt nicht — die Kernwörter beider Titel werden
       <b>unabhängig vom Scanner</b> nachgerechnet</td><td>meldet Verdacht</td></tr>
-    <tr><td>Rendite unplausibel hoch (ab 5&nbsp;%)</td><td>meldet Verdacht; die Minuten-Sperre sortiert aus</td></tr>
+    <tr><td>Rendite unplausibel hoch (ab 6,5&nbsp;% vor Gebühren)</td><td>meldet Verdacht; die Minuten-Sperre sortiert aus</td></tr>
     <tr><td>Partie vorbei, Zeile noch live</td><td>meldet; die Karteileichen-Regel beendet</td></tr>
     <tr><td>Ein Bereichslauf steht (länger als 3&nbsp;×&nbsp;sein Takt)</td><td>meldet Verdacht</td></tr>
     <tr><td>Zeile seit über 3 Minuten von keinem Lauf gesehen</td><td><b>greift ein:</b> beendet sie (&bdquo;verwaiste&ldquo;)</td></tr>
@@ -450,8 +463,8 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
 
 </div>
 
-<script src="js/konfig.js?v=76"></script>
-<script src="js/sperre.js?v=76"></script>
+<script src="js/konfig.js?v=77"></script>
+<script src="js/sperre.js?v=77"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   window.Sperre.start(function () {

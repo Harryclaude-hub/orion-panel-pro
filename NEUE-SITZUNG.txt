@@ -2,10 +2,11 @@ Ich arbeite an "Orion Panel Pro". Du übernimmst eine laufende Arbeit von
 gestern – nicht ein neues Projekt. Bitte lies zuerst, dann rede mit mir.
 
 ZUERST LESEN, in dieser Reihenfolge:
-1. C:\Users\Home\orion-panel-pro\UEBERGABE.md — Abschnitt 8k, danach 8j.
-   8k ist die Startseite (Stand 13.8. spät abends): Buchstimmigkeit als
-   neue Fehlerprobe, die drei Zeiten auf der Karte, die Messung aller 21
-   Bereiche. 8j hat den Betriebszustand und die fünf Fallen.
+1. C:\Users\Home\orion-panel-pro\UEBERGABE.md — die LETZTEN Abschnitte
+   zuerst (9n ist der Stand vom 23.8.: Rendite VOR Gebuehren als
+   Hauptrechnung, 2-%-Trennlinie knapp/Chance, 24-Stunden-Regel,
+   Pruefer- und Verlaufsurteil-Fehler behoben), dann rueckwaerts so
+   weit wie noetig.
 2. C:\Users\Home\orion-panel-pro\supabase\datenbank.md — alles, was nur in
    der Datenbank lebt und nicht im Repo steht (Funktionen, Trigger, crons).
 Diese beiden Dateien sind die Wahrheit. Das Repo allein ist es nicht.
@@ -17,8 +18,8 @@ C:\Users\Home\orion-panel-pro, Supabase-Projekt noexklrgtqveiclijdwp,
 Sperrwort der Website: ARBRADAR2026.
 Alles läuft serverseitig: pg_cron ruft Edge Functions, die schreiben nach
 orion_funde, die Website liest nur ab. Nur Betfair braucht meinen Rechner:
-die Bridge 3.8 in C:\Users\Home\Desktop\Orion-Bridge-3.8, gestartet über
-Bridge-dauerlauf.cmd. Die Zugangsdatei bridge-config.json gehört immer in
+die Bridge 4.0 (Build 27) in C:\Users\Home\Desktop\ORION-BRIDGE, gestartet
+über Orion-Bridge-STARTEN.cmd. Die Zugangsdatei bridge-config.json gehört immer in
 denselben Ordner wie die exe.
 
 DAS SUPABASE-PROJEKT DARF NIEMALS PAUSIERT WERDEN.

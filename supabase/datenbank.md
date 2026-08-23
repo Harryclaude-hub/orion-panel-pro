@@ -630,3 +630,30 @@ lag zum Prüfzeitpunkt keine einzige Partie, die bei Kalshi *und* Betfair
 vorkam. Lieber „nicht angegeben" als eine erfundene Zeit, die die
 Zeitsperre in die Irre führt. Sobald sich beide Bücher einmal
 überschneiden, ist das nachmessbar und kann nachgezogen werden.
+
+## Rendite VOR Gebühren + 24-Stunden-Regel (23.8.2026, Karams Prüfauftrag)
+
+**Spalten neu in `orion_funde`:** `rendite_netto`, `inv_netto` — die Zahl
+NACH Gebühren. `rendite`/`inv`/`einsatz_1`/`einsatz_2`/`auszahlung` sind
+seit Scanner v27 die ROHE Rechnung (1/p, q, L/(L−1)) — Karams Vorgabe:
+erst ohne Gebühr rechnen, Gebühren später abziehen.
+
+**Reparierte Fehler:**
+- `orion_verlauf_urteil` hatte einen 100×-Einheitenfehler: `beste >= 0.05`
+  meinte „ab 5 %", verurteilte aber ab 0,05 % — praktisch jeden
+  Verlaufsfund als ‚zweifelhaft'. Jetzt `>= 6.5` (Prozent, vor Gebühren);
+  falsche Stempel zurückgenommen. Der ×100-Meldetext in
+  `orion_wache_stufe2` ist ebenfalls raus.
+- Edge-Funktion `orion-pruefer` (v7) rechnete die PM-Gebühr noch mit dem
+  widerlegten `min(p,1−p)` und lebte NUR in der Datenbank. v8 rechnet roh
+  nach und liegt jetzt als `supabase/functions/orion-pruefer/` im Repo.
+
+**Plausibilitätsdeckel 5 → 6,5** (Gebührenlast ~1,1–1,5 Punkte, 9l), an
+vier Stellen: KONFIG.maxPlausibel, `orion_verlauf_urteil`,
+`orion_verdacht`, Chancen-Bot-Band (`rendite lte 6.5`).
+
+**Job 96 (stündlich):** löscht `vorbei`-Zeilen älter 24 h — `vorbei_seit`
+ODER `zuerst_gesehen` — OHNE Gemeldet-Ausnahme (ersetzt 36 h/30 Tage vom
+22.8.; Karams Befehl: „alles, was vor länger als ein Tag her ist").
+`orion_gespeichert` bleibt unangetastet. Die Website lädt den Verlauf nur
+noch mit `zuerst_gesehen >= jetzt − 24 h` (js/daten.js, holeVerlauf).

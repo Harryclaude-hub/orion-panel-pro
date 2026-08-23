@@ -104,8 +104,16 @@ function zahlOderNull(x: unknown): number | null {
   return isFinite(n) ? n : null;
 }
 
+/* RENDITE VOR GEBUEHREN (Karams Vorgabe 23.8.2026).
+ *
+ * qe ist seit dem 23.8. die ROHE Effektivquote OHNE Gebuehr (1/p, q,
+ * L/(L-1)) — damit ist rendite von Hand nachrechenbar: 1/q1 + 1/q2 < 1.
+ * qe_netto traegt dieselbe Quote NACH Gebuehr; daraus entsteht
+ * rendite_netto als eigene Spalte, zum spaeteren Abziehen. null heisst:
+ * nach Gebuehr bleibt keine Quote ueber 1 uebrig. */
 interface Seite {
-  buch: string; richtung: 'ja' | 'nein'; qe: number; geld: number | null; roh: number;
+  buch: string; richtung: 'ja' | 'nein'; qe: number; qe_netto: number | null;
+  geld: number | null; roh: number;
   gebuehr: number; gebuehr_echt: boolean; name: string; seite_text: string;
   link: string; partie: string;
   gebuehr_form: R.GebuehrForm;
@@ -388,8 +396,17 @@ Deno.serve(async (req) => {
       jePaarung[paarung] = (jePaarung[paarung] || 0) + 1;
       if (e.maxEinsatz !== null && e.maxEinsatz !== undefined) mitMenge++;
 
-      const gA = R.gebuehrBetrag(a.gebuehr_form, e.s1, a.roh, a.qe);
-      const gB = R.gebuehrBetrag(b.gebuehr_form, e.s2, b.roh, b.qe);
+      /* Die Zahl NACH Gebuehren, als Zweitwert. e selbst ist seit dem
+       * 23.8. die ROHE Rechnung (Karams Vorgabe: erst ohne Gebuehr
+       * rechnen, Gebuehren spaeter abziehen). */
+      const eN = (a.qe_netto !== null && b.qe_netto !== null)
+        ? R.pruefe(a.qe_netto, b.qe_netto)
+        : null;
+
+      /* Der Gebuehrenbetrag braucht die NETTO-Quote (Differenz roh/netto),
+       * gerechnet auf die rohe Aufteilung e.s1/e.s2. */
+      const gA = R.gebuehrBetrag(a.gebuehr_form, e.s1, a.roh, a.qe_netto);
+      const gB = R.gebuehrBetrag(b.gebuehr_form, e.s2, b.roh, b.qe_netto);
       const gSumme = (gA === null || gB === null) ? null : gA + gB;
 
       zeilen.push({
@@ -404,6 +421,7 @@ Deno.serve(async (req) => {
         bf_name: b.name, bf_seite: b.seite_text, bf_quote: b.roh,
         bf_link: b.link, bf_partie: b.partie,
         zuordnung: opt.zuordnung, rendite: e.rendite, inv: e.inv,
+        rendite_netto: eN ? eN.rendite : null, inv_netto: eN ? eN.inv : null,
         einsatz_1: e.s1, einsatz_2: e.s2, auszahlung: e.auszahlung,
         pm_gebuehr: a.gebuehr, bf_gebuehr: b.gebuehr,
         pm_gebuehr_echt: a.gebuehr_echt, bf_gebuehr_echt: b.gebuehr_echt,
@@ -446,15 +464,18 @@ Deno.serve(async (req) => {
        * also 40 % zu hoch. Beides ist jetzt gemessen, nicht geraten. */
       const pmSatz = (m.satz !== null && m.satz !== undefined) ? m.satz : R.pmSatzFuer(bereich);
       const pmEcht = true;
-      const qeJa = R.qePm(ask[0], pmSatz);
-      const qeNein = R.qePm(ask[1], pmSatz);
+      /* Satz 0 = ROHE Quote (1/p); der Satz selbst geht nur in qe_netto. */
+      const qeJa = R.qePm(ask[0], 0);
+      const qeNein = R.qePm(ask[1], 0);
       if (qeJa !== null) seiten.push({
-        buch: 'polymarket', richtung: 'ja', qe: qeJa, geld: mengen[0] * ask[0], roh: ask[0],
+        buch: 'polymarket', richtung: 'ja', qe: qeJa, qe_netto: R.qePm(ask[0], pmSatz),
+        geld: mengen[0] * ask[0], roh: ask[0],
         gebuehr: R.gebuehrSicher(pmSatz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
         name: bez, seite_text: istOu ? 'ÜBER' : 'JA', link: pmLink, partie: m.titel
       });
       if (qeNein !== null) seiten.push({
-        buch: 'polymarket', richtung: 'nein', qe: qeNein, geld: mengen[1] * ask[1], roh: ask[1],
+        buch: 'polymarket', richtung: 'nein', qe: qeNein, qe_netto: R.qePm(ask[1], pmSatz),
+        geld: mengen[1] * ask[1], roh: ask[1],
         gebuehr: R.gebuehrSicher(pmSatz), gebuehr_echt: pmEcht, gebuehr_form: 'anteil',
         name: bez, seite_text: istOu ? 'UNTER' : 'NEIN', link: pmLink, partie: m.titel
       });
@@ -486,10 +507,11 @@ Deno.serve(async (req) => {
             const satz = R.ORBIT_SATZ;
             const link = brokerLink(tr.bf.link);
             const partie = tr.bf.ev || tr.bf.k;
-            const qb = R.qeBack(lauf.laeufer.b, satz);
-            const ql = R.qeLay(lauf.laeufer.l, satz);
+            const qb = R.qeBack(lauf.laeufer.b, 0);
+            const ql = R.qeLay(lauf.laeufer.l, 0);
             if (qb !== null) seiten.push({
-              buch: 'betfair', richtung: 'ja', qe: qb, geld: zahlOderNull(lauf.laeufer.bs),
+              buch: 'betfair', richtung: 'ja', qe: qb, qe_netto: R.qeBack(lauf.laeufer.b, satz),
+              geld: zahlOderNull(lauf.laeufer.bs),
               roh: lauf.laeufer.b, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: true,
               gebuehr_form: 'back',
               name: lauf.laeufer.n, seite_text: 'Back', link, partie
@@ -497,7 +519,7 @@ Deno.serve(async (req) => {
             if (ql !== null) {
               const ls = zahlOderNull(lauf.laeufer.ls);
               seiten.push({
-                buch: 'betfair', richtung: 'nein', qe: ql,
+                buch: 'betfair', richtung: 'nein', qe: ql, qe_netto: R.qeLay(lauf.laeufer.l, satz),
                 geld: ls === null ? null : ls * (lauf.laeufer.l - 1),
                 roh: lauf.laeufer.l, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: true,
                 gebuehr_form: 'lay',
@@ -524,10 +546,11 @@ Deno.serve(async (req) => {
             const echt = (tr.bf as any).sz_echt === true;
             const link = (tr.bf as any).link;
             const partie = tr.bf.ev;
-            const qb = R.qeBack(lauf.laeufer.b, satz);
-            const ql = R.qeLay(lauf.laeufer.l, satz);
+            const qb = R.qeBack(lauf.laeufer.b, 0);
+            const ql = R.qeLay(lauf.laeufer.l, 0);
             if (qb !== null) seiten.push({
-              buch: 'smarkets', richtung: 'ja', qe: qb, geld: zahlOderNull(lauf.laeufer.bs),
+              buch: 'smarkets', richtung: 'ja', qe: qb, qe_netto: R.qeBack(lauf.laeufer.b, satz),
+              geld: zahlOderNull(lauf.laeufer.bs),
               roh: lauf.laeufer.b, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: echt,
               gebuehr_form: 'back',
               name: lauf.laeufer.n, seite_text: 'Back', link, partie
@@ -535,7 +558,7 @@ Deno.serve(async (req) => {
             if (ql !== null) {
               const ls = zahlOderNull(lauf.laeufer.ls);
               seiten.push({
-                buch: 'smarkets', richtung: 'nein', qe: ql,
+                buch: 'smarkets', richtung: 'nein', qe: ql, qe_netto: R.qeLay(lauf.laeufer.l, satz),
                 geld: ls === null ? null : ls * (lauf.laeufer.l - 1),
                 roh: lauf.laeufer.l, gebuehr: R.gebuehrSicher(satz), gebuehr_echt: echt,
                 gebuehr_form: 'lay',
@@ -570,17 +593,17 @@ Deno.serve(async (req) => {
             /* Serien-Multiplikator aus Kalshis Gebuehrenordnung (PDF vom
              * 7.7.2026): neun Serien tragen 0 und sind GEBUEHRENFREI. */
             const kSatz = R.kalshiSatzFuer(k.serie);
-            const qJa = R.qeKalshi(k.ja, kSatz);
-            const qNein = R.qeKalshi(k.nein, kSatz);
+            const qJa = R.qeKalshi(k.ja, 0);
+            const qNein = R.qeKalshi(k.nein, 0);
             const kMenge = zahlOderNull(k.jaMenge);
             if (qJa !== null) seiten.push({
-              buch: 'kalshi', richtung: 'ja', qe: qJa,
+              buch: 'kalshi', richtung: 'ja', qe: qJa, qe_netto: R.qeKalshi(k.ja, kSatz),
               geld: kMenge === null ? null : kMenge * k.ja, roh: k.ja,
               gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
               name: k.jaName, seite_text: 'Ja', link, partie: k.titel
             });
             if (qNein !== null) seiten.push({
-              buch: 'kalshi', richtung: 'nein', qe: qNein,
+              buch: 'kalshi', richtung: 'nein', qe: qNein, qe_netto: R.qeKalshi(k.nein, kSatz),
               geld: kMenge === null ? null : kMenge * k.nein, roh: k.nein,
               gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
               name: k.jaName, seite_text: 'Nein', link, partie: k.titel
@@ -640,21 +663,24 @@ Deno.serve(async (req) => {
         const seiten: Seite[] = [];
         const kLink = kalshiLink(k);
         const kSatz = R.kalshiSatzFuer(k.serie);
-        const qJa = R.qeKalshi(k.ja, kSatz), qNein = R.qeKalshi(k.nein, kSatz);
+        const qJa = R.qeKalshi(k.ja, 0), qNein = R.qeKalshi(k.nein, 0);
         const kMenge = zahlOderNull(k.jaMenge);
         if (qJa !== null) seiten.push({
-          buch: 'kalshi', richtung: 'ja', qe: qJa, geld: kMenge === null ? null : kMenge * k.ja,
+          buch: 'kalshi', richtung: 'ja', qe: qJa, qe_netto: R.qeKalshi(k.ja, kSatz),
+          geld: kMenge === null ? null : kMenge * k.ja,
           roh: k.ja, gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
           name: k.jaName, seite_text: 'Ja', link: kLink, partie: k.titel
         });
         if (qNein !== null) seiten.push({
-          buch: 'kalshi', richtung: 'nein', qe: qNein, geld: kMenge === null ? null : kMenge * k.nein,
+          buch: 'kalshi', richtung: 'nein', qe: qNein, qe_netto: R.qeKalshi(k.nein, kSatz),
+          geld: kMenge === null ? null : kMenge * k.nein,
           roh: k.nein, gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
           name: k.jaName, seite_text: 'Nein', link: kLink, partie: k.titel
         });
-        const qb = R.qeBack(v.b, smM.sz), ql = R.qeLay(v.l, smM.sz);
+        const qb = R.qeBack(v.b, 0), ql = R.qeLay(v.l, 0);
         if (qb !== null) seiten.push({
-          buch: 'smarkets', richtung: 'ja', qe: qb, geld: zahlOderNull(v.bs), roh: v.b,
+          buch: 'smarkets', richtung: 'ja', qe: qb, qe_netto: R.qeBack(v.b, smM.sz),
+          geld: zahlOderNull(v.bs), roh: v.b,
           gebuehr: R.gebuehrSicher(smM.sz), gebuehr_echt: smM.sz_echt === true,
           gebuehr_form: 'back',
           name: v.n, seite_text: 'Back', link: smM.link, partie: smM.ev
@@ -662,7 +688,7 @@ Deno.serve(async (req) => {
         if (ql !== null) {
           const ls = zahlOderNull(v.ls);
           seiten.push({
-            buch: 'smarkets', richtung: 'nein', qe: ql,
+            buch: 'smarkets', richtung: 'nein', qe: ql, qe_netto: R.qeLay(v.l, smM.sz),
             geld: ls === null ? null : ls * (v.l - 1), roh: v.l,
             gebuehr: R.gebuehrSicher(smM.sz), gebuehr_echt: smM.sz_echt === true,
             gebuehr_form: 'lay',
@@ -722,16 +748,17 @@ Deno.serve(async (req) => {
       const link = brokerLink(m.link);
       const partie = m.ev || m.k;
       const aus: Seite[] = [];
-      const qb = R.qeBack(r.b, satz), ql = R.qeLay(r.l, satz);
+      const qb = R.qeBack(r.b, 0), ql = R.qeLay(r.l, 0);
       if (qb !== null) aus.push({
-        buch: 'betfair', richtung: 'ja', qe: qb, geld: zahlOderNull(r.bs), roh: r.b,
+        buch: 'betfair', richtung: 'ja', qe: qb, qe_netto: R.qeBack(r.b, satz),
+        geld: zahlOderNull(r.bs), roh: r.b,
         gebuehr: R.gebuehrSicher(satz), gebuehr_echt: true, gebuehr_form: 'back',
         name: r.n, seite_text: 'Back', link, partie
       });
       if (ql !== null) {
         const ls = zahlOderNull(r.ls);
         aus.push({
-          buch: 'betfair', richtung: 'nein', qe: ql,
+          buch: 'betfair', richtung: 'nein', qe: ql, qe_netto: R.qeLay(r.l, satz),
           geld: ls === null ? null : ls * (r.l - 1), roh: r.l,
           gebuehr: R.gebuehrSicher(satz), gebuehr_echt: true, gebuehr_form: 'lay',
           name: r.n, seite_text: 'Lay', link, partie
@@ -753,16 +780,17 @@ Deno.serve(async (req) => {
         if (!v) continue;
 
         const seiten: Seite[] = bfSeitenFuer(bfM, r);
-        const qb2 = R.qeBack(v.b, smM.sz), ql2 = R.qeLay(v.l, smM.sz);
+        const qb2 = R.qeBack(v.b, 0), ql2 = R.qeLay(v.l, 0);
         if (qb2 !== null) seiten.push({
-          buch: 'smarkets', richtung: 'ja', qe: qb2, geld: zahlOderNull(v.bs), roh: v.b,
+          buch: 'smarkets', richtung: 'ja', qe: qb2, qe_netto: R.qeBack(v.b, smM.sz),
+          geld: zahlOderNull(v.bs), roh: v.b,
           gebuehr: R.gebuehrSicher(smM.sz), gebuehr_echt: smM.sz_echt === true, gebuehr_form: 'back',
           name: v.n, seite_text: 'Back', link: smM.link, partie: smM.ev
         });
         if (ql2 !== null) {
           const ls2 = zahlOderNull(v.ls);
           seiten.push({
-            buch: 'smarkets', richtung: 'nein', qe: ql2,
+            buch: 'smarkets', richtung: 'nein', qe: ql2, qe_netto: R.qeLay(v.l, smM.sz),
             geld: ls2 === null ? null : ls2 * (v.l - 1), roh: v.l,
             gebuehr: R.gebuehrSicher(smM.sz), gebuehr_echt: smM.sz_echt === true, gebuehr_form: 'lay',
             name: v.n, seite_text: 'Lay', link: smM.link, partie: smM.ev
@@ -797,15 +825,17 @@ Deno.serve(async (req) => {
         const seiten: Seite[] = bfSeitenFuer(bfM, r);
         const kLink = kalshiLink(k);
         const kSatz = R.kalshiSatzFuer(k.serie);
-        const qJa = R.qeKalshi(k.ja, kSatz), qNein = R.qeKalshi(k.nein, kSatz);
+        const qJa = R.qeKalshi(k.ja, 0), qNein = R.qeKalshi(k.nein, 0);
         const kMenge = zahlOderNull(k.jaMenge);
         if (qJa !== null) seiten.push({
-          buch: 'kalshi', richtung: 'ja', qe: qJa, geld: kMenge === null ? null : kMenge * k.ja,
+          buch: 'kalshi', richtung: 'ja', qe: qJa, qe_netto: R.qeKalshi(k.ja, kSatz),
+          geld: kMenge === null ? null : kMenge * k.ja,
           roh: k.ja, gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
           name: k.jaName, seite_text: 'Ja', link: kLink, partie: k.titel
         });
         if (qNein !== null) seiten.push({
-          buch: 'kalshi', richtung: 'nein', qe: qNein, geld: kMenge === null ? null : kMenge * k.nein,
+          buch: 'kalshi', richtung: 'nein', qe: qNein, qe_netto: R.qeKalshi(k.nein, kSatz),
+          geld: kMenge === null ? null : kMenge * k.nein,
           roh: k.nein, gebuehr: kSatz, gebuehr_echt: true, gebuehr_form: 'kontrakt',
           name: k.jaName, seite_text: 'Nein', link: kLink, partie: k.titel
         });
@@ -873,11 +903,12 @@ Deno.serve(async (req) => {
       body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: 'Partie vorbei' })
     });
 
-    /* Zaehlschwelle wie in der Anzeige und in orion_uebersicht: 3 %
-     * (Vorgabe 11.8. spaet abends). Stand hier bis dahin 0,5 %, waehrend
-     * die Website schon 3 % zeigte, haette das Protokoll andere Zahlen
+    /* Zaehlschwelle wie in der Anzeige und in orion_uebersicht: 2 %
+     * (Karams Aufteilung 23.8.: unter 2 % knappes Paar, ab 2 % Chance —
+     * gerechnet VOR Gebuehren). Stand hier bis dahin 3 %, waehrend die
+     * Website schon 2 % zeigte — das Protokoll haette andere Zahlen
      * behauptet als die Seite. */
-    const chancen = zeilen.filter(z => z.rendite >= 3.0).length;
+    const chancen = zeilen.filter(z => z.rendite >= 2.0).length;
 
     await fetch(`${URL_SUPA}/rest/v1/orion_laeufe`, {
       method: 'POST', headers: { ...dbKopf(), prefer: 'return=minimal' },
