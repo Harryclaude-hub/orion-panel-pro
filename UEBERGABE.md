@@ -4001,3 +4001,96 @@ Die zehn leeren Bereiche (eishockey, golf, krypto, kultur, motorsport,
 politik, tech, welt, wetter, wirtschaft) laufen rund 16.000 mal am Tag
 ohne jedes Material. Politik ist mit 4155 ms sogar der langsamste
 Bereich ueberhaupt - bei null Maerkten.
+
+---
+
+## 9m. DER BUCHSUMMEN-RIEGEL IST UMGEDREHT (23.8., Karams Entscheidung)
+
+### Anlass
+
+Karam sah 2 Chancen und 7 knappe Paare im Verlauf und keine einzige
+Telegram-Nachricht. Gemessen waren es 11 Zeilen, alle mit dem Stempel
+"zweifelhaft", keine davon sauber.
+
+### Die doppelte Sperre
+
+Der Denkfehler aus 9l steckte an VIER Stellen, nicht nur in der Wache:
+
+    orion_wache_stufe2      buch_summe >= 1,00 -> 'falsch'
+    orion_verlauf_urteil    beste_summe >= 1,00 -> 'falsch'
+    orion-melder-telegram   buch_summe.lt.1 im Auswahlfilter
+    orion-melder-knapp      dasselbe (Drilling)
+
+Zuerst kassierte die Wache die Zeile, dann haette der Melder sie mit
+demselben Mass noch einmal ausgesperrt. Gemessen im Meldeband:
+
+    Band                Zeilen   am Riegel   von der Wache verurteilt
+    Chance 2 bis 5 %       24        22               24
+    Knapp  0 bis 2 %       96        83               96
+
+Keine einzige kam je durch.
+
+### Was jetzt gilt
+
+Karam hat "umdrehen wie in der Anzeige" gewaehlt. An allen vier Stellen
+gilt jetzt das Band
+
+    1,00 <= buch_summe <= 1,30
+
+Unter 1,00 klebt vermutlich ein Kurs im Gegenbuch, genau wie
+js/anzeige.js:1481 es seit jeher liest. Ueber 1,30 ist es keine Marge
+mehr: in den Daten steht eine Zeile mit 2,0280 (West Ham gegen
+Charlton), das sind 103 % und damit ein Datenfehler.
+
+DIE OBERGRENZE 1,30 IST NICHT TEIL VON KARAMS ENTSCHEIDUNG. Sie ist als
+Schutz gegen genau diesen Fall dazugekommen und steht als eine Zahl an
+jeder der vier Stellen. Soll sie weg, ist es diese eine Zahl.
+
+### Wirkung, sofort gemessen
+
+Die Wache ueber denselben Bestand, vorher und nachher:
+
+    vorher    166 von 169 gesperrt
+    nachher    12 von 151 gesperrt
+
+### Altlasten bereinigt
+
+82 Zeilen trugen ein Urteil, das allein am alten Mass hing (73 aus dem
+Live-Pfad, 9 aus dem Verlaufs-Pfad), davon 27 ueber 2 %. Ihr Urteil
+wurde zurueckgenommen und neu bewertet. Die 331 Zeilen mit anderem Grund
+(Anpfiff, Mannschaftsklasse, Marktlink, Back-Preis-Summe) blieben
+unberuehrt - die waren nie strittig.
+
+### Gegenprobe mit echten Pruefzeilen
+
+Eine Zeile mit rendite 2,60 und buch_summe 1,0118, also genau die
+Konstellation, die vorher immer kassiert wurde:
+
+    Wache          SAUBER, kein Einwand
+    Chancen-Bot    gemeldet, telegram_gemeldet = true
+
+Dazu eine knappe Zeile mit rendite 0,84 und buch_summe 1,0153:
+
+    Wache          SAUBER, kein Einwand
+    Knapp-Bot      gemeldet 1, zugestellt an 2 Empfaenger
+
+Beide Pruefzeilen danach restlos entfernt, Gegenprobe 0.
+
+MERKE fuer den naechsten Test: eine eingeschleuste Zeile ueberlebt keine
+fuenf Minuten. Der Scanner setzt sie beim naechsten Lauf auf 'vorbei'
+("nicht mehr gefunden"). Der Chancen-Bot im Minutentakt erwischt sie
+noch, der Knapp-Bot mit seinen fuenf Minuten nicht mehr. Beim zweiten
+Anlauf muss die Zeile unmittelbar vor dem Aufruf wieder auf 'live'
+gesetzt werden.
+
+### Nebenbefund, nicht behoben
+
+Die Wache schreibt in ihrer Verlaufsmeldung "Spitzenwert 260.0 %" fuer
+eine Zeile mit 2,60 % Rendite. Sie multipliziert mit 100, obwohl der
+Wert schon in Prozent vorliegt. Betrifft nur den Meldetext, nicht das
+Urteil.
+
+### Pruefstand
+
+Spiegel gruen, Vollpruefung gruen (alle sieben Huerden), Melder,
+Rechnung und Zuordnung ohne Beanstandung.

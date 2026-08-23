@@ -20,12 +20,15 @@
  * `mit_beitragslink`, weil beitrag.html hinter dem Kennwort liegt.
  *
  * Schutzgurte wie beim Chancen-Bot: Wache-Urteil leer, 120 s Bewaehrung,
- * hoechstens einmal je Fund. Buchsummen-Gurt seit 22.8. bei 1,00 statt
- * 1,02: die Wache verurteilt JEDE Zeile ab 1,00 bei positiver Rendite,
- * und seit das Band bei 0 beginnt, sind alle Kandidaten positiv. Der
- * weitere Deckel haette nur Zeilen durchgelassen, die die Wache Sekunden
- * spaeter kassiert - eine Meldung ueber einen Fund, der im Panel schon
- * als falsch dasteht. Bot und Wache messen jetzt mit demselben Mass.
+ * hoechstens einmal je Fund, Buchsumme im Band 1,00 bis 1,30.
+ *
+ * Der Buchsummen-Gurt wurde am 23.8. UMGEDREHT. Er stand auf "nur unter
+ * 1,00 melden" und hat damit fast alles ausgesperrt: 96 Zeilen lagen im
+ * Knappband, 83 davon scheiterten allein an diesem Gurt, keine einzige
+ * Meldung kam je an. Grund war eine Verwechslung, die auch die Wache
+ * hatte: buch_summe ist die Marge EINES Buches und MUSS ueber 1 liegen,
+ * die Arbitrage steckt in beiden Buechern zusammen. Bot und Wache messen
+ * weiter mit demselben Mass, jetzt aber mit dem richtigen.
  *
  * BEDIENUNG: {"einrichten": true} listet, wer nichts bekommt.
  *            {"abholen": true} traegt neue Chats ein.
@@ -252,9 +255,30 @@ Deno.serve(async (req) => {
     }
 
     const bewaehrtVor = new Date(Date.now() - 120_000).toISOString();
+    /* BUCHSUMMEN-GURT, am 23.8. UMGEDREHT. Bis dahin stand hier
+     * buch_summe.lt.1, also "melde nur unter 1". Das war falsch herum und
+     * hat praktisch alles ausgesperrt: gemessen 24 Zeilen im Chancenband
+     * und 96 im Knappband, davon 22 bzw. 83 allein an diesem Gurt.
+     *
+     * buch_summe ist die Marge EINES Buches, nicht die Summe der Paarung.
+     * Am 23.8. an vier Faellen nachgerechnet: Preis plus Restseite ergibt
+     * exakt den Wert (0,6410 + 0,3707 = 1,0118). Eine Marge MUSS ueber 1
+     * liegen. Die Arbitrage steckt in beiden Buechern zusammen, dort lagen
+     * dieselben Faelle bei 0,9210 bis 0,9846 - und die Rendite passt
+     * lueckenlos dazu, Gebuehrenabstand eingerechnet.
+     *
+     * js/anzeige.js:1481 liest den Wert seit jeher richtig herum
+     * ("unter 1 = UNSTIMMIG, ein Kurs klebt"). Der Gurt folgt jetzt dieser
+     * Deutung: unter 1 ist verdaechtig, ab 1 ist der Normalfall.
+     *
+     * OBERGRENZE 1,30 ist neu und NICHT Teil von Karams Entscheidung: in
+     * den Daten steht eine Zeile mit buch_summe 2,0280 (West Ham gegen
+     * Charlton). Eine Marge von 103 % hat kein gesundes Buch, das ist ein
+     * Datenfehler. Ohne Deckel waere sie ab jetzt meldefaehig. Soll der
+     * Deckel weg, ist es diese eine Zahl. */
     const q = 'orion_funde?status=eq.live&knapp_gemeldet=eq.false' +
       '&pruefung=is.null' +
-      '&or=(buch_summe.is.null,buch_summe.lt.1)' +
+      '&or=(buch_summe.is.null,and(buch_summe.gte.1,buch_summe.lte.1.3))' +
       '&rendite=gte.0&rendite=lt.2' +
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null' +

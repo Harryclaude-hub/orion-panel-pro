@@ -37,12 +37,15 @@ KOPF = r'''/* orion-melder-knapp — der ZWEITE Telegram-Bot: meldet die KNAPPST
  * `mit_beitragslink`, weil beitrag.html hinter dem Kennwort liegt.
  *
  * Schutzgurte wie beim Chancen-Bot: Wache-Urteil leer, 120 s Bewaehrung,
- * hoechstens einmal je Fund. Buchsummen-Gurt seit 22.8. bei 1,00 statt
- * 1,02: die Wache verurteilt JEDE Zeile ab 1,00 bei positiver Rendite,
- * und seit das Band bei 0 beginnt, sind alle Kandidaten positiv. Der
- * weitere Deckel haette nur Zeilen durchgelassen, die die Wache Sekunden
- * spaeter kassiert - eine Meldung ueber einen Fund, der im Panel schon
- * als falsch dasteht. Bot und Wache messen jetzt mit demselben Mass.
+ * hoechstens einmal je Fund, Buchsumme im Band 1,00 bis 1,30.
+ *
+ * Der Buchsummen-Gurt wurde am 23.8. UMGEDREHT. Er stand auf "nur unter
+ * 1,00 melden" und hat damit fast alles ausgesperrt: 96 Zeilen lagen im
+ * Knappband, 83 davon scheiterten allein an diesem Gurt, keine einzige
+ * Meldung kam je an. Grund war eine Verwechslung, die auch die Wache
+ * hatte: buch_summe ist die Marge EINES Buches und MUSS ueber 1 liegen,
+ * die Arbitrage steckt in beiden Buechern zusammen. Bot und Wache messen
+ * weiter mit demselben Mass, jetzt aber mit dem richtigen.
  *
  * BEDIENUNG: {"einrichten": true} listet, wer nichts bekommt.
  *            {"abholen": true} traegt neue Chats ein.
