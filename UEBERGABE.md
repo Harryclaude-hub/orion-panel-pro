@@ -3898,3 +3898,106 @@ Damit greift die Kette lueckenlos: gemeldet -> bleibt sichtbar ->
 laeuft ab -> steht im Verlauf -> wird 30 Tage nicht angeruehrt ->
 und wer es dauerhaft will, speichert es in orion_gespeichert, wo es
 ueberhaupt nie angefasst wird.
+
+---
+
+## 9l. WARUM NICHTS GEFUNDEN WIRD: DIE WACHE PRUEFT DIE FALSCHE ZAHL (23.8.)
+
+### Karams Frage
+
+"Warum wurde bis jetzt nichts gefunden?"
+
+Die Antwort aus 9j ("es gab nichts ueber 2 %") war zu kurz gegriffen. Sie
+mass nur die LEBENDEN Zeilen. Ueber den ganzen Bestand sieht es anders
+aus.
+
+### Es gab sehr wohl Zeilen ueber der Schwelle
+
+    ueber 2,00 %        36 Zeilen      davon sauber:  0
+    beste am 23.8.       7,43 %
+    beste am 22.8.      14,03 %
+
+Alle 36 hat die Wache verurteilt. Die Gruende:
+
+    27  Buchsumme ueber 1,00
+     3  Spitzenwert absurd (213 %, 301 %, 660 %)
+     2  Back-Preis-Summe verletzt
+     4  Anpfiff-Probleme
+
+Drei Viertel sind also EIN einziger Grund: die Buchsumme.
+
+### Was buch_summe wirklich misst
+
+Vier Faelle nachgerechnet. Der Wert ist reproduzierbar die Marge EINES
+Buches, nicht die Summe der Paarung:
+
+    Spiel          Preis Buch A   buch_summe   Rest im selben Buch
+    Vancouver         0,6410        1,0118           0,3707
+    Orlando           0,4717        1,0073           0,5356
+    Cincinnati        0,5682        1,0128           0,4447
+    NY Red Bulls      0,3846        1,0131           0,6285
+
+Preis plus Rest ergibt jedes Mal exakt buch_summe. Das ist die normale
+Marge eines gesunden Orderbuchs - sie MUSS knapp ueber 1 liegen.
+
+Die Arbitrage entsteht dagegen aus BEIDEN Buechern:
+
+    Spiel          Buch A + Buch B    gemeldete Rendite
+    Vancouver          0,9210              7,43 %
+    Orlando            0,9317              5,81 %
+    Cincinnati         0,9682              1,99 %
+    NY Red Bulls       0,9846              0,09 %
+
+Je tiefer die Summe beider Buecher unter 1, desto hoeher die Rendite -
+lueckenlos konsistent, auch der Abstand zu 1/summe-1 passt zu den
+Gebuehren. Der Rechenweg arbeitet korrekt.
+
+### Der Widerspruch
+
+Drei Stellen deuten dieselbe Spalte, zwei davon gleich, eine anders:
+
+    Scanner schreibt   Marge eines Buches, also immer rund 1,01
+    js/anzeige.js:1481 "< 1 = UNSTIMMIG, ein Kurs klebt"   passt dazu
+    orion_wache_stufe2 ">= 1,00 = Widerspruch, kein Vorteil moeglich"
+
+Die Wache ist die Ausreisserin. Ihre Bedingung lautet:
+
+    when f.buch_summe >= 1.0 and coalesce(f.rendite,0) > 0
+      then 'Widerspruch: Buchsumme ... dann kann es keinen Vorteil geben'
+
+Das waere richtig, wenn buch_summe die Summe der Paarung waere. Sie ist
+es aber nicht. Damit verurteilt die Wache genau den Normalfall.
+
+### Stand und offene Entscheidung
+
+NICHTS GEAENDERT. Das ist der Rechenweg, und dafuer gilt Karams Regel:
+erst melden, nicht selbst umbauen. Die Wache wurde am 13.8. aus gutem
+Grund gebaut - damals waren 8 von 15 Verlaufszeilen tatsaechlich falsch.
+Ob dort schon dieselbe Verwechslung mitspielte oder ob es zwei getrennte
+Sachen sind, ist noch nicht gemessen.
+
+Zu klaeren ist:
+  a) Soll die Wache statt buch_summe die Summe beider Buecher pruefen?
+  b) Oder soll der Scanner in buch_summe die Paarungssumme schreiben?
+Beides behebt den Widerspruch, aber (b) wuerde die Anzeige brechen, die
+den Wert ausdruecklich als "Buchprobe Gegenbuch" fuehrt.
+
+### Nebenbefund: zehn Bereiche laufen ins Leere
+
+Der Trichter ueber 24 Stunden zeigt, dass praktisch nur Fussball traegt:
+
+    Bereich      PM-Maerkte   BF-Quoten   Paare/Lauf   Laeufe/Tag
+    fussball        443          135         23,9         3554
+    tennis           65           17          1,4         1611
+    cricket           2           12          0,6         1610
+    baseball         57           13          0,0         1650
+    esport           93            0          0,0         1611
+    zehn andere       0            0          0,0       ~16000
+
+BASEBALL ist auffaellig: 57 Maerkte auf der einen, 13 auf der anderen
+Seite, aber keine einzige Paarung. Da findet etwas nicht zusammen.
+
+Die zehn leeren Bereiche (eishockey, golf, krypto, kultur, motorsport,
+politik, tech, welt, wetter, wirtschaft) laufen rund 16.000 mal am Tag
+ohne jedes Material. Politik ist mit 4155 ms sogar der langsamste
+Bereich ueberhaupt - bei null Maerkten.
