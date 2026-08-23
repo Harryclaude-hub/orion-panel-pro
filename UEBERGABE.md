@@ -4219,3 +4219,47 @@ Nach einem Tag ist der Bestand sortenrein.
 
 Chancen-Bot: Band-Obergrenze 2-5 auf 2-6,5 nachgezogen (siehe
 orion-melder-telegram im Repo), Text nennt "vor Gebuehren".
+
+## 9o. DIE GENAUE SETZ-ANWEISUNG (23.8., Karams Nachschlag)
+
+### Der Auftrag
+
+"Gib bitte immer eine sehr genaue Angabe, was man wo und wie viel setzen
+soll."
+
+### Umgesetzt, auf Karte UND in Telegram
+
+**"So setzt du" (anzeige.js) rechnet jetzt auf den EMPFOHLENEN Einsatz**:
+Grundeinsatz (1000, Anzeige-Waehrung), aber nie mehr, als zu diesen
+Kursen wirklich hineinpasst (max_einsatz). Vorher rechnete der Abschnitt
+stur auf 1000, auch wenn nur 140 im Buch lagen - die genannten Betraege
+waren dann gar nicht setzbar.
+
+Je Schritt steht neu eine Detail-Zeile (setzDetail) mit der Zahl, die
+man am Buch WIRKLICH eintippt:
+
+    Anteilspreis   Betrag + Stueckzahl (Betrag/Preis), Preis als Obergrenze
+    Back           Betrag als Back-Einsatz, Quote als Untergrenze
+    Lay            INS EINSATZ-FELD gehoert Betrag/(L-1); die Haftung,
+                   die die Boerse dann zeigt, IST der Betrag der Rechnung.
+                   Den Haftungsbetrag ins Feld zu tippen ist der
+                   klassische Lay-Fehler (das (L-1)-fache gesetzt).
+
+Dazu je Schritt der Marktlink, und die Summenzeile nennt Auszahlung und
+sicheren Gewinn vor Gebuehren plus die Zahl nach Abzug. Neue CSS-Klasse
+setz-detail (stil.css), Cache-Marken v78.
+
+**Beide Telegram-Bots** tragen denselben Block ("So setzt du" beim
+Chancen-Bot, "So saehe der Einsatz aus" beim Knapp-Bot): Basis =
+handelbarer Deckel, hoechstens 1000 $; je Seite die exakte Anweisung
+inkl. Lay-Feld-Betrag und Stueckzahl. bau-knapp.py-Anker nachgezogen
+(lte.6.5, "vor Gebuehren"), Knapp-Bot daraus neu erzeugt.
+
+### Ausgerollt und gemessen
+
+    orion-melder-telegram v14   Probe {}: "keine neue Chance", laeuft
+    orion-melder-knapp v10      feuerte beim ersten Takt 3 ECHTE Meldungen
+                                im neuen Format an 2 Empfaenger - der
+                                Beweis aus dem Betrieb, nicht aus dem Test
+    melder.test.js              gruen (beide Melder tragen denselben Block)
+    node --check anzeige.js     ok, Cache-Marken aller Seiten v77 -> v78

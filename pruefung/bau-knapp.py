@@ -71,17 +71,19 @@ TAUSCH = [
     # nur Zeilen durchgelassen, die die Wache Sekunden spaeter kassiert.
     # Bot und Wache messen jetzt mit demselben Mass. Damit ist die Zeile
     # identisch zum Chancen-Bot und faellt aus der Tauschliste heraus.
-    (r"'&rendite=gte.2&rendite=lte.5' +",
+    (r"'&rendite=gte.2&rendite=lte.6.5' +",
      r"'&rendite=gte.0&rendite=lt.2' +"),
     (r"'&max_einsatz=not.is.null&max_gewinn=gte.5' +",
      r"'&max_einsatz=not.is.null' +"),
     (r"grund: 'keine neue Chance'", r"grund: 'kein knappes Paar'"),
 
     # Nachrichtentext
-    (r"    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} %</b>`,",
-     r"    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} %</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,"),
-    (r"      ? `\u{1F9EE} Bei 100 $ Einsatz: <b>${e1.toFixed(2)} $</b> auf ${n1}, <b>${e2.toFixed(2)} $</b> auf ${n2} → <b>${aus.toFixed(2)} $</b> zurück, egal wie es endet`",
-     r"      ? `\u{1F9EE} Bei 100 $ Einsatz kämen <b>${aus.toFixed(2)} $</b> zurück (${e1.toFixed(2)} $ auf ${n1}, ${e2.toFixed(2)} $ auf ${n2})`"),
+    (r"    `\u{1F3AF} <b>ZIEL ERFASST · +${Number(f.rendite).toFixed(2)} % vor Gebühren</b>`,",
+     r"    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} % vor Gebühren</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,"),
+    # Die genaue Setz-Anweisung (23.8.) bleibt im Knapp-Bot erhalten;
+    # nur Kopf und Schluss sagen ehrlich, dass es (noch) keine Chance ist.
+    (r"<b>So setzt du</b>", r"<b>So sähe der Einsatz aus</b>"),
+    (r"$</b> sicher, vor Gebühren`", r"$</b> vor Gebühren — noch keine Chance`"),
     (r"    `\u{1F4B0} Einsatz bis <b>${geld(f.max_einsatz)}</b> · holbar ~<b>${geld(f.max_gewinn)}</b>`,",
      r"    `\u{1F4B0} Platz bis <b>${geld(f.max_einsatz)}</b> Einsatz, falls es kippt`,"),
 

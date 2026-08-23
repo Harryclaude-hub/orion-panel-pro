@@ -1062,41 +1062,86 @@
     return txt(seiteText) + ' auf „' + n + '"';
   }
 
+  /* ---------- Die GENAUE Setz-Anweisung je Seite (Karams Vorgabe 23.8.):
+   * WO (Buch + Link), WAS (Seite + Kurs als Grenze) und WIE VIEL — und
+   * zwar die Zahl, die man am Buch WIRKLICH eintippt:
+   *   Anteilspreis   Betrag in $ UND die Zahl der Anteile (Betrag / Preis)
+   *   Back           der Betrag selbst, zur Mindest-Quote
+   *   Lay            das EINSATZ-FELD ist Betrag / (L − 1); die Haftung,
+   *                  die die Boerse dann zeigt, ist der Betrag dieser
+   *                  Rechnung. Wer den Rechnungs-Betrag ins Feld tippt,
+   *                  setzt das (L−1)-fache — der klassische Lay-Fehler. */
+  function setzDetail(info, buchName, seiteText, roh, usd, link) {
+    var s = String(seiteText || '').toLowerCase();
+    var n = Number(roh);
+    var t = '';
+    if (info.art === 'preis') {
+      if (isFinite(n) && n > 0 && n < 1 && isFinite(usd)) {
+        var anteile = usd / n;
+        t = 'Preis: höchstens <b>' + n.toFixed(3) + ' $</b> je ' +
+            (buchName === 'kalshi' ? 'Kontrakt' : 'Anteil') +
+            ' (teurer kippt die Rechnung) · dein Betrag kauft <b>≈ ' +
+            anteile.toFixed(1) + ' Stück</b>, jedes zahlt 1 $ bei Treffer';
+      }
+    } else if (s === 'lay') {
+      if (isFinite(n) && n > 1 && isFinite(usd)) {
+        var feld = usd / (n - 1);
+        t = 'Lay-Quote: höchstens <b>' + n.toFixed(2) + '</b> · ' +
+            '<b>ins Einsatz-Feld gehört ' + geld(feld) + '</b> — die Börse zeigt dann ' +
+            '<b>' + geld(usd) + ' Haftung</b>, und GENAU die Haftung ist dein Betrag in dieser Rechnung. ' +
+            'Nicht den Haftungsbetrag ins Feld tippen!';
+      }
+    } else {
+      if (isFinite(n) && n > 1) {
+        t = 'Quote: mindestens <b>' + n.toFixed(2) + '</b> (weniger kippt die Rechnung) · ' +
+            'den Betrag als ' + (info.name === 'Smarkets' ? 'BUY' : 'Back') + '-Einsatz eintragen';
+      }
+    }
+    if (link) {
+      t += (t ? ' · ' : '') + '<a href="' + txt(link) + '" target="_blank" rel="noopener">Markt öffnen</a>';
+    }
+    return t ? '<div class="setz-detail">' + t + '</div>' : '';
+  }
+
   function soSetztDu(f) {
     var b1 = buch1(f), b2 = buch2(f);
     var e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2);
     var aus = Number(f.auszahlung);
     if (!isFinite(e1) || !isFinite(e2) || !isFinite(aus)) return '';
 
-    /* GERECHNET WIRD AUF DEN GRUNDEINSATZ (Vorgabe: 1000 €), nicht auf
-     * abstrakte 100. Die AUFTEILUNG ist bei jedem Betrag dieselbe — nur so
-     * zahlen beide Ausgaenge denselben Betrag zurueck. einsatz_1/_2 kommen
-     * je 100 aus der Datenbank, skala rechnet sie hoch. */
+    /* GERECHNET WIRD AUF DEN EMPFOHLENEN EINSATZ: der Grundeinsatz
+     * (Vorgabe 1000, Anzeige-Währung), aber NIE mehr, als zu diesen
+     * Kursen wirklich hineinpasst (max_einsatz). Vorher rechnete der
+     * Abschnitt stur auf 1000, auch wenn nur 140 im Buch lagen — die
+     * genannten Beträge waren dann nicht setzbar. Die AUFTEILUNG ist bei
+     * jedem Betrag dieselbe; einsatz_1/_2 kommen je 100 aus der
+     * Datenbank. Intern läuft alles in USD (der Währung der Bücher),
+     * geld() zeigt beide Währungen. */
     var grund = Number((welt.KONFIG || {}).grundEinsatz) || 1000;
-    var skala = grund / 100;
-    function betrag(x) {
-      var n = x * skala;
-      return (n >= 1000 ? Math.round(n).toLocaleString('de-AT') : n.toFixed(2)) + ' ' + einheit();
-    }
-    var gewinn = (aus - 100) * skala;
+    var grundUsd = fxKurs ? grund / Number(fxKurs.kurs) : grund;
+    var deckelUsd = (f.max_einsatz === null || f.max_einsatz === undefined || !isFinite(Number(f.max_einsatz)))
+      ? null : Number(f.max_einsatz);
+    var empfUsd = (deckelUsd !== null && deckelUsd > 0) ? Math.min(grundUsd, deckelUsd) : grundUsd;
+    var skala = empfUsd / 100;
+    function betrag(x) { return geld(x * skala); }
+    var usd1 = e1 * skala, usd2 = e2 * skala;
+    var gewinnUsd = (aus - 100) * skala;
+    var gewinn = gewinnUsd;
 
-    /* Wie viel WIRKLICH hineinpasst, steht in max_einsatz (USD, wird in €
-     * umgerechnet). Wer 1000 setzen will, wo 140 im Buch liegen, bekommt
-     * den Rest nur zu schlechteren Kursen. */
-    var deckel = (f.max_einsatz === null || f.max_einsatz === undefined) ? null : inEur(Number(f.max_einsatz));
     var deckelText;
-    if (deckel === null) {
+    if (deckelUsd === null) {
       deckelText = '<div class="setz-deckel acht">Wie viel wirklich hineinpasst, ist <b>unbekannt</b> — ' +
-        'eines der beiden Bücher nennt keine Menge. Unbekannt heißt nicht unbegrenzt.</div>';
-    } else if (deckel < grund) {
-      deckelText = '<div class="setz-deckel acht"><b>Achtung:</b> zu diesen Kursen passen nur ' +
-        '<b>' + geld(f.max_einsatz) + '</b> hinein (dann ' +
-        (f.max_gewinn === null || f.max_gewinn === undefined ? 'Gewinn unbekannt' : '<b>+' + geld(f.max_gewinn) + '</b> Gewinn') +
-        '). Die Aufteilung ' + (100 * e1 / (e1 + e2)).toFixed(1) + ' / ' + (100 * e2 / (e1 + e2)).toFixed(1) +
-        ' bleibt dieselbe — nur der Betrag schrumpft. Mehr geht nur zu schlechteren Kursen.</div>';
+        'eines der beiden Bücher nennt keine Menge. Die Beträge oben sind auf den Grundeinsatz gerechnet; ' +
+        'vor dem Setzen die Menge am Buch prüfen. Unbekannt heißt nicht unbegrenzt.</div>';
+    } else if (deckelUsd < grundUsd) {
+      deckelText = '<div class="setz-deckel acht"><b>Die Beträge oben sind bereits auf den handelbaren ' +
+        'Deckel von ' + geld(deckelUsd) + ' gerechnet</b> (dein Grundeinsatz wäre ' + geld(grundUsd) +
+        '). Mehr passt zu diesen Kursen nicht hinein — die nächste Preisstufe ist schlechter. ' +
+        'Aufteilung ' + (100 * e1 / (e1 + e2)).toFixed(1) + ' / ' + (100 * e2 / (e1 + e2)).toFixed(1) +
+        ' bleibt bei jedem Betrag gleich.</div>';
     } else {
-      deckelText = '<div class="setz-deckel">Zu diesen Kursen passen <b>' + geld(f.max_einsatz) +
-        '</b> hinein — die ' + betrag(100) + ' gehen sich also aus.</div>';
+      deckelText = '<div class="setz-deckel">Zu diesen Kursen passen <b>' + geld(deckelUsd) +
+        '</b> hinein — dein Grundeinsatz von ' + betrag(100) + ' geht sich aus.</div>';
     }
 
     /* Der Absage-Ausgang, in Geld. Die Zeile, wegen der es diesen ganzen
@@ -1126,24 +1171,33 @@
       }
     }
 
+    var netto = renditeNachGebuehren(f);
+    var nettoGewinnUsd = netto === null ? null : empfUsd * netto / 100;
+
     return '<div class="setz">' +
       '<div class="setz-schritt">' +
         '<span class="setz-nr">1</span>' +
         '<span class="setz-buch ' + txt(b1.chip) + '">' + txt(b1.name) + '</span>' +
         '<span class="setz-geld">' + betrag(e1) + '</span>' +
         '<span class="setz-text">' + tuWas(b1, f.pm_seite, f.mannschaft) + '</span>' +
+        setzDetail(b1, f.buch_1 || 'polymarket', f.pm_seite, f.pm_preis, usd1, f.pm_link) +
       '</div>' +
       '<div class="setz-schritt">' +
         '<span class="setz-nr">2</span>' +
         '<span class="setz-buch ' + txt(b2.chip) + '">' + txt(b2.name) + '</span>' +
         '<span class="setz-geld">' + betrag(e2) + '</span>' +
         '<span class="setz-text">' + tuWas(b2, f.bf_seite, f.bf_name) + '</span>' +
+        setzDetail(b2, f.buch || 'betfair', f.bf_seite, f.bf_quote, usd2, f.bf_link) +
       '</div>' +
       '<div class="setz-summe">' +
         'Zusammen <b>' + betrag(100) + '</b> Einsatz. Es gibt genau <b>zwei</b> Ausgänge, ' +
         'und beide zahlen dasselbe: <b>' + betrag(aus) + '</b> zurück — also ' +
         '<b class="' + (gewinn > 0 ? 'gut' : 'rot') + '">' +
-        (gewinn >= 0 ? '+' : '') + gewinn.toFixed(2) + ' ' + einheit() + '</b> sicher.' +
+        (gewinn >= 0 ? '+' : '−') + geld(Math.abs(gewinnUsd)) + '</b> sicher, vor Gebühren' +
+        (nettoGewinnUsd === null
+          ? '.'
+          : ' (nach Abzug der Gebühren blieben ' + (nettoGewinnUsd >= 0 ? '+' : '−') +
+            geld(Math.abs(nettoGewinnUsd)) + ').') +
       '</div>' +
       deckelText +
       absageText +

@@ -760,6 +760,14 @@ h2 {
   white-space: nowrap;
 }
 .fund .setz-text { font-size: 14px; }
+/* Die feldgenaue Anweisung je Schritt (23.8., Karams Vorgabe): Kursgrenze,
+ * Stueckzahl bzw. Lay-Feld-Betrag und der Marktlink. Volle Breite unter
+ * Nummer/Buch/Betrag/Text. */
+.fund .setz-detail {
+  grid-column: 1 / -1; font-size: 13px; color: var(--text-leise);
+  border-top: 1px dashed var(--rand); padding-top: 6px;
+}
+.fund .setz-detail b { color: var(--text); }
 .fund .setz-summe {
   font-size: 15px; padding: 9px 12px;
   border: 1px solid rgba(var(--akzent-rgb),.35); border-radius: 10px;

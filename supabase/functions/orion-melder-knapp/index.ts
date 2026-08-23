@@ -77,6 +77,29 @@ function partieSchluessel(titel: unknown): string {
     .toLowerCase();
 }
 
+/* GENAUE SETZ-ANWEISUNG je Seite (Karams Vorgabe 23.8.): WO, WAS und
+ * WIE VIEL — mit der Zahl, die man am Buch WIRKLICH eintippt:
+ *   Anteilspreis   Betrag in $ und die Stueckzahl (Betrag / Preis)
+ *   Back           der Betrag selbst, zur Mindest-Quote
+ *   Lay            das EINSATZ-FELD ist Betrag / (L − 1); die Haftung,
+ *                  die die Boerse dann zeigt, ist der Betrag dieser
+ *                  Rechnung. Den Haftungsbetrag ins Feld zu tippen ist
+ *                  der klassische Lay-Fehler (das (L−1)-fache gesetzt). */
+function anweisung(buch: string, seite: unknown, roh: number, usd: number): string {
+  const s = String(seite ?? '').toLowerCase();
+  const boerse = buch === 'betfair' || buch === 'smarkets';
+  if (!boerse) {
+    if (!(roh > 0 && roh < 1) || !isFinite(usd)) return usd.toFixed(2) + ' $';
+    const st = buch === 'kalshi' ? 'Kontrakte' : 'Anteile';
+    return `<b>${usd.toFixed(2)} $</b> = ≈${(usd / roh).toFixed(1)} ${st} zum Preis max. ${roh.toFixed(3)} $`;
+  }
+  if (!(roh > 1) || !isFinite(usd)) return usd.toFixed(2) + ' $';
+  if (s === 'lay') {
+    return `Lay zu max. ${roh.toFixed(2)}: <b>ins Einsatz-Feld ${(usd / (roh - 1)).toFixed(2)} $</b> — Haftung ${usd.toFixed(2)} $, und die Haftung ist dein Betrag`;
+  }
+  return `<b>${usd.toFixed(2)} $</b> Back zur Quote min. ${roh.toFixed(2)}`;
+}
+
 /* mitLinks=false laesst alle Panel-Verweise weg, die Information bleibt
  * vollstaendig. _probe=true zeigt aufs Panel statt auf einen erfundenen
  * Schluessel: eine Testnachricht darf nie wie ein Betriebsfehler
@@ -99,12 +122,29 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string, mit
   }
 
   const zeilen = [
-    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} %</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,
+    `\u{1F440} <b>KNAPPES PAAR</b> · <b>+${Number(f.rendite).toFixed(2)} % vor Gebühren</b>, unter der 2-%-Meldeschwelle (noch keine Chance)`,
     `<b>${esc(f.titel)}</b>${f.mannschaft ? ' · ' + esc(f.mannschaft) : ''}`,
     buchZeile(p1, n1, f.pm_seite, Number(f.pm_preis), null, 1),
     buchZeile(p2, n2, f.bf_seite, Number(f.bf_quote), f.bf_name, 2),
     (isFinite(e1) && isFinite(e2) && isFinite(aus)
-      ? `\u{1F9EE} Bei 100 $ Einsatz kämen <b>${aus.toFixed(2)} $</b> zurück (${e1.toFixed(2)} $ auf ${n1}, ${e2.toFixed(2)} $ auf ${n2})`
+      ? (() => {
+          /* Basis = handelbarer Deckel, hoechstens 1000 $ (Grundeinsatz);
+           * ohne bekannte Menge ehrlich die 100er-Basis. Die Aufteilung
+           * ist bei jedem Betrag dieselbe. */
+          const max = Number(f.max_einsatz);
+          const basis = isFinite(max) && max > 0 ? Math.min(1000, max) : 100;
+          const skala = basis / 100;
+          const g = (aus - 100) * skala;
+          return [
+            `\u{1F9EE} <b>So sähe der Einsatz aus</b> — ${basis.toFixed(2)} $ gesamt` +
+              (isFinite(max) && max > 0
+                ? (max < 1000 ? ' (mehr passt zu diesen Kursen nicht hinein)' : '')
+                : ' (Menge im Buch unbekannt, vorher pruefen)') + ':',
+            `1⃣ ${n1}: ${anweisung(b1, f.pm_seite, Number(f.pm_preis), e1 * skala)}`,
+            `2⃣ ${n2}: ${anweisung(b2, f.bf_seite, Number(f.bf_quote), e2 * skala)}`,
+            `→ beide Ausgänge zahlen <b>${(aus * skala).toFixed(2)} $</b> zurück: <b>${g >= 0 ? '+' : ''}${g.toFixed(2)} $</b> vor Gebühren — noch keine Chance`
+          ].join('\n');
+        })()
       : ''),
     `\u{1F4B0} Platz bis <b>${geld(f.max_einsatz)}</b> Einsatz, falls es kippt`,
     (Number(f._weitere) > 0
@@ -276,6 +316,10 @@ Deno.serve(async (req) => {
      * Charlton). Eine Marge von 103 % hat kein gesundes Buch, das ist ein
      * Datenfehler. Ohne Deckel waere sie ab jetzt meldefaehig. Soll der
      * Deckel weg, ist es diese eine Zahl. */
+    /* BAND 2 bis 6,5 seit 23.8.: rendite ist VOR Gebuehren gerechnet
+     * (Karams Vorgabe), und der Plausibilitaetsdeckel wanderte von 5
+     * (netto gemessen) auf 6,5 (roh). Dieselbe Zahl wie KONFIG
+     * .maxPlausibel, orion_verlauf_urteil und orion_verdacht. */
     const q = 'orion_funde?status=eq.live&knapp_gemeldet=eq.false' +
       '&pruefung=is.null' +
       '&or=(buch_summe.is.null,and(buch_summe.gte.1,buch_summe.lte.1.3))' +
