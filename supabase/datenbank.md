@@ -99,7 +99,20 @@ nach `orion_wache`. Ruft:
 - `orion_bereich_pm(sport)` / `orion_bereich_kalshi(serie)` /
   `orion_link_passt(buch, link)` — dritte, unabhängige Zuordnungswege für
   den Wächter (neben JS- und TS-Spiegel).
-- **Gespeicherte Funde** (NEU 20.8.2026): Tabelle `orion_gespeichert`
+- **Gespeicherte Funde** — seit 24.8.2026 in DREI Kopien (Karams Vorgabe:
+  „was ich speichere, bleibt wirklich gespeichert, auch auf dem Gerät"):
+  1. **Gerät** (`localStorage`, Fach `orion_gespeichert_v1`) — wird ZUERST
+     geschrieben, überlebt jeden Supabase-Ausfall und jede fremde Löschung.
+  2. **Wolke** (`orion_gespeichert`, siehe unten) — für „auf jedem Gerät".
+  3. **Datei** (Knopf auf gespeichert.html) — überlebt auch
+     „Browserdaten löschen".
+  Beim Ansehen heilen sich Gerät und Wolke gegenseitig. Gemessen am
+  24.8. im Live-Panel: Cloud-Fund wird beim ersten Ansehen aufs Gerät
+  gespiegelt (74 Felder vollständig); bei simuliertem Wolken-Ausfall
+  bleibt der Fund samt Titel und Rendite sichtbar; nach Rückkehr steht
+  er auf „beide". **WICHTIG:** `anon` darf in der Wolke weiterhin
+  DELETE — deshalb ist die Gerätekopie der eigentliche Schutz.
+- **Die Wolken-Tabelle** (NEU 20.8.2026): Tabelle `orion_gespeichert`
   (`schluessel` PK, `zeile` jsonb = SCHNAPPSCHUSS der Fundzeile beim
   Klick, `gespeichert_am`). RLS an, anon darf lesen/anlegen/loeschen —
   dieselbe Vertrauensstufe wie `orion_mail` (das Panel schreibt mit dem

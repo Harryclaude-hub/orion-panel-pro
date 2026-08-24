@@ -4627,3 +4627,62 @@ absichtlich mit Fehler ab. GitHub schickt bei fehlgeschlagenen
 Workflow-Laeufen automatisch eine E-Mail an den Kontoinhaber. Es gibt
 also schon jetzt eine Meldung bei Totalausfall - nur eben per Mail
 statt per Telegram.
+
+## 9w. GESPEICHERT HEISST GESPEICHERT: drei Kopien (24.8., Karams Vorgabe)
+
+### Der Auftrag
+
+"Wenn ich einen Bericht speichere, soll er IMMER gespeichert bleiben.
+Auch wenn er ablaeuft oder was dran ist, bleibt er trotzdem auf DIESEM
+GERAET gespeichert, mit allen Details."
+
+### Was gemessen falsch war
+
+Der Merkzettel lag AUSSCHLIESSLICH in Supabase - trotz des alten
+Kommentars "auf JEDEM Geraet dieselben". Zwei Loecher:
+
+    1. Supabase-Ausfall = Merkzettel unsichtbar. Am 23.8. waeren das
+       14,5 Stunden gewesen, genau wenn man nachsehen will.
+    2. RLS erlaubt anon DELETE, und der Panel-Schluessel steht
+       oeffentlich im Repo. Ein Fremder koennte alles loeschen, ohne
+       dass es eine zweite Kopie gaebe.
+
+ENTLASTET: kein Loeschtakt fasst orion_gespeichert an (Job 96 und die
+Rauschregel gehen ausdruecklich daran vorbei) - das war schon richtig.
+
+### Gebaut: drei Kopien, die sich gegenseitig heilen
+
+    GERAET  localStorage, Fach orion_gespeichert_v1, Deckel 500.
+            Wird ZUERST geschrieben, denn sie kann nicht ausfallen.
+    WOLKE   orion_gespeichert wie bisher (fuer "auf jedem Geraet").
+    DATEI   Knopf "Als Datei sichern" auf gespeichert.html, plus
+            "Datei zurueckspielen" - ueberlebt Browserdaten-Loeschen
+            und hebt den Merkzettel auf ein fremdes Geraet.
+
+Heilung in beide Richtungen beim Ansehen: Wolke -> Geraet immer,
+Geraet -> Wolke sobald die Wolke wieder antwortet. Jede Karte zeigt
+ihre Herkunft (Geraet+Wolke / nur dieses Geraet / Wolke). Entfernen
+raeumt beide, aber NUR auf Knopfdruck - eine fremde Loeschung in der
+Wolke laesst das Geraet unberuehrt, und der Fund kehrt beim naechsten
+Ansehen von selbst zurueck.
+
+### Gemessen im LIVE-Panel (nicht im Testaufbau)
+
+    Funktionen vorhanden              alle vier
+    Geraet vorher                     0 Eintraege
+    nach einmal Ansehen               1 Eintrag  (Heilung Wolke->Geraet)
+    Vollstaendigkeit des Schnappschusses  74 Felder
+    AUSFALL-PROBE (fetch auf Supabase
+    abgewiesen, wie am 23.8.)         Fund BLEIBT sichtbar, Quelle
+                                      "geraet", Titel und Rendite
+                                      (2,59 %) unveraendert da
+    nach Rueckkehr der Wolke          Quelle "beide"
+
+### Ehrliche Grenzen
+
+  - "Browserdaten loeschen" raeumt den Geraetespeicher weg. Dagegen
+    hilft nur die Datei. Deshalb gibt es sie.
+  - Der Geraetespeicher gilt je Browser. Ein anderer Browser oder ein
+    anderes Geraet holt sich alles beim ersten Ansehen aus der Wolke.
+  - Privates Fenster / voller Speicher: dann sagt der Zettel beim
+    Speichern ausdruecklich "nur in der Wolke" statt still zu scheitern.
