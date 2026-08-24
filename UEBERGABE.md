@@ -4592,3 +4592,38 @@ Damit ist ALLES live: /start genuegt (Eintrag + Begruessung, mit
 Links), Prozent-Aufteilung und Netto-Zusatz in beiden Bots, Knapp-Band
 netto >= 0. Der erste erfolgreiche Deploy ueber den neuen curl-Weg -
 DEPLOY-JETZT.cmd nutzt denselben und ist damit ebenfalls einsatzbereit.
+
+## 9v. WACHHUND SCHARF GESCHALTET (24.8., Claude hat uebernommen)
+
+### Was Claude selbst erledigt hat
+
+    TELEGRAM_CHAT_ID   als GitHub-Actions-Secret gesetzt (6795362180,
+                       aus orion_telegram_empfaenger art='direkt')
+    Workflow           auf GitHub aktiv registriert ("Orion Wachhund")
+    Probelauf          Lauf 32706441467: HTTP 200, "Juengster Lauf vor
+                       0 Minuten", Schluss SUCCESS und richtig STUMM
+
+Damit ist die Pruefkette bewiesen: der Waechter erreicht die Datenbank
+von aussen, liest die Frische und schweigt im Gesundfall.
+
+### Was Claude NICHT kann (ehrlich)
+
+1. TELEGRAM_BOT_TOKEN als Secret setzen. Der Token liegt AUSSCHLIESSLICH
+   in den Supabase-Edge-Secrets und ist von dort nicht auslesbar (kein
+   MCP-Tool, kein sbp_-Token, und er steht - richtigerweise - in keiner
+   Datei auf dem Laptop; nachgemessen per Mustersuche ueber das ganze
+   Repo und den Bridge-Ordner: kein Treffer).
+   -> NEU: bridge/WACHHUND-SCHARF.cmd, Doppelklick, Token einfuegen,
+      fertig. Setzt das Secret per gh und startet gleich einen Probelauf.
+2. Alte sbp_-Tokens im Supabase-Dashboard widerrufen. Die Token-
+   Verwaltung haengt am Konto, nicht am Projekt; die MCP-Verbindung
+   reicht nur bis zum Projekt. Das bleibt Karams Klick - es ist reine
+   Ordnung, mehrere gueltige Tokens sind harmlos.
+
+### Bis der Bot-Token da ist: der Notkanal steht bereits
+
+Ohne das Token-Secret bricht der Alarm-Schritt bei einer Stoerung
+absichtlich mit Fehler ab. GitHub schickt bei fehlgeschlagenen
+Workflow-Laeufen automatisch eine E-Mail an den Kontoinhaber. Es gibt
+also schon jetzt eine Meldung bei Totalausfall - nur eben per Mail
+statt per Telegram.
