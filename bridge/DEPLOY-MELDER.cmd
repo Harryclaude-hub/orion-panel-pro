@@ -7,14 +7,12 @@ rem  Diese hier rollt die zwei Bots aus:
 rem      orion-melder-telegram  (Chancen-Bot, laeuft minuetlich)
 rem      orion-melder-knapp     (Knapp-Bot, laeuft alle fuenf Minuten)
 rem
-rem  WAS SICH GEAENDERT HAT (20.8., Karams Vorgabe): in beiden Meldungen
-rem  fuehrt JEDER Link ins eigene Haus. Die zwei Buchzeilen zeigen nicht
-rem  mehr direkt auf den Anbieter, sondern auf
-rem      beitrag.html?fund=<schluessel>&zu=1   bzw.   &zu=2
-rem  Dort steht der Absprung zum Anbieter als eigener Klick, mit dem
-rem  aktuellen Kurs daneben. Grund: zwischen Meldung und Klick koennen
-rem  Minuten liegen. Der Kurs in der Telegram-Nachricht ist eingefroren,
-rem  der auf der Seite nicht.
+rem  WAS SICH GEAENDERT HAT (24.8., Karams Vorgabe): SELBST-ANMELDUNG.
+rem  Wer einem Bot /start schreibt, wird ab jetzt bei JEDEM Takt
+rem  automatisch als Empfaenger eingetragen - MIT Beitragslink, also
+rem  denselben Meldungen wie der Betreiber - und bekommt sofort eine
+rem  Begruessung. Dazu (23.8.): Rendite VOR Gebuehren, Netto-Zusatz im
+rem  Kopf, genaue Setz-Anweisung mit Prozent-Aufteilung je Seite.
 rem
 rem  GEFAHRLOS: schlaegt der Deploy fehl, aendert sich NICHTS - die alten
 rem  Fassungen melden unveraendert weiter.
@@ -29,8 +27,9 @@ echo.
 echo   ORION - DIE ZWEI MELDER AUSROLLEN
 echo   ============================================================
 echo.
-echo   Danach fuehrt in beiden Bots jeder Link auf die eigene
-echo   Beitragsseite statt direkt zum Anbieter.
+echo   Danach gilt in beiden Bots die SELBST-ANMELDUNG: /start
+echo   genuegt, jeder Starter bekommt automatisch jede Meldung
+echo   mit allen Links - dieselben wie der Betreiber.
 echo.
 echo   Token holen, falls noch keiner da ist:
 echo     https://supabase.com/dashboard/account/tokens
@@ -84,8 +83,8 @@ if not "%ERG1%"=="0" goto :schiefgegangen
 if not "%ERG2%"=="0" goto :schiefgegangen
 
 echo   [4/5] ABONNENTEN ABHOLEN - jeder, der einem Bot geschrieben hat,
-echo         wird als Empfaenger eingetragen. Ohne Beitragslink, weil
-echo         beitrag.html hinter dem Kennwort liegt.
+echo         wird sofort als Empfaenger eingetragen, MIT Beitragslink.
+echo         (Ab jetzt passiert das ohnehin automatisch bei jedem Takt.)
 echo.
 curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-telegram" -H "content-type: application/json" -d "{\"abholen\":true}"
 echo.
