@@ -4686,3 +4686,57 @@ Ansehen von selbst zurueck.
     anderes Geraet holt sich alles beim ersten Ansehen aus der Wolke.
   - Privates Fenster / voller Speicher: dann sagt der Zettel beim
     Speichern ausdruecklich "nur in der Wolke" statt still zu scheitern.
+
+## 9x. DREI PUNKTE, EINZELN BEWIESEN (24.8., Karams Auftrag)
+
+### A. Der Speicherort ist das PANEL, nicht der Download-Ordner
+
+Karam: "Der Speicherort, wo ich es aufmachen kann, ist im Orion Panel
+im gespeicherten Bereich. Nicht unbedingt aufs Laptop."
+
+Geaendert: gespeichert.html sagt es jetzt ausdruecklich ("Das hier ist
+dein Speicherort ... im Browser, ohne Download"), die beiden
+Datei-Knoepfe stehen als leise Zusatzsicherung rechts. Die
+Bestaetigung beim Speichern nennt den ORT statt der Technik
+("liegt jetzt unter Gespeichert im Panel und bleibt dort").
+
+BEWIESEN am Live-Panel (v81): 1 Fund im Panel sichtbar, Quelle
+"beide", 74 Felder vollstaendig, Titel und Rendite unveraendert.
+
+### B. "Chancen verschwinden komisch" - es war eine Zahl
+
+GEMESSEN: live wird alle 15 s frisch geholt, der Verlauf nur alle 60 s
+(Puffer der Egress-Bremse). Lief eine Chance ab, war sie sofort aus der
+Live-Liste raus - und der gepufferte Verlauf kannte sie bis zu 45
+Sekunden lang nicht. In diesem Fenster stand sie NIRGENDS. Nicht
+verloren, nur unsichtbar; von aussen sieht das identisch aus.
+
+Gebaut (js/daten.js, verlaufNachziehen): die Live-Schluessel werden
+gemerkt. Fehlt beim naechsten Ablesen einer, wird der Verlaufs-Puffer
+GEZIELT geleert und der Verlauf sofort neu geholt - kein
+Zusatzabruf, solange nichts ablaeuft.
+
+BEWIESEN am Live-Panel: eine ablaufende Zeile simuliert
+(pm>bf:3832261 aus der Live-Antwort entfernt) -> der Verlauf wurde im
+SELBEN Takt neu geholt (2 Abrufe). Keine Luecke mehr.
+
+### C. "Wirft mich beim Scrollen hoch und runter" - eine Rueckkopplung
+
+GEFUNDEN: Es gibt VIER Listen, jede mit eigener Anker-Korrektur per
+scrollBy. Dieses scrollBy loest ein SCROLL-EREIGNIS aus - und der
+Zuhoerer hielt das fuer den Nutzer. Damit sperrte Liste 1 die Listen
+2 bis 4 fuer 1,2 s; im naechsten Takt kam eine andere dran, wieder mit
+eigenem Ruck. Vier Listen, die sich abwechselnd schreiben und jedes Mal
+an der Seite ziehen.
+
+Gebaut (js/anzeige.js): Regel 3 - die eigene Korrektur zaehlt nicht
+als Unruhe (Zeitstempel eigeneKorrektur, 200 ms Fenster). Regel 4 -
+eine unsichtbare Liste (anderer Reiter) wird geschrieben, ruehrt die
+Seite aber NIE an.
+
+BEWIESEN am Live-Panel: Seite auf 900 px gescrollt, dann ZEHN
+Zeichnungen hintereinander mit wechselndem Inhalt. Ergebnis: alle zehn
+Listen befuellt, Position blieb auf exakt 900 px, NULL Spruenge,
+groesster Sprung 0 px. Konsole fehlerfrei.
+
+Spiegel-Pruefstand 19896/19896 gruen. Cache-Marken v81.
