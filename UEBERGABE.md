@@ -4418,3 +4418,65 @@ also gibt es selbst ohne Einrichtung einen Notkanal.
               Laptop aus = Bridge aus kostet NUR die Betfair-Paarungen
               (PM/Kalshi/Smarkets laufen weiter) und erklaert nie eine
               Totenstille. Totenstille war bisher IMMER ein Ausfall.
+
+## 9s. WARUM der Totalausfall passierte (24.8., gemessen)
+
+### Die Beweiskette aus den Protokollen
+
+    bis 17:11 UTC   gesund: 60-84 Laeufe/min, 0 Fehlschlaege in der
+                    16-Uhr-Stunde (2887 ok / 0 failed)
+    Vorzeichen      wiederkehrende MULDEN mit Nachfeuern: 16:52 nur 6
+                    Laeufe, 17:02 nur 3, 17:08 nur 19 - gefolgt von
+                    Doppel-Minuten mit 81-84 Laeufen und Ausreissern
+                    bis 8,2 s Laufzeit (Samstagabend-Spitzenlast)
+    17:11:13-16     DIE ENTLADUNG: ueber 30 Scanner-Laeufe enden in
+                    EINER Sekunde, fussball FUENFFACH parallel,
+                    politik/krypto/esport/lol/valorant/... je doppelt
+    ab 17:11:20     pg_cron flaechendeckend "job startup timeout" -
+                    der Verbindungsvorrat ist weg
+    die Nacht       KEIN Zusammenbruch auf null, sondern Taumeln:
+                    je Stunde ~200-550 ok gegen ~1700-1900 failed.
+                    Die "ok" sind fast nur abgesetzte http_posts und
+                    SQL-Direktjobs; die Edge-Laeufe dahinter starben
+                    am haengenden REST (bekannte Falle: succeeded
+                    heisst nur "Aufruf abgesetzt"). orion_laeufe blieb
+                    von 17:11 bis 07:43 LEER, also null Funde, null
+                    Meldungen
+    07:43 UTC       Selbst-Erholung OHNE Neustart (Postmaster-Start
+                    weiterhin 13.8.); 07:45 wieder 84 Laeufe/min,
+                    pg_net-Warteschlange 0
+    Plattform-Logs  waehrend der ganzen Analyse gestoert ("Backend
+                    error") - die FATAL-Zeilen von Postgres selbst
+                    sind darum NICHT belegbar
+
+### Entlastet
+
+    Job 96 (stuendliches Aufraeumen)   17:07 in 6 s durch, "DELETE 39"
+    Umstellung auf Rendite-vor-Gebuehren  reine Rechenaenderung, kein
+                                       Last-Beitrag messbar
+
+### Ursache (belegt + gefolgert, sauber getrennt)
+
+BELEGT ist die Kette Mulden -> Entladung -> Pool weg. GEFOLGERT (ohne
+Postgres-Logs nicht beweisbar): der pg_net-Hintergrundarbeiter geriet
+unter Samstagabend-Last ins Stocken und feuerte den Rueckstau
+GEBUENDELT ab; 30+ gleichzeitige Edge-Laeufe (jeder mit Upsert plus
+zwei Bereichs-PATCHes ueber PostgREST) rissen den Verbindungsvorrat;
+ab da hielt der Stau sich selbst: jede Minute ~35 neue Jobs mit 55-s-
+Timeouts gegen einen leeren Pool. Struktureller Treiber ist die
+Takt-Verdichtung vom 22.8. (fussball 15 s, alle anderen 33 s) - sie
+laeuft ohne Puffer gegen genau solche Stotterer. Dieselbe Ausfallklasse
+wie am 13.8., nur ohne rettenden Neustart, darum 14,5 Stunden.
+
+### Vorschlaege (NICHT gebaut - Takte und Scanner nur auf Ansage)
+
+  a) DOPPELSTART-SPERRE im Scanner: pg-Advisory-Lock je Bereich; ein
+     Zweitstart desselben Bereichs endet sofort mit "laeuft schon".
+     Verhindert exakt die Fuenffach-Entladung. Kleiner Edge-Eingriff.
+  b) timeout_milliseconds der Scanner-Jobs auf Taktlaenge senken
+     (fussball 55s -> ~14s, 33er-Bereiche -> ~30s): haengende Aufrufe
+     koennen sich dann nicht mehr 3-4-fach stapeln.
+  c) Konservativ dazu: fussball an Spitzenabenden 20-30 s statt 15 s.
+
+Der Wachhund von aussen (9r) haette diesen Vorfall nach 30 Minuten
+gemeldet statt nach einer Nacht - Secrets eintragen.
