@@ -6,9 +6,9 @@
 <title>Orion Panel Pro — Gespeichert</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="schrift/schrift.css?v=79">
-<link rel="stylesheet" href="css/stil.css?v=79">
-<link rel="stylesheet" href="css/hud.css?v=79">
+<link rel="stylesheet" href="schrift/schrift.css?v=80">
+<link rel="stylesheet" href="css/stil.css?v=80">
+<link rel="stylesheet" href="css/hud.css?v=80">
 <style>
   .gesp-huelle { max-width: 900px; margin: 0 auto; padding: 18px 16px 60px; }
   .gesp-kopf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 18px; }
@@ -17,6 +17,14 @@
   .gesp-stand { border: 1px solid var(--rand); border-radius: 10px; padding: 12px 14px;
                 margin-bottom: 16px; font-size: 14px; color: var(--text-leise); }
   .gesp-stand b { color: var(--text); }
+  .gesp-stand .gesp-warn { color: var(--orange); }
+  /* Werkzeugleiste fuer die dritte Kopie (24.8., Karams Vorgabe:
+   * gespeichert heisst gespeichert - auch ohne Wolke, auch ohne Browser). */
+  .gesp-werkzeug { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin: 0 0 14px; }
+  .gesp-hinweis { font-size: 12px; color: var(--text-leise); }
+  .gesp-quelle { font-size: 12px; color: var(--text-leise);
+    border: 1px solid var(--rand); border-radius: 999px; padding: 1px 8px; }
+  .gesp-quelle.gut { color: var(--gruen); border-color: rgba(124,214,154,.4); }
   .gesp-eintrag { margin-bottom: 26px; }
   .gesp-zeile { display: flex; align-items: center; gap: 10px; margin: 0 0 6px;
                 font-size: 13px; color: var(--text-leise); }
@@ -43,16 +51,23 @@
   </header>
 
   <div id="stand" class="gesp-stand">wird geladen …</div>
+  <div class="gesp-werkzeug">
+    <button type="button" class="knopf" id="sichern">💾 Als Datei sichern</button>
+    <button type="button" class="knopf" id="zurueckspielen">📂 Datei zurückspielen</button>
+    <input type="file" id="datei" accept="application/json,.json" hidden>
+    <span class="gesp-hinweis">Die Datei überlebt auch „Browserdaten löschen“ und hebt den
+      Merkzettel auf ein anderes Gerät.</span>
+  </div>
   <div id="liste"></div>
 </div>
 
-<script src="js/konfig.js?v=79"></script>
-<script src="js/sperre.js?v=79"></script>
-<script src="js/rechnung.js?v=79"></script>
-<script src="js/zuordnung.js?v=79"></script>
-<script src="js/filter.js?v=79"></script>
-<script src="js/anzeige.js?v=79"></script>
-<script src="js/speicher.js?v=79"></script>
+<script src="js/konfig.js?v=80"></script>
+<script src="js/sperre.js?v=80"></script>
+<script src="js/rechnung.js?v=80"></script>
+<script src="js/zuordnung.js?v=80"></script>
+<script src="js/filter.js?v=80"></script>
+<script src="js/anzeige.js?v=80"></script>
+<script src="js/speicher.js?v=80"></script>
 <script>
 (function () {
   'use strict';
@@ -107,15 +122,27 @@
         document.getElementById('liste').innerHTML = '';
         return;
       }
+      var nurGeraet = eintraege.filter(function (e) { return e.quelle === 'geraet'; }).length;
       stand('<b>' + eintraege.length + '</b> ' +
             (eintraege.length === 1 ? 'gespeicherter Fund' : 'gespeicherte Funde') + '. Jede Karte ist der ' +
             '<b>Schnappschuss vom Moment des Speicherns</b> — die Kurse darin sind ' +
-            'historisch, nicht live. Der Beitrags-Link daneben zeigt den heutigen Stand.');
+            'historisch, nicht live. Der Beitrags-Link daneben zeigt den heutigen Stand.' +
+            (eintraege.wolkeLebt === false
+              ? '<br><b class="gesp-warn">Die Wolke antwortet gerade nicht</b> — gezeigt wird, was auf ' +
+                'DIESEM Gerät liegt. Genau dafür gibt es die zweite Kopie.'
+              : (nurGeraet
+                  ? '<br>' + nurGeraet + ' davon lagen nur auf diesem Gerät und wurden soeben in die Wolke zurückgespielt.'
+                  : '')));
       document.getElementById('liste').innerHTML = eintraege.map(function (e) {
         var f = ergaenze(e.zeile || {});
         return '<div class="gesp-eintrag">' +
           '<div class="gesp-zeile">' +
             'gespeichert am ' + txt(window.Anzeige.zeitpunkt(e.gespeichert_am)) +
+            ' &middot; ' + (e.quelle === 'beide'
+              ? '<span class="gesp-quelle gut" title="Doppelt gesichert: auf diesem Gerät UND in der Wolke.">Gerät + Wolke</span>'
+              : e.quelle === 'geraet'
+                ? '<span class="gesp-quelle" title="Liegt auf diesem Gerät. Sobald die Wolke antwortet, wandert der Fund automatisch hinüber.">nur dieses Gerät</span>'
+                : '<span class="gesp-quelle" title="Liegt in der Wolke und wurde soeben auch auf dieses Gerät gespiegelt.">Wolke</span>') +
             '<span class="luecke"></span>' +
             '<a class="knopf" href="beitrag.html?fund=' + encodeURIComponent(e.schluessel) + '">Beitrag (heutiger Stand)</a>' +
             '<button type="button" class="chip gesp-weg" data-schluessel="' + txt(e.schluessel) + '">Entfernen</button>' +
@@ -127,6 +154,41 @@
       stand('<b>Nicht geladen:</b> ' + e.message);
     });
   }
+
+  /* Die dritte Kopie: eine Datei im Download-Ordner. */
+  document.getElementById('sichern').addEventListener('click', function () {
+    var b = this;
+    b.disabled = true;
+    window.Speicher.alsDatei().then(function (erg) {
+      b.textContent = '✔ ' + erg.anzahl + ' gesichert';
+      setTimeout(function () { b.textContent = '💾 Als Datei sichern'; b.disabled = false; }, 3000);
+    }, function (e) {
+      b.textContent = 'Fehler: ' + e.message;
+      setTimeout(function () { b.textContent = '💾 Als Datei sichern'; b.disabled = false; }, 4000);
+    });
+  });
+
+  document.getElementById('zurueckspielen').addEventListener('click', function () {
+    document.getElementById('datei').click();
+  });
+
+  document.getElementById('datei').addEventListener('change', function (ev) {
+    var d = ev.target.files && ev.target.files[0];
+    if (!d) return;
+    var leser = new FileReader();
+    leser.onload = function () {
+      try {
+        var erg = window.Speicher.ausDatei(String(leser.result));
+        stand('<b>Zurückgespielt:</b> ' + erg.neu + ' von ' + erg.gelesen +
+              ' Funden waren neu. Vorhandenes wurde nicht angetastet.');
+        setTimeout(lade, 1200);
+      } catch (e) {
+        stand('<b>Datei nicht lesbar:</b> ' + e.message);
+      }
+    };
+    leser.readAsText(d);
+    ev.target.value = '';
+  });
 
   document.addEventListener('click', function (ev) {
     var k = ev.target && ev.target.closest ? ev.target.closest('.gesp-weg') : null;
