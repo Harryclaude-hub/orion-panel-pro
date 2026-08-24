@@ -1,14 +1,20 @@
 @echo off
 rem ============================================================================
-rem  ORION - orion-lauf ausrollen. Doppelklick genuegt.
+rem  ORION - orion-lauf (den SCANNER) ausrollen. Doppelklick genuegt.
 rem ============================================================================
-rem  Fragt nur nach dem Token und macht den Rest allein.
+rem  Rollt den Scanner mit seinen DREI Dateien aus dem Repo aus:
+rem      index.ts, rechnung.ts, zuordnung.ts
 rem
-rem  WARUM DIESE DATEI: der Befehl von Hand hatte am 19.08. eine Falle.
-rem  "set VAR=wert && ..." haengt in cmd ein LEERZEICHEN an den Wert
-rem  (gemessen: Laenge 7 statt 6). Der Token kam damit falsch bei Supabase
-rem  an und wurde abgelehnt. "set /p" liest die Eingabe sauber ein - hier
-rem  kann das nicht mehr passieren.
+rem  UMBAU 24.8.: KEIN npx/supabase-CLI mehr. Windows' Anwendungssteuerung
+rem  (Smart App Control) blockiert frisch geladene unsignierte Programme -
+rem  daran scheiterte jeder CLI-Deploy seit dem 23.8., unabhaengig vom
+rem  Token. Jetzt geht alles ueber das SIGNIERTE, eingebaute curl direkt
+rem  an die Supabase-Verwaltungsschnittstelle. Die Antwort landet in
+rem      bridge\letzter-deploy-scanner.log
+rem  damit ein Fehlschlag nie wieder stumm bleibt.
+rem
+rem  GEFAHRLOS: schlaegt der Deploy fehl, aendert sich NICHTS - der
+rem  Scanner laeuft unveraendert auf dem alten Stand weiter.
 rem
 rem  KEINE UMLAUTE: cmd liest die Datei in der alten Codepage.
 rem ============================================================================
@@ -17,18 +23,10 @@ title Orion - orion-lauf ausrollen
 cd /d "C:\Users\Home\orion-panel-pro"
 
 echo.
-echo   ORION - DER LETZTE SCHRITT
+echo   ORION - DEN SCANNER AUSROLLEN
 echo   ============================================================
 echo.
-echo   Damit wird der Scanner auf den neuen Stand gebracht:
-echo     - Tennis-Matchsieger: marktArt erkennt die Form
-echo       "Turnier: A vs B" (gemessen 19.8.: 127 Spiele im
-echo       72-h-Fenster, vorher 0; 19 Paare gegen Betfair)
-echo     - Turnierpraefix wird vor der Namenspruefung abgeschnitten
-echo.
-echo   WICHTIG, EIGENER SCHRITT: supabase/wache-tennis-turnier.sql
-echo   einmal im SQL-Editor ausfuehren - sonst sperrt die Wache
-echo   jede Frauen-Tennis-Paarung ("Mannschaftsklasse ungleich").
+echo   Rollt orion-lauf auf den Stand aus, der gerade im Repo liegt.
 echo.
 echo   Token holen, falls noch keiner da ist:
 echo     https://supabase.com/dashboard/account/tokens
@@ -49,56 +47,42 @@ if "%TOKEN%"=="" (
   exit /b 1
 )
 
-echo.
-echo   [1/3] Node pruefen ...
-where node >nul 2>nul
-if errorlevel 1 (
-  echo         FEHLER: Node fehlt. Einmalig holen:
-  echo         winget install OpenJS.NodeJS.LTS
-  echo.
-  pause
-  exit /b 1
-)
-echo         in Ordnung.
+set "API=https://api.supabase.com/v1/projects/noexklrgtqveiclijdwp/functions/deploy"
 
-echo   [2/3] Ausrollen ... das dauert etwa eine Minute.
 echo.
-set "SUPABASE_ACCESS_TOKEN=%TOKEN%"
-call npx --yes supabase@latest functions deploy orion-lauf --project-ref noexklrgtqveiclijdwp --no-verify-jwt
-set ERG=%errorlevel%
-set "SUPABASE_ACCESS_TOKEN="
+echo   [1/2] Ausrollen (drei Dateien) ...
+echo {"name":"orion-lauf","entrypoint_path":"index.ts","verify_jwt":false}>"%TEMP%\orion-meta-lauf.json"
+set "CODE="
+for /f %%H in ('curl -s -o "%~dp0letzter-deploy-scanner.log" -w "%%{http_code}" -X POST "%API%?slug=orion-lauf" -H "Authorization: Bearer %TOKEN%" -F "metadata=<%TEMP%\orion-meta-lauf.json;type=application/json" -F "file=@supabase/functions/orion-lauf/index.ts;type=application/typescript" -F "file=@supabase/functions/orion-lauf/rechnung.ts;type=application/typescript" -F "file=@supabase/functions/orion-lauf/zuordnung.ts;type=application/typescript"') do set CODE=%%H
+echo         Antwort HTTP %CODE%  (Details: bridge\letzter-deploy-scanner.log)
+
 set "TOKEN="
+del "%TEMP%\orion-meta-lauf.json" >nul 2>nul
 
 echo.
-if not "%ERG%"=="0" (
+if not "%CODE%"=="200" if not "%CODE%"=="201" (
   echo   ============================================================
-  echo   FEHLGESCHLAGEN. Es hat sich NICHTS geaendert - der Scanner
-  echo   laeuft unveraendert auf dem alten Stand weiter. Es ist
-  echo   nichts kaputt.
+  echo   FEHLGESCHLAGEN (HTTP %CODE%). Es hat sich NICHTS geaendert -
+  echo   der Scanner laeuft unveraendert auf dem alten Stand weiter.
   echo.
-  echo   Haeufigste Ursache: Token abgelaufen oder widerrufen.
-  echo   Einfach neuen holen und nochmal doppelklicken.
+  echo   Der GRUND steht in: bridge\letzter-deploy-scanner.log
+  echo   HTTP 401 = Token falsch/abgelaufen: neuen holen, nochmal.
+  echo   Alles andere: Claude die Log-Datei lesen lassen.
   echo   ============================================================
   echo.
   pause
   exit /b 1
 )
 
-echo   [3/3] Trockenlauf FUSSBALL - rechnet alles, schreibt NICHTS.
-echo         Genau dieser Bereich starb am 21.8. an WORKER_RESOURCE_LIMIT.
-echo         Kommt eine Antwort mit ok true und pm_maerkte, ist der
-echo         Speicherfehler weg. Kommt wieder WORKER_RESOURCE_LIMIT,
-echo         reicht die Entlastung nicht - dann Bescheid geben.
+echo   [2/2] Trockenlauf FUSSBALL - rechnet alles, schreibt NICHTS.
+echo         Kommt eine Antwort mit ok true und pm_maerkte ueber 0,
+echo         laeuft der neue Stand.
 echo.
 curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-lauf" -H "content-type: application/json" -d "{\"bereich\":\"fussball\",\"probe\":true}"
 echo.
 echo.
 echo   ============================================================
 echo   FERTIG.
-echo.
-echo   Oben in der Zeile steht  "pm_maerkte":
-echo     steht dort 0    - es hat nicht gegriffen, bitte melden
-echo     steht dort ^>0   - Tennis ist sichtbar, es hat geklappt
 echo.
 echo   Danach den Token wieder loeschen:
 echo     https://supabase.com/dashboard/account/tokens

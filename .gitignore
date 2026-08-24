@@ -13,3 +13,5 @@ node_modules/
 
 bridge/*.exe
 bridge/*.blob
+bridge/letzter-deploy-*.log
+bridge/werkzeug/

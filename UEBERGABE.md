@@ -4528,3 +4528,55 @@ geht einwandfrei). Deshalb warten Chancen-Bot v17 und Knapp-Bot v12/v13
 **bridge/DEPLOY-MELDER.cmd** (Doppelklick, rollt beide, funkt Proben).
 Bis dahin laeuft v16/v11: alles Bisherige funktioniert, nur die
 Selbst-Anmeldung und die Knapp-Prozente sind noch nicht live.
+
+## 9u. WARUM DER DOPPELKLICK FEHLSCHLUG + DEPLOY OHNE CLI (24.8.)
+
+### Karams Frage
+
+"Fehlgeschlagen gekommen. Hab ich jetzt doppelt Tokens, oder hab ich
+den Melder-Deploy gestern schon gemacht?"
+
+### Gemessen
+
+    orion-melder-telegram   v16, zuletzt 23.8. 12:58 UTC (MCP-Deploy)
+    orion-melder-knapp      v11, zuletzt 23.8. 12:33 UTC (MCP-Deploy)
+
+Kein Deploy danach: BEIDE Doppelklick-Versuche (gestern und heute)
+haben nie etwas ausgerollt. Doppelte sbp_-Tokens sind harmlos (alle
+gueltig nebeneinander, alte im Dashboard per Revoke loeschbar) und am
+Fehlschlag unschuldig - der Fehler kam VOR der Token-Pruefung.
+
+### Die Wurzel, reproduziert in drei Stufen
+
+    npx supabase --version        spawn UNKNOWN (errno -4094)
+    npm-Paket im npx-Cache        bin/-Ordner FEHLT komplett;
+                                  Cache-Neuaufbau aendert nichts
+    offizielle supabase.exe       "Eine Anwendungssteuerungsrichtlinie
+    direkt von GitHub geladen     hat diese Datei blockiert"
+
+Windows' Anwendungssteuerung (Smart App Control, Windows 11 Home)
+blockiert frisch geladene unsignierte Programme. Daran starb die CLI -
+egal ob via npm oder als direkte exe. WICHTIG: Diese Schutzschicht
+NICHT abschalten (einmal aus = dauerhaft aus, nur per Neuinstallation
+zurueck); sie ist auch nicht noetig:
+
+### Der neue Weg: Deploy per curl, ganz ohne CLI
+
+Beide Deploy-Dateien rufen jetzt mit dem SIGNIERTEN, eingebauten
+Windows-curl direkt die Verwaltungsschnittstelle:
+
+    POST api.supabase.com/v1/projects/<ref>/functions/deploy?slug=...
+    multipart: metadata (JSON: name, entrypoint_path, verify_jwt=false)
+               + file=@... je Quelldatei (orion-lauf: drei Dateien)
+    Authorization: Bearer sbp_...   (tippt Karam wie gewohnt ein)
+
+Jede Antwort landet zusaetzlich in bridge\letzter-deploy-*.log (in
+.gitignore) - ein Fehlschlag ist damit nie wieder stumm, Claude kann
+die Logs direkt lesen. Probe ohne echten Token gelaufen: die
+Schnittstelle antwortet sauber 401 "JWT could not be decoded" - der
+Weg traegt bis zur Token-Pruefung. Die geblockte exe samt zip wurde
+wieder geloescht (230 MB), bridge/werkzeug/ ist weg.
+
+Damit ist auch klar, warum der MCP-Edge-Deploy und die CLI am selben
+Tag "kaputt" wirkten: zwei verschiedene Ursachen (MCP: ZodError nach
+Reconnect; CLI: App-Steuerung), ein Symptom.

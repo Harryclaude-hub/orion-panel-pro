@@ -7,6 +7,15 @@ rem  Diese hier rollt die zwei Bots aus:
 rem      orion-melder-telegram  (Chancen-Bot, laeuft minuetlich)
 rem      orion-melder-knapp     (Knapp-Bot, laeuft alle fuenf Minuten)
 rem
+rem  UMBAU 24.8.: KEIN npx/supabase-CLI mehr. Windows' Anwendungssteuerung
+rem  (Smart App Control) blockiert frisch geladene unsignierte Programme -
+rem  daran scheiterte jeder Deploy seit dem 23.8., unabhaengig vom Token.
+rem  Jetzt geht alles ueber das SIGNIERTE, eingebaute curl direkt an die
+rem  Supabase-Verwaltungsschnittstelle. Jede Antwort landet zusaetzlich in
+rem      bridge\letzter-deploy-1.log  (Chancen-Bot)
+rem      bridge\letzter-deploy-2.log  (Knapp-Bot)
+rem  damit ein Fehlschlag nie wieder stumm bleibt.
+rem
 rem  WAS SICH GEAENDERT HAT (24.8., Karams Vorgabe): SELBST-ANMELDUNG.
 rem  Wer einem Bot /start schreibt, wird ab jetzt bei JEDEM Takt
 rem  automatisch als Empfaenger eingetragen - MIT Beitragslink, also
@@ -50,39 +59,29 @@ if "%TOKEN%"=="" (
   exit /b 1
 )
 
-echo.
-echo   [1/5] Node pruefen ...
-where node >nul 2>nul
-if errorlevel 1 (
-  echo         FEHLER: Node fehlt. Einmalig holen:
-  echo         winget install OpenJS.NodeJS.LTS
-  echo.
-  pause
-  exit /b 1
-)
-echo         in Ordnung.
-
-set "SUPABASE_ACCESS_TOKEN=%TOKEN%"
-
-echo   [2/5] Chancen-Bot ausrollen ...
-echo.
-call npx --yes supabase@latest functions deploy orion-melder-telegram --project-ref noexklrgtqveiclijdwp --no-verify-jwt
-set ERG1=%errorlevel%
+set "API=https://api.supabase.com/v1/projects/noexklrgtqveiclijdwp/functions/deploy"
 
 echo.
-echo   [3/5] Knapp-Bot ausrollen ...
-echo.
-call npx --yes supabase@latest functions deploy orion-melder-knapp --project-ref noexklrgtqveiclijdwp --no-verify-jwt
-set ERG2=%errorlevel%
+echo   [1/4] Chancen-Bot ausrollen ...
+echo {"name":"orion-melder-telegram","entrypoint_path":"index.ts","verify_jwt":false}>"%TEMP%\orion-meta1.json"
+set "CODE1="
+for /f %%H in ('curl -s -o "%~dp0letzter-deploy-1.log" -w "%%{http_code}" -X POST "%API%?slug=orion-melder-telegram" -H "Authorization: Bearer %TOKEN%" -F "metadata=<%TEMP%\orion-meta1.json;type=application/json" -F "file=@supabase/functions/orion-melder-telegram/index.ts;type=application/typescript"') do set CODE1=%%H
+echo         Antwort HTTP %CODE1%  (Details: bridge\letzter-deploy-1.log)
 
-set "SUPABASE_ACCESS_TOKEN="
+echo   [2/4] Knapp-Bot ausrollen ...
+echo {"name":"orion-melder-knapp","entrypoint_path":"index.ts","verify_jwt":false}>"%TEMP%\orion-meta2.json"
+set "CODE2="
+for /f %%H in ('curl -s -o "%~dp0letzter-deploy-2.log" -w "%%{http_code}" -X POST "%API%?slug=orion-melder-knapp" -H "Authorization: Bearer %TOKEN%" -F "metadata=<%TEMP%\orion-meta2.json;type=application/json" -F "file=@supabase/functions/orion-melder-knapp/index.ts;type=application/typescript"') do set CODE2=%%H
+echo         Antwort HTTP %CODE2%  (Details: bridge\letzter-deploy-2.log)
+
 set "TOKEN="
+del "%TEMP%\orion-meta1.json" "%TEMP%\orion-meta2.json" >nul 2>nul
 
 echo.
-if not "%ERG1%"=="0" goto :schiefgegangen
-if not "%ERG2%"=="0" goto :schiefgegangen
+if not "%CODE1%"=="200" if not "%CODE1%"=="201" goto :schiefgegangen
+if not "%CODE2%"=="200" if not "%CODE2%"=="201" goto :schiefgegangen
 
-echo   [4/5] ABONNENTEN ABHOLEN - jeder, der einem Bot geschrieben hat,
+echo   [3/4] ABONNENTEN ABHOLEN - jeder, der einem Bot geschrieben hat,
 echo         wird sofort als Empfaenger eingetragen, MIT Beitragslink.
 echo         (Ab jetzt passiert das ohnehin automatisch bei jedem Takt.)
 echo.
@@ -91,9 +90,7 @@ echo.
 curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-knapp" -H "content-type: application/json" -d "{\"abholen\":true}"
 echo.
 echo.
-echo   [5/5] WER BEKOMMT WAS - Liste beider Bots.
-echo         Steht unter BEKOMMEN_NICHTS noch jemand, hat er dem Bot
-echo         geschrieben, ist aber nicht eingetragen.
+echo   [4/4] WER BEKOMMT WAS - Liste beider Bots.
 echo.
 curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-melder-telegram" -H "content-type: application/json" -d "{\"einrichten\":true}"
 echo.
@@ -102,16 +99,12 @@ echo.
 echo.
 echo   ============================================================
 echo   FERTIG. Beide Bots stehen auf dem neuen Stand und senden an
-echo   ALLE eingetragenen Empfaenger.
+echo   ALLE eingetragenen Empfaenger. Ab jetzt genuegt /start:
+echo   jeder neue Starter wird automatisch eingetragen und begruesst.
 echo.
-echo   ABSICHTLICH KEINE FUNKPROBE: Testnachrichten sahen zuletzt wie
-echo   echte Funde aus und haben verwirrt. Wer eine will, ruft
-echo   {"test":true} von Hand auf (Befehl in BEFEHLE.txt).
-echo.
-echo   KANAL NACHTRAGEN: Kanal anlegen, beide Bots als Admin
-echo   hinzufuegen, EINE Nachricht in den Kanal schreiben, dann diese
-echo   Datei nochmal doppelklicken. Der Kanal wird dann automatisch
-echo   als Empfaenger eingetragen.
+echo   Danach den Token wieder loeschen:
+echo     https://supabase.com/dashboard/account/tokens
+echo     drei Punkte  ^>  Revoke token
 echo   ============================================================
 echo.
 pause
@@ -119,12 +112,14 @@ exit /b 0
 
 :schiefgegangen
 echo   ============================================================
-echo   FEHLGESCHLAGEN. Es hat sich NICHTS geaendert - beide Bots
-echo   melden unveraendert auf dem alten Stand weiter. Es ist
-echo   nichts kaputt.
+echo   FEHLGESCHLAGEN (HTTP %CODE1% / %CODE2%). Es hat sich NICHTS
+echo   geaendert - beide Bots melden unveraendert weiter.
 echo.
-echo   Haeufigste Ursache: Token abgelaufen oder widerrufen.
-echo   Einfach neuen holen und nochmal doppelklicken.
+echo   Der GRUND steht jetzt schwarz auf weiss in:
+echo     bridge\letzter-deploy-1.log   und   bridge\letzter-deploy-2.log
+echo.
+echo   HTTP 401 = Token falsch/abgelaufen: neuen holen, nochmal klicken.
+echo   Alles andere: Claude die Log-Dateien lesen lassen.
 echo   ============================================================
 echo.
 pause
