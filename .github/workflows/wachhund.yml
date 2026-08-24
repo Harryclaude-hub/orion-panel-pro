@@ -1,0 +1,92 @@
+# ORION WACHHUND — laeuft AUSSERHALB von Supabase (GitHub Actions).
+#
+# WARUM ES IHN GIBT (24.8.2026): Am 23.8. ab ca. 16:00 UTC hing die
+# Datenbank komplett (Verbindungspool, Ausfallklasse vom 13.8.) — und
+# damit schwiegen Scanner, beide Telegram-Bots UND das Lebenszeichen,
+# denn das Lebenszeichen wohnt IN dem System, das es bewachen soll.
+# Ein Waechter gegen einen Totalausfall muss draussen stehen. GitHub
+# Actions laeuft unabhaengig von Supabase UND von Karams Laptop.
+#
+# WAS ER TUT, alle 30 Minuten:
+#   1. Liest den juengsten Scanner-Lauf ueber die oeffentliche
+#      REST-Schnittstelle (nur lesen, mit dem ohnehin oeffentlichen
+#      Panel-Schluessel; RLS schuetzt wie immer).
+#   2. Antwortet die Datenbank NICHT oder ist der juengste Lauf aelter
+#      als 20 Minuten -> Telegram-Alarm an Karam.
+#
+# EINRICHTUNG (einmalig, sonst tut der Alarm-Schritt ehrlich nichts):
+#   GitHub -> Repo -> Settings -> Secrets and variables -> Actions:
+#     TELEGRAM_BOT_TOKEN   Token des Chancen-Bots (dasselbe wie in den
+#                          Supabase-Secrets)
+#     TELEGRAM_CHAT_ID     Karams Direktchat-Nummer (steht in
+#                          orion_telegram_empfaenger, art='direkt')
+#
+# BEKANNTE GRENZE (ehrlich): bei einer Dauerstoerung meldet er alle
+# 30 Minuten erneut — dieselbe bewusste Entscheidung wie bei Job 94.
+# GitHub-Zeitplaene koennen sich um einige Minuten verspaeten; fuer
+# einen Totalausfall-Melder ist das egal.
+
+name: Orion Wachhund
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  pruefen:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Datenbank pruefen (Erreichbarkeit + Frische)
+        id: ping
+        run: |
+          KEY="sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M"
+          URL="https://noexklrgtqveiclijdwp.supabase.co/rest/v1/orion_laeufe?select=gelaufen_am&order=gelaufen_am.desc&limit=1"
+          ANTWORT=$(curl -s -m 25 -w "\n%{http_code}" "$URL" -H "apikey: $KEY" -H "authorization: Bearer $KEY" || echo -e "\n000")
+          CODE=$(echo "$ANTWORT" | tail -1)
+          KOERPER=$(echo "$ANTWORT" | head -n -1)
+          echo "HTTP $CODE"
+          echo "$KOERPER"
+          FEHLER=""
+          if [ "$CODE" != "200" ]; then
+            FEHLER="Supabase antwortet nicht (HTTP $CODE). Scanner, Bots und Lebenszeichen sind damit ALLE stumm."
+          else
+            ALTER_MIN=$(python3 - "$KOERPER" <<'PY'
+          import json, sys
+          from datetime import datetime, timezone
+          try:
+              zeilen = json.loads(sys.argv[1])
+              t = datetime.fromisoformat(zeilen[0]["gelaufen_am"].replace("Z", "+00:00"))
+              print(int((datetime.now(timezone.utc) - t).total_seconds() // 60))
+          except Exception:
+              print(99999)
+          PY
+          )
+            echo "Juengster Lauf vor $ALTER_MIN Minuten"
+            if [ "$ALTER_MIN" -gt 20 ]; then
+              FEHLER="Datenbank erreichbar, aber der juengste Scanner-Lauf ist $ALTER_MIN Minuten alt (Takt: 15-33 s). Der Scanner steht."
+            fi
+          fi
+          {
+            echo "fehler<<ENDE"
+            echo "$FEHLER"
+            echo "ENDE"
+          } >> "$GITHUB_OUTPUT"
+
+      - name: Telegram-Alarm (nur bei Stoerung)
+        if: steps.ping.outputs.fehler != ''
+        env:
+          TOKEN: ${{ secrets.TELEGRAM_BOT_TOKEN }}
+          CHAT: ${{ secrets.TELEGRAM_CHAT_ID }}
+          FEHLER: ${{ steps.ping.outputs.fehler }}
+        run: |
+          if [ -z "$TOKEN" ] || [ -z "$CHAT" ]; then
+            echo "Kein TELEGRAM_BOT_TOKEN/TELEGRAM_CHAT_ID als Actions-Secret hinterlegt — Alarm kann nicht funken."
+            echo "Stoerung waere gewesen: $FEHLER"
+            exit 1
+          fi
+          curl -s -m 20 "https://api.telegram.org/bot${TOKEN}/sendMessage" \
+            -d chat_id="$CHAT" \
+            --data-urlencode text="🚨 ORION WACHHUND (von aussen, GitHub): $FEHLER Abhilfe: Supabase-Dashboard -> Projekt -> Restart project (NICHT pausieren!). Keine Meldung heisst ab jetzt wieder: es gab nur nichts zu melden."
+          echo "Alarm gefunkt."

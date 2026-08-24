@@ -4344,3 +4344,77 @@ erzeugt im Repo; deployt ist v11 (Band-Fix und Netto-Text sind also
 LIVE, nur die Prozent-Zeilen fehlen dort noch). Ausrollen:
 bridge/DEPLOY-MELDER.cmd doppelklicken (rollt beide Bots) - oder der
 MCP-Weg beim naechsten Versuch.
+
+## 9r. TOTALAUSFALL DER DATENBANK + WACHHUND VON AUSSEN (24.8., Karams Fund)
+
+### Karams Meldung
+
+"Seit gestern ca. 18 Uhr die ganze Nacht keine einzige Telegram-Meldung
+und keine Chancen. Warum kommt oft zu viel und dann lange nichts? Wenn
+lange nichts kommt, darf nichts verloren gehen."
+
+### Gemessen am 24.8.
+
+    Verwaltungs-API             Projekt "ACTIVE_HEALTHY"
+    Tor (Wurzel-Pfade)          antwortet in 0,2 s
+    REST mit Datenbankzugriff   45 s Timeout, HTTP 000
+    Edge-Funktionen (beide Bots) 45 s Timeout, HTTP 000
+    auth/health                 Timeout (nutzt ebenfalls die DB)
+    MCP execute_sql             "connection timeout", sogar select 1
+    Plattform-Logs              "Backend error" auf jede Abfrage
+
+BEFUND: Postgres selbst nimmt keine Verbindungen mehr an — die
+Ausfallklasse vom 13.8. (Verbindungspool erschoepft, PGRST002; damals
+half nur ein Neustart durch den Betreiber). Beginn nicht exakt messbar
+(Logs kaputt), eingegrenzt: 23.8. zwischen ~13:30 UTC (letzte
+erfolgreiche Messung dieser Sitzung) und ~16:00 UTC (Karams "seit 18
+Uhr nichts", Ortszeit). Der Ausfall dauert bei Abfassung dieses
+Abschnitts an: NICHT 45 Minuten, sondern ueber 20 Stunden.
+
+WICHTIG: Das Lebenszeichen (Jobs 94/95) konnte NICHT alarmieren, weil
+es selbst in Supabase wohnt. Ein Waechter gegen einen Totalausfall, der
+im ausgefallenen System lebt, ist per Bauart blind. Das war die
+eigentliche Luecke.
+
+### Abhilfe SOFORT (nur Karam kann das)
+
+Supabase-Dashboard -> Projekt arbitrage-radar -> Settings -> General ->
+**Restart project**. NIEMALS "Pause" druecken (harte Regel). Nach dem
+Neustart heilt alles von selbst: cron feuert wieder, der Scanner
+schreibt, verwaiste Zeilen werden beendet, die 24-h-Regel raeumt auf.
+Danach einmal bridge/DEPLOY-MELDER.cmd doppelklicken (rollt beide Bots;
+der Knapp-Bot v12 mit den Prozent-Zeilen wartet ohnehin darauf).
+
+### Ehrliche Antwort auf "nichts darf verloren gehen"
+
+Was WAEHREND eines Ausfalls am Markt passiert, ist unwiederbringlich:
+Kurse, die nie gespeichert wurden, kann kein Programm rueckwirkend
+finden. Was sich absichern laesst, ist die STILLE selbst — dass ein
+Ausfall binnen Minuten auffaellt statt nach einer Nacht.
+
+### NEU: .github/workflows/wachhund.yml — der Waechter VON AUSSEN
+
+GitHub Actions, alle 30 Minuten, unabhaengig von Supabase UND vom
+Laptop: liest den juengsten Scanner-Lauf ueber REST (oeffentlicher
+Schluessel, nur lesen). Antwortet die DB nicht ODER ist der juengste
+Lauf aelter als 20 Minuten -> Telegram-Alarm mit Abhilfe-Anleitung.
+
+Einrichtung (einmalig): Repo -> Settings -> Secrets and variables ->
+Actions -> zwei Secrets anlegen: TELEGRAM_BOT_TOKEN (derselbe wie in
+den Supabase-Secrets) und TELEGRAM_CHAT_ID (Karams Direktchat, steht in
+orion_telegram_empfaenger art='direkt'). OHNE die Secrets schlaegt der
+Alarm-Schritt bei Stoerung sichtbar fehl — und GitHub schickt bei
+fehlgeschlagenen Workflows ohnehin eine E-Mail an den Kontoinhaber,
+also gibt es selbst ohne Einrichtung einen Notkanal.
+
+### Warum "mal zu viel, mal nichts" (die ganze Antwort)
+
+    zu viel   23.8. mittags: der 0,00-%-Eichfehler des Knapp-Bots (9p,
+              behoben). Dazu grundsaetzlich: Fussballabende buendeln
+              die Funde, ein Abend-Spielplan liefert in zwei Stunden
+              mehr als der Rest des Tages.
+    nichts    23.8. abends bis 24.8.: TOTALAUSFALL (dieser Abschnitt).
+              Grundsaetzlich: nachts gibt es strukturell wenig Spiele;
+              Laptop aus = Bridge aus kostet NUR die Betfair-Paarungen
+              (PM/Kalshi/Smarkets laufen weiter) und erklaert nie eine
+              Totenstille. Totenstille war bisher IMMER ein Ausfall.
