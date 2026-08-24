@@ -4580,3 +4580,15 @@ wieder geloescht (230 MB), bridge/werkzeug/ ist weg.
 Damit ist auch klar, warum der MCP-Edge-Deploy und die CLI am selben
 Tag "kaputt" wirkten: zwei verschiedene Ursachen (MCP: ZodError nach
 Reconnect; CLI: App-Steuerung), ein Symptom.
+
+### VOLLZOGEN (24.8., Karams Doppelklick): der curl-Weg traegt im Echtbetrieb
+
+    Chancen-Bot  v17  ACTIVE   (letzter-deploy-1.log: HTTP-Antwort der API)
+    Knapp-Bot    v12  ACTIVE   (letzter-deploy-2.log)
+    Verhaltensbeweis: beide {}-Proben antworten mit dem neuen Feld
+    "neu_angemeldet" - die Selbst-Anmeldung laeuft.
+
+Damit ist ALLES live: /start genuegt (Eintrag + Begruessung, mit
+Links), Prozent-Aufteilung und Netto-Zusatz in beiden Bots, Knapp-Band
+netto >= 0. Der erste erfolgreiche Deploy ueber den neuen curl-Weg -
+DEPLOY-JETZT.cmd nutzt denselben und ist damit ebenfalls einsatzbereit.
