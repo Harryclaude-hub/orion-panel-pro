@@ -4480,3 +4480,51 @@ wie am 13.8., nur ohne rettenden Neustart, darum 14,5 Stunden.
 
 Der Wachhund von aussen (9r) haette diesen Vorfall nach 30 Minuten
 gemeldet statt nach einer Nacht - Secrets eintragen.
+
+## 9t. SELBST-ANMELDUNG: /start GENUEGT (24.8., Karams Vorgabe)
+
+### Der Auftrag
+
+"Jeder, der diese Bots startet, soll immer alle Benachrichtigungen
+bekommen - dieselben wie ich, mit den Links und allem."
+
+### Was fehlte (gemessen am Code)
+
+1. NIEMAND trug neue Chats ein: ein /start landete nur in Telegrams
+   getUpdates-Warteliste und verfiel nach 24 h; eingetragen wurde erst,
+   wenn jemand von Hand {"abholen":true} rief.
+2. Neue Abonnenten bekamen mit_beitragslink=false, also die Meldungen
+   OHNE Links.
+
+Die Secrets waren vollstaendig (TELEGRAM_BOT_TOKEN,
+TELEGRAM_BOT_TOKEN_KNAPP) - daran lag es nicht.
+
+### Umgesetzt (beide Bots, ueber den Generator)
+
+- Neue Funktion neueEintragen(): laeuft bei JEDEM Takt VOR dem Holen
+  der Empfaenger. Traegt jeden neuen Chat automatisch ein (abo bzw.
+  kanal), mit mit_beitragslink=true, und funkt eine Begruessung
+  ("Angemeldet. Ab jetzt bekommst du hier automatisch jede Meldung...").
+  Ein Fehler dort kann den Meldelauf nie reissen (try, Rueckgabe 0).
+- Der Hand-Weg {"abholen":true} traegt ebenfalls MIT Link ein.
+- Bestand per SQL angeglichen: alle 4 aktiven Empfaenger (Karam +
+  Felix_2044 auf beiden Bots) stehen auf mit_beitragslink=true. AKTIV.
+- Antworten tragen neu_angemeldet, damit das Eintragen sichtbar ist.
+
+### Fuer die Community heisst das (nach dem Ausrollen)
+
+Bot in Telegram oeffnen, /start druecken - binnen eines Takts (Chancen-
+Bot: 1 min, Knapp-Bot: 5 min) kommt die Begruessung, ab dann jede
+Meldung. Beide Bots muessen getrennt gestartet werden. ACHTUNG: die
+verlinkte Beitragsseite liegt hinter dem Sperrwort - das gibt Karam
+selbst weiter. Kanaele gehen weiter auch: Bot als Admin hinzufuegen.
+
+### OFFEN: ein Doppelklick
+
+Der Supabase-MCP-Deploy ist seit einem Neuverbinden am 24.8. kaputt
+(nimmt files nicht mehr als Array an, dreimal identisch; execute_sql
+geht einwandfrei). Deshalb warten Chancen-Bot v17 und Knapp-Bot v12/v13
+(Selbst-Anmeldung + Prozent-Zeilen) fertig geprueft im Repo auf
+**bridge/DEPLOY-MELDER.cmd** (Doppelklick, rollt beide, funkt Proben).
+Bis dahin laeuft v16/v11: alles Bisherige funktioniert, nur die
+Selbst-Anmeldung und die Knapp-Prozente sind noch nicht live.

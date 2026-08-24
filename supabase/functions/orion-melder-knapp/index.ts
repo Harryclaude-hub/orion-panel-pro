@@ -228,6 +228,48 @@ async function bekannteChats() {
   return { ok: true, chats: [...chats.values()] };
 }
 
+/* SELBST-ANMELDUNG (24.8., Karams Vorgabe: "jeder, der den Bot startet,
+ * bekommt immer alle Benachrichtigungen - dieselben wie ich, mit Links").
+ *
+ * Vorher musste jemand von Hand {"abholen":true} rufen, und ein /start
+ * verfiel nach 24 Stunden (getUpdates haelt Updates nur so lange).
+ * Jetzt laeuft das Eintragen bei JEDEM Takt automatisch, VOR dem Holen
+ * der Empfaenger - ein frisch Gestarteter bekommt also schon den
+ * laufenden Takt mit. Neue Empfaenger bekommen mit_beitragslink=true
+ * (Karams Ansage; die Beitragsseite liegt hinter dem Sperrwort, das
+ * gibt der Betreiber der Community selbst weiter). Ein Fehler hier darf
+ * den Meldelauf NIE reissen - deshalb alles im try, Rueckgabe 0. */
+async function neueEintragen(): Promise<number> {
+  try {
+    const bk = await bekannteChats();
+    if (!bk.ok) return 0;
+    const empf = await holeEmpfaenger();
+    const drin = new Set((empf ?? []).map((e: Record<string, unknown>) => String(e.chat_id)));
+    const neu = bk.chats.filter((c) => !drin.has(c.id));
+    if (neu.length === 0) return 0;
+    const r = await db('orion_telegram_empfaenger?on_conflict=bot,chat_id', {
+      method: 'POST',
+      headers: { prefer: 'resolution=ignore-duplicates,return=representation' },
+      body: JSON.stringify(neu.map((c) => ({
+        bot: BOT_NR, chat_id: c.id, art: c.typ === 'channel' ? 'kanal' : 'abo',
+        name: c.titel, aktiv: true, mit_beitragslink: true
+      })))
+    });
+    const angelegt = await r.json();
+    const anzahl = Array.isArray(angelegt) ? angelegt.length : 0;
+    /* Kurze Begruessung, damit der neue Empfaenger WEISS, dass es
+     * geklappt hat - sonst sieht ein stummer Bot aus wie ein kaputter. */
+    for (const z of (Array.isArray(angelegt) ? angelegt : [])) {
+      try {
+        await sende(String((z as Record<string, unknown>).chat_id),
+          '✅ Angemeldet. Ab jetzt bekommst du hier automatisch jede Meldung dieses Bots — dieselben wie der Betreiber, mit allen Links.\n' + PANEL);
+      } catch { /* Begruessung ist Schmuck, kein Muss */ }
+      await new Promise((w) => setTimeout(w, 150));
+    }
+    return anzahl;
+  } catch { return 0; }
+}
+
 Deno.serve(async (req) => {
   try {
     let body: Record<string, unknown> = {};
@@ -263,16 +305,18 @@ Deno.serve(async (req) => {
         headers: { prefer: 'resolution=ignore-duplicates,return=representation' },
         body: JSON.stringify(neu.map((c) => ({
           bot: BOT_NR, chat_id: c.id, art: c.typ === 'channel' ? 'kanal' : 'abo',
-          name: c.titel, aktiv: true, mit_beitragslink: false
+          name: c.titel, aktiv: true, mit_beitragslink: true
         })))
       });
       const angelegt = await r.json();
       return new Response(JSON.stringify({
         ok: true, neu_eingetragen: Array.isArray(angelegt) ? angelegt.length : 0, zeilen: angelegt,
-        hinweis: 'Ohne Beitragslink eingetragen. Zum Freischalten mit_beitragslink=true setzen.'
+        hinweis: 'Mit Beitragslink eingetragen (Karams Vorgabe 24.8.: alle bekommen dasselbe).'
       }, null, 1), { headers: kopf });
     }
 
+    /* Erst neue /start-Chats eintragen, DANN die Empfaenger holen. */
+    const neuAngemeldet = await neueEintragen();
     const empfaenger = await holeEmpfaenger();
     if (!Array.isArray(empfaenger) || empfaenger.length === 0) {
       return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'kein aktiver Empfaenger (bot 2)' }), { headers: kopf });
@@ -344,7 +388,7 @@ Deno.serve(async (req) => {
       'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung&limit=5';
     const kand = await (await db(q)).json();
     if (!Array.isArray(kand) || kand.length === 0) {
-      return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'kein knappes Paar' }), { headers: kopf });
+      return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'kein knappes Paar', neu_angemeldet: neuAngemeldet }), { headers: kopf });
     }
 
     /* EINE PARTIE, EINE MELDUNG: beste Zeile je Partie, die uebrigen
@@ -376,7 +420,8 @@ Deno.serve(async (req) => {
       method: 'PATCH', body: JSON.stringify({ knapp_gemeldet: true })
     });
     return new Response(JSON.stringify({
-      ok: true, gemeldet: zuMelden.length, zeilen_markiert: kand.length, zustellung: bericht
+      ok: true, gemeldet: zuMelden.length, zeilen_markiert: kand.length, zustellung: bericht,
+      neu_angemeldet: neuAngemeldet
     }, null, 1), { headers: kopf });
   } catch (e) {
     return new Response(JSON.stringify({ ok: false, fehler: String(e) }), { status: 500, headers: kopf });
