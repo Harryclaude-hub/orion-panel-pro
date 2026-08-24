@@ -315,11 +315,11 @@
     k.textContent = 'speichert …';
     speichere(s).then(function (erg) {
       if (erg.wolke && erg.geraet) {
-        zettel('★ Gespeichert — doppelt gesichert: auf diesem Gerät UND in der Wolke. Bleibt, auch wenn der Fund abläuft.', true);
+        zettel('★ Gespeichert — liegt jetzt unter „Gespeichert“ im Panel und bleibt dort, auch wenn der Fund abläuft.', true);
       } else if (erg.geraet) {
-        zettel('★ Auf diesem Gerät gespeichert. Die Wolke antwortet gerade nicht — sobald sie wieder da ist, wandert der Fund von selbst hinüber.', true);
+        zettel('★ Gespeichert — steht unter „Gespeichert“ im Panel. (Die Wolke antwortet gerade nicht; der Fund wandert von selbst hinüber, sobald sie wieder da ist.)', true);
       } else {
-        zettel('★ In der Wolke gespeichert. Der Gerätespeicher dieses Browsers geht nicht (privates Fenster oder voll).', true);
+        zettel('★ Gespeichert — steht unter „Gespeichert“ im Panel. (Nur in der Wolke: der Speicher dieses Browsers ist aus oder voll.)', true);
       }
     }, function (e) {
       zettel('Speichern fehlgeschlagen: ' + e.message, false);

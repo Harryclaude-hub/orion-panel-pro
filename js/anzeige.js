@@ -43,15 +43,51 @@
    *      und rueckt danach die Seite so zurecht, dass genau diese Karte
    *      wieder an derselben Stelle steht. Man bleibt an seiner Zeile
    *      kleben, egal was oben passiert. */
+  /* ---------- DIE RUECKKOPPLUNG, behoben am 24.8.2026 ----------
+   *
+   * Karams Beschwerde: "wenn ich scrolle, wirft es mich immer hoch und
+   * runter". Die zwei Regeln unten waren richtig gedacht, aber sie
+   * bissen sich selbst in den Schwanz:
+   *
+   *   Es gibt VIER Listen (Chancen, Knapp, Verlauf, Falsch), jede ruft
+   *   listeSetzen. Liste 1 schreibt und rueckt die Seite mit scrollBy
+   *   zurecht. Dieses scrollBy loest ein SCROLL-EREIGNIS aus - und der
+   *   Zuhoerer unten hielt das fuer den Nutzer. Damit stand
+   *   letzteUnruhe auf "gerade eben", und die Listen 2 bis 4 durften
+   *   nicht mehr schreiben. Im naechsten Takt kam eine andere Liste
+   *   dran, wieder mit eigener Korrektur. Vier Listen, die sich
+   *   abwechselnd schreiben und dabei jedes Mal an der Seite ziehen:
+   *   genau das Hoch und Runter.
+   *
+   * ZWEI ERGAENZUNGEN beheben es, ohne die bewaehrten Regeln zu
+   * aendern:
+   *   3. EIGENE KORREKTUR ZAEHLT NICHT ALS UNRUHE. Ein Scroll, den wir
+   *      selbst ausgeloest haben, darf die anderen Listen nicht sperren.
+   *   4. UNSICHTBARE LISTEN SCROLLEN NIE. Steht der Nutzer im Reiter
+   *      "Verlauf", darf ein Neuschreiben der versteckten
+   *      Chancen-Liste die Seite nicht anfassen. */
   var letzteUnruhe = 0;
+  var eigeneKorrektur = 0;
   ['scroll', 'wheel', 'touchmove', 'pointerdown', 'keydown'].forEach(function (art) {
-    window.addEventListener(art, function () { letzteUnruhe = Date.now(); },
-      { passive: true, capture: true });
+    window.addEventListener(art, function () {
+      /* Regel 3: was wir selbst gerade verursacht haben, ist keine
+       * Unruhe des Nutzers. */
+      if (Date.now() - eigeneKorrektur < 200) return;
+      letzteUnruhe = Date.now();
+    }, { passive: true, capture: true });
   });
 
   function listeSetzen(el, html) {
     if (!el) return false;
     if (el.dataset.stand === html) return false;
+
+    /* Regel 4: eine Liste, die gar nicht zu sehen ist (anderer Reiter),
+     * wird geschrieben, ruehrt die Seite aber NIE an. */
+    if (el.offsetParent === null) {
+      el.dataset.stand = html;
+      el.innerHTML = html;
+      return true;
+    }
 
     /* Regel 1 — der Nutzer ist gerade dabei: nicht anfassen. */
     if (Date.now() - letzteUnruhe < 1200) return false;
@@ -79,7 +115,12 @@
       var neu = el.querySelector('.fund[data-schluessel="' + anker[a].s.replace(/"/g, '\\"') + '"]');
       if (neu) {
         var abweichung = neu.getBoundingClientRect().top - anker[a].oben;
-        if (Math.abs(abweichung) > 1) window.scrollBy(0, abweichung);
+        if (Math.abs(abweichung) > 1) {
+          /* Regel 3: eigene Korrektur anmelden, BEVOR sie das
+           * Scroll-Ereignis ausloest. */
+          eigeneKorrektur = Date.now();
+          window.scrollBy(0, abweichung);
+        }
         break;
       }
     }

@@ -171,7 +171,7 @@
   function gepuffert(hole, haltbarMs) {
     var p = { zeit: 0, daten: null, hat: false };
     pufferLeerer.push(function () { p.hat = false; });
-    return function () {
+    var f = function () {
       if (p.hat && Date.now() - p.zeit < haltbarMs) return Promise.resolve(p.daten);
       return hole().then(function (d) {
         /* Einen FEHLER nicht einfrieren: der naechste Takt darf es sofort
@@ -180,6 +180,11 @@
         return d;
       });
     };
+    /* GEZIELT leeren, nicht nur alle auf einmal: der Verlauf muss sofort
+     * nachgeladen werden koennen, wenn eine Live-Zeile verschwindet
+     * (siehe verlaufNachziehen). */
+    f.leeren = function () { p.hat = false; };
+    return f;
   }
   /* EGRESS-BREMSE 20.8., Teil 2: auch die LIVE-Funde in den Puffer.
    * Der Scanner schreibt hoechstens alle 1-2 Minuten je Bereich — die
@@ -201,9 +206,58 @@
   var holeWacheG     = gepuffert(holeWache, 10000);
   var kursG          = gepuffert(kurs, 300000);
 
+  /* ---------- KEINE LUECKE ZWISCHEN LIVE UND VERLAUF (24.8.2026) ----
+   *
+   * Karams Beschwerde: "manche Chancen verschwinden richtig komisch und
+   * haengen dazwischen, statt sofort in den Verlauf zu gehen."
+   *
+   * GEMESSEN, und es war genau eine Zahl: die Live-Funde werden alle
+   * 15 Sekunden frisch geholt, der Verlauf aber nur alle 60 (Puffer aus
+   * der Egress-Bremse vom 20.8.). Laeuft eine Chance ab, ist sie also
+   * sofort aus der Live-Liste raus - und der gepufferte Verlauf kennt
+   * sie bis zu 45 Sekunden lang noch nicht. In diesem Fenster steht sie
+   * NIRGENDS. Sie ist nicht verloren, sie ist unsichtbar, und das sieht
+   * von aussen genau wie ein Verschwinden aus.
+   *
+   * DIE REPARATUR kostet keinen einzigen zusaetzlichen Abruf im
+   * Normalbetrieb: gemerkt wird, welche Schluessel eben noch live
+   * waren. Fehlt beim naechsten Ablesen einer davon, wird der
+   * Verlaufs-Puffer GEZIELT geleert und der Verlauf sofort neu geholt.
+   * Damit ist eine abgelaufene Chance im selben Takt im Verlauf - ohne
+   * Zwischenzustand. Passiert nichts, wird auch nichts nachgeladen. */
+  var zuletztLive = null;
+
+  function verlaufNachziehen(teile) {
+    var live = teile[0] || [];
+    var jetztLive = {};
+    for (var i = 0; i < live.length; i++) jetztLive[live[i].schluessel] = true;
+
+    var verschwunden = 0;
+    if (zuletztLive) {
+      for (var s in zuletztLive) {
+        if (Object.prototype.hasOwnProperty.call(zuletztLive, s) && !jetztLive[s]) verschwunden++;
+      }
+    }
+    zuletztLive = jetztLive;
+
+    if (!verschwunden) return teile;
+
+    /* Etwas ist gerade abgelaufen: den Verlauf JETZT frisch holen,
+     * damit die Zeile im selben Zeichnen wieder auftaucht. Schlaegt das
+     * fehl, wird mit dem alten Verlauf gezeichnet - lieber ein
+     * veralteter Verlauf als gar keine Anzeige. */
+    holeVerlaufG.leeren();
+    return holeVerlaufG().then(function (frisch) {
+      teile[1] = frisch;
+      teile._nachgezogen = verschwunden;
+      return teile;
+    }, function () { return teile; });
+  }
+
   function ladeAlles() {
     return Promise.all([holeLiveG(), holeVerlaufG(), holeLaeufeG(), holeKalshiG(), holeWacheG(),
                         holeUebersichtG(), holeSmarketsG(), kursG(), holeScanstandG()])
+      .then(verlaufNachziehen)
       .then(function (teile) {
         var live = teile[0], verlauf = teile[1], laeufe = teile[2] || [], ka = teile[3], wache = teile[4];
         var fx = teile[7];

@@ -6,9 +6,9 @@
 <title>Orion Panel Pro — Gespeichert</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="schrift/schrift.css?v=80">
-<link rel="stylesheet" href="css/stil.css?v=80">
-<link rel="stylesheet" href="css/hud.css?v=80">
+<link rel="stylesheet" href="schrift/schrift.css?v=81">
+<link rel="stylesheet" href="css/stil.css?v=81">
+<link rel="stylesheet" href="css/hud.css?v=81">
 <style>
   .gesp-huelle { max-width: 900px; margin: 0 auto; padding: 18px 16px 60px; }
   .gesp-kopf { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin: 6px 0 18px; }
@@ -52,22 +52,24 @@
 
   <div id="stand" class="gesp-stand">wird geladen …</div>
   <div class="gesp-werkzeug">
-    <button type="button" class="knopf" id="sichern">💾 Als Datei sichern</button>
-    <button type="button" class="knopf" id="zurueckspielen">📂 Datei zurückspielen</button>
+    <span class="gesp-hinweis"><b>Das hier ist dein Speicherort.</b> Alles, was du im Panel
+      speicherst, liegt hier und lässt sich jederzeit öffnen — im Browser, ohne Download.
+      Die zwei Knöpfe rechts sind nur eine <i>zusätzliche</i> Sicherung für den Notfall.</span>
+    <span class="luecke"></span>
+    <button type="button" class="knopf leise" id="sichern">💾 Zusätzlich als Datei</button>
+    <button type="button" class="knopf leise" id="zurueckspielen">📂 Datei einlesen</button>
     <input type="file" id="datei" accept="application/json,.json" hidden>
-    <span class="gesp-hinweis">Die Datei überlebt auch „Browserdaten löschen“ und hebt den
-      Merkzettel auf ein anderes Gerät.</span>
   </div>
   <div id="liste"></div>
 </div>
 
-<script src="js/konfig.js?v=80"></script>
-<script src="js/sperre.js?v=80"></script>
-<script src="js/rechnung.js?v=80"></script>
-<script src="js/zuordnung.js?v=80"></script>
-<script src="js/filter.js?v=80"></script>
-<script src="js/anzeige.js?v=80"></script>
-<script src="js/speicher.js?v=80"></script>
+<script src="js/konfig.js?v=81"></script>
+<script src="js/sperre.js?v=81"></script>
+<script src="js/rechnung.js?v=81"></script>
+<script src="js/zuordnung.js?v=81"></script>
+<script src="js/filter.js?v=81"></script>
+<script src="js/anzeige.js?v=81"></script>
+<script src="js/speicher.js?v=81"></script>
 <script>
 (function () {
   'use strict';
@@ -118,7 +120,8 @@
     window.Speicher.liste().then(function (eintraege) {
       if (!eintraege.length) {
         stand('<b>Noch nichts gespeichert.</b> Auf jeder Fundkarte gibt es den Knopf ' +
-              '„☆ Speichern“ — was du dort merkst, liegt danach hier, auf jedem Gerät.');
+              '„☆ Speichern“ — was du dort merkst, liegt danach HIER und bleibt hier: ' +
+              'auch wenn der Fund längst abgelaufen ist, auch nach Tagen, mit allen Details.');
         document.getElementById('liste').innerHTML = '';
         return;
       }
