@@ -385,7 +385,17 @@ Deno.serve(async (req) => {
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null' +
       '&select=schluessel,nr,titel,mannschaft,rendite,rendite_netto,max_einsatz,max_gewinn,buch,buch_1,' +
-      'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung&limit=5';
+      'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung' +
+      /* SORTIERUNG, 25.8.2026 (Karams Freigabe). SPIEGEL der Stelle in
+       * orion-melder-telegram - dort steht die ausfuehrliche Begruendung.
+       * Hier zaehlt zuerst der NETTO-Wert: das Band dieses Bots ist
+       * rendite_netto >= 0 UND rendite < 2, die Netto-Zahl ist also die,
+       * um die es geht. Danach Geld, dann Alter fuer Eindeutigkeit.
+       * DIESER BOT laeuft nur alle 5 Minuten (pg_cron 93), nicht jede
+       * Minute wie der Chancen-Bot - bei vielen Bewerbern dauerte eine
+       * Runde durch die Warteschlange hier also fuenfmal so lang. */
+      '&order=rendite_netto.desc,max_gewinn.desc.nullslast,zuerst_gesehen.asc' +
+      '&limit=5';
     const kand = await (await db(q)).json();
     if (!Array.isArray(kand) || kand.length === 0) {
       return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'kein knappes Paar', neu_angemeldet: neuAngemeldet }), { headers: kopf });

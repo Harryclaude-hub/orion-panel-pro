@@ -5124,3 +5124,222 @@ Und: Job 96 löscht alles älter als 24 Stunden. Die 15 geprüften Zeilen vom
 dieses Plans stehen auf 410 Zeilen aus 24 Stunden mit genau einer Zeile über
 6,5 %.** Die Lücke zwischen 5,42 $ und 379,35 $ Gewinn ist kein Naturgesetz,
 sondern ein ruhiger Tag.
+
+
+---
+
+## 9bb. Punkt 2 und 3: Wurzelsperre für Kalshi/Smarkets, Sortierung in beiden Meldern (25.8.2026)
+
+Karams Freigabe: „mach die" — auf meine Empfehlung von Punkt 2 (Wurzelsperre
+für die zwei ungeschützten Bücher) und Punkt 3 (fehlende Sortierung in beiden
+Meldern).
+
+Vorweg: die adversarische Gegenprüfung lief als 15-Agenten-Workflow und ist
+nach 2 von 15 Agenten an der **Sitzungsgrenze** gescheitert. Die zwei
+durchgekommenen haben allerdings genau die Befunde geliefert, die den Bau in
+der ursprünglich geplanten Reihenfolge verboten hätten. Alles Übrige habe ich
+selbst gemessen. Was nicht gemessen ist, steht unten als solches markiert.
+
+### Was die zwei Prüfer gefunden haben (beides selbst nachgelesen)
+
+**1. L5 ist BESTÄTIGT: `bf-bridge` stempelt `updated_at` bedingungslos.**
+`supabase/functions/bf-bridge/index.ts:48` baut das Patch-Objekt mit
+`updated_at` **immer** hinein; die Marktliste kommt erst danach und nur unter
+Vorbehalt (`:50`, `if (body && Array.isArray(body.markets))`); geschrieben
+wird `:131` als **Teil**-Update. Ein POST mit gültigem Token, aber ohne
+Markt-Array frischt also die Uhr auf, ohne die Kurse zu erneuern.
+
+**Das trifft die Betfair-Sperre von heute Vormittag an der Wurzel** — sie
+steht auf einer Zahl, die lügen kann. Nicht gebaut, siehe „Was offen bleibt".
+
+**2. Die Bridge lädt in JEDER Runde alte Kurse mit hoch.** Sie katalogisiert
+je Durchlauf nur **eine** Sportart neu und liest nur `kurseProDurchlauf`
+Märkte frisch (Standard 400), sendet aber den ganzen Vorrat. Gemessen im
+laufenden Betrieb: `vorrat 1723, gelesen 400, maerkte 504`. Ein Alter **je
+Markt** erreicht den Server heute gar nicht.
+
+Folge: `updated_at` beweist „die Quelle spricht", nicht „dieser Kurs ist
+frisch". Der belastbare Frischebeweis je Markt bleibt `pm_preis_seit` /
+`bf_quote_seit` im Panel — also genau die Bedingung `KONFIG.gross.kursMaxS`,
+die heute früh gebaut wurde.
+
+**3. Bei greifender Sperre beendete der Aufräumer das Brett mit einer
+falschen Begründung.** `orion-lauf/index.ts` schrieb in **jedem** Fall
+`vorbei_grund: 'nicht mehr gefunden'`. Wenn die Quelle gesperrt ist, wurde
+aber gar nicht gesucht. Das ist nicht kosmetisch: bei Tennis standen 31 von
+31 Live-Zeilen auf Betfair-Wegen, bei Smarkets hängen über die Hälfte aller
+Zeilen daran. Behoben, siehe unten.
+
+**Nebenbefunde, nicht gebaut:** ein fehlgeschlagener RPC-Aufruf ist heute
+nicht von „nichts gefunden" zu unterscheiden (`index.ts:309, :337, :364`,
+jeweils `.ok ? ... : []`). Kalshi hat keinen Riegel gegen eine leere Aufnahme
+(`orion-kalshi/index.ts:177-178` ruft `ablegen()` bedingungslos, ein
+Gegenstück zu `orion-smarkets/index.ts:264-268` fehlt) — für die Frische ist
+das aber folgenlos, weil Kalshi keinen Zwischenspeicher hält und eine
+fehlgeschlagene Serie **nichts** beiträgt statt Altem. Kalshis `updated_at`
+unterschätzt das Alter des ältesten Marktes um bis zu gut eine Minute
+(Stempel beim Schreiben, `dauer_ms 67207` gemessen).
+
+**Sicherheitshinweis aus der Prüfung, ungefragt aber ehrlich:** in
+`C:\Users\Home\Desktop\ORION-BRIDGE\bridge-config.json` stehen
+Betfair-Benutzername, -Passwort und -Anwendungsschlüssel im Klartext, dazu
+der Bridge-Token. Die Datei liegt **nicht** im Repo. Nichts daran geändert.
+
+### Punkt 2: die Schwelle, gemessen statt geraten
+
+| | Kalshi | Smarkets |
+|---|---|---|
+| Takt (pg_cron) | 120 s (Job 3) | 120 s (Job 74) |
+| Seit Erholung 07:42: Takte / Fehlschläge | 129 / **0** | 129 / **0** |
+| Größte Lücke, Normalbetrieb | 123 s | 123 s |
+| Größte Lücke **im schlimmsten Ausfall** (23.–25.8., 45 % der Takte mit „job startup timeout") | **517 s** | **517 s** |
+| p99 / p999 in diesem Fenster | 307 s / 410 s | 307 s / 410 s |
+| Lücken über 600 s | **0** | **0** |
+| Laufdauer des Sammlers | 67 s | 16 s |
+| **Schlimmstes erreichbares Alter** | **584 s** | 533 s |
+
+**Gewählt: 900 s für beide.** Das sind 316 s Abstand über dem schlimmsten je
+gemessenen Wert und das 7,3-fache des Normalbetriebs. 600 s wären zu knapp
+gewesen — Kalshis 584 s liegen nur 16 s darunter.
+
+Warum so großzügig: **Smarkets trägt über die Hälfte aller Zeilen.** Ein
+Fehlalarm kostet mehr als ein durchgelassener alter Kurs, und ein wirklich
+eingefrorenes Buch steht Stunden, nicht Minuten.
+
+### Punkt 2: gebaut
+
+`supabase/frischesperre.sql` (**neu**) — Abschrift aller drei
+Markt-Funktionen. Bis heute stand `orion_bf_maerkte` **nirgends** im Repo,
+nur in der Datenbank. Genau die Falle, die heute früh in
+`wache-tennis-turnier.sql` beinahe explodiert wäre.
+
+**Die Signaturfalle hat zum zweiten Mal zugeschlagen.** Nach dem
+`CREATE OR REPLACE` standen erneut **je zwei** Fassungen da:
+
+```
+orion_kalshi_maerkte(text,integer)   hat_sperre = true
+orion_kalshi_maerkte(text)           hat_sperre = false   <- PostgREST hätte DIESE genommen
+orion_sm_maerkte(integer)            hat_sperre = true
+orion_sm_maerkte()                   hat_sperre = false   <- und DIESE
+```
+
+Bei Smarkets besonders heimtückisch: die alte Fassung nimmt **null**
+Argumente und wird mit dem Rumpf `'{}'` gerufen. Der `DROP` ist dort nicht
+Kosmetik, sondern der eigentliche Schalter. Nach `DROP` und
+`notify pgrst, 'reload schema'`:
+
+```
+orion_bf_maerkte(integer,text,integer)   true
+orion_kalshi_maerkte(text,integer)       true
+orion_sm_maerkte(integer)                true
+```
+
+**Rückgabeform ist Absicht:** greift die Sperre, kommt weiter **genau eine**
+Zeile, nur `maerkte` ist leer, `updated_at` bleibt stehen. Der Scanner
+rechnet daraus `kalshi_alter_s` / `smarkets_alter_s`. Bei null Zeilen wäre
+zwar der Absturz abgefangen (`index.ts:338`, `:365`), aber die Alterszahl
+weg — und damit der einzige Beleg, **warum** nichts kam.
+
+**Sichtbarkeit:** `orion_verdacht_zusatz()` bekam Regel 4 („KALSHI STEHT")
+und Regel 5 („SMARKETS STEHT"), Gegenstücke zur bestehenden Regel 3
+(„BRIDGE STEHT"). Gleiche Grenzen wie die Sperre. Wortlaut geprüft:
+
+> SMARKETS STEHT: letzte Aufnahme vor 1 Minuten. Smarkets-Maerkte sind
+> gesperrt (Frischesperre), es kommen KEINE Smarkets-Funde mehr - das ist
+> ueber die Haelfte aller Zeilen. Sammler orion-smarkets pruefen (pg_cron
+> Job 74).
+
+### Punkt 2: Gegenprobe, alles am laufenden System gemessen
+
+| Probe | Ergebnis |
+|---|---|
+| Je Name genau **eine** Fassung, alle mit Sperre | ✓ (siehe oben) |
+| Aufruf mit dem **alten** Rumpf `{"bereich_p":"tennis"}` | HTTP 200, eine Zeile |
+| Aufruf mit dem **alten** Rumpf `{}` | HTTP 200, eine Zeile, echte Daten |
+| Normalbetrieb, Betfair Tennis: mit Sperre / ohne | **44 / 44** — nichts weggenommen |
+| Normalbetrieb, Smarkets: mit Sperre / ohne | **944 / 944** |
+| Grenze 5 s, Smarkets: Märkte / Zeilen / Uhr lesbar | **0 / 1 / true** — greift, Uhr bleibt |
+| Grenze 5 s, Kalshi | **0 / 1 / true** |
+| Grenze 0 (aus) | volle Zahl zurück |
+| Alte Regeln 1–3 unbeschädigt (Halbzeit-Muster) | ✓ einzeln nachgeprüft |
+| Scanner nach dem Umbau | **0 Fehler**, 20 Bereiche, 1144 Paare/Minute |
+| Smarkets-Zeilen leben weiter | **121 live, alle 121 in 3 min aufgefrischt, 9 neu in 10 min** |
+
+### Der Aufräumer sagt jetzt die Wahrheit
+
+`orion-lauf/index.ts` prüft vor dem Aufräumen, ob eine Quelle gesperrt war
+(Alter über der Grenze **und** null Märkte), und schreibt dann:
+
+> Quelle gesperrt, nicht gesucht: Smarkets 18 min ohne frische Lieferung.
+> Die Zeile ist womöglich noch da — sie ließ sich in diesem Lauf nur nicht
+> bestätigen.
+
+statt „nicht mehr gefunden". Die drei Grenzen (300/900/900) stehen dort als
+**Spiegel** mit ausdrücklichem Vermerk: wer eine ändert, muss alle drei
+Stellen ändern (`frischesperre.sql`, `orion_verdacht_zusatz`, `orion-lauf`).
+
+### Punkt 3: die Sortierung
+
+Beide Melder fragten mit `&limit=5` **ohne** `&order=`. PostgREST gab damit
+fünf Zeilen in beliebiger Tabellenordnung heraus.
+
+**Ehrlich zur Schwere:** ein Fund ging dabei nicht **verloren** — die übrigen
+bleiben `telegram_gemeldet=false` und kommen im nächsten Takt dran. Er wurde
+**verzögert**. Beim Chancen-Bot um Minuten (pg_cron 92, jede Minute), beim
+Knapp-Bot um das Fünffache (pg_cron 93, alle 5 Minuten). Eine große Chance
+lebt oft nur Minuten — deshalb zählt es trotzdem.
+
+**Chancen-Bot:** `&order=max_gewinn.desc.nullslast,rendite.desc,zuerst_gesehen.asc`
+
+Sortiert wird nach **Geld**, nicht nach Prozent: das Band ist ohnehin auf
+2 bis 6,5 % verengt, und innerhalb dieses schmalen Bandes entscheidet die
+Buchtiefe über den Ertrag — 2,1 % auf 5000 $ sind 105 $, 6,4 % auf 100 $ sind
+6,40 $. `nullslast` ist Pflicht, sonst stünden Zeilen ohne bekannten Gewinn
+ganz oben.
+
+**Bewusste Abweichung, im Code vermerkt:** die Auswahl „beste je Partie"
+weiter unten vergleicht `Number(b.rendite)`. Kein Widerspruch, sondern eine
+andere Frage — hier: *welche Bewerber kommen überhaupt herein* (Geld); dort:
+*welche eine Zeile derselben Partie wird gezeigt* (Prozent). Wer das
+vereinheitlichen will, ändert beide Stellen zusammen.
+
+**Knapp-Bot:** `&order=rendite_netto.desc,max_gewinn.desc.nullslast,zuerst_gesehen.asc`
+— sein Band ist `rendite_netto >= 0 UND rendite < 2`, die Netto-Zahl ist also
+die maßgebliche.
+
+**Syntax gegen die echte Schnittstelle geprüft**, nicht angenommen: beide
+Klauseln HTTP 200, ein erfundener Spaltenname korrekt HTTP 400
+(`column orion_funde.KAPUTT does not exist`).
+
+### Was Karam doppelklicken muss
+
+Ausrollen über MCP geht weiterhin nicht (`deploy_edge_function` wirft
+denselben `ZodError: files expected array, received string` wie am 24.8.).
+
+1. **`bridge\DEPLOY-MELDER.cmd`** — die Sortierung in beiden Bots.
+2. **`bridge\DEPLOY-JETZT.cmd`** — der ehrliche Aufräum-Grund im Scanner.
+
+Beide Dateien holen den Stand aus dem Repo. Schlägt ein Deploy fehl, ändert
+sich **nichts** — die alte Fassung läuft weiter, der Grund steht in
+`bridge\letzter-deploy-*.log`.
+
+**Die Datenbank-Sperren sind bereits scharf** und brauchen keinen Deploy.
+
+### Was offen bleibt
+
+- **L5 reparieren.** Vorschlag der Prüfung, additiv und rückfallsicher:
+  Spalte `bridge_odds.markets_at`, in `bf-bridge/index.ts` **innerhalb** des
+  markets-Zweigs stempeln, und `orion_bf_maerkte` auf
+  `coalesce(markets_at, updated_at)` umstellen. Solange `markets_at` leer
+  ist, fällt es auf das heutige Verhalten zurück — also gefahrlos. **Die
+  Bridge auf dem Laptop wird dabei nicht angefasst.** Nicht gebaut: für
+  `bf-bridge` gibt es keine Deploy-Datei.
+- **Alter je Markt.** Der Befund „die Bridge lädt alte Kurse mit hoch" lässt
+  sich mit `markets_at` **nicht** reparieren — das Alter je Markt erreicht
+  den Server nie. Dafür bräuchte es drei Teile: Feld in der Bridge ergänzen
+  (`Orion-Bridge-Pro-27.js`, der Wert liegt dort bereits vor), in
+  `bf-bridge` durchreichen, in `orion_bf_maerkte` je Markt filtern.
+- **Fehlgeschlagener RPC-Aufruf sichtbar machen** (`index.ts:309, :337, :364`).
+- **Kalshi-Riegel gegen leere Aufnahme** (Gegenstück zu Smarkets).
+- Die 13 abgebrochenen Prüf-Agenten. Der Bauplan-Agent kam nicht mehr dran;
+  was hier steht, ist eigene Messung plus die zwei fertigen Prüfer.

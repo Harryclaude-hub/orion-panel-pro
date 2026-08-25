@@ -695,3 +695,26 @@ jemals im Meldeband stand und aus einem anderen Grund liegenblieb, liess
 sich nicht beantworten.
 
 Siehe UEBERGABE.md Abschnitt 9aa.
+
+
+## Wurzel-Frischesperre, alle drei Boersen (25.8.2026)
+
+Die vollstaendige Abschrift steht in **supabase/frischesperre.sql** - dort
+auch die Messungen, aus denen die Schwellen stammen, und die Gegenproben.
+
+| Funktion | Signatur | Grenze | Aufruf im Scanner |
+|---|---|---|---|
+| `orion_bf_maerkte` | (integer, text, integer) | 300 s | `{fenster_h:12, bereich_p}` |
+| `orion_kalshi_maerkte` | (text, integer) | 900 s | `{bereich_p}` |
+| `orion_sm_maerkte` | (integer) | 900 s | `{}` |
+
+**SIGNATURFALLE, zweimal zugeschlagen (24.8. und 25.8.):** CREATE OR REPLACE
+mit neuer Signatur ersetzt nicht, sondern legt eine ZWEITE Funktion daneben.
+PostgREST waehlt nach den uebergebenen Parameternamen und nimmt weiter die
+alte, ungeschuetzte. Immer: anlegen, ALTE SIGNATUR DROPPEN, `notify pgrst`,
+dann gegenpruefen, dass je Name nur EINE Fassung uebrig ist.
+
+Zu jeder Sperre gehoert eine Regel in `orion_verdacht_zusatz()`
+(3 = BRIDGE STEHT, 4 = KALSHI STEHT, 5 = SMARKETS STEHT) mit DERSELBEN
+Grenze, und ein Spiegel in `orion-lauf/index.ts` (GESPERRT_AB) fuer den
+ehrlichen Aufraeum-Grund. Drei Stellen, eine Zahl.

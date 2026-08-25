@@ -366,7 +366,29 @@ Deno.serve(async (req) => {
       '&zuerst_gesehen=lte.' + bewaehrtVor +
       '&max_einsatz=not.is.null&max_gewinn=gte.5' +
       '&select=schluessel,nr,titel,mannschaft,rendite,rendite_netto,max_einsatz,max_gewinn,buch,buch_1,' +
-      'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung&limit=5';
+      'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung' +
+      /* SORTIERUNG, 25.8.2026 (Karams Freigabe). Bis heute stand hier nur
+       * '&limit=5' OHNE order - PostgREST gab dann fuenf Zeilen in
+       * BELIEBIGER Tabellenordnung heraus. Bei mehr als fuenf Bewerbern
+       * konnte der dickste Fund herausfallen, BEVOR ueberhaupt jemand
+       * sortiert. Verloren ging er nicht (die uebrigen bleiben
+       * telegram_gemeldet=false und kommen im naechsten Takt dran), aber
+       * verzoegert - und eine grosse Chance lebt oft nur Minuten.
+       *
+       * SORTIERT WIRD NACH GELD, nicht nach Prozent: das Band ist ohnehin
+       * auf 2 bis 6,5 % verengt, innerhalb dieses schmalen Bandes
+       * entscheidet die Buchtiefe ueber den Ertrag (2,1 % auf 5000 $ sind
+       * 105 $, 6,4 % auf 100 $ sind 6,40 $). nullslast ist Pflicht -
+       * ohne sie stuenden Zeilen ohne bekannten Gewinn ganz oben.
+       *
+       * ABWEICHUNG, bewusst: die Auswahl 'beste je Partie' weiter unten
+       * vergleicht Number(b.rendite). Das ist kein Widerspruch, sondern
+       * eine andere Frage: hier geht es darum, WELCHE Bewerber ueberhaupt
+       * hereinkommen (Geld), dort darum, welche EINE Zeile derselben
+       * Partie gezeigt wird (Prozent). Wer das vereinheitlichen will,
+       * aendert beide Stellen zusammen. */
+      '&order=max_gewinn.desc.nullslast,rendite.desc,zuerst_gesehen.asc' +
+      '&limit=5';
     const kand = await (await db(q)).json();
     if (!Array.isArray(kand) || kand.length === 0) {
       return new Response(JSON.stringify({ ok: true, getan: 'nichts', grund: 'keine neue Chance', neu_angemeldet: neuAngemeldet }), { headers: kopf });

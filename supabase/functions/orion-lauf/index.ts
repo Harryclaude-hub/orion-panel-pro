@@ -890,10 +890,47 @@ Deno.serve(async (req) => {
      * der Tennis-Lauf darf keine Fussball-Zeilen beenden, die er nie gesehen
      * hat — sonst loeschen sich die Bereiche gegenseitig die Funde. */
     const laufMarke = new Date(jetzt).toISOString();
+
+    /* EHRLICHER GRUND, WENN EINE QUELLE GESPERRT WAR (25.8.2026).
+     *
+     * Seit dem 25.8. sperren die drei Markt-Funktionen an der Wurzel, wenn
+     * ein Buch zu lange still steht (orion_bf_maerkte, orion_kalshi_maerkte,
+     * orion_sm_maerkte; siehe supabase/frischesperre.sql). Greift so eine
+     * Sperre, kommen aus dem Buch NULL Maerkte - der Lauf schreibt fuer
+     * dessen Wege also nichts, und der Aufraeumer unten beendet die
+     * betroffenen Live-Zeilen.
+     *
+     * Bis heute stand dort in JEDEM Fall 'nicht mehr gefunden'. Das ist
+     * dann schlicht unwahr: es wurde gar nicht gesucht, die Quelle war
+     * gesperrt. Der Unterschied ist nicht kosmetisch - bei Smarkets haengen
+     * ueber die Haelfte aller Zeilen daran, bei Tennis standen am 25.8. 31
+     * von 31 Live-Zeilen auf Betfair-Wegen. Das Brett waere nach EINEM Lauf
+     * leer, mit einer Begruendung, die in die falsche Richtung zeigt.
+     *
+     * SPIEGEL: die drei Grenzen sind DIESELBEN Zahlen wie in
+     * supabase/frischesperre.sql und in orion_verdacht_zusatz() Regeln 3
+     * bis 5. Wer eine aendert, muss alle drei Stellen aendern. */
+    const GESPERRT_AB = { betfair: 300, kalshi: 900, smarkets: 900 };
+    const gesperrt: string[] = [];
+    if (BETFAIR_AKTIV && bfAlterS !== null && bfAlterS > GESPERRT_AB.betfair && bfAnzahl === 0) {
+      gesperrt.push('Betfair ' + Math.round(bfAlterS / 60) + ' min');
+    }
+    if (kaAlterS !== null && kaAlterS > GESPERRT_AB.kalshi && kalshi.length === 0) {
+      gesperrt.push('Kalshi ' + Math.round(kaAlterS / 60) + ' min');
+    }
+    if (smAlterS !== null && smAlterS > GESPERRT_AB.smarkets && smAnzahl === 0) {
+      gesperrt.push('Smarkets ' + Math.round(smAlterS / 60) + ' min');
+    }
+    const beendetGrund = gesperrt.length
+      ? 'Quelle gesperrt, nicht gesucht: ' + gesperrt.join(', ') +
+        ' ohne frische Lieferung. Die Zeile ist womoeglich noch da - ' +
+        'sie liess sich in diesem Lauf nur nicht bestaetigen.'
+      : 'nicht mehr gefunden';
+
     const beendetAntwort = await fetch(
       `${URL_SUPA}/rest/v1/orion_funde?status=eq.live&bereich=eq.${bereich}&zuletzt_gesehen=lt.${laufMarke}`, {
       method: 'PATCH', headers: { ...dbKopf(), prefer: 'return=representation' },
-      body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: 'nicht mehr gefunden' })
+      body: JSON.stringify({ status: 'vorbei', vorbei_seit: new Date().toISOString(), vorbei_grund: beendetGrund })
     });
     const beendet = beendetAntwort.ok ? (await beendetAntwort.json()).length : 0;
     if (!beendetAntwort.ok) throw new Error('Aufraeumen fehlgeschlagen ' + beendetAntwort.status);
