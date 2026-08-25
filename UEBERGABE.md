@@ -4841,3 +4841,67 @@ der Telegram-Bot sieht den Browser nie.
   - Ob L10 (Kalshi/Smarkets) dieselbe Wirkung hat wie bei Betfair.
   - Wie viele der 29 Meldungen zum Zeitpunkt des Versands WIRKLICH tot
     waren (der Meldezeitpunkt wird nicht gespeichert, nur das Kursalter).
+
+## 9z. DIE FRISCHESPERRE IST GEBAUT (25.8., Karams Freigabe zu 9y)
+
+### Was gebaut wurde, an EINER Stelle
+
+`orion_bf_maerkte` bekommt einen dritten Parameter `max_alter_s`
+(Vorgabe 300, dieselbe Zahl wie KONFIG.bridgeMaxAlterS im Panel):
+
+    and (max_alter_s <= 0
+         or b.updated_at > now() - make_interval(secs => max_alter_s))
+
+Diese Funktion ist der Engpass, durch den ALLE Betfair-Maerkte laufen.
+Steht die Bridge laenger als fuenf Minuten, kommt hier nichts mehr
+heraus - also entstehen tote Paare gar nicht erst. Damit sind die
+Loecher L1, L2, L3, L6 und L8 aus 9y in einem Zug entschaerft, ohne
+Scanner oder Melder anzufassen. `max_alter_s => 0` hebt die Sperre auf
+(fuer Trockenlauf und Fehlersuche).
+
+### DER FUND BEI DER GEGENPROBE (haette die ganze Reparatur entwertet)
+
+`CREATE OR REPLACE` mit einer NEUEN Signatur ersetzt die alte Funktion
+NICHT, es entsteht eine zweite daneben:
+
+    orion_bf_maerkte(integer, text)            ALT, ohne Sperre
+    orion_bf_maerkte(integer, text, integer)   NEU, mit Sperre
+
+Der Scanner ruft die RPC mit genau zwei benannten Parametern -
+PostgREST haette weiter die ALTE genommen, und die Sperre waere
+wirkungslos geblieben. Aufgefallen nur, weil die Gegenprobe einen
+Fehler "function is not unique" warf. Die alte Fassung ist entfernt;
+Aufrufe mit zwei Parametern landen jetzt auf der neuen und bekommen
+300 s ueber den Vorgabewert. Der Scanner brauchte KEINE Aenderung.
+
+MERKE: nach jedem CREATE OR REPLACE mit geaenderter Signatur zaehlen,
+wie viele Fassungen uebrig sind.
+
+### Dazu: das fehlende Verdachtsmuster (L7)
+
+`orion_verdacht_zusatz` hat eine dritte Regel bekommen: "BRIDGE STEHT:
+letzte Betfair-Lieferung vor X Minuten ... es kommen KEINE Betfair-Funde
+mehr." Noetig, weil aus falschen Funden jetzt STILLE wird - und Stille
+sieht von aussen aus wie Marktruhe. Dieselbe Lehre wie beim
+Lebenszeichen (9j). Der Waechter ruft die Zusatzregeln bereits per
+union all auf, die 19 gewachsenen Muster blieben unangetastet.
+
+### Gegenprobe, gemessen
+
+    Fassungen uebrig                    1
+    Bridge-Alter zum Testzeitpunkt      4 s
+    orion_bf_maerkte(12,'fussball')     392 Maerkte   (Normalbetrieb)
+    ... mit max_alter_s => 0            392 Maerkte   (Sperre aus, gleich)
+    ... mit max_alter_s => 1            0 Maerkte     (SPERRE GREIFT)
+    Trockenlauf Fussball                ok true, 392 Betfair, 67 Paare
+    orion_verdacht_zusatz()             laeuft, 0 Gruende (Bridge lebt)
+    Normalbetrieb danach                84 live, davon 53 Betfair,
+                                        Wache alles_gut, 0 Scanner-Fehler
+
+### Was bewusst NICHT geaendert wurde
+
+L5 (bf-bridge stempelt updated_at bei jedem POST) und L9 (Panel rechnet
+bf_alter_s nicht nach) und L10 (Kalshi/Smarkets gleiche Bauart) stehen
+weiter offen. L5 ist wichtig, weil es die Zahl vergiften koennte, auf
+der die neue Sperre fusst - aber es ist ein Verdacht aus der Codelese,
+im Betrieb nicht nachgewiesen.
