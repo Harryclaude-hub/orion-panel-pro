@@ -4740,3 +4740,104 @@ Listen befuellt, Position blieb auf exakt 900 px, NULL Spruenge,
 groesster Sprung 0 px. Konsole fehlerfrei.
 
 Spiegel-Pruefstand 19896/19896 gruen. Cache-Marken v81.
+
+## 9y. DIE BRIDGE STEHT, UND ALLE MELDEN WEITER (25.8., Karams Fund)
+
+### Karams Frage
+
+"Wie kann es sein, dass die Bridge offline ist und ich trotzdem knappe
+Paare und Chancen ueber Orbit bekomme?"
+
+### Gemessen, bevor gebaut wurde
+
+    Bridge-Chronik 25.8.   Nacht bis 07:00 offline (aeltester Wert 10,7 h)
+                           08:00 sauber (max 174 s)
+                           09:00 offline, 2220 von 2304 Laeufen ueber 300 s
+                           10:00 bis 78 min alt, dann wieder frisch
+    Gemeldete Funde        29 - und ALLE 29 mit Betfair beteiligt
+                           (29 als knappes Paar, 4 davon auch als Chance)
+    Kursalter der          Schnitt 814 s (13,6 min), laengster 4714 s
+    gemeldeten Zeilen      (78 min), 3 Zeilen ueber einer Stunde
+    Lebenszeichen-Waechter 00:00, 02:00, 04:02, 06:00 alle mit
+                           "job startup timeout" gescheitert - konnte
+                           waehrend der Nacht-Offline-Phase nicht warnen
+
+### Der Kernsatz aus der Pruefung
+
+Die einzige scharfe Frischepruefung des Systems sitzt im BROWSER, und
+der Telegram-Bot sieht den Browser nie.
+
+### Die Kette, Schritt fuer Schritt
+
+    0. Laptop aus -> bridge_odds altert, wird aber nie geleert
+    1. orion-lauf/index.ts:306-309 ruft orion_bf_maerkte(fenster, bereich)
+       - kein Altersparameter
+    2. orion_bf_maerkte filtert Markttyp, Bereich, ANPFIFF - b.updated_at
+       kommt im Rumpf nicht vor. Bei Stillstand ueberleben ~85 %
+    3. orion-lauf:314-316 misst bfAlterS und benutzt es NIE als Bedingung
+       (nur Zeilen 918/930, Protokoll) - und misst erst NACH dem Laden
+    4. Paarung 484-491 und 727-736 auf toten Kursen
+    5. Zeile 432 stempelt zuletzt_gesehen=jetzt, status=live
+    6. orion_zeiten_stimmigkeit liest dieselbe alte Zeile und schreibt
+       daraus buch_summe - die Wache prueft also ihre eigene Altdatenquelle
+    7. orion_wache_stufe2 nennt bridge_odds nirgends
+    8. Melder 362-369 (Chance) und 381-388 (Knapp): keine Frischebedingung.
+       VERSCHAERFEND: die einzige Zeitbedingung ist ein MINDESTALTER von
+       120 s - eine stehende Bridge liefert immer dasselbe Paar, die Zeile
+       bewaehrt sich also von selbst
+    9. Versand, buch='betfair' heisst in der Nachricht "Betfair/Orbit"
+   10. js/daten.js:729/781 haetten gesperrt - der Bot laeuft serverseitig
+       und kennt KONFIG.bridgeMaxAlterS (300 s) gar nicht
+
+### Die Loecher nach Gefaehrlichkeit
+
+    L1  orion-melder-telegram:362-369   keine Frischepruefung (live v17)
+    L2  orion-melder-knapp:381-388      dieselbe Luecke, erzeugt aus L1
+    L3  orion-lauf:317                  Alter liegt vor, keine Sperre
+    L4  orion_bf_maerkte (DB)           DER ENGPASS, kein updated_at
+    L5  bf-bridge/index.ts:48           stempelt updated_at bei JEDEM POST
+                                        neu, markets nur bei gueltigem
+                                        Array (VERDACHT, nicht im Betrieb
+                                        nachgewiesen)
+    L6  orion_zeiten_stimmigkeit        speist die Wache aus Altdaten
+    L7  orion_verdacht                  hat "Scanner steht" und
+                                        "Bereichslauf steht", aber kein
+                                        "Bridge steht"
+    L8  orion_wache_stufe2              kennt bridge_odds nicht
+    L9  js/daten.js:285-288             Panel-Bug: bf_alter_s ohne
+                                        Frischegrenze fuer die Laufzeile
+                                        und ohne Nachaltern
+    L10 Kalshi/Smarkets                 gleiche Bauart (gemessen,
+                                        protokolliert, nie Bedingung) -
+                                        VERDACHT, nicht bewiesen
+
+### Was RICHTIG funktioniert (nicht doppelt bauen)
+
+  - Das Panel selbst wirft veraltete Zeilen aus Chancen und knappen
+    Paaren (js/daten.js:729 und 781, Grenze KONFIG.bridgeMaxAlterS 300).
+  - Bei Polymarket-Paarungen wird die Gegenseite ueber laufAlterVon
+    (daten.js:315, laufMaxAlterS 180 s) echt nachgerechnet.
+  - Der Scanner PROTOKOLLIERT bf_alter_s sauber - deshalb war dieser
+    Befund ueberhaupt messbar.
+
+### Reparaturvorschlag, NICHT gebaut (Logik-Schicht, Karams Ansage noetig)
+
+    EMPFOHLEN: L4 an der Wurzel. orion_bf_maerkte gibt eine LEERE Liste
+    zurueck, wenn bridge_odds.updated_at aelter als eine Grenze ist
+    (Vorschlag 300 s, dieselbe Zahl wie im Panel). Eine Aenderung an
+    EINER SQL-Funktion, durch die ALLE Betfair-Maerkte laufen: damit
+    entstehen erst gar keine toten Paare, und L1, L2, L3, L6, L8 sind
+    in einem Zug entschaerft.
+    EHRLICHE FOLGE: steht der Laptop, gibt es KEINE Betfair-Funde mehr.
+    Gemessen hingen alle 29 Meldungen an Betfair - es wird also spuerbar
+    stiller. Das ist die Wahrheit, keine Verschlechterung: diese Funde
+    waren ohnehin nicht setzbar.
+    DAZU: L7 (Verdachtsmuster "Bridge steht"), L9 (Panel-Bug),
+    L5 pruefen, L10 messen.
+
+### Ungeprueft geblieben
+
+  - Ob L5 im Betrieb wirklich auftritt (Lebenszeichen-POST ohne Maerkte).
+  - Ob L10 (Kalshi/Smarkets) dieselbe Wirkung hat wie bei Betfair.
+  - Wie viele der 29 Meldungen zum Zeitpunkt des Versands WIRKLICH tot
+    waren (der Meldezeitpunkt wird nicht gespeichert, nur das Kursalter).
