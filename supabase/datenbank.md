@@ -672,3 +672,26 @@ ODER `zuerst_gesehen` — OHNE Gemeldet-Ausnahme (ersetzt 36 h/30 Tage vom
 22.8.; Karams Befehl: „alles, was vor länger als ein Tag her ist").
 `orion_gespeichert` bleibt unangetastet. Die Website lädt den Verlauf nur
 noch mit `zuerst_gesehen >= jetzt − 24 h` (js/daten.js, holeVerlauf).
+
+
+## Vier Spalten fuer die grosse Chance (25.8.2026)
+
+Neu in `orion_funde`, alle `null` erlaubt, Vorgabe `null`. Nichts schreibt
+sie bisher - ein Scanner-Stand von vor dem 25.8. laeuft unveraendert weiter.
+
+| Spalte | Typ | wofuer |
+|---|---|---|
+| `alter_1_s` | integer | Lieferalter der ERSTEN Boerse in Sekunden, **zum Zeitpunkt dieses Fundes**. Zuordnung ueber den Buchnamen, nicht ueber die Reihenfolge |
+| `alter_2_s` | integer | dasselbe fuer die zweite Boerse |
+| `gemeldet_am` | timestamptz | **wann** gefunkt wurde |
+| `melde_klasse` | text | unter welcher Klasse: `chance`, `knapp` oder `gross` |
+
+**Warum es sie braucht.** Bisher stand das Lieferalter nur je **Lauf** in
+`orion_laeufe.bf_alter_s`. Damit war nie nachweisbar, wie frisch die Kurse
+einer **einzelnen Zeile** waren - genau die Frage, an der der Sonego-Fall
+vom 24.8. haengt (7,30 %, 5196 $ Tiefe, nie gemeldet). Und
+`telegram_gemeldet`/`knapp_gemeldet` sind blosses Ja/Nein: ob eine Zeile
+jemals im Meldeband stand und aus einem anderen Grund liegenblieb, liess
+sich nicht beantworten.
+
+Siehe UEBERGABE.md Abschnitt 9aa.

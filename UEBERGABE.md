@@ -4905,3 +4905,222 @@ bf_alter_s nicht nach) und L10 (Kalshi/Smarkets gleiche Bauart) stehen
 weiter offen. L5 ist wichtig, weil es die Zahl vergiften koennte, auf
 der die neue Sperre fusst - aber es ist ein Verdacht aus der Codelese,
 im Betrieb nicht nachgewiesen.
+
+
+---
+
+## 9aa. GROSSE CHANCE, Stufe 1: der Deckel sagt nicht mehr nur „zu hoch" (25.8.2026)
+
+### Der Anlass
+
+Karam am 25.8.: „Ich hab gestern und vorgestern zwei richtig gute Chancen
+bekommen. Einmal hab ich fünfzig Prozent gemacht. Und einmal hab ich das
+vertrödelt." Dazu der Wunsch: große Chancen, bei denen die zwei Quoten weit
+auseinanderliegen, sollen **noch einmal angezeigt werden, mit einer
+Extramarkierung**, und in Telegram nicht wie eine normale Chance ankommen.
+
+Der vertrödelte Fall ist gefunden und vermessen (siehe 9z): `pm>bf:3780822`,
+Winston-Salem Open, Sonego gegen Kopriva. **7,30 % roh, 5,72 % netto,
+5196,51 $ handelbare Tiefe, also rund 379 $ Gewinn, Buchsumme 1,0085
+(kerngesund), 212 Minuten sichtbar, `telegram_gemeldet = false`.**
+
+Nie gemeldet. Nicht weil sie falsch war, sondern weil sie **über
+`maxPlausibel` = 6,5 %** lag.
+
+**Das ist der Kern:** der Deckel filtert nach **Höhe**. Gemeint war immer
+**Beweisbarkeit**. Solange beides dieselbe Zahl ist, kostet jede echte große
+Chance genau so viel wie ein Kleber — nämlich alles.
+
+### Was ein 14-Agenten-Bauplan ergeben hat
+
+Drei Entwürfe, neun Jury-Urteile, eine Beweislage aus 410 Zeilen. Gewonnen
+hat **„die zweite Tür mit dem schärferen Schloss"**: der Deckel bleibt
+unangetastet, daneben entsteht eine eigene Klasse mit **zusätzlichen**
+Bedingungen. Eine Zeile darf nur dann „GROSSE CHANCE" heißen, wenn sie über
+dem Deckel liegt **und** jede weitere Prüfung besteht.
+
+Der Plan hat fünf Stufen. **Hier gebaut ist ausschließlich Stufe 1** — die
+Stufe, die **nichts lockert**. Es entsteht kein einziger neuer Weg für eine
+Zeile, die heute gesperrt ist. Es wird nur sichtbar, was der Deckel wegnimmt.
+
+### Die ehrliche Erwartung, vorweg
+
+**Im gemessenen 24-Stunden-Fenster hätte die Klasse NULL mal gefeuert.**
+Selbst Sonego fällt — an der Frischeprüfung, weil die Bridge zu dem
+Zeitpunkt stand (der Betfair-Kurs war 51,6 Minuten alt). Der Wert von
+Stufe 1 liegt in der **Sichtbarkeit** und in der **Messung**, nicht in der
+Meldung. Wer etwas anderes verspricht, verspricht zu viel.
+
+### Was gebaut wurde
+
+**1. `js/konfig.js` — `KONFIG.gross`, alle Schwellen an EINER Stelle**
+
+| Schwelle | Wert | Herkunft |
+|---|---|---|
+| `kursMaxS` | 900 s | gemessen: Median der Kurs-Uhr ~26 min, eine 15-min-Grenze trifft über die Hälfte — genau gewollt |
+| `anpfiffAbstandS` | 300 s | Pachuca gegen U21: 705 min auseinander, 4,68 % |
+| `vorlaufMinS` | 1200 s | die Wache stempelt ab `beginnt_am − 5 min`; darunter ist keine Seite mehr sicher setzbar |
+| `geldMin` | 25 | Cent-Gewinn bei zweistelliger Rendite = dünnes Buch |
+| `buchVon` / `buchBis` | 1,00 / 1,10 | Sonego lag bei 1,0085. **Nicht** `beste_buch_summe` — die liest `orion_verlauf_urteil` als Widerlegung |
+| `nettoMin` | 4,0 % | gesetzt, nicht gemessen |
+| `deckel` | 15 % | der 663er-Schwall vom 9.8. ging bis 184 % |
+| `bewaehrungFaktor` | 2 | eine große Zeile muss länger stehen als eine normale |
+
+**2. `js/anzeige.js` — `grossPruefung(f)` und zwei Marken**
+
+Die Funktion ändert keine Zahl und keinen Reiter. Sie liest und gibt zurück,
+welche Bedingungen gerissen sind. Ersatzlos löschbar.
+
+- Alles bestanden → goldene Marke **„GROSSE CHANCE? alle prüfbaren
+  Bedingungen erfüllt — netto x,xx %"**
+- Sonst → graue Marke **„GROSSE CHANCE verfehlt an: `<Grund>`"**, im Tooltip
+  die vollständige Liste
+
+Beide stehen **innerhalb** der bestehenden Hoch-Bedingung, laufen also nur
+für Zeilen über 6,5 % und kosten bei allen anderen nichts.
+
+**Gefundener Fehler beim Bauen:** die erste Fassung las `f.gewinn`. Das Feld
+gibt es nicht — es heißt `f.echter_gewinn` und wird in `js/daten.js` aus
+`max_einsatz × rendite` gerechnet. Ungeprüft hätte die Marke bei **jeder**
+Zeile „Gewinn nicht bezifferbar" behauptet. Korrigiert und im Kommentar
+festgehalten.
+
+**3. `css/stil.css` — reine Designschicht, löschbar.** Bewusst **ohne
+Animation**: eine Klasse, die sich selbst anschreit, wird nach dem dritten
+Fehlalarm ignoriert.
+
+**4. `supabase/wache-tennis-turnier.sql` — ein Sprengsatz entschärft**
+
+Die Repo-Datei war an **drei** Stellen gegenläufig zur laufenden Datenbank.
+Wer sie ausgerollt hätte, hätte **jede gesunde Zeile als „falsch"
+gestempelt**:
+
+1. **Buchsumme genau andersherum.** Repo: `>= 1,00` = Widerspruch. Live seit
+   23.8.: unplausibel ist `< 1,00` oder `> 1,30`.
+2. **Einheit:** Repo zählte gegen `0.05` und multiplizierte im Text mit 100.
+   `beste_rendite` steht in Prozent. Live: `>= 6.5`, kein `* 100`.
+3. **`SECURITY DEFINER` und `search_path`** stehen laut Repo an der Funktion,
+   an der laufenden aber nicht (`prosecdef = false`, `proconfig = null`).
+
+**Beweis, welche Fassung live ist:** Sonego hatte `buch_summe` 1,008524 bei
+positiver Rendite. Nach der Repo-Fassung hätte sein Stempel „Widerspruch:
+Buchsumme" lauten müssen — er lautete „Anpfiff ist vorbei". Der
+Buchsummen-Zweig steht im `CASE` **vor** allen anderen, also kann die alte
+Fassung nicht live sein. Die Datei ist jetzt eine **Abschrift** der
+Datenbank, keine Absichtserklärung.
+
+**5. Vier neue Spalten in `orion_funde`**, alle `null` erlaubt, nichts
+schreibt sie bisher — ein alter Scanner läuft unverändert weiter:
+
+- `alter_1_s`, `alter_2_s` — Lieferalter je Börse **zum Zeitpunkt dieses
+  Fundes**. Bisher gab es nur `bf_alter_s` je **Lauf** in `orion_laeufe`.
+- `gemeldet_am` — **wann** gefunkt wurde. Vorher nur Ja/Nein, deshalb war beim
+  Sonego-Fall nicht beantwortbar, ob die Zeile je im Meldeband stand.
+- `melde_klasse` — `chance`, `knapp` oder `gross`.
+
+**6. Cache-Marken `?v=81` → `?v=82`** in 64 Fundstellen über 9 Dateien.
+`bridge-setup.html` läuft auf `?v=22` und bleibt.
+
+**7. `logik.html`** nachgezogen (Karams Regel: nie nur eines von beiden).
+
+### Die Gegenprobe, am lebenden Panel gemessen
+
+**A) Sonego bei lebender Bridge:** `raus: []` — **keine einzige Bedingung
+gerissen**, goldene Marke, netto 5,72 %.
+
+**B) Sonego wie er wirklich war:** genau **eine** gerissene Bedingung —
+*„ältester Kurs 52 min alt (erlaubt 15 min)"*. Genau dieser Satz hätte am
+24.8. auf Karams Bildschirm gestanden.
+
+**C) Dreizehn bekannte Fehlfunde, jeder an der RICHTIGEN Bedingung
+gesperrt** — keiner nur zufällig:
+
+| Fall | gerissen an |
+|---|---|
+| CSD Municipal, 184 % (9.8.) | Obergrenze 15 % |
+| Pachuca gegen Pachuca U21 (19.8.) | Anpfiff 705 min auseinander |
+| Kleber Betfair 52 min (13.8.) | Kursalter |
+| Anpfiff in 3 Minuten | Vorlauf |
+| Cent-Gewinn im dünnen Buch | Gewinn 0,88 < 25 |
+| Gegenbuch unstimmig 0,9421 | Buchprobe |
+| Gebührensatz geschätzt | nicht belegt |
+| netto nur 1,9 % | Gebühren |
+| erst 20 s bewährt | Bewährung |
+| vom Prüfer falsch gestempelt | Prüferurteil |
+| Fehlpaarung | kein gemeinsames Wort |
+| Kurse veraltet | Stempel |
+| Anpfiff unbelegt | ohne Datum nicht beweisbar |
+
+Festgehalten in **`pruefung/gross.test.js`** (neu, 24 Prüfungen). Die Datei
+lädt die **ausgelieferte** `js/anzeige.js` in einer schmalen
+Browser-Umgebung — es wird die echte Fassung geprüft, keine Abschrift.
+**Sieben von sieben Prüfdateien laufen durch.**
+
+### Was NICHT geprüft ist, und das ehrlich
+
+- **Das Lieferalter der Bridge je Fund** und der Zustand des Wächters lassen
+  sich an der einzelnen Zeile heute nicht prüfen. Deshalb sagt die Marke
+  ausdrücklich **„prüfbare Bedingungen"** und behauptet nicht, alles geprüft
+  zu haben. Sie ist eine **Sichtbarkeits**-Marke, **keine Freigabe**.
+- **Kein Bildschirmfoto möglich** (Browser-Pane nicht eingeblendet). Statt
+  dessen `elementFromPoint` nach Karams eigener Regel. Befund: **alle 36
+  Chips** der Karte — auch die seit Wochen laufenden — verhalten sich beim
+  Treffertest gleich. Das ist ein Artefakt des eingespritzten
+  Testbehälters, kein Fehler an den neuen Marken; ein Beweis für die
+  Sichtbarkeit im Betrieb ist es aber **nicht**.
+- Nebenbefund: `#sperre` (die Code-Sperre) liegt mit `z-index 2147483647`
+  über der ganzen Seite. Erwartet, aber die Falle aus dem Fund vom 21.8.
+  ist damit ein zweites Mal bestätigt.
+
+### Was ausdrücklich NICHT gebaut ist
+
+Stufen 2 bis 5 des Bauplans, **alle offen, alle brauchen Karams Wort**:
+
+- **Stufe 2 (messen, sieben Tage, nichts melden):** `alter_1_s`/`alter_2_s`
+  im Scanner schreiben, `kalshi_alter_s`/`smarkets_alter_s` in
+  `orion_laeufe`, **L5 klären** (stempelt `bf-bridge` `updated_at` bei jedem
+  POST, auch ohne Märkte?), Schattenlauf mitzählen.
+- **Stufe 3 (verschärfen, keine Rendite-Freigabe nötig):** Wurzelsperre für
+  `orion_kalshi_maerkte` und `orion_sm_maerkte`. **Smarkets trägt 227 von
+  410 Zeilen und hat heute keinen einzigen Riegel gegen ein eingefrorenes
+  Buch außer dem Deckel.** Signaturfalle beachten: `orion_sm_maerkte` nimmt
+  heute null Argumente — eine neue Fassung stellt sich **daneben**, PostgREST
+  nimmt weiter die alte (dieselbe Falle wie am 24.8. bei `orion_bf_maerkte`).
+- **Stufe 4:** Etikett `abgelaufen` statt `falsch` trennen. Neun Lesestellen
+  im Frontend, vier in der Wache, Nachtrag auf 282 Stempel. **Achtung:**
+  `daten.js:55` filtert auf `pruefung.eq.falsch` — ohne Anpassung
+  verschwinden abgelaufene Zeilen mit negativer Spitze lautlos.
+- **Stufe 5 (scharf schalten, nur nach ausdrücklichem Ja UND nach Stufe 2):**
+  eigener Bot `orion-melder-gross`, eigener Token, `BOT_NR 3`, eigener
+  pg_cron-Job. `bridge/DEPLOY-MELDER.cmd` ist heute fest auf zwei Bots
+  verdrahtet. **Egress vorher abschätzen** — das Free-Limit wurde im August
+  mit 339 % gerissen.
+
+Dazu **eine winzige, aber echte Sache am laufenden Bot**, die Karams Wort
+braucht: `orion-melder-telegram` fragt mit `&limit=5` **ohne `&order=`** ab.
+Der Bot greift fünf Zeilen in beliebiger Tabellenordnung ab — **der dickste
+Fund kann herausfallen, bevor überhaupt sortiert wird.** Eine Zeile Arbeit,
+aber es ist der laufende Melder, und der wird nur auf Ansage angefasst.
+
+### Der Widerspruch, der ausgeräumt wurde
+
+Eine Jury nannte `kand.map` die „Sonego-Fehlerklasse", weil alle bis zu fünf
+Kandidaten als gemeldet markiert werden. Nachgelesen: `zuMelden` bildet
+**eine** Meldung je Partie, die übrigen Zeilen derselben Partie werden in
+der Nachricht als „weitere" genannt und deshalb mitmarkiert. **Absicht, kein
+Fehler.** Das fehlende `&order=` ist dagegen echt und bestätigt.
+
+### Was nicht mehr auflösbar ist
+
+Ob die Sonego-Zeile in den Stunden davor jemals im Band 2 bis 6,5 % stand
+und aus einem **anderen** Grund liegenblieb, lässt sich nicht mehr
+feststellen — nur der Spitzenwert wird gespeichert, kein Verlauf. Solange
+das offen ist, kann niemand behaupten, der Deckel sei die **vollständige**
+Ursache. `gemeldet_am` und `melde_klasse` machen die Frage künftig
+beantwortbar.
+
+Und: Job 96 löscht alles älter als 24 Stunden. Die 15 geprüften Zeilen vom
+13.8., die 1185 vom 18.8. und die 663 vom 9.8. sind weg. **Alle Schwellen
+dieses Plans stehen auf 410 Zeilen aus 24 Stunden mit genau einer Zeile über
+6,5 %.** Die Lücke zwischen 5,42 $ und 379,35 $ Gewinn ist kein Naturgesetz,
+sondern ein ruhiger Tag.

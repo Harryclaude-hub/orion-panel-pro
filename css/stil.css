@@ -144,6 +144,19 @@ button.gesperrt { opacity: .5; }
 .chip.acht { color: var(--orange); border-color: #2E524C; }
 .chip.rot  { color: var(--rot);    border-color: #5C2F3C; }
 
+/* GROSSE CHANCE, 25.8.2026 (Karams Auftrag nach dem Sonego-Fall).
+ * Reine Designschicht: dieser Block ist ersatzlos loeschbar, dann sehen
+ * die beiden Marken aus wie normale Chips. Keine Zahl, kein Filter, kein
+ * Reiter haengt daran. Bewusst OHNE Animation - eine Klasse, die sich
+ * selbst anschreit, wird nach dem dritten Fehlalarm ignoriert. */
+.chip.grau { color: var(--text-leise); border-color: var(--rand); }
+.chip.gross-treffer {
+  color: #0B0E14;
+  background: linear-gradient(180deg, #F2C14E 0%, #D9A227 100%);
+  border-color: #A87C12;
+  font-weight: 700; letter-spacing: .02em;
+}
+
 /* ---------- Kartengitter ---------- */
 
 .zeile-oben { display: flex; gap: 12px; flex-wrap: wrap; margin-bottom: 18px; }

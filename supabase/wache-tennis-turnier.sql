@@ -65,13 +65,39 @@ begin
 end;
 $function$;
 
--- Wache Stufe 2: dieselbe Reinigung an derselben Huerde. Alles andere
--- ist unveraendert gegenueber dem Stand vom 19.8. (8m/8p).
+-- ===========================================================================
+-- WACHE STUFE 2
+-- ===========================================================================
+-- ACHTUNG, 25.8.2026: dieser Abschnitt war bis heute ein SPRENGSATZ.
+--
+-- Die Repo-Fassung stand auf dem Stand vom 19.8. und war an DREI Stellen
+-- gegenlaeufig zur laufenden Datenbank. Wer sie unveraendert ausgerollt
+-- haette, haette jede gesunde Zeile als "falsch" gestempelt:
+--
+--   1. BUCHSUMME war genau andersherum. Die Repo-Datei nannte
+--      buch_summe >= 1,00 einen "Widerspruch". Am 23.8. wurde das in der
+--      Datenbank UMGEDREHT: buch_summe ist die Marge EINES Buches und MUSS
+--      ueber 1 liegen (an vier Faellen nachgerechnet, 0,6410 + 0,3707 =
+--      1,0118). Unplausibel ist jetzt < 1,00 oder > 1,30.
+--   2. EINHEIT: die Repo-Datei zaehlte gegen 0.05 und multiplizierte im
+--      Text mit 100. beste_rendite steht aber in PROZENT. Dieselbe
+--      Einheiten-Verwechslung wie in orion_verlauf_urteil, dort am 24.8.
+--      behoben (Stempel "260,0 %" fuer 2,60 %).
+--   3. SECURITY DEFINER und search_path stehen NICHT an der laufenden
+--      Funktion (prosecdef = false, proconfig = null, am 25.8. geprueft).
+--
+-- BEWEIS, dass die laufende Fassung die hier stehende ist: der Sonego-Fund
+-- vom 24.8. hatte buch_summe 1,008524 bei positiver Rendite. Nach der alten
+-- Repo-Fassung haette sein Stempel "Widerspruch: Buchsumme" lauten muessen -
+-- er lautete "Anpfiff ist vorbei". Der Buchsummen-Zweig steht im CASE VOR
+-- allen anderen, also kann die alte Fassung nicht live sein.
+--
+-- Ab jetzt gilt: diese Datei ist eine ABSCHRIFT der Datenbank, keine
+-- Absichtserklaerung. Vor jeder Aenderung mit pg_get_functiondef abgleichen.
+-- ===========================================================================
 create or replace function public.orion_wache_stufe2()
 returns table(geprueft integer, gesperrt integer, gruende jsonb)
 language plpgsql
-security definer
-set search_path to 'public'
 as $function$
 declare
   n_geprueft integer := 0;
@@ -81,7 +107,7 @@ begin
   perform orion_schreibsperre();
 
   select count(*) into n_geprueft from orion_funde
-   where status = 'live' or coalesce(beste_rendite, 0) >= 0.05;
+   where status = 'live' or coalesce(beste_rendite, 0) >= 6.5;
 
   create temporary table if not exists _w2 (schluessel text, grund text, urteil text) on commit drop;
   delete from _w2;
@@ -90,10 +116,26 @@ begin
   insert into _w2
   select f.schluessel,
          case
-           when f.buch_summe is not null and f.buch_summe >= 1.0 and coalesce(f.rendite, 0) > 0
-             then 'Widerspruch: Buchsumme ' || round(f.buch_summe, 4) ||
-                  ' liegt bei/ueber 1,00 - dann kann es keinen Vorteil geben. Angezeigt sind aber ' ||
-                  round((coalesce(f.rendite, 0) * 100)::numeric, 2) || ' %'
+           /* BUCHSUMME, am 23.8. UMGEDREHT. Bis dahin galt ">= 1,00 =
+            * Widerspruch". Das war falsch herum und hat alles kassiert,
+            * was ueber der Meldeschwelle lag: 24 Zeilen im Chancenband,
+            * 96 im Knappband, keine einzige kam durch.
+            * buch_summe ist die Marge EINES Buches. An vier Faellen
+            * nachgerechnet: Preis plus Restseite ergibt exakt den Wert
+            * (0,6410 + 0,3707 = 1,0118). Eine Marge MUSS ueber 1 liegen.
+            * Die Arbitrage steckt in beiden Buechern zusammen, dort lagen
+            * dieselben Faelle bei 0,9210 bis 0,9846, und die Rendite passt
+            * lueckenlos dazu. js/anzeige.js liest den Wert seit jeher
+            * richtig herum. Die Wache folgt jetzt derselben Deutung.
+            * Obergrenze 1,30 faengt kaputte Werte wie 2,0280 (West Ham
+            * gegen Charlton) - eine Marge von 103 % hat kein Buch. */
+           when f.buch_summe is not null
+            and (f.buch_summe < 1.0 or f.buch_summe > 1.3)
+            and coalesce(f.rendite, 0) > 0
+             then 'Buchsumme ' || round(f.buch_summe, 4) || ' ist unplausibel - ' ||
+                  case when f.buch_summe < 1.0
+                       then 'unter 1,00, im Gegenbuch klebt vermutlich ein Kurs'
+                       else 'ueber 1,30, das ist keine Marge eines gesunden Buches' end
            when f.beginnt_am is null
              then 'Anpfiff nicht belegt - ohne Datum ist nicht beweisbar, dass beide Buecher dasselbe Spiel meinen'
            when f.endet_am is not null
@@ -114,18 +156,22 @@ begin
     from orion_funde f
    where f.status = 'live';
 
-  /* ---- VERLAUF: mit Beleg beweisen, ohne Beleg nur einordnen ---- */
+  /* ---- VERLAUF: mit Beleg beweisen, ohne Beleg nur einordnen ----
+   * beste_rendite steht in PROZENT - kein "* 100" im Text (Fehler bis
+   * 23.8.: "Spitzenwert 260,0 %" fuer 2,60 %). Deckel 6,5 = vor Gebuehren. */
   insert into _w2
   select f.schluessel,
          case orion_verlauf_urteil(f.beste_rendite, f.beste_buch_summe)
            when 'falsch' then
              'Widerlegt: im Moment des Hoechststands lag die Buchsumme bei ' ||
-             round(f.beste_buch_summe, 4) || ' - ueber 1,00, also gab es den angezeigten Vorteil von ' ||
-             round((f.beste_rendite * 100)::numeric, 1) || ' % nie'
+             round(f.beste_buch_summe, 4) || ' - ausserhalb des plausiblen Bandes 1,00 bis 1,30, ' ||
+             'also gab es den angezeigten Vorteil von ' ||
+             round(f.beste_rendite::numeric, 2) || ' % nie'
            else
-             'Spitzenwert ' || round((f.beste_rendite * 100)::numeric, 1) ||
-             ' % liegt weit ueber dem, was je bestaetigt wurde (13.8.: richtige 2,07 bis 3,27 %, ' ||
-             'falsche ueber 4,48 %). Ohne gespeicherte Kurse von damals nicht nachrechenbar'
+             'Spitzenwert ' || round(f.beste_rendite::numeric, 2) ||
+             ' % liegt ueber dem Plausibilitaetsdeckel von 6,5 % (vor Gebuehren; ' ||
+             'gemessen 13.8.: jede Zeile ueber 5 % netto war ein Kleber oder eine Fehlpaarung). ' ||
+             'Ohne gespeicherte Kurse von damals nicht nachrechenbar'
          end,
          orion_verlauf_urteil(f.beste_rendite, f.beste_buch_summe)
     from orion_funde f

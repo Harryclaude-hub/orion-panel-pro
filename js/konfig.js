@@ -323,6 +323,68 @@
      * Zahl steht in orion_verlauf_urteil und orion_verdacht. */
     maxPlausibel: 6.5,
 
+    /* ====================================================================
+     * GROSSE CHANCE (25.8.2026, Karams Auftrag nach dem Sonego-Fall)
+     * ====================================================================
+     * Anlass: am 24.8. stand 212 Minuten lang eine Zeile mit 7,30 % und
+     * 5196 $ handelbarer Tiefe im System (Sonego gegen Kopriva, Tennis).
+     * Sie wurde NIE gemeldet - nicht weil sie falsch war, sondern weil sie
+     * ueber maxPlausibel lag. Der Deckel filtert nach HOEHE; gemeint war
+     * aber immer BEWEISBARKEIT. Das ist der Unterschied, um den es hier
+     * geht.
+     *
+     * Der Deckel bleibt unangetastet. Daneben entsteht eine zweite Tuer
+     * mit einem SCHAERFEREN Schloss: eine Zeile ueber maxPlausibel darf
+     * nur dann "GROSSE CHANCE" heissen, wenn sie zusaetzlich JEDE der
+     * folgenden Bedingungen besteht. Faellt auch nur eine, bleibt sie
+     * gesperrt - dann steht aber sichtbar da, WORAN sie gescheitert ist.
+     * Ein stiller Filter ist in diesem Projekt die teuerste Fehlerklasse.
+     *
+     * WARNUNG ZUR ERWARTUNG: im gemessenen 24-Stunden-Fenster (410 Zeilen)
+     * haette diese Klasse NULL mal gefeuert. Selbst Sonego faellt an der
+     * Frischepruefung, weil die Bridge zu dem Zeitpunkt stand. Der Wert
+     * liegt vorerst in der SICHTBARKEIT (man sieht, dass etwas Grosses da
+     * war und warum es gesperrt ist), nicht in der Meldung.
+     *
+     * Alle Schwellen stehen NUR hier. Der spaetere Bot bekommt sie als
+     * Konstanten mit Spiegel-Vermerk - zwei Fassungen derselben Logik sind
+     * eine dokumentierte Fehlerklasse dieses Projekts. */
+    gross: {
+      /* Aeltester der beiden Kurse. GEMESSEN: der Median der Kurs-Uhr
+       * liegt bei rund 26 Minuten, eine 15-Minuten-Grenze trifft also
+       * mehr als die Haelfte aller Zeilen. Genau das ist gewollt - eine
+       * grosse Chance auf einem halbstuendigen Kurs ist kein Fund. */
+      kursMaxS: 900,
+      /* Anpfiff muss auf BEIDEN Seiten fast auf die Minute stimmen.
+       * Gemessen am Pachuca-Fall: erste Elf gegen U21, 705 Minuten
+       * auseinander, 4,68 % Rendite. */
+      anpfiffAbstandS: 300,
+      /* Mindestens so viel Zeit muss noch bleiben. Wer 3 Minuten vor
+       * Anpfiff zwei Boersen bedienen soll, verliert eine Seite.
+       * Zusaetzlicher Grund: die Wache stempelt ab beginnt_am minus
+       * 5 Minuten. */
+      vorlaufMinS: 1200,
+      /* Unter diesem Gewinn lohnt der Aufwand nicht - und ein Cent-Gewinn
+       * bei zweistelliger Rendite ist fast immer ein duennes Buch. */
+      geldMin: 25,
+      /* Buchprobe des Gegenbuchs. Unter 1,00 ist das Buch in sich
+       * unstimmig (meist ein Kleber), ueber 1,10 ist es kein normaler
+       * Markt mehr. Sonego lag bei 1,0085.
+       * ACHTUNG: das ist buch_summe, NICHT beste_buch_summe - die liest
+       * orion_verlauf_urteil als Widerlegung. Nicht verwechseln. */
+      buchVon: 1.00,
+      buchBis: 1.10,
+      /* Nach Gebuehren muss genug uebrig bleiben, und beide Gebuehren-
+       * saetze muessen ECHT sein (keine geschaetzten). */
+      nettoMin: 4.0,
+      /* Harter Deckel nach oben. Darueber ist es kein Fund mehr, sondern
+       * ein Datenfehler - der 663er-Schwall vom 9.8. ging bis 184 %. */
+      deckel: 15.0,
+      /* Doppelte Bewaehrung. Eine grosse Zeile muss laenger stehen als
+       * eine normale, bevor man ihr glaubt. */
+      bewaehrungFaktor: 2
+    },
+
     /* BEWAEHRUNGSZEIT (14.8. frueh, siebte Chancen-Bedingung).
      *
      * 'Wenn eine Chance kommt, soll sie nicht falsch sein.' Gemessen: die

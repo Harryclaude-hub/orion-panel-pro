@@ -1403,6 +1403,122 @@
     return z;
   }
 
+  /* ---------- GROSSE CHANCE: das schaerfere Schloss (25.8.2026) ----------
+   *
+   * Karams Auftrag nach dem Sonego-Fall: eine Zeile ueber der Plausibili-
+   * taetsgrenze soll nicht mehr stumm verschwinden. Sie bleibt gesperrt —
+   * aber es steht sichtbar da, WORAN sie gescheitert ist.
+   *
+   * Diese Funktion aendert KEINE Zahl und KEINEN Reiter. Sie liest nur und
+   * gibt zurueck, welche der pruefbaren Bedingungen gerissen sind.
+   * Ersatzlos loeschbar: faellt sie weg, verschwindet nur die Marke.
+   *
+   * NICHT pruefbar an der einzelnen Zeile (Stufe 2 des Bauplans, dafuer
+   * braucht es alter_1_s/alter_2_s in orion_funde): das LIEFERALTER der
+   * Bridge zum Zeitpunkt des Fundes und der Zustand des Waechters. Solange
+   * die fehlen, sagt die Marke ausdruecklich "pruefbare Bedingungen" und
+   * behauptet nicht, alles geprueft zu haben. */
+  function grossPruefung(f) {
+    var K = (welt.KONFIG || {}).gross;
+    if (!K) return null;
+    var r = Number(f.rendite);
+    if (!isFinite(r)) return null;
+
+    var raus = [];
+    var jetzt = Date.now();
+    function alterS(iso) {
+      var t = Date.parse(iso);
+      return isFinite(t) ? Math.round((jetzt - t) / 1000) : null;
+    }
+    function min(s) { return Math.round(s / 60); }
+
+    /* 1. Harter Deckel nach oben — darueber ist es ein Datenfehler. */
+    if (r > K.deckel) {
+      raus.push('Rendite ' + r.toFixed(2) + ' % über der Obergrenze von ' +
+                K.deckel.toFixed(0) + ' %');
+    }
+    /* 2. Aeltester der beiden Kurse. */
+    var a1 = alterS(f.pm_preis_seit), a2 = alterS(f.bf_quote_seit);
+    var aMax = (a1 === null && a2 === null) ? null : Math.max(a1 || 0, a2 || 0);
+    if (aMax === null) {
+      raus.push('Kursalter unbekannt — keine Seite trägt eine Uhr');
+    } else if (aMax > K.kursMaxS) {
+      raus.push('ältester Kurs ' + min(aMax) + ' min alt (erlaubt ' +
+                min(K.kursMaxS) + ' min)');
+    }
+    /* 3. Anpfiff muss auf beiden Seiten stimmen. */
+    var t1 = Date.parse(f.beginnt_am), t2 = Date.parse(f.endet_am);
+    if (!isFinite(t1) || !isFinite(t2)) {
+      raus.push('Anpfiff auf mindestens einer Seite nicht belegt');
+    } else {
+      var abst = Math.abs(t1 - t2) / 1000;
+      if (abst > K.anpfiffAbstandS) {
+        raus.push('Anpfiff ' + min(abst) + ' min auseinander (erlaubt ' +
+                  min(K.anpfiffAbstandS) + ' min)');
+      }
+      /* 4. Genug Vorlauf, um beide Bücher zu bedienen. */
+      var vor = (Math.min(t1, t2) - jetzt) / 1000;
+      if (vor < K.vorlaufMinS) {
+        raus.push(vor < 0
+          ? 'Anpfiff war vor ' + min(-vor) + ' min'
+          : 'nur noch ' + min(vor) + ' min bis Anpfiff (nötig ' +
+            min(K.vorlaufMinS) + ' min)');
+      }
+    }
+    /* 5. Geld. Ein Cent-Gewinn bei zweistelliger Rendite ist ein dünnes Buch.
+     * FELDNAME: echter_gewinn, in js/daten.js aus max_einsatz mal Rendite
+     * gerechnet. Ein Feld f.gewinn gibt es NICHT — wer es liest, bekommt
+     * still undefined und hält jede Zeile für unbezifferbar. */
+    var gew = Number(f.echter_gewinn);
+    if (f.echter_gewinn === null || f.echter_gewinn === undefined || !isFinite(gew)) {
+      raus.push('Gewinn nicht bezifferbar — Buchtiefe unbekannt');
+    } else if (gew < K.geldMin) {
+      raus.push('Gewinn nur ' + gew.toFixed(2) + ' (nötig ' +
+                K.geldMin.toFixed(0) + ')');
+    }
+    if (f.zu_duenn) raus.push('Buch zu dünn');
+    /* 6. Buchprobe des Gegenbuchs. */
+    var bs = f.buch_summe;
+    if (bs === null || bs === undefined || !isFinite(Number(bs))) {
+      raus.push('Buchprobe nicht gemessen');
+    } else if (Number(bs) < K.buchVon || Number(bs) > K.buchBis) {
+      raus.push('Buchprobe ' + Number(bs).toFixed(4) + ' außerhalb ' +
+                K.buchVon.toFixed(2) + ' bis ' + K.buchBis.toFixed(2));
+    }
+    /* 7. Beide Gebührensätze echt, und nach Gebühren bleibt genug. */
+    if (f.pm_gebuehr_echt === false || f.bf_gebuehr_echt === false) {
+      raus.push('mindestens ein Gebührensatz ist geschätzt, nicht belegt');
+    }
+    var netto = renditeNachGebuehren(f);
+    if (netto === null) {
+      raus.push('Netto-Rendite nicht berechenbar');
+    } else if (netto < K.nettoMin) {
+      raus.push('nach Gebühren nur ' + netto.toFixed(2) + ' % (nötig ' +
+                K.nettoMin.toFixed(2) + ' %)');
+    }
+    /* 8. Doppelte Bewährung: eine große Zeile muss länger stehen. */
+    var K1 = welt.KONFIG || {};
+    var noetig = (K1.bewaehrungS || 25) * (K.bewaehrungFaktor || 2);
+    var stand = (Date.parse(f.zuletzt_gesehen) - Date.parse(f.zuerst_gesehen)) / 1000;
+    if (!isFinite(stand)) {
+      raus.push('Standzeit unbekannt');
+    } else if (stand < noetig) {
+      raus.push('erst ' + Math.round(stand) + ' s bewährt (nötig ' +
+                Math.round(noetig) + ' s)');
+    }
+    /* 9. Deckung und Paarung — dieselben Riegel wie bei jeder Chance. */
+    if (f.fehlpaarung) raus.push('Fehlpaarung: kein gemeinsames Wort');
+    if (!istGedeckt(f)) raus.push('nicht gedeckt — beide Seiten zahlen im selben Fall');
+    if (f.veraltet) raus.push('Kurse als veraltet gestempelt');
+    if (f.pruefung === 'falsch') raus.push('vom Prüfer als falsch nachgewiesen');
+    var Zg = welt.Zuordnung;
+    if (Zg && Zg.kennungGleich && f.bf_partie &&
+        !Zg.kennungGleich(f.titel, f.bf_partie)) {
+      raus.push('Mannschafts- oder Altersklasse stimmt nicht überein');
+    }
+    return { raus: raus, netto: netto, kursAlterS: aMax };
+  }
+
   /* ---------- WARNUNGEN ----------
    * Alles, was gegen die Zeile spricht, an EINER Stelle statt verstreut
    * zwischen den Chips. Ist nichts da, steht hier auch nichts. */
@@ -1427,6 +1543,28 @@
     if (K1.maxPlausibel && rMax > K1.maxPlausibel) {
       w.push('<span class="chip rot" title="Zwei Boersen mit echten Teilnehmern liegen nicht so weit auseinander. Gemessen: jede Zeile ueber 5 Prozent war bisher ein stehengebliebener Kurs oder eine Fehlpaarung - hier widersprechen sich die Buecher, und eines von beiden ist alt. Keine Chance, nicht setzen.">' +
         'UNPLAUSIBEL HOCH — Bücher widersprechen sich, eines klebt</span>');
+      /* ZWEITE MARKE (25.8.2026). Der rote Chip oben sagt nur "zu hoch".
+       * Genau das war Karams Verlust am 24.8.: 212 Minuten lang stand eine
+       * Zeile mit 7,30 % und 5196 $ Tiefe da, und nichts sagte ihm, dass
+       * sie gesund war. Ab jetzt steht der GRUND daneben — oder eben, dass
+       * kein Grund mehr uebrig ist. Reine Anzeige, sperrt nichts, gibt
+       * nichts frei. */
+      var gp = grossPruefung(f);
+      if (gp) {
+        if (!gp.raus.length) {
+          w.push('<span class="chip gross-treffer" title="Diese Zeile liegt über der Plausibilitätsgrenze und hat trotzdem JEDE prüfbare Bedingung bestanden: Kursalter, Anpfiff auf beiden Seiten, Vorlauf, Geld, Buchprobe, echte Gebührensätze, Netto-Rendite, doppelte Bewährung, Deckung, Paarung. NICHT geprüft ist das Lieferalter der Bridge zum Zeitpunkt des Fundes — das steht noch nicht in der Zeile. Bis dahin ist das eine SICHTBARKEITS-Marke, keine Freigabe: prüfe beide Bücher selbst, bevor Du setzt.">' +
+            'GROSSE CHANCE? alle prüfbaren Bedingungen erfüllt' +
+            (gp.netto === null ? '' : ' — netto ' + gp.netto.toFixed(2) + ' %') +
+            '</span>');
+        } else {
+          w.push('<span class="chip grau" title="Warum diese hohe Zeile keine große Chance ist — alle gerissenen Bedingungen:&#10;· ' +
+            txt(gp.raus.join('&#10;· ')) +
+            '&#10;&#10;Ein stiller Filter ist in diesem Projekt die teuerste Fehlerklasse. Deshalb steht der Grund hier und nicht nirgends.">' +
+            'GROSSE CHANCE verfehlt an: ' + txt(gp.raus[0]) +
+            (gp.raus.length > 1 ? ' (+' + (gp.raus.length - 1) + ' weitere)' : '') +
+            '</span>');
+        }
+      }
     }
     if (f.zu_duenn) {
       w.push('<span class="chip rot" title="Der beste Kurs im Orderbuch traegt fast kein Volumen. Seit dem 23.8. bleibt die Zeile trotzdem in ihrem Rendite-Reiter (Karams Aufteilung) - aber wer hier setzt, bekommt nur Cent-Betraege unter.">zu dünn — max. ' +
@@ -2757,6 +2895,11 @@
   welt.Anzeige = { zeichne: zeichne, stand: stand, dauer: dauer, zeitpunkt: zeitpunkt,
                    setzeWennAnders: setzeWennAnders, karte: karte, setzeKurs: setzeKurs,
                    absageBilanz: absageBilanz, istGedeckt: istGedeckt,
-                   buch1: buch1, buch2: buch2 };
+                   buch1: buch1, buch2: buch2,
+                   /* nach aussen gereicht, damit die Pruefung sie testen
+                    * kann und der spaetere Bot gegen DIESE Fassung
+                    * gespiegelt wird - zwei Fassungen derselben Logik sind
+                    * eine dokumentierte Fehlerklasse dieses Projekts. */
+                   grossPruefung: grossPruefung };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
