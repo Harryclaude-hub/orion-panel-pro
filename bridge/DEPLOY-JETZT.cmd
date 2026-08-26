@@ -60,23 +60,33 @@ set "TOKEN="
 del "%TEMP%\orion-meta-lauf.json" >nul 2>nul
 
 echo.
-if not "%CODE%"=="200" if not "%CODE%"=="201" (
-  echo   ============================================================
-  echo   FEHLGESCHLAGEN (HTTP %CODE%). Es hat sich NICHTS geaendert -
-  echo   der Scanner laeuft unveraendert auf dem alten Stand weiter.
-  echo.
-  echo   Der GRUND steht in: bridge\letzter-deploy-scanner.log
-  echo   HTTP 401 = Token falsch/abgelaufen: neuen holen, nochmal.
-  echo   Alles andere: Claude die Log-Datei lesen lassen.
-  echo   ============================================================
-  echo.
-  pause
-  exit /b 1
-)
+rem  ABSTURZFALLE, behoben am 26.8.2026: hier stand ein Klammerblock
+rem  "if ... ( ... )" und darin die Zeile "FEHLGESCHLAGEN (HTTP %CODE%)".
+rem  Die Klammer im Text hat den Block VORZEITIG geschlossen, cmd brach mit
+rem  einem Syntaxfehler ab und das Fenster flog sofort zu - genau in dem
+rem  Moment, in dem die Fehlermeldung haette erscheinen sollen. Karam sah
+rem  deshalb nur ein Fenster, das sich nach dem Enter schliesst.
+rem  Ab jetzt derselbe Weg wie in DEPLOY-MELDER.cmd: KEINE Klammerbloecke,
+rem  nur Spruenge. Damit kann das nicht wieder passieren.
+if "%CODE%"=="200" goto :geklappt
+if "%CODE%"=="201" goto :geklappt
+goto :schiefgegangen
 
+:geklappt
+
+echo   ============================================================
+echo   AUSROLLEN HAT GEKLAPPT ^(HTTP %CODE%^).
+echo   ============================================================
+echo.
 echo   [2/2] Trockenlauf FUSSBALL - rechnet alles, schreibt NICHTS.
 echo         Kommt eine Antwort mit ok true und pm_maerkte ueber 0,
 echo         laeuft der neue Stand.
+echo.
+echo   HINWEIS 26.8.2026: solange die Supabase-Stoerung laeuft
+echo   ^("JWT issued at future"^), antwortet der Trockenlauf mit
+echo   "Bereich fussball steht nicht im Register". Das ist NICHT
+echo   Dein Deploy - der ist oben schon durch. Es heisst nur, dass
+echo   die Funktion die Datenbank noch nicht lesen darf.
 echo.
 curl -s -X POST "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-lauf" -H "content-type: application/json" -d "{\"bereich\":\"fussball\",\"probe\":true}"
 echo.
@@ -90,3 +100,21 @@ echo     drei Punkte  ^>  Revoke token
 echo   ============================================================
 echo.
 pause
+exit /b 0
+
+:schiefgegangen
+echo   ============================================================
+echo   FEHLGESCHLAGEN ^(HTTP %CODE%^). Es hat sich NICHTS geaendert -
+echo   der Scanner laeuft unveraendert auf dem alten Stand weiter.
+echo   Es ist nichts kaputt.
+echo.
+echo   Der GRUND steht in dieser Datei:
+echo     bridge\letzter-deploy-scanner.log
+echo.
+echo   HTTP 401 = Token falsch oder abgelaufen. Neuen holen:
+echo     https://supabase.com/dashboard/account/tokens
+echo   Alles andere: Claude die Log-Datei lesen lassen.
+echo   ============================================================
+echo.
+pause
+exit /b 1
