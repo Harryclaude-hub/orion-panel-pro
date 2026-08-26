@@ -52,6 +52,18 @@ set /p TOKEN=  Token hier einfuegen (Rechtsklick fuegt ein) und Enter:
 
 if "%TOKEN%"=="" goto :kein_token
 
+rem  KONTROLLE, 26.8.2026: es gibt in diesem Projekt DREI Schluessel, die
+rem  leicht zu verwechseln sind, und einer davon lag beim ersten Versuch in
+rem  der Zwischenablage. Der Server antwortete dann mit
+rem      {"message":"JWT could not be decoded"}   ->  neunmal HTTP 401
+rem  Ohne diese Kontrolle sieht das aus wie "Token abgelaufen", und man holt
+rem  sich vergeblich einen neuen.
+echo %TOKEN%| findstr /b /c:"sbp_" >nul
+if errorlevel 1 goto :falscher_token
+
+echo.
+echo   Token erkannt: beginnt mit sbp_ - das ist der richtige.
+
 set "API=https://api.supabase.com/v1/projects/noexklrgtqveiclijdwp/functions/deploy"
 set "GUT=0"
 set "SCHLECHT=0"
@@ -104,6 +116,30 @@ echo.
 echo   HTTP 401 = Token falsch oder abgelaufen. Neuen holen:
 echo     https://supabase.com/dashboard/account/tokens
 echo   Alles andere: Claude die Log-Dateien lesen lassen.
+echo.
+pause
+exit /b 1
+
+:falscher_token
+set "TOKEN="
+echo.
+echo   ============================================================
+echo   DAS IST DER FALSCHE SCHLUESSEL. Es ist nichts passiert.
+echo   ============================================================
+echo.
+echo   Hier braucht es den AUSROLL-Token. Der beginnt mit  sbp_
+echo   und kommt von:
+echo     https://supabase.com/dashboard/account/tokens
+echo     Generate new token  ^>  Name: orion-deploy
+echo.
+echo   NICHT zu verwechseln mit:
+echo     sb_secret_......  = der DATENBANK-Schluessel. Der gehoert
+echo                         NICHT hierher, sondern als Geheimnis
+echo                         ORION_DB_KEY in die Edge Functions.
+echo     sb_publishable_.. = der oeffentliche Schluessel der Website.
+echo.
+echo   Was Du eingegeben hast, begann nicht mit sbp_.
+echo   ============================================================
 echo.
 pause
 exit /b 1
