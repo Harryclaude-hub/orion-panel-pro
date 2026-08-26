@@ -46,7 +46,31 @@ const WELT_SERIEN = [
 ];
 
 const URL_SUPA = Deno.env.get('SUPABASE_URL')!;
-const DIENST = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+/* DB-SCHLUESSEL, 26.8.2026 - Ausweg um eine Supabase-Stoerung herum.
+ *
+ * Seit dem 25.8. um 21:33 UTC wies die Datenbank die eigenen Edge-Funktionen
+ * ab: PostgREST antwortete auf den Dienstschluessel mit
+ *     "JWT issued at future"  ->  HTTP 401
+ * Damit stand ALLES: Scanner, Bridge-Annahme, beide Melder, Panel leer.
+ * Gemessen: 12 von 12 Aufrufen abgewiesen, nicht sprunghaft. Ein Neu-
+ * ausrollen half NICHT (am 26.8. mit HTTP 201 geprueft).
+ *
+ * Auf status.supabase.com steht dazu seit dem 14.8. die offene Meldung
+ * "401 errors due to JWT rejections".
+ *
+ * DER AUSWEG: die NEUEN Supabase-Schluessel (sb_secret_...) sind KEINE
+ * JWT. Sie laufen an der kaputten Pruefung vorbei. Gegenprobe am 26.8.:
+ * derselbe Aufruf mit dem neuen sb_publishable_-Schluessel kam mit
+ * HTTP 200 durch, waehrend jeder JWT abgewiesen wurde.
+ *
+ * ORION_DB_KEY wird als Funktions-Geheimnis hinterlegt. Fehlt es, faellt
+ * alles auf den alten Weg zurueck - diese Zeile ist also gefahrlos, egal
+ * ob das Geheimnis schon existiert. Ist die Stoerung behoben, kann
+ * ORION_DB_KEY einfach geloescht werden, dann greift wieder der alte Weg.
+ *
+ * SPIEGEL: dieselbe Zeile steht in allen neun Funktionen. */
+const DIENST = Deno.env.get('ORION_DB_KEY')
+  || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || '';
 
 const schlaf = (ms: number) => new Promise(r => setTimeout(r, ms));
 const zahl = (s: unknown): number | null => {
