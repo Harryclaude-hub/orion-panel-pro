@@ -19,3 +19,5 @@ bridge/bridge-lauf.log
 bridge/bridge-fehler.log
 bridge/orion-lauf.bundle.js
 bridge/notbetrieb*.log
+bridge/*.bundle.js
+bridge/melder.log

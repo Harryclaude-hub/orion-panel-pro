@@ -1,74 +1,85 @@
 # Orion Bridge 4.0, Build 27
 
-**Stand 26.08.2026.** Der Ordner wurde an diesem Tag aufgeraeumt: `ANLEITUNG.txt`
-und `BEFEHLE.txt` sind geloescht. Sie waren doppelt zu dieser Datei, und
-`BEFEHLE.txt` enthielt sogar noch den alten Deploy-Befehl ueber `npx supabase`,
-der auf diesem Laptop nie lief und einen halben Tag gekostet hat.
+**Stand 26.08.2026, Notbetrieb.**
 
-**Es gilt: was hier steht, gilt. Sonst nichts.**
+## Ein Doppelklick, alles laeuft
+
+    ORION-STARTEN.cmd
+
+Startet die Betfair-Bridge, den Scanner und die zwei Telegram-Bots. Fragt die
+zwei Telegram-Schluessel **einmal** ab und merkt sie sich danach in
+`bridge-config.json`. Nie wieder tippen.
+
+## Warum alles hier laeuft
+
+Seit dem 25.08. um 21:33 UTC kommen die Supabase-**Server**-Funktionen nicht
+mehr an ihre eigene Datenbank. PostgREST antwortet auf den Dienstschluessel mit
+`JWT issued at future`, also HTTP 401. Gemessen: 12 von 12 Aufrufen, dauerhaft.
+Auf status.supabase.com steht dazu seit dem 14.08. die offene Meldung
+"401 errors due to JWT rejections".
+
+**Neuen Code hochzuladen nuetzt nichts**, solange der Server die Datenbank nicht
+lesen darf. Am 26.08. wurde erfolgreich ausgerollt (HTTP 201), danach kam
+unveraendert 401.
+
+Deshalb laeuft alles ersatzweise hier auf dem Laptop, mit **genau demselben
+Code**: die `.bundle.js`-Dateien sind Wort fuer Wort die Server-Funktionen, nur
+mit esbuild fuer Node gebuendelt. Es gibt **keine zweite Fassung der Logik**.
+
+Gelesen wird mit dem oeffentlichen Schluessel (`sb_publishable_...`), der KEIN
+JWT ist und deshalb an der kaputten Pruefung vorbeilaeuft. Geschrieben wird
+ueber drei token-gesicherte Tueren in der Datenbank:
+`orion_bridge_annehmen()`, `orion_lauf_schreiben()`, `orion_melder()`.
+Jede prueft den Bridge-Token selbst. Ohne ihn schreibt keine etwas.
+
+**Ist die Stoerung vorbei:** die drei kleinen Fenster schliessen. Die
+pg_cron-Takte rufen die Server-Funktionen weiter jede Minute, die uebernehmen
+von selbst. Danach koennen die drei Tueren in der Datenbank ersatzlos geloescht
+werden.
+
+## Was hier liegt
 
 | Datei | Wofuer |
 |---|---|
-| **`Orion-Bridge-STARTEN.cmd`** | **Doppelklick, das ist alles.** Schaltet Standby ab, prueft, startet, richtet den Waechter ein. Ist zugleich selbst der Waechter |
-| `Orion-Bridge-Pro-27.js` | das Programm (Node) |
-| `bridge-config.json` | **deine Zugangsdaten**: Benutzername, Passwort, App-Key, Bridge-Token |
-| `Orion-Waechter-Leise.vbs` | wird vom Starter selbst erzeugt, startet den Waechter ohne Fenster |
+| **`ORION-STARTEN.cmd`** | **Doppelklick, das ist alles** |
+| `Orion-Bridge-Pro-27.js` | die Betfair-Bridge |
+| `orion-lokal.js` | der Scanner |
+| `orion-melder-lokal.js` | die zwei Telegram-Bots |
+| `orion-lauf.bundle.js` | Scanner-Servercode, fuer Node gebuendelt |
+| `melder-chance.bundle.js` | Chancen-Bot, fuer Node gebuendelt |
+| `melder-knapp.bundle.js` | Knapp-Bot, fuer Node gebuendelt |
+| `bridge-config.json` | **deine Zugangsdaten**, nie ins Repo |
+| `Orion-Bridge-STARTEN.cmd` | alter Starter, nur fuer die Bridge allein. Der Aufgabenplaner ruft ihn beim Anmelden auf |
+| `Orion-Waechter-Leise.vbs` | wird vom alten Starter erzeugt |
 | `README.md` | diese Anleitung |
-| `bridge-lauf.log` | **NEU 26.08.:** was die Bridge sagt. Vorher ging das ins Nichts, deshalb sah man nur "fetch failed" und nie den echten Grund |
-| `bridge-fehler.log` | Fehlerkanal, normalerweise leer |
-| `DEPLOY-ALLES.cmd` | rollt alle neun Server-Funktionen aus |
-| `DEPLOY-JETZT.cmd` | rollt nur den Scanner aus |
-| `DEPLOY-MELDER.cmd` | rollt nur die zwei Telegram-Bots aus |
+| `bridge-lauf.log` | was die Bridge sagt |
+| `notbetrieb.log` | was der Scanner sagt |
+| `melder.log` | was die Telegram-Bots sagen |
 
-Die drei `DEPLOY-*.cmd` sind **nur Weichen**. Der echte Inhalt liegt im
-Repo-Ordner unter `orion-panel-pro\bridge\`. Aenderungen NUR dort, sonst
-entstehen wieder zwei Fassungen, die auseinanderlaufen.
+**Die Protokolle sind neu seit dem 26.08.** Vorher gingen diese Zeilen ins
+Nichts, und im Fenster stand nur "fetch failed" ohne den echten Grund. Daran
+ist ein halber Tag verlorengegangen.
 
-**Die drei Schluessel, die man leicht verwechselt:**
+## Was im Notbetrieb NICHT geht
+
+**Kalshi und Smarkets bleiben still.** Ihre Sammler sind eigene
+Server-Funktionen und genauso tot, ihre Schnappschuesse ueber 20 Stunden alt.
+Die Frischesperren halten sie deshalb richtigerweise zurueck. Es entstehen
+**Polymarket-gegen-Betfair-Paare**, also genau die Paarung des Sonego-Falls
+vom 24.08.
+
+## Die drei Schluessel, die man leicht verwechselt
 
 | Schluessel | wofuer | wohin |
 |---|---|---|
-| `sbp_...` | Ausrollen | ins schwarze Fenster der DEPLOY-Dateien |
+| `sbp_...` | Code ausrollen | ins Fenster der DEPLOY-Dateien (liegen im Repo) |
 | `sb_secret_...` | Datenbank-Vollzugriff | als Geheimnis `ORION_DB_KEY` bei Supabase |
 | `sb_publishable_...` | oeffentlich, Website | steht schon im Code, kein Geheimnis |
+| `brg_...` | Bridge und Notbetrieb | steht in `bridge-config.json` |
+| `1234:AAE...` | Telegram | fragt `ORION-STARTEN.cmd` einmal ab |
 
 ---
 
-## NOTWEG, eingebaut am 26.08.2026
-
-Seit dem 25.08. um 21:33 UTC weist die Supabase-Datenbank ihre **eigenen**
-Funktionen ab. PostgREST antwortet auf den Dienstschluessel mit
-`JWT issued at future`, also HTTP 401. Auf status.supabase.com steht dazu
-seit dem 14.08. die offene Meldung "401 errors due to JWT rejections".
-
-**Fuer die Bridge hiess das:** sie meldet sich bei Betfair an, holt die
-Sportkarte, holt Kurse, und scheitert erst beim Hochladen mit
-"Token unbekannt oder Konto gesperrt". Der Token ist in Wirklichkeit
-gueltig, die Gegenstelle kann ihn nur nicht nachschlagen.
-
-**Der Ausweg:** die neuen Supabase-Schluessel (`sb_publishable_...`) sind
-KEINE JWT und laufen an der kaputten Pruefung vorbei. Die Bridge liefert
-deshalb ersatzweise direkt an die Datenbankfunktion
-`orion_bridge_annehmen()`, die den Bridge-Token selbst prueft
-(SECURITY DEFINER, gleiche Regel wie `wer()` in bf-bridge).
-
-**Wichtig:**
-
-* Der **normale Weg wird immer zuerst versucht.** Sobald Supabase den Fehler
-  behoben hat, laeuft alles wieder wie vorher, ganz von selbst. Im Protokoll
-  steht dann "Der normale Weg geht wieder."
-* Der Notweg **ueberschreibt nie mit leeren Daten.** Kommen keine Maerkte,
-  bleibt die letzte gute Aufnahme stehen. Das ist sogar besser als der
-  normale Weg, der `updated_at` bedingungslos setzt (Fehlerklasse L5).
-* Der publishable-Schluessel im Programm ist **kein Geheimnis.** Er steht
-  genauso im Panel und ist im Browser jedes Besuchers lesbar. Ohne gueltigen
-  Bridge-Token schreibt er nichts. Gegengeprueft am 26.08.: falscher Token
-  abgewiesen, leere Maerkte abgewiesen, fehlende Maerkte abgewiesen.
-
-Ist die Stoerung vorbei, kann `orion_bridge_annehmen()` in der Datenbank
-ersatzlos geloescht und der Notweg-Block aus dem Programm entfernt werden.
-
----
 
 
 ## Was das Programm tut

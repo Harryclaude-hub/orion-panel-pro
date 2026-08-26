@@ -175,6 +175,87 @@ function meldung(f: Record<string, unknown>, geld: (usd: unknown) => string, mit
   return zeilen.join('\n');
 }
 
+/* GROSSE CHANCE: eine eigene Nachrichtenform (26.8.2026).
+ *
+ * Karams Vorgabe: sie soll NICHT aussehen wie eine normale Meldung. Man
+ * muss sie am Handy erkennen, ohne sie zu lesen.
+ *
+ * Bewusst OHNE Ausrufezeichen-Gewitter und ohne Emoji-Kette. Sie faellt
+ * durch AUFBAU und ZAHLEN auf. Eine Klasse, die sich selbst anschreit,
+ * wird nach dem dritten Fehlalarm ignoriert - und dann ist sie wertlos.
+ *
+ * Der Quotenabstand steht gross drin, weil genau der die Riesenchance
+ * ausmacht: zwei Boersen, die fuer denselben Ausgang weit auseinander
+ * liegen. Beim Sonego-Fall waren es 6,8 Punkte. */
+function meldungGross(f: Record<string, unknown>, geld: (usd: unknown) => string, mitLinks: boolean): string {
+  const b1 = String(f.buch_1 ?? 'polymarket'), b2 = String(f.buch ?? 'betfair');
+  const n1 = BUCHNAME[b1] ?? b1, n2 = BUCHNAME[b2] ?? b2;
+  const p1 = PUNKT[b1] ?? '⚪', p2 = PUNKT[b2] ?? '⚪';
+  const e1 = Number(f.einsatz_1), e2 = Number(f.einsatz_2), aus = Number(f.auszahlung);
+  const roh = Number(f.rendite), netto = Number(f.rendite_netto);
+  const tiefe = Number(f.max_einsatz), gewinn = Number(f.max_gewinn);
+
+  /* Der Abstand in Prozentpunkten: was sagt Buch 1, was sagt Buch 2 fuer
+   * DENSELBEN Ausgang. Anteilspreis ist schon eine Wahrscheinlichkeit,
+   * eine Quote wird umgerechnet. */
+  function alsProzent(buch: string, wert: number): number | null {
+    if (!isFinite(wert) || wert <= 0) return null;
+    const boerse = buch === 'betfair' || buch === 'smarkets';
+    if (boerse) return wert > 1 ? (100 / wert) : null;
+    return wert < 1 ? wert * 100 : null;
+  }
+  const w1 = alsProzent(b1, Number(f.pm_preis));
+  const w2 = alsProzent(b2, Number(f.bf_quote));
+  const abstand = (w1 !== null && w2 !== null) ? Math.abs(w1 - w2) : null;
+
+  const beitrag = PANEL + 'beitrag.html?fund=' + encodeURIComponent(String(f.schluessel ?? ''));
+  const bis = Date.parse(String(f.beginnt_am));
+  const minuten = isFinite(bis) ? Math.round((bis - Date.now()) / 60000) : null;
+
+  const basis = isFinite(tiefe) && tiefe > 0 ? Math.min(1000, tiefe) : 100;
+  const skala = basis / 100;
+
+  const zeilen = [
+    '━━━━━━━━━━━━━━━━━━━━━━',
+    '   <b>GROSSE CHANCE</b>',
+    '   verschärft geprüft',
+    '━━━━━━━━━━━━━━━━━━━━━━',
+    '',
+    `<b>${isFinite(gewinn) ? geld(gewinn) : '?'}</b> holbar bei <b>${isFinite(tiefe) ? geld(tiefe) : '?'}</b> Buchtiefe`,
+    `<b>+${roh.toFixed(2)} %</b> vor Gebühren · nach Gebühren <b>${netto >= 0 ? '+' : ''}${netto.toFixed(2)} %</b>`,
+    '',
+    `<b>${esc(f.titel)}</b>`,
+    (minuten !== null
+      ? (minuten > 0 ? `Anpfiff in <b>${minuten} Minuten</b>` : 'Anpfiff steht unmittelbar bevor')
+      : ''),
+    '',
+    (abstand !== null
+      ? [`<b>QUOTENABSTAND ${abstand.toFixed(1)} PUNKTE</b>`,
+         `${p1} ${n1}: ${w1!.toFixed(1)} %`,
+         `${p2} ${n2}: ${w2!.toFixed(1)} %`,
+         'für denselben Ausgang. So weit liegen zwei Börsen normalerweise nicht.'].join('\n')
+      : ''),
+    '',
+    (isFinite(e1) && isFinite(e2) && isFinite(aus)
+      ? [`<b>SO SETZT DU</b> — ${basis.toFixed(2)} $ gesamt`,
+         `1⃣ ${n1} (<b>${e1.toFixed(1)} %</b>): ${anweisung(b1, f.pm_seite, Number(f.pm_preis), e1 * skala)}`,
+         `2⃣ ${n2} (<b>${e2.toFixed(1)} %</b>): ${anweisung(b2, f.bf_seite, Number(f.bf_quote), e2 * skala)}`,
+         `→ beide Ausgänge zahlen <b>${(aus * skala).toFixed(2)} $</b>: <b>+${((aus - 100) * skala).toFixed(2)} $</b> sicher, vor Gebühren`].join('\n')
+      : ''),
+    '',
+    '<b>WARUM SIE DURCHKOMMT</b>',
+    `Buchprobe ${f.buch_summe === null || f.buch_summe === undefined ? '?' : Number(f.buch_summe).toFixed(4)} · ` +
+      `beide Gebührensätze belegt · Anpfiff beidseitig gleich · über 4 Minuten bestätigt`,
+    '',
+    '<b>BEVOR DU SETZT</b>',
+    '1. Beide Bücher öffnen und prüfen, ob die Quote noch steht.',
+    '2. Der Betrag ist groß. Erst die kleinere Seite, dann die andere.',
+    (mitLinks ? `\n📋 <a href="${beitrag}">Ganze Karte öffnen</a>` : '\n📋 Rechnung und Fristen stehen im Panel.')
+  ].filter((z) => z !== '');
+
+  return zeilen.join('\n');
+}
+
 async function sende(chatId: string, text: string) {
   const r = await fetch(`https://api.telegram.org/bot${TOKEN}/sendMessage`, {
     method: 'POST', headers: { 'content-type': 'application/json' },
@@ -355,6 +436,75 @@ Deno.serve(async (req) => {
         '\u{1F4E1} <b>FUNKPROBE — KEIN ECHTER FUND</b>\nMuster zum Pruefen der Zustellung. Die Zahlen sind erfunden.\n\n' +
         meldung(muster, geld, mitLinks));
       return new Response(JSON.stringify({ ok: true, funkprobe: bericht, empfaenger: empfaenger.length }, null, 1), { headers: kopf });
+    }
+
+    /* ======================================================================
+     * GROSSE CHANCE (26.8.2026, Karams Auftrag)
+     * ======================================================================
+     * Karam: "Wenn eine Riesenchance kommt mit ueber fuenf Prozent, ueber
+     * zehn Prozent und so richtig fett, soll einfach eine Extranachricht
+     * bei Telegram kommen. Gleicher Bot, einfach eine andere Nachricht."
+     *
+     * Anlass war der 24.8.: pm>bf:3780822, Sonego gegen Kopriva, 7,30 %
+     * roh und 5196 $ handelbare Tiefe, 212 Minuten lang sichtbar - und NIE
+     * gemeldet. Nicht weil die Zeile falsch war, sondern weil sie ueber dem
+     * Plausibilitaetsdeckel von 6,5 % lag. Der Deckel filtert nach HOEHE;
+     * gemeint war immer BEWEISBARKEIT.
+     *
+     * Deshalb: der Deckel des normalen Bandes bleibt unangetastet. Daneben
+     * steht diese zweite Tuer mit einem SCHAERFEREN Schloss. Eine Zeile
+     * darueber wird nur dann gefunkt, wenn sie ZUSAETZLICH jede der
+     * folgenden Bedingungen besteht. Die Zahlen sind dieselben wie in
+     * js/konfig.js unter KONFIG.gross - wer eine aendert, muss beide
+     * Stellen aendern.
+     *
+     * OBERGRENZE 15 %: darueber ist es kein Fund mehr, sondern ein
+     * Datenfehler. Der Schwall vom 9.8. ging bis 184 %, alles falsch.
+     * Karam hat ausdruecklich nach "zwanzig, fuenfzig Prozent" gefragt -
+     * so etwas gab es in den Daten noch nie als echten Fund, und es waere
+     * unredlich, ihm das als Riesenchance zu verkaufen.
+     * ====================================================================== */
+    const grossVor = new Date(Date.now() - 240_000).toISOString();   // doppelte Bewaehrung
+    const grossAb  = new Date(Date.now() + 1_200_000).toISOString();  // 20 min Vorlauf
+    const qGross = 'orion_funde?status=eq.live&telegram_gemeldet=eq.false' +
+      '&pruefung=is.null' +
+      '&rendite=gt.6.5&rendite=lte.15' +
+      '&rendite_netto=gte.4' +
+      '&buch_summe=gte.1&buch_summe=lte.1.1' +
+      '&max_gewinn=gte.25' +
+      '&pm_gebuehr_echt=is.true&bf_gebuehr_echt=is.true' +
+      '&zuerst_gesehen=lte.' + grossVor +
+      '&beginnt_am=gte.' + grossAb +
+      '&select=schluessel,nr,titel,mannschaft,rendite,rendite_netto,max_einsatz,max_gewinn,buch,buch_1,' +
+      'pm_seite,pm_preis,pm_link,bf_seite,bf_quote,bf_name,bf_link,einsatz_1,einsatz_2,auszahlung,' +
+      'buch_summe,beginnt_am,endet_am' +
+      '&order=max_gewinn.desc.nullslast,rendite.desc' +
+      '&limit=3';
+    let grossKand: Record<string, unknown>[] = [];
+    try {
+      const g = await (await db(qGross)).json();
+      if (Array.isArray(g)) {
+        /* Letzte Pruefung, die PostgREST nicht ausdruecken kann: der Anpfiff
+         * muss auf BEIDEN Seiten fast auf die Minute stimmen. Gemessen am
+         * Pachuca-Fall: erste Elf gegen U21, 705 Minuten auseinander. */
+        grossKand = g.filter((f: Record<string, unknown>) => {
+          const t1 = Date.parse(String(f.beginnt_am));
+          const t2 = Date.parse(String(f.endet_am));
+          if (!isFinite(t1) || !isFinite(t2)) return false;
+          return Math.abs(t1 - t2) <= 300_000;
+        });
+      }
+    } catch { /* eine grosse Chance darf den normalen Lauf nie reissen */ }
+
+    if (grossKand.length) {
+      const berichtG = await sendeAnAlle(empfaenger, (mitLinks) =>
+        grossKand.map((f) => meldungGross(f, geld, mitLinks)).join('\n\n────────\n\n'));
+      if (berichtG.zugestellt > 0) {
+        const sG = grossKand.map((f) => '"' + String(f.schluessel).replace(/"/g, '') + '"').join(',');
+        await db('orion_funde?schluessel=in.(' + encodeURIComponent(sG) + ')', {
+          method: 'PATCH', body: JSON.stringify({ telegram_gemeldet: true })
+        });
+      }
     }
 
     const bewaehrtVor = new Date(Date.now() - 120_000).toISOString();
