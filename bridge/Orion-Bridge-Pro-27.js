@@ -553,17 +553,88 @@ function bauen() {
   return raus.slice(0, O.uploadLimit);
 }
 
+/* NOTWEG, 26.8.2026.
+ *
+ * Seit dem 25.8. 21:33 UTC weist die Supabase-Datenbank ihre EIGENEN
+ * Funktionen ab: PostgREST antwortet dem Dienstschluessel mit
+ *     "JWT issued at future"  ->  HTTP 401
+ * bf-bridge kann deshalb den Bridge-Token gar nicht mehr nachschlagen und
+ * antwortet "Token unbekannt oder Konto gesperrt" - obwohl der Token in der
+ * Datenbank gueltig und nicht gesperrt ist. Die Bridge lief einwandfrei und
+ * scheiterte nur am letzten Schritt. Gemessen 12 von 12 Aufrufen abgewiesen.
+ * Auf status.supabase.com steht dazu seit dem 14.8. die offene Meldung
+ * "401 errors due to JWT rejections". Neu ausrollen half NICHT.
+ *
+ * DER AUSWEG: die neuen Supabase-Schluessel (sb_publishable_...) sind KEINE
+ * JWT und laufen an der kaputten Pruefung vorbei. Die Bridge liefert deshalb
+ * ersatzweise DIREKT an die Datenbankfunktion orion_bridge_annehmen(), die
+ * den Token selbst prueft (SECURITY DEFINER, gleiche Regel wie bf-bridge).
+ *
+ * WICHTIG: der NORMALE Weg wird IMMER ZUERST versucht. Sobald Supabase den
+ * Fehler behoben hat, laeuft alles wieder wie vorher, ganz von selbst. Der
+ * Notweg ist nur das Netz darunter.
+ *
+ * Der publishable-Schluessel ist oeffentlich - er steht genauso im Panel
+ * (js/konfig.js) und ist im Browser jedes Besuchers lesbar. Er ist KEIN
+ * Geheimnis und gibt fuer sich allein keinerlei Schreibrecht: ohne
+ * gueltigen Bridge-Token schreibt orion_bridge_annehmen() nichts. */
+const NOTWEG_URL = String(CFG.bridgeUrl || '')
+  .replace(/\/functions\/v1\/bf-bridge.*$/, '/rest/v1/rpc/orion_bridge_annehmen');
+const NOTWEG_KEY = 'sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M';
+let notwegGemeldet = false;
+
+async function ueberNotweg(markets, stats, grundVorher) {
+  const r = await fetch(NOTWEG_URL, {
+    method: 'POST',
+    headers: {
+      'content-type': 'application/json',
+      apikey: NOTWEG_KEY,
+      authorization: 'Bearer ' + NOTWEG_KEY
+    },
+    body: JSON.stringify({
+      p_token: CFG.bridgeToken,
+      p_markets: markets,
+      p_stats: stats
+    })
+  });
+  const j = await r.json().catch(() => ({}));
+  if (!j || j.ok !== true) {
+    throw new Error('Upload fehlgeschlagen (normal: ' + grundVorher +
+                    ' / Notweg: ' + ((j && j.error) || r.status) + ')');
+  }
+  if (!notwegGemeldet) {
+    notwegGemeldet = true;
+    log('HINWEIS: der normale Weg ueber bf-bridge antwortet nicht (' + grundVorher + ').');
+    log('         Die Bridge liefert ab jetzt ueber den NOTWEG direkt an die');
+    log('         Datenbank. Sobald der normale Weg wieder geht, wechselt sie');
+    log('         von selbst zurueck. Es geht nichts verloren.');
+  }
+  return j;
+}
+
 async function hochladen(markets, stats) {
   const data = markets.filter(m => m.r.length === 2)
                       .map(m => ({ key: m.k, o1: m.r[0].b, o2: m.r[1].b, link: m.link }));
-  const r = await fetch(CFG.bridgeUrl, {
-    method: 'POST',
-    headers: { 'content-type': 'application/json', 'x-bridge-token': CFG.bridgeToken },
-    body: JSON.stringify({ data, v: 2, markets, arbs: [], opps: [], stats })
-  });
-  const j = await r.json().catch(() => ({}));
-  if (!j.ok) throw new Error('Upload fehlgeschlagen: ' + (j.error || r.status));
-  return j;
+  let grund = null;
+  try {
+    const r = await fetch(CFG.bridgeUrl, {
+      method: 'POST',
+      headers: { 'content-type': 'application/json', 'x-bridge-token': CFG.bridgeToken },
+      body: JSON.stringify({ data, v: 2, markets, arbs: [], opps: [], stats })
+    });
+    const j = await r.json().catch(() => ({}));
+    if (j && j.ok) {
+      if (notwegGemeldet) {
+        notwegGemeldet = false;
+        log('Der normale Weg geht wieder. Notweg nicht mehr noetig.');
+      }
+      return j;
+    }
+    grund = (j && j.error) || String(r.status);
+  } catch (e) {
+    grund = String((e && e.message) || e);
+  }
+  return await ueberNotweg(markets, stats, grund);
 }
 
 /* ---------- Der Durchlauf ---------- */

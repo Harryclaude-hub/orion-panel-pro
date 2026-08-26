@@ -15,3 +15,5 @@ bridge/*.exe
 bridge/*.blob
 bridge/letzter-deploy-*.log
 bridge/werkzeug/
+bridge/bridge-lauf.log
+bridge/bridge-fehler.log

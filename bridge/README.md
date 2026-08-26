@@ -1,17 +1,75 @@
-# Orion Bridge 4.0 — Build 27 (19.08.2026)
+# Orion Bridge 4.0, Build 27
 
-**Vier Dateien, mehr braucht es nicht.** Früher waren es acht — mit zwei
-Startern, zwei Anleitungen und einer Vorlage neben der echten Zugangsdatei.
-Alles Doppelte ist zusammengefasst.
+**Stand 26.08.2026.** Der Ordner wurde an diesem Tag aufgeraeumt: `ANLEITUNG.txt`
+und `BEFEHLE.txt` sind geloescht. Sie waren doppelt zu dieser Datei, und
+`BEFEHLE.txt` enthielt sogar noch den alten Deploy-Befehl ueber `npx supabase`,
+der auf diesem Laptop nie lief und einen halben Tag gekostet hat.
 
-| Datei | Wofür |
+**Es gilt: was hier steht, gilt. Sonst nichts.**
+
+| Datei | Wofuer |
 |---|---|
-| **`Orion-Bridge-STARTEN.cmd`** | **Doppelklick — das ist alles.** Schaltet Standby ab, prüft, startet, richtet den Wächter ein. Ist zugleich selbst der Wächter |
-| `Orion-Bridge-Pro-27.js` | das Programm (Node, ~500 Zeilen) |
-| `bridge-config.json` | **deine Zugangsdaten** — Benutzername, Passwort, App-Key, Token |
+| **`Orion-Bridge-STARTEN.cmd`** | **Doppelklick, das ist alles.** Schaltet Standby ab, prueft, startet, richtet den Waechter ein. Ist zugleich selbst der Waechter |
+| `Orion-Bridge-Pro-27.js` | das Programm (Node) |
+| `bridge-config.json` | **deine Zugangsdaten**: Benutzername, Passwort, App-Key, Bridge-Token |
+| `Orion-Waechter-Leise.vbs` | wird vom Starter selbst erzeugt, startet den Waechter ohne Fenster |
 | `README.md` | diese Anleitung |
+| `bridge-lauf.log` | **NEU 26.08.:** was die Bridge sagt. Vorher ging das ins Nichts, deshalb sah man nur "fetch failed" und nie den echten Grund |
+| `bridge-fehler.log` | Fehlerkanal, normalerweise leer |
+| `DEPLOY-ALLES.cmd` | rollt alle neun Server-Funktionen aus |
+| `DEPLOY-JETZT.cmd` | rollt nur den Scanner aus |
+| `DEPLOY-MELDER.cmd` | rollt nur die zwei Telegram-Bots aus |
+
+Die drei `DEPLOY-*.cmd` sind **nur Weichen**. Der echte Inhalt liegt im
+Repo-Ordner unter `orion-panel-pro\bridge\`. Aenderungen NUR dort, sonst
+entstehen wieder zwei Fassungen, die auseinanderlaufen.
+
+**Die drei Schluessel, die man leicht verwechselt:**
+
+| Schluessel | wofuer | wohin |
+|---|---|---|
+| `sbp_...` | Ausrollen | ins schwarze Fenster der DEPLOY-Dateien |
+| `sb_secret_...` | Datenbank-Vollzugriff | als Geheimnis `ORION_DB_KEY` bei Supabase |
+| `sb_publishable_...` | oeffentlich, Website | steht schon im Code, kein Geheimnis |
 
 ---
+
+## NOTWEG, eingebaut am 26.08.2026
+
+Seit dem 25.08. um 21:33 UTC weist die Supabase-Datenbank ihre **eigenen**
+Funktionen ab. PostgREST antwortet auf den Dienstschluessel mit
+`JWT issued at future`, also HTTP 401. Auf status.supabase.com steht dazu
+seit dem 14.08. die offene Meldung "401 errors due to JWT rejections".
+
+**Fuer die Bridge hiess das:** sie meldet sich bei Betfair an, holt die
+Sportkarte, holt Kurse, und scheitert erst beim Hochladen mit
+"Token unbekannt oder Konto gesperrt". Der Token ist in Wirklichkeit
+gueltig, die Gegenstelle kann ihn nur nicht nachschlagen.
+
+**Der Ausweg:** die neuen Supabase-Schluessel (`sb_publishable_...`) sind
+KEINE JWT und laufen an der kaputten Pruefung vorbei. Die Bridge liefert
+deshalb ersatzweise direkt an die Datenbankfunktion
+`orion_bridge_annehmen()`, die den Bridge-Token selbst prueft
+(SECURITY DEFINER, gleiche Regel wie `wer()` in bf-bridge).
+
+**Wichtig:**
+
+* Der **normale Weg wird immer zuerst versucht.** Sobald Supabase den Fehler
+  behoben hat, laeuft alles wieder wie vorher, ganz von selbst. Im Protokoll
+  steht dann "Der normale Weg geht wieder."
+* Der Notweg **ueberschreibt nie mit leeren Daten.** Kommen keine Maerkte,
+  bleibt die letzte gute Aufnahme stehen. Das ist sogar besser als der
+  normale Weg, der `updated_at` bedingungslos setzt (Fehlerklasse L5).
+* Der publishable-Schluessel im Programm ist **kein Geheimnis.** Er steht
+  genauso im Panel und ist im Browser jedes Besuchers lesbar. Ohne gueltigen
+  Bridge-Token schreibt er nichts. Gegengeprueft am 26.08.: falscher Token
+  abgewiesen, leere Maerkte abgewiesen, fehlende Maerkte abgewiesen.
+
+Ist die Stoerung vorbei, kann `orion_bridge_annehmen()` in der Datenbank
+ersatzlos geloescht und der Notweg-Block aus dem Programm entfernt werden.
+
+---
+
 
 ## Was das Programm tut
 
@@ -208,3 +266,51 @@ Drei teuer bezahlte Lehren:
   zweimal Escapes zerlegt (`\s` → `s`).
 - **`wmic` gibt es auf Windows 11 nicht mehr.** Prozessprüfungen über
   PowerShell (`Get-CimInstance Win32_Process`).
+
+---
+
+## HARTE REGELN, nie brechen
+
+Zusammengefasst am 26.08.2026 aus `UEBERGABE-BRIDGE.md`, die danach geloescht
+wurde. Der volle Wortlaut steht fuer immer in der Git-Historie.
+
+1. **Das Upload-Format ist fest.** Je Markt die Felder `k, r, mt, ev, st, ip,
+   sz, et, link`. Der Server erwartet exakt das. Endpunkt und
+   Supabase-Projekt niemals umbenennen.
+
+2. **`bridge-config.json` bleibt kompatibel.** Die Zugangsdatei wird
+   weiterverwendet, nie neu ausgefuellt, **nie ins Repo eingecheckt.**
+
+3. **Der Aenderungsweg:** Datei aendern, `node --check`, dann die Bridge neu
+   starten.
+   **ACHTUNG, Lehre vom 17.08.:** `schtasks /end` beendet die Bridge NICHT
+   zuverlaessig. Die Aufgabe startet sie ueber `cmd /c start` abgekoppelt, und
+   am 17.08. lief sie nach `/end` einfach weiter, mit zwei Bridges parallel.
+   Deshalb nach jedem Stoppen **nachmessen**, ob der Prozess wirklich tot ist,
+   und in dieser Reihenfolge beenden: zuerst die cmd-Schleife, dann node.
+   Sonst startet die Schleife nach 15 Sekunden neu.
+   **Lehre vom 26.08.:** die Sperrdatei liegt in
+   `%LOCALAPPDATA%\orion-bridge.lock` und enthaelt `PID|Ordner`. Wer den
+   Prozess hart abschiesst, muss sie mit entfernen, sonst haelt die naechste
+   Bridge sie fuer belegt.
+
+4. **Nie mit Bash-Heredoc voller Backslashes in die Datei schreiben.** Das hat
+   Escapes schon zweimal zerlegt (`\s` wurde zu `s`). Stattdessen ein
+   Python- oder Node-Skript mit sauberen Ankern benutzen.
+
+5. **Pruefen, ob sie laeuft:**
+   `select now()-updated_at, stats from bridge_odds where id=1;`
+   Das Alter muss unter einer Minute liegen, `stats.bridge` muss `4.0` sein.
+   Seit 26.08. gibt es zusaetzlich `bridge-lauf.log` im Ordner, dort steht im
+   Klartext, was sie tut.
+
+6. **Die Bridge nie hinter uns lassen.** Bei JEDER neuen Logik am Server, also
+   neue Marktarten, neue Bereiche, neue Pruefungen, gehoert die Frage in den
+   Bauplan: muss die Bridge das mittragen? Die Antwort wird **gemessen**, nie
+   angenommen. Die Bridge darf bei der Arbeit am Server nie stillschweigend
+   veralten.
+
+7. **EIN Paket, nie zwei parallel.** Am 26.08. lagen zwei Fassungen der
+   Deploy-Dateien herum, eine davon mit dem alten `npx supabase`-Weg, der auf
+   diesem Laptop nie lief. Das hat einen halben Tag gekostet. Seitdem sind die
+   Dateien auf dem Desktop nur noch **Weichen** auf die Repo-Fassung.
