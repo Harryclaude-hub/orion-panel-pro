@@ -17,3 +17,5 @@ bridge/letzter-deploy-*.log
 bridge/werkzeug/
 bridge/bridge-lauf.log
 bridge/bridge-fehler.log
+bridge/orion-lauf.bundle.js
+bridge/notbetrieb*.log
