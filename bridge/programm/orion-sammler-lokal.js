@@ -142,9 +142,14 @@ async function sammeln(welcher) {
       log(welcher.padEnd(9) + 'nichts: ' + (j.grund || j.fehler || '?'));
       return;
     }
+    /* Die Sammler melden verschiedene Felder. Bei Smarkets stand hier
+     * vorher j.maerkte - das Feld gibt es dort gar nicht, also fiel es
+     * still auf j.sieger zurueck und im Protokoll stand "288", obwohl
+     * 3779 Maerkte gespeichert wurden. Genau die Sorte stiller Zahl, die
+     * spaeter niemand mehr einordnen kann. */
     const n = welcher === 'kalshi'
       ? ((j.sport && j.sport.maerkte) || 0) + ((j.welt && j.welt.maerkte) || 0)
-      : (j.maerkte || j.sieger || 0);
+      : (j.mit_quoten || j.maerkte_genutzt || j.sieger || 0);
     log(welcher.padEnd(9) + 'eingesammelt ' + String(n).padStart(4) +
         ' · ' + ((Date.now() - t0) / 1000).toFixed(1) + ' s');
   } catch (e) {
