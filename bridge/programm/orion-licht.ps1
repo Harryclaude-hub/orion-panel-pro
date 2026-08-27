@@ -1,76 +1,80 @@
 # ===========================================================================
-#  ORION-LICHT - ein kleines Fenster, das immer obenauf bleibt
+#  ORION-WARNLICHT - meldet sich NUR, wenn etwas kaputt ist
 # ===========================================================================
-#  Karams Wunsch am 27.08.2026: "Irgendein gruenes Licht, und wenn es dann
-#  mal nicht laeuft, wird's rot."
+#  Karams Ansage am 27.08.2026: "Ich will diese Anzeige nur, wenn was
+#  schieflaeuft. Solange nichts schieflaeuft, soll auch keine Anzeige
+#  kommen, kein gruenes Licht. Nur ein rotes Licht oben rechts."
 #
-#  WARUM: seit die Programme verborgen laufen, sieht man nicht mehr, DASS
-#  sie laufen. Karam musste dreimal nachfragen, ob die Bridge aktiv ist,
-#  obwohl sie durchlief. Dieses Fenster beantwortet das ohne Nachfragen.
+#  Genau so gebaut. Das Programm laeuft still im Hintergrund und ist
+#  UNSICHTBAR, solange alles in Ordnung ist. Erst wenn etwas klemmt,
+#  erscheint oben rechts ein kleines rotes Fenster mit dem Grund. Ist der
+#  Fehler weg, verschwindet es von selbst wieder.
 #
-#  GRUEN  alles laeuft und die Daten sind frisch
-#  GELB   laeuft, aber etwas ist zu alt oder eine Quelle fehlt
-#  ROT    ein Programm laeuft nicht
+#  Das ist bewusst so: ein Dauerlicht, das immer gruen ist, uebersieht man
+#  nach zwei Tagen. Ein Licht, das nur bei Aerger angeht, nicht.
 #
-#  Klick aufs Fenster oeffnet die ausfuehrliche Anzeige.
-#  Rechtsklick schliesst das Licht (die Programme laufen weiter).
+#  WAS ALS FEHLER GILT
+#    - eines der drei Programme laeuft nicht (Bridge, Scanner, Sammler)
+#    - die Betfair-Kurse sind aelter als 5 Minuten (ihre Sperrgrenze)
+#    - die Datenbank ist dreimal hintereinander nicht erreichbar
+#  Kurze Aussetzer werden bewusst NICHT gemeldet: einmal Pech beim Abruf
+#  ist kein Ausfall, und ein Licht, das grundlos angeht, ist wertlos.
+#
+#  Klick auf das Fenster oeffnet die ausfuehrliche Anzeige.
+#  Rechtsklick blendet es aus, bis der naechste Fehler kommt.
 # ===========================================================================
 
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
 $Programm = Split-Path -Parent $MyInvocation.MyCommand.Path
+$Oben     = Split-Path -Parent $Programm
 $SUPA = 'https://noexklrgtqveiclijdwp.supabase.co'
 $KEY  = 'sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M'
 $kopf = @{ apikey = $KEY; authorization = "Bearer $KEY" }
 
-# ---- Fenster -------------------------------------------------------------
+# ---- Das Fenster, anfangs unsichtbar --------------------------------------
 $f = New-Object System.Windows.Forms.Form
 $f.Text = 'Orion'
 $f.FormBorderStyle = 'None'
-$f.Size = New-Object System.Drawing.Size(230, 84)
+$f.Size = New-Object System.Drawing.Size(268, 92)
 $f.TopMost = $true
 $f.ShowInTaskbar = $false
-$f.BackColor = [System.Drawing.Color]::FromArgb(12, 18, 30)
+$f.BackColor = [System.Drawing.Color]::FromArgb(60, 14, 24)
 $f.StartPosition = 'Manual'
 $bild = [System.Windows.Forms.Screen]::PrimaryScreen.WorkingArea
-$f.Location = New-Object System.Drawing.Point(($bild.Width - 250), 20)
+$f.Location = New-Object System.Drawing.Point(($bild.Width - 288), 20)
 
 $punkt = New-Object System.Windows.Forms.Label
-$punkt.Text = [char]0x25CF          # ein voller Kreis
-$punkt.Font = New-Object System.Drawing.Font('Segoe UI', 30)
-$punkt.ForeColor = [System.Drawing.Color]::Gray
-$punkt.Location = New-Object System.Drawing.Point(12, 8)
-$punkt.Size = New-Object System.Drawing.Size(52, 58)
+$punkt.Text = [char]0x25CF
+$punkt.Font = New-Object System.Drawing.Font('Segoe UI', 28)
+$punkt.ForeColor = [System.Drawing.Color]::FromArgb(255, 87, 110)
+$punkt.Location = New-Object System.Drawing.Point(10, 10)
+$punkt.Size = New-Object System.Drawing.Size(48, 56)
 $punkt.TextAlign = 'MiddleCenter'
 $f.Controls.Add($punkt)
 
-$kopfzeile = New-Object System.Windows.Forms.Label
-$kopfzeile.Font = New-Object System.Drawing.Font('Segoe UI', 12, [System.Drawing.FontStyle]::Bold)
-$kopfzeile.ForeColor = [System.Drawing.Color]::White
-$kopfzeile.Location = New-Object System.Drawing.Point(66, 12)
-$kopfzeile.Size = New-Object System.Drawing.Size(156, 24)
-$kopfzeile.Text = 'pruefe ...'
-$f.Controls.Add($kopfzeile)
+$titel = New-Object System.Windows.Forms.Label
+$titel.Font = New-Object System.Drawing.Font('Segoe UI', 11, [System.Drawing.FontStyle]::Bold)
+$titel.ForeColor = [System.Drawing.Color]::White
+$titel.Location = New-Object System.Drawing.Point(60, 12)
+$titel.Size = New-Object System.Drawing.Size(200, 22)
+$titel.Text = 'ORION STEHT'
+$f.Controls.Add($titel)
 
-$zeile2 = New-Object System.Windows.Forms.Label
-$zeile2.Font = New-Object System.Drawing.Font('Segoe UI', 8)
-$zeile2.ForeColor = [System.Drawing.Color]::FromArgb(133, 160, 189)
-$zeile2.Location = New-Object System.Drawing.Point(68, 38)
-$zeile2.Size = New-Object System.Drawing.Size(154, 34)
-$f.Controls.Add($zeile2)
+$grund = New-Object System.Windows.Forms.Label
+$grund.Font = New-Object System.Drawing.Font('Segoe UI', 8)
+$grund.ForeColor = [System.Drawing.Color]::FromArgb(255, 200, 210)
+$grund.Location = New-Object System.Drawing.Point(62, 36)
+$grund.Size = New-Object System.Drawing.Size(198, 48)
+$f.Controls.Add($grund)
 
-# Klick: ausfuehrliche Anzeige. Rechtsklick: schliessen.
 $klick = {
-  if ($_.Button -eq [System.Windows.Forms.MouseButtons]::Right) { $f.Close(); return }
-  Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', (Join-Path (Split-Path -Parent $Programm) 'ORION-STATUS.cmd')
+  if ($_.Button -eq [System.Windows.Forms.MouseButtons]::Right) { $f.Hide(); return }
+  Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', (Join-Path $Oben 'ORION-STATUS.cmd')
 }
-$f.Add_MouseClick($klick)
-$punkt.Add_MouseClick($klick)
-$kopfzeile.Add_MouseClick($klick)
-$zeile2.Add_MouseClick($klick)
+foreach ($c in @($f, $punkt, $titel, $grund)) { $c.Add_MouseClick($klick) }
 
-# Fenster mit der Maus verschieben duerfen
 $zieheVon = $null
 $f.Add_MouseDown({ $script:zieheVon = $_.Location })
 $f.Add_MouseMove({
@@ -82,65 +86,63 @@ $f.Add_MouseMove({
 })
 $f.Add_MouseUp({ $script:zieheVon = $null })
 
-# ---- Pruefung ------------------------------------------------------------
-function Pruefe {
+# ---- Pruefung -------------------------------------------------------------
+$script:netzFehler = 0
+
+function Was-Ist-Kaputt {
   $noetig = @(
-    @{ n='Bridge';   m='Orion-Bridge-Pro' },
-    @{ n='Scanner';  m='orion-lokal' },
-    @{ n='Sammler';  m='orion-sammler' }
+    @{ n='Betfair-Bridge'; m='Orion-Bridge-Pro' },
+    @{ n='Scanner';        m='orion-lokal' },
+    @{ n='Sammler';        m='orion-sammler' }
   )
   $alle = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue
   $fehlt = @()
   foreach ($d in $noetig) {
     if (-not ($alle | Where-Object { $_.CommandLine -like ('*' + $d.m + '*') })) { $fehlt += $d.n }
   }
-
   if ($fehlt.Count -gt 0) {
-    return @{ farbe='rot'; kopf='STEHT'; text=($fehlt -join ', ') + ' laeuft nicht' }
+    return ($fehlt -join ', ') + " laeuft nicht.`nKlick hier fuer Einzelheiten."
   }
 
-  # Laeuft alles: wie frisch sind die Daten?
   try {
-    $bf = Invoke-RestMethod -Uri "$SUPA/rest/v1/bridge_odds?id=eq.1&select=updated_at" -Headers $kopf -TimeoutSec 10
+    $bf = Invoke-RestMethod -Uri "$SUPA/rest/v1/bridge_odds?id=eq.1&select=updated_at" -Headers $kopf -TimeoutSec 12
+    $script:netzFehler = 0
     $alt = [int]((Get-Date).ToUniversalTime() - [datetime]::Parse($bf[0].updated_at).ToUniversalTime()).TotalSeconds
-    $z = Invoke-RestMethod -Uri "$SUPA/rest/v1/orion_funde?status=eq.live&select=rendite" -Headers $kopf -TimeoutSec 10
-    $anz = @($z).Count
-    $ch  = @($z | Where-Object { $_.rendite -ge 2 }).Count
-
     if ($alt -gt 300) {
-      return @{ farbe='gelb'; kopf='ALTE KURSE'; text=("Betfair " + [math]::Round($alt/60) + " min alt") }
+      return ("Betfair-Kurse sind " + [math]::Round($alt/60) + " min alt.`nAb 5 min werden sie gesperrt.")
     }
-    $t = "Betfair $alt s  ·  $anz Zeilen"
-    if ($ch -gt 0) { $t += "`n$ch Chance" + $(if ($ch -gt 1) { 'n' } else { '' }) + " im Panel" }
-    return @{ farbe='gruen'; kopf='LAEUFT'; text=$t }
   } catch {
-    return @{ farbe='gelb'; kopf='LAEUFT'; text='Datenbank gerade nicht erreichbar' }
+    # Ein einzelner Aussetzer ist kein Ausfall. Erst beim dritten Mal melden.
+    $script:netzFehler++
+    if ($script:netzFehler -ge 3) { return "Datenbank seit mehreren Minuten`nnicht erreichbar." }
+  }
+  return $null
+}
+
+function Nachsehen {
+  $problem = Was-Ist-Kaputt
+  if ($problem) {
+    $grund.Text = $problem
+    if (-not $f.Visible) { $f.Show() }
+    $f.TopMost = $true
+  } elseif ($f.Visible) {
+    $f.Hide()
   }
 }
 
 $takt = New-Object System.Windows.Forms.Timer
-$takt.Interval = 15000
-$takt.Add_Tick({
-  $e = Pruefe
-  switch ($e.farbe) {
-    'gruen' { $punkt.ForeColor = [System.Drawing.Color]::FromArgb(47, 211, 167) }
-    'gelb'  { $punkt.ForeColor = [System.Drawing.Color]::FromArgb(242, 193, 78) }
-    default { $punkt.ForeColor = [System.Drawing.Color]::FromArgb(255, 107, 133) }
-  }
-  $kopfzeile.Text = $e.kopf
-  $zeile2.Text = $e.text
-})
+$takt.Interval = 20000
+$takt.Add_Tick({ Nachsehen })
 $takt.Start()
 
-$f.Add_Shown({
-  $e = Pruefe
-  switch ($e.farbe) {
-    'gruen' { $punkt.ForeColor = [System.Drawing.Color]::FromArgb(47, 211, 167) }
-    'gelb'  { $punkt.ForeColor = [System.Drawing.Color]::FromArgb(242, 193, 78) }
-    default { $punkt.ForeColor = [System.Drawing.Color]::FromArgb(255, 107, 133) }
-  }
-  $kopfzeile.Text = $e.kopf
-  $zeile2.Text = $e.text
-})
+# Beim Start einmal pruefen, aber dem System 20 s Zeit geben - direkt nach
+# dem Anmelden oder nach dem Aufwachen laeuft noch nicht alles.
+$erst = New-Object System.Windows.Forms.Timer
+$erst.Interval = 20000
+$erst.Add_Tick({ $erst.Stop(); Nachsehen })
+$erst.Start()
 
-[void]$f.ShowDialog()
+# Unsichtbar laufen: kein ShowDialog, sonst waere das Fenster immer da.
+$ctx = New-Object System.Windows.Forms.ApplicationContext
+$f.Add_FormClosed({ $ctx.ExitThread() })
+[System.Windows.Forms.Application]::Run($ctx)
