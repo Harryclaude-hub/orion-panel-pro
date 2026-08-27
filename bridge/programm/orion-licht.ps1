@@ -27,6 +27,34 @@
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type -AssemblyName System.Drawing
 
+# ---- NUR EINMAL LAUFEN, geraeteweit (27.08.2026) --------------------------
+# DREI Anlaeufe, weil zwei Fallstricke zuschlugen:
+#   1. Prozesssuche im Starter: zu langsam, zwei Starts im selben Moment
+#      sehen einander noch nicht.
+#   2. Mutex mit Local\ : gilt JE WINDOWS-SITZUNG. Claudes Befehle laufen
+#      in einer anderen Sitzung als Karams Desktop, die zwei Kopien haben
+#      sich deshalb nie gesehen. Genau das war gemessen: trotz Sperre zwei.
+# Deshalb jetzt eine Sperrdatei mit PID, so wie es die Bridge seit Build 27
+# macht. Die wirkt ueber Sitzungsgrenzen hinweg.
+$sperre = Join-Path $env:LOCALAPPDATA 'orion-warnlicht.lock'
+try {
+  if (Test-Path $sperre) {
+    $alt = [int](Get-Content $sperre -ErrorAction Stop | Select-Object -First 1)
+    if ($alt -gt 0 -and (Get-Process -Id $alt -ErrorAction SilentlyContinue)) { exit 0 }
+  }
+} catch { }
+# Gurt UND Hosentraeger: zusaetzlich direkt nachsehen, ob schon ein anderes
+# Warnlicht laeuft. Die Sperrdatei allein hat am 27.08. nicht gereicht -
+# vermutlich weil zwei Starts sich im selben Sekundenfenster ueberholten.
+# Diese Suche sieht Prozesse ueber Sitzungsgrenzen hinweg.
+try {
+  $andere = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop |
+              Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like '*orion-licht*' })
+  if ($andere.Count -gt 0) { exit 0 }
+} catch { }
+
+try { Set-Content -LiteralPath $sperre -Value $PID -Encoding ascii -ErrorAction Stop } catch { }
+
 $Programm = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Oben     = Split-Path -Parent $Programm
 $SUPA = 'https://noexklrgtqveiclijdwp.supabase.co'
@@ -119,7 +147,20 @@ function Was-Ist-Kaputt {
   return $null
 }
 
+# PROBEALARM: mit  ORION-LICHT.cmd /test  laesst sich das rote Fenster
+# absichtlich zeigen. Anlass 27.08.: ich kann von aussen nicht pruefen, ob
+# das Fenster auf Karams Bildschirm wirklich erscheint - meine Befehle
+# laufen in einer anderen Windows-Sitzung und sehen nur deren Fenster.
+# Dieser Schalter macht die Probe zu einem Doppelklick.
+$script:probe = ($args -contains '/test')
+
 function Nachsehen {
+  if ($script:probe) {
+    $grund.Text = "PROBEALARM. So sieht es aus,`nwenn wirklich etwas klemmt.`nRechtsklick blendet aus."
+    if (-not $f.Visible) { $f.Show() }
+    $f.TopMost = $true
+    return
+  }
   $problem = Was-Ist-Kaputt
   if ($problem) {
     $grund.Text = $problem
@@ -138,7 +179,7 @@ $takt.Start()
 # Beim Start einmal pruefen, aber dem System 20 s Zeit geben - direkt nach
 # dem Anmelden oder nach dem Aufwachen laeuft noch nicht alles.
 $erst = New-Object System.Windows.Forms.Timer
-$erst.Interval = 20000
+$erst.Interval = if ($script:probe) { 500 } else { 20000 }
 $erst.Add_Tick({ $erst.Stop(); Nachsehen })
 $erst.Start()
 
@@ -146,3 +187,6 @@ $erst.Start()
 $ctx = New-Object System.Windows.Forms.ApplicationContext
 $f.Add_FormClosed({ $ctx.ExitThread() })
 [System.Windows.Forms.Application]::Run($ctx)
+
+# Beim Beenden die Sperrdatei wieder freigeben.
+try { Remove-Item -LiteralPath $sperre -Force -ErrorAction SilentlyContinue } catch { }

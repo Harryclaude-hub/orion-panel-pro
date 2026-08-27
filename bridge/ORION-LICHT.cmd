@@ -16,4 +16,6 @@ rem
 rem  KEINE UMLAUTE: cmd liest die Datei in der alten Codepage.
 rem ============================================================================
 
-start "" /min powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0programm\orion-licht.ps1"
+rem  /test  zeigt das rote Fenster absichtlich, damit man einmal SIEHT,
+rem  wie es aussieht und wo es steht. Rechtsklick blendet es wieder aus.
+start "" /min powershell -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File "%~dp0programm\orion-licht.ps1" %*
