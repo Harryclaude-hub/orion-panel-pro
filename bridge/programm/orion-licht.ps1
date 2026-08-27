@@ -37,19 +37,24 @@ Add-Type -AssemblyName System.Drawing
 # Deshalb jetzt eine Sperrdatei mit PID, so wie es die Bridge seit Build 27
 # macht. Die wirkt ueber Sitzungsgrenzen hinweg.
 $sperre = Join-Path $env:LOCALAPPDATA 'orion-warnlicht.lock'
-try {
-  if (Test-Path $sperre) {
-    $alt = [int](Get-Content $sperre -ErrorAction Stop | Select-Object -First 1)
-    if ($alt -gt 0 -and (Get-Process -Id $alt -ErrorAction SilentlyContinue)) { exit 0 }
-  }
-} catch { }
 # Gurt UND Hosentraeger: zusaetzlich direkt nachsehen, ob schon ein anderes
 # Warnlicht laeuft. Die Sperrdatei allein hat am 27.08. nicht gereicht -
 # vermutlich weil zwei Starts sich im selben Sekundenfenster ueberholten.
 # Diese Suche sieht Prozesse ueber Sitzungsgrenzen hinweg.
+# EINMAL LAUFEN - und zwar mit PRAEZISEM Vergleich (27.08., vierter Anlauf).
+#
+# DIE EIGENTLICHE LEHRE: die drei Anlaeufe davor waren gar nicht noetig. Es
+# lief immer nur EINE Kopie. Mein Zaehlbefehl suchte nach '*orion-licht*'
+# in allen powershell-Befehlszeilen - und dieser Befehl enthielt selbst das
+# Wort. Er hat sich also selbst mitgezaehlt und zwei gemeldet. Ich habe
+# daraufhin dreimal eine Sperre gebaut, die nie ein Problem hatte.
+# Merksatz: erst das MESSGERAET pruefen, dann das Gemessene.
+#
+# Deshalb jetzt genau: nur Prozesse, die orion-licht.ps1 wirklich per -File
+# ausfuehren. Ein Befehl, der den Namen bloss erwaehnt, zaehlt nicht mehr.
 try {
   $andere = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop |
-              Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -like '*orion-licht*' })
+              Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -match '-File\s+\S*orion-licht\.ps1' })
   if ($andere.Count -gt 0) { exit 0 }
 } catch { }
 
@@ -96,6 +101,21 @@ $grund.ForeColor = [System.Drawing.Color]::FromArgb(255, 200, 210)
 $grund.Location = New-Object System.Drawing.Point(62, 36)
 $grund.Size = New-Object System.Drawing.Size(198, 48)
 $f.Controls.Add($grund)
+
+# ---- ZUSAETZLICH: echte Windows-Benachrichtigung (27.08.2026) -------------
+# Karam sieht das rote Fenster nicht - auch der Probealarm blieb unsichtbar,
+# obwohl alles in derselben Windows-Sitzung laeuft. Warum, ist ungeklaert.
+# Statt weiter daran zu raten kommt hier ein ZWEITER, ganz anderer Weg dazu:
+# eine Sprechblase aus dem Infobereich neben der Uhr. Wenn das Fenster nicht
+# durchkommt, kommt wenigstens die Blase an - und umgekehrt.
+$symbol = New-Object System.Windows.Forms.NotifyIcon
+$symbol.Icon = [System.Drawing.SystemIcons]::Warning
+$symbol.Text = 'Orion'
+$symbol.Visible = $true
+$symbol.Add_BalloonTipClicked({
+  Start-Process -FilePath 'cmd.exe' -ArgumentList '/c', (Join-Path $Oben 'ORION-STATUS.cmd')
+})
+$script:letzteBlase = $null
 
 $klick = {
   if ($_.Button -eq [System.Windows.Forms.MouseButtons]::Right) { $f.Hide(); return }
@@ -166,8 +186,25 @@ function Nachsehen {
     $grund.Text = $problem
     if (-not $f.Visible) { $f.Show() }
     $f.TopMost = $true
-  } elseif ($f.Visible) {
+    # Blase nur beim ERSTEN Mal und dann hoechstens alle 10 Minuten wieder.
+    # Eine Sprechblase, die alle 20 Sekunden aufpoppt, waere eine Plage.
+    $jetzt = Get-Date
+    if (-not $script:letzteBlase -or ($jetzt - $script:letzteBlase).TotalMinutes -ge 10) {
+      $script:letzteBlase = $jetzt
+      $symbol.BalloonTipIcon  = [System.Windows.Forms.ToolTipIcon]::Error
+      $symbol.BalloonTipTitle = 'ORION STEHT'
+      $symbol.BalloonTipText  = ($problem -replace "`n", ' ')
+      $symbol.ShowBalloonTip(20000)
+    }
+  } elseif ($f.Visible -or $script:letzteBlase) {
     $f.Hide()
+    if ($script:letzteBlase) {
+      $script:letzteBlase = $null
+      $symbol.BalloonTipIcon  = [System.Windows.Forms.ToolTipIcon]::Info
+      $symbol.BalloonTipTitle = 'Orion laeuft wieder'
+      $symbol.BalloonTipText  = 'Alles in Ordnung.'
+      $symbol.ShowBalloonTip(8000)
+    }
   }
 }
 
@@ -189,4 +226,5 @@ $f.Add_FormClosed({ $ctx.ExitThread() })
 [System.Windows.Forms.Application]::Run($ctx)
 
 # Beim Beenden die Sperrdatei wieder freigeben.
+if ($symbol) { $symbol.Visible = $false; $symbol.Dispose() }
 try { Remove-Item -LiteralPath $sperre -Force -ErrorAction SilentlyContinue } catch { }
