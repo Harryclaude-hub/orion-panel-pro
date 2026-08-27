@@ -35,14 +35,22 @@ const SUPA = 'https://noexklrgtqveiclijdwp.supabase.co';
 const OEFFENTLICH = 'sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M';
 const TOKEN = process.env.ORION_BRIDGE_TOKEN || '';
 
-/* TAKT. Auf dem Server standen 120 s (pg_cron 3 und 74). VON ZUHAUSE AUS
- * dauert es laenger: gemessen am 27.8. braucht Kalshi rund 65 s und
- * Smarkets ueber 200 Einzelabrufe an api.smarkets.com, also mehrere
- * Minuten. Im Rechenzentrum waren es 16 s - das ist reine Leitung, kein
- * Fehler. Deshalb hier 5 Minuten Takt UND eine Ueberlappungssperre:
- * laeuft eine Runde noch, wird die naechste uebersprungen statt danebengelegt. */
-const TAKT_MS = 300_000;
-let laeuft = false;
+/* ZWEI GETRENNTE TAKTE, gemessen am 27.8. von diesem Laptop aus:
+ *   Kalshi    braucht  65 s
+ *   Smarkets  braucht 307 s  (614 Einzelabrufe an api.smarkets.com)
+ * Im Rechenzentrum waren es 16 s - das ist reine Leitung, kein Fehler.
+ *
+ * Nacheinander waeren das 372 s je Runde, und bei einem gemeinsamen
+ * 5-Minuten-Takt haetten sie sich dauernd ueberholt. Deshalb laufen sie
+ * GETRENNT und jeder mit eigener Sperre:
+ *   Kalshi   alle 2 Minuten, wie der Server (pg_cron 3)
+ *   Smarkets sofort wieder, sobald er fertig ist, mit 20 s Luft
+ * Damit bleibt Smarkets rund 5,5 Minuten jung - die Frischesperre erlaubt
+ * 15 Minuten, also reichlich Abstand. */
+const TAKT_KALSHI_MS = 120_000;
+const PAUSE_SMARKETS_MS = 20_000;
+let laeuftKalshi = false;
+let laeuftSmarkets = false;
 
 function zeit() {
   const d = new Date();
@@ -152,12 +160,26 @@ async function sammeln(welcher) {
   console.log('');
   if (!TOKEN) { console.error('  FEHLER: ORION_BRIDGE_TOKEN fehlt.'); process.exit(1); }
 
-  const runde = async () => {
-    if (laeuft) { log('vorige Runde laeuft noch, diese uebersprungen'); return; }
-    laeuft = true;
-    try { await sammeln('kalshi'); await sammeln('smarkets'); }
-    finally { laeuft = false; }
+  /* Kalshi: fester Takt. */
+  const kalshiRunde = async () => {
+    if (laeuftKalshi) { log('kalshi    vorige Runde laeuft noch, uebersprungen'); return; }
+    laeuftKalshi = true;
+    try { await sammeln('kalshi'); } finally { laeuftKalshi = false; }
   };
-  await runde();
-  setInterval(runde, TAKT_MS);
+
+  /* Smarkets: laeuft, ruht kurz, laeuft wieder. Ein fester Takt waere
+   * sinnlos, weil ein Durchlauf laenger dauert als jeder vernuenftige Takt. */
+  const smarketsSchleife = async () => {
+    for (;;) {
+      if (!laeuftSmarkets) {
+        laeuftSmarkets = true;
+        try { await sammeln('smarkets'); } finally { laeuftSmarkets = false; }
+      }
+      await new Promise((r) => setTimeout(r, PAUSE_SMARKETS_MS));
+    }
+  };
+
+  await kalshiRunde();
+  setInterval(kalshiRunde, TAKT_KALSHI_MS);
+  smarketsSchleife();
 })();
