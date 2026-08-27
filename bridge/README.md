@@ -1,14 +1,44 @@
 # Orion Bridge 4.0, Build 27
 
-**Stand 26.08.2026, Notbetrieb.**
+**Stand 27.08.2026.**
 
-## Ein Doppelklick, alles laeuft
+## Zwei Doppelklicks, mehr gibt es nicht
 
-    ORION-STARTEN.cmd
+    ORION-STARTEN.cmd     startet alles
+    ORION-STOPPEN.cmd     beendet alles
 
-Startet die Betfair-Bridge, den Scanner und die zwei Telegram-Bots. Fragt die
-zwei Telegram-Schluessel **einmal** ab und merkt sie sich danach in
-`bridge-config.json`. Nie wieder tippen.
+Der Starter startet nur, was **noch nicht laeuft**. Er darf also beliebig oft
+laufen und ist damit zugleich der Waechter. Zwei Aufgaben im Aufgabenplaner
+rufen ihn auf:
+
+| Aufgabe | wann |
+|---|---|
+| `Orion Bridge` | beim Anmelden |
+| `Orion Wache` | alle 10 Minuten, startet nach, was gestorben ist |
+
+**Es stehen keine Fenster mehr herum.** Bis zum 27.08. blieb je Programm ein
+minimiertes Terminal offen, dessen Ausgabe ins Protokoll umgeleitet war - es
+sah leer aus. Jetzt laeuft alles verborgen. Was passiert, steht in
+`programmridge-lauf.log`, `notbetrieb.log` und `melder.log`.
+
+**Geloescht am 27.08.:** die Aufgabe `Orion Bridge Waechter` samt
+`Orion-Waechter-Leise.vbs` und `Orion-Bridge-STARTEN.cmd`. Nach dem
+Aufraeumen zeigte die Aufgabe auf eine verschobene Datei und warf alle paar
+Minuten ein Fehlerfenster ("Scriptdatei wurde nicht gefunden"). Ihre Aufgabe
+macht jetzt der Starter selbst, und zwar ohne diese Falle: er leitet alle
+Pfade aus seinem eigenen Ort ab.
+
+## Was hier liegt
+
+    ORION-STARTEN.cmd     Doppelklick, startet alles
+    ORION-STOPPEN.cmd     Doppelklick, beendet alles
+    bridge-config.json    deine Zugangsdaten
+    README.md             diese Anleitung
+    programm\             alles Uebrige, da muss niemand hinein
+
+**Weitergebbar:** der Ordner ist in sich vollstaendig. Wer ihn kopiert, seine
+eigene `bridge-config.json` einsetzt und den Starter doppelklickt, hat eine
+eigene lokale Bridge. Nichts ist auf diesen Laptop festgenagelt.
 
 ## Warum alles hier laeuft
 
