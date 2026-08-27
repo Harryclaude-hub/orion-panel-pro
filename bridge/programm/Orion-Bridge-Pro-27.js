@@ -46,7 +46,16 @@ const VERSION = '4.0';
 const BUILD = 27;   // 25: Grundanteil+Standby - 26: Golf, Nicht-Sport, Markttyp je Bereich - 27: Sperre geraeteweit
 
 /* ---------- Zugangsdatei ---------- */
-const CFG_DATEI = pfad.join(__dirname, 'bridge-config.json');
+/* ZUGANGSDATEI, 26.8.2026: sie liegt EINE EBENE HOEHER.
+ * Der Ordner wurde an diesem Tag aufgeraeumt - was Karam nicht selbst
+ * oeffnet, liegt jetzt in programm\. Oben stehen nur noch drei Dinge:
+ * der Starter, die Zugangsdatei und die Anleitung.
+ * Der Fallback auf __dirname bleibt, damit der Ordner auch dann laeuft,
+ * wenn jemand alles flach in EINEN Ordner kopiert - das ist der Fall,
+ * wenn die Bridge weitergegeben wird. */
+const CFG_OBEN = pfad.join(__dirname, '..', 'bridge-config.json');
+const CFG_HIER = pfad.join(__dirname, 'bridge-config.json');
+const CFG_DATEI = fs.existsSync(CFG_OBEN) ? CFG_OBEN : CFG_HIER;
 let CFG;
 try {
   CFG = JSON.parse(fs.readFileSync(CFG_DATEI, 'utf8'));
