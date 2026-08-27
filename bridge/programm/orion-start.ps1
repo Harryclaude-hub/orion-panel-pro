@@ -83,7 +83,14 @@ Starte 'Betfair-Bridge' 'Orion-Bridge-Pro-27.js' 'bridge-lauf.log' @{} | Out-Nul
 # 2. Scanner
 Starte 'Scanner' 'orion-lokal.js' 'notbetrieb.log' @{ ORION_BRIDGE_TOKEN = $brg } | Out-Null
 
-# 3. Telegram-Bots, nur wenn ein Schluessel hinterlegt ist
+# 3. Sammler fuer Kalshi und Smarkets
+#    Seit 27.08. auch hier: ihre Server-Funktionen kommen nicht an die
+#    Datenbank, dadurch waren ihre Schnappschuesse ueber 20 Stunden alt und
+#    die Frischesperren hielten sie zurueck. Von vier Boersen arbeiteten
+#    nur noch zwei.
+Starte 'Sammler Kalshi+Smarkets' 'orion-sammler-lokal.js' 'sammler.log' @{ ORION_BRIDGE_TOKEN = $brg } | Out-Null
+
+# 4. Telegram-Bots, nur wenn ein Schluessel hinterlegt ist
 if ($tg -or $tgk) {
   Starte 'Telegram-Bots' 'orion-melder-lokal.js' 'melder.log' `
     @{ ORION_BRIDGE_TOKEN = $brg; TELEGRAM_BOT_TOKEN = $tg; TELEGRAM_BOT_TOKEN_KNAPP = $tgk } | Out-Null
@@ -93,6 +100,6 @@ if ($tg -or $tgk) {
 
 Sag ""
 Sag "   Protokolle liegen in programm\ :"
-Sag "     bridge-lauf.log   notbetrieb.log   melder.log"
+Sag "     bridge-lauf.log   notbetrieb.log   sammler.log   melder.log"
 Sag ""
 exit 0
