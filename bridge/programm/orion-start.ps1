@@ -46,10 +46,19 @@ function Starte($name, $datei, $protokoll, $umgebung) {
 
   foreach ($k in $umgebung.Keys) { Set-Item -Path ("Env:" + $k) -Value $umgebung[$k] }
   try {
-    Start-Process -FilePath 'node' -ArgumentList $datei `
-      -WorkingDirectory $Programm -WindowStyle Hidden `
-      -RedirectStandardOutput (Join-Path $Programm $protokoll) `
-      -RedirectStandardError  (Join-Path $Programm ($protokoll -replace '\.log$','-fehler.log'))
+    # PROTOKOLL WIRD ANGEHAENGT, NICHT UEBERSCHRIEBEN (27.08.2026).
+    # Start-Process -RedirectStandardOutput legt die Datei bei jedem Start
+    # NEU an. Am 27.8. starben Bridge und Scanner aus unbekanntem Grund,
+    # und beim Neustart war die Spur weg - man sah nur eine leere Datei.
+    # Genau die Blindheit, die schon einen halben Tag gekostet hat
+    # ("fetch failed" ohne Ursache). Deshalb ueber cmd mit >> angehaengt.
+    # Vor jedem Start eine Trennzeile, damit man die Laeufe auseinanderhaelt.
+    $log = Join-Path $Programm $protokoll
+    $strich = "`r`n===== Neustart " + (Get-Date -Format 'dd.MM.yyyy HH:mm:ss') + " ====="
+    Add-Content -LiteralPath $log -Value $strich -Encoding utf8
+    Start-Process -FilePath 'cmd.exe' `
+      -ArgumentList '/c', ('node ' + $datei + ' >> "' + $protokoll + '" 2>&1') `
+      -WorkingDirectory $Programm -WindowStyle Hidden
     Sag ("   gestartet: " + $name)
     return $true
   } catch {
