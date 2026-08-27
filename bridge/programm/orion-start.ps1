@@ -107,6 +107,20 @@ if ($tg -or $tgk) {
   Sag "   Telegram uebersprungen: kein Bot-Schluessel in bridge-config.json"
 }
 
+# 5. Das Licht: ein kleines Fenster oben rechts, gruen wenn alles laeuft.
+#    Karams Wunsch am 27.08.: seit die Programme verborgen laufen, sah er
+#    nicht mehr, DASS sie laufen, und musste dreimal nachfragen.
+$lichtLaeuft = Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction SilentlyContinue |
+               Where-Object { $_.CommandLine -like '*orion-licht*' }
+if ($lichtLaeuft) {
+  Sag "   laeuft schon: Licht"
+} else {
+  Start-Process -FilePath 'powershell.exe' `
+    -ArgumentList '-NoProfile','-ExecutionPolicy','Bypass','-WindowStyle','Hidden','-File',(Join-Path $Programm 'orion-licht.ps1') `
+    -WindowStyle Hidden
+  Sag "   gestartet: Licht (kleines Fenster oben rechts)"
+}
+
 Sag ""
 Sag "   Protokolle liegen in programm\ :"
 Sag "     bridge-lauf.log   notbetrieb.log   sammler.log   melder.log"
