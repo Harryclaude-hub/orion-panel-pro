@@ -48,7 +48,15 @@ const TOKEN = process.env.ORION_BRIDGE_TOKEN || '';
  * Damit bleibt Smarkets rund 5,5 Minuten jung - die Frischesperre erlaubt
  * 15 Minuten, also reichlich Abstand. */
 const TAKT_KALSHI_MS = 120_000;
-const PAUSE_SMARKETS_MS = 20_000;
+/* PAUSE ZWISCHEN ZWEI SMARKETS-RUNDEN, am 27.8. von 20 s auf 90 s erhoeht.
+ * GRUND, gemessen an 32 Bridge-Runden: waehrend Smarkets seine 614 Abrufe
+ * abfeuert, nimmt es der Betfair-Bridge die Leitung. Mitte 9,5 s je Runde,
+ * aber drei Runden ueber 60 s und eine bei 171,8 s. Die Frischesperre der
+ * Bridge liegt bei 300 s - keine Runde hat sie gerissen, aber 171 s sind
+ * zu nah dran. Mit 90 s Pause bekommt die Bridge in jedem Kreislauf ein
+ * klares Fenster. Smarkets bleibt dadurch rund 6,5 min jung, seine Sperre
+ * erlaubt 15 min. */
+const PAUSE_SMARKETS_MS = 90_000;
 let laeuftKalshi = false;
 let laeuftSmarkets = false;
 
