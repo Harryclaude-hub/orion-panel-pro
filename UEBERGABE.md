@@ -5343,3 +5343,154 @@ sich **nichts** — die alte Fassung läuft weiter, der Grund steht in
 - **Kalshi-Riegel gegen leere Aufnahme** (Gegenstück zu Smarkets).
 - Die 13 abgebrochenen Prüf-Agenten. Der Bauplan-Agent kam nicht mehr dran;
   was hier steht, ist eigene Messung plus die zwei fertigen Prüfer.
+
+
+---
+
+## 9cc. NOTBETRIEB: alles läuft auf dem Laptop (Stand 27.08.2026, 21:30)
+
+**Das ist der Einstiegspunkt für die nächste Sitzung.** Wer hier weitermacht,
+liest zuerst diesen Abschnitt und dann 9bb (Wurzelsperren) und 9aa (GROSSE
+CHANCE).
+
+### Die Lage in drei Sätzen
+
+Supabase weist seit dem **25.08. um 21:33 UTC** die eigenen Edge-Funktionen ab:
+PostgREST antwortet auf deren Dienstschlüssel mit `JWT issued at future`, also
+HTTP 401. Gemessen: 12 von 12 Aufrufen, dauerhaft, nicht sprunghaft. Auf
+status.supabase.com läuft dazu seit dem **14.08.** eine offene Störung
+(*„401 errors due to JWT rejections"*).
+
+**Deshalb läuft seit dem 26.08. alles auf Karams Laptop** — mit demselben
+Code, nur woanders ausgeführt.
+
+### Was wo läuft
+
+| Teil | normal | jetzt |
+|---|---|---|
+| Betfair-Bridge | Laptop | Laptop (unverändert) |
+| Scanner `orion-lauf` | Supabase | **Laptop** |
+| Sammler Kalshi | Supabase | **Laptop** |
+| Sammler Smarkets | Supabase | **Laptop** |
+| Telegram-Bots | Supabase | **Laptop** |
+| Panel | GitHub Pages | unverändert |
+
+**Ordner:** `C:\Users\Home\Desktop\ORION-BRIDGE`, gespiegelt in `bridge/`
+im Repo. Oben liegen nur Doppelklick-Dateien, alles Übrige in `programm\`.
+
+### Wie der Notbetrieb technisch funktioniert
+
+Die `.bundle.js`-Dateien sind **Wort für Wort** die Server-Funktionen, nur mit
+esbuild für Node gebündelt. Es gibt **keine zweite Fassung der Logik** — das
+war die harte Bedingung, sonst wäre Drift entstanden.
+
+Die Läufer (`orion-lokal.js`, `orion-sammler-lokal.js`,
+`orion-melder-lokal.js`) fangen `fetch` ab:
+
+* **Lesen** läuft mit dem `sb_publishable_`-Schlüssel. Der ist **kein JWT** und
+  läuft deshalb an der kaputten Prüfung vorbei. Genau das ist der Trick.
+* **Schreiben** läuft über vier token-gesicherte Türen in der Datenbank, weil
+  RLS nur Leseregeln hat:
+
+| Funktion | wofür |
+|---|---|
+| `orion_bridge_annehmen` | Betfair-Lieferung |
+| `orion_lauf_schreiben` | Funde, Aufräumen, Laufeintrag, alles in EINER Transaktion |
+| `orion_schnappschuss` | Kalshi- und Smarkets-Aufnahmen |
+| `orion_melder` | Empfänger lesen, Funde markieren, neue Chats eintragen |
+
+Jede prüft den Bridge-Token **selbst** und lehnt leere Nutzlast ab, damit eine
+tote Quelle nie eine gute Aufnahme überschreibt (Fehlerklasse L5).
+
+Dazu wurden `orion_bf_maerkte`, `orion_kalshi_maerkte` und `orion_sm_maerkte`
+auf `SECURITY DEFINER` gestellt — sonst kam für den öffentlichen Schlüssel 0
+heraus, weil `orion_bf_sport` RLS an und **null** Regeln hat.
+
+**Zurückbauen:** Notbetrieb beenden, dann die vier Türen droppen. Die
+pg_cron-Takte rufen die Server-Funktionen ohnehin weiter jede Minute.
+
+### Was von selbst passiert
+
+| Aufgabenplaner | wann |
+|---|---|
+| `Orion Bridge` | beim Anmelden |
+| `Orion Wache` | alle 5 Minuten |
+| `Orion Aufwachen` | auf das Ereignis Power-Troubleshooter 1, also nach dem Energiesparen |
+
+Alle rufen `programm\orion-start.ps1 /auto`. Der ist **idempotent** — startet
+nur, was nicht schon läuft. Deshalb kostet ein überflüssiger Auslöser nichts.
+
+Die frühere Aufgabe `Orion Bridge Waechter` ist **gelöscht**: sie zeigte nach
+dem Aufräumen auf eine verschobene `.vbs` und warf alle paar Minuten ein
+Fehlerfenster.
+
+### Gemessener Stand bei der Übergabe
+
+```
+Betfair          2 s alt    408 Märkte
+Kalshi Sport    48 s alt    399 Märkte
+Kalshi Welt     47 s alt    301 Märkte
+Smarkets       148 s alt   5741 Märkte
+Scanner         17 Läufe in 3 Minuten
+Panel           29 lebende Zeilen
+Telegram        @orion_melder_bot und @OrionKnappBot, 5 Empfänger
+                1 Nachricht zugestellt
+```
+
+Alle zehn Paarungsrichtungen zwischen den vier Börsen waren im Lauf des Tages
+belegt (bf↔sm, sm↔pm, bf↔pm, ka↔sm, ka↔pm).
+
+### OFFEN, in dieser Reihenfolge
+
+**1. Supabase zurückholen — der eigentliche Punkt.**
+Läuft der Laptop nicht, läuft nichts. Vorher lief alles rund um die Uhr.
+
+Stand: `ORION_DB_KEY` ist als Geheimnis hinterlegt, **alle neun Funktionen sind
+mit dem passenden Code ausgerollt** (bf-bridge v24, orion-lauf v38, …), und
+trotzdem kommt weiter `JWT issued at future`. Der Code lautet
+`Deno.env.get('ORION_DB_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')` —
+er fällt also **nur bei leerem Wert** zurück. **Der Schlüssel kommt nicht an.**
+
+Nächster Schritt: `GEHEIMNISSE-PRUEFEN.cmd` zeigt die **Namen** der
+hinterlegten Geheimnisse. Damit klärt sich, ob der Name falsch geschrieben ist
+oder der falsche Schlüssel drinsteht. **Achtung:** die Verwaltungsschnittstelle
+gibt als `value` nur eine **SHA-256-Prüfsumme** heraus (64 Hexzeichen), nie den
+Wert. Das ist am 27.08. bewiesen worden — nicht nochmal versuchen.
+
+**2. Das Warnlicht kommt bei Karam nicht an.**
+`programm\orion-licht.ps1` läuft und ist unsichtbar, solange alles gut ist.
+Bei einem Problem soll oben rechts ein rotes Fenster erscheinen. **Karam sieht
+es nicht**, auch der Probealarm nicht. Alles läuft in derselben Windows-Sitzung
+(Sitzung 1, Benutzer Home — nachgemessen). Warum es nicht ankommt, ist
+**ungeklärt**. Als zweiter Kanal ist eine Sprechblase aus dem Infobereich
+eingebaut; ob die ankommt, ist noch nicht bestätigt.
+`PROBEALARM.cmd` löst die Anzeige zum Testen aus.
+
+**3. GROSSE CHANCE, Stufen 2 bis 5** (siehe 9aa). Die Meldung liegt scharf im
+Chancen-Bot: über 6,5 % bis höchstens 15 %, dazu neun weitere Bedingungen.
+Sie hat noch nie gefeuert — im gemessenen Fenster hätte sie null mal ausgelöst.
+Das ist ehrlich so erwartet.
+
+**4. Offene Punkte aus 9y:** L5 an bf-bridge (stempelt `updated_at`
+bedingungslos), L9, L10.
+
+### Lehren dieses Tages, die Zeit gekostet haben
+
+1. **Erst das Messgerät prüfen, dann das Gemessene.** Ich habe dreimal eine
+   Einmal-Sperre gegen doppelte Warnlichter gebaut. Es lief immer nur eines —
+   mein Zählbefehl suchte nach `*orion-licht*` und enthielt das Wort selbst.
+2. **Nie zwei Pakete parallel.** Auf dem Desktop lagen Deploy-Dateien vom 22.08.
+   mit dem alten `npx supabase`-Weg, der auf diesem Laptop nie lief. Karam hat
+   die angeklickt. Ein halber Tag.
+3. **Absolute Pfade im Aufgabenplaner brechen beim Verschieben lautlos.**
+   Zweimal an einem Tag hineingelaufen.
+4. **Windows-Pfade nie in Zeichenketten zusammenbauen.** Aus
+   `programm\telegram-eintragen.js` wurde ein Tabulator. Stattdessen `pushd` in
+   den Ordner und die Datei beim bloßen Namen aufrufen.
+5. **Längere Logik nie in eine Befehlszeile quetschen**, sondern in eine Datei.
+   `node -e` mit langem Skript wurde von cmd zerlegt.
+6. **Protokolle anhängen, nie überschreiben.** Als Bridge und Scanner starben,
+   war die Spur beim Neustart weg. Jetzt mit Trennzeile und Datum.
+7. **Klammern in cmd-Meldungstexten escapen.** `(HTTP %CODE%)` in einem
+   `if (...)`-Block schloss den Block vorzeitig, cmd brach ab und das Fenster
+   flog zu — genau wenn die Fehlermeldung kommen sollte.
