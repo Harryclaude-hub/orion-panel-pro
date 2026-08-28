@@ -2628,3 +2628,52 @@ html.anim-2 .s-hud-jet         { display: none !important; }
 }
 .fund details.voll[open] .urteil { color: var(--text); }
 .fund details.voll[open] .urteil.gut b { color: #14603F; }
+
+/* ══════════════════════════════════════════════════════════════════════
+   BLEIBT-OFFEN — die Karte, die der Nutzer gerade liest (28.08.2026)
+   ══════════════════════════════════════════════════════════════════════
+   Karams Wort: "wenn ich ihn grad offen hab, dann soll er einfach stehen
+   bei mir. Der darf einfach nicht verschwinden."
+
+   js/anzeige.js setzt diese Klasse auf eine AUFGEKLAPPTE Karte, die im
+   frischen Datenstand nicht mehr vorkommt — die Chance ist ausgelaufen
+   oder in den Verlauf gewandert. Sie wird trotzdem stehen gelassen,
+   solange sie offen ist.
+
+   Damit das nicht zur stillen Luege wird, muss man ihr ansehen, dass sie
+   nicht mehr bestaetigt ist. Der Hinweis steht ueber der Karte und kommt
+   aus CSS, nicht aus dem Datenstand — er kann also keine Zahl faelschen.
+
+   REINE DESIGNSCHICHT. Wird dieser Block geloescht, bleibt die Karte
+   trotzdem stehen (das macht anzeige.js), sie sieht dann nur aus wie
+   jede andere.
+   ══════════════════════════════════════════════════════════════════════ */
+.fund.bleibt-offen {
+  position: relative;
+  opacity: .82;
+  outline: 1px dashed rgba(255, 176, 60, .55);
+  outline-offset: 2px;
+}
+
+.fund.bleibt-offen::before {
+  content: "Nicht mehr bestätigt · bleibt offen, weil du sie geöffnet hast · zuklappen entfernt sie";
+  display: block;
+  margin: 0 0 8px;
+  padding: 5px 9px;
+  border-radius: 6px;
+  background: rgba(255, 176, 60, .14);
+  color: #B4761A;
+  font-size: 11.5px;
+  letter-spacing: .02em;
+  line-height: 1.35;
+}
+
+/* Im dunklen Modus dieselbe Aussage, nur lesbar. Ohne diesen Block
+   stuende brauner Text auf dunklem Grund. */
+@media (prefers-color-scheme: dark) {
+  .fund.bleibt-offen::before { color: #FFC978; background: rgba(255, 176, 60, .12); }
+}
+:root[data-thema="dunkel"] .fund.bleibt-offen::before,
+body.dunkel .fund.bleibt-offen::before {
+  color: #FFC978; background: rgba(255, 176, 60, .12);
+}

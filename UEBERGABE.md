@@ -5494,3 +5494,717 @@ bedingungslos), L9, L10.
 7. **Klammern in cmd-Meldungstexten escapen.** `(HTTP %CODE%)` in einem
    `if (...)`-Block schloss den Block vorzeitig, cmd brach ab und das Fenster
    flog zu — genau wenn die Fehlermeldung kommen sollte.
+
+## 9dd. WARUM SUPABASE SICH SELBST AUSSPERRT (27.08.2026, 19:40 UTC, gemessen)
+
+**Punkt 1 aus 9cc ist geklaert.** Zwei Befunde, beide am laufenden System
+gemessen, nicht hergeleitet. Der zweite hebt den ersten auf.
+
+### Befund 1: das Geheimnis heisst nicht so, wie der Code es sucht
+
+Die Laufzeit der Edge-Funktionen kennt diese Namen:
+
+```
+BRIDGE_TOKEN, SUPABASE_ANON_KEY, SUPABASE_DB_URL, SUPABASE_JWKS,
+SUPABASE_PUBLISHABLE_KEYS, SUPABASE_SECRET_KEYS,
+SUPABASE_SERVICE_ROLE_KEY, SUPABASE_URL,
+TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_TOKEN_KNAPP,
+orion db key            <- HIER
+```
+
+Das Geheimnis heisst **`orion db key`** — klein geschrieben, mit
+**Leerzeichen** statt Unterstrichen. Der Spiegel-Code in allen neun
+Funktionen sucht `Deno.env.get('ORION_DB_KEY')` und findet deshalb
+**nichts**. Er faellt sauber auf `SUPABASE_SERVICE_ROLE_KEY` zurueck,
+genau wie gebaut. Der Rueckfall ist kein Fehler, er hat funktioniert.
+
+Damit war die Vermutung aus 9cc bestaetigt: der Name war falsch
+geschrieben.
+
+### Befund 2: die Umbenennung haette NICHTS gebracht
+
+Das ist der eigentliche Fund. Jeder vorhandene Schluessel wurde einzeln
+gegen PostgREST geprueft, aus der Funktion heraus:
+
+| Schluessel | Art | HTTP | Urteil |
+|---|---|---|---|
+| `orion db key` | sb_secret | **401** | `JWT issued at future` |
+| `SUPABASE_SERVICE_ROLE_KEY` | **sb_secret** | **401** | `JWT issued at future` |
+| `SUPABASE_ANON_KEY` | sb_publishable | **200** | kommt durch |
+| `SUPABASE_SECRET_KEYS` | Liste, kein Schluessel | 401 | `Invalid API key` |
+| `SUPABASE_PUBLISHABLE_KEYS` | Liste, kein Schluessel | 401 | `Invalid API key` |
+
+**Der Dienstschluessel der Laufzeit ist laengst kein JWT mehr.** Er beginnt
+mit `sb_secret_` und ist 41 Zeichen lang. Und er wird **trotzdem** mit
+`JWT issued at future` abgewiesen.
+
+**Damit faellt die Annahme aus 9cc/9bb, die den ganzen Notbetrieb traegt.**
+Dort steht: *„die NEUEN Schluessel sind KEINE JWT und laufen an der kaputten
+Pruefung vorbei"*. Das gilt **nur fuer `sb_publishable_`**, nicht fuer
+`sb_secret_`. Ein `sb_secret_`-Schluessel wird serverseitig in ein frisches
+JWT uebersetzt, und **genau dieses** wird abgewiesen — sein `iat` liegt aus
+Sicht von PostgREST in der Zukunft. Der oeffentliche Schluessel geht einen
+anderen Weg und kommt an.
+
+**Konsequenz:** ein neues Geheimnis anzulegen, egal unter welchem Namen,
+haette den Ausfall nicht behoben, solange dort ein `sb_secret_`-Wert
+drinsteht. Der halbe Tag vom 27.08. war eine Sackgasse — aber jetzt ist
+bewiesen, dass sie eine ist, statt sie ein drittes Mal zu betreten.
+
+### Was NICHT die Ursache ist, ebenfalls gemessen
+
+- **Die Uhren gehen richtig.** Postgres meldete 19:36:30 UTC, der Laptop
+  19:36:38 UTC. Es ist nicht die Datenbankuhr, die abweicht, sondern die
+  Uhr, gegen die PostgREST das eingesetzte JWT prueft.
+- **Der ausgerollte Code ist der richtige.** `orion-lebenszeichen` v9 wurde
+  im Original gelesen, die Spiegel-Zeile steht wortwoertlich drin.
+- **MCP-Deploy geht wieder.** Der `ZodError` vom 24./25.08. trat nicht auf;
+  drei Ausrollvorgaenge liefen sauber durch. Die Deploy-Doppelklickdateien
+  bleiben trotzdem der Weg fuer Karam, aber der Satz „Ausrollen ueber MCP
+  geht nicht" aus 9bb stimmt so nicht mehr.
+
+### Die Gegenprobe, die es sichtbar macht
+
+`orion-lebenszeichen` mit `{"nur_pruefen":true}` aufgerufen (sendet nichts):
+
+```
+Kein einziger Scannerlauf verzeichnet.
+Bridge hat noch nie geliefert.
+Chancen-Bot hat KEINEN aktiven Empfaenger.
+Knapp-Bot hat KEINEN aktiven Empfaenger.
+```
+
+Alles vier ist falsch — auf dem Laptop laeuft in dieser Minute alles. Die
+Funktion **lebt**, sie ist nur blind. Genau so sieht der Ausfall von innen
+aus.
+
+### Das Messgeraet
+
+`orion-schluesselprobe` (neu, Fassung 3) liegt jetzt neben den neun
+Funktionen. Sie **schreibt nichts** und gibt **kein einziges Zeichen** eines
+Schluessels aus — nur, ob es ihn gibt, welcher Art er ist und was PostgREST
+dazu sagt. (Die Fassungen 1 und 2 zeigten noch 12 Zeichen Praefix; das
+gehoert nicht in eine oeffentlich aufrufbare Funktion und wurde entfernt.)
+Aufruf:
+
+```
+curl -s "https://noexklrgtqveiclijdwp.supabase.co/functions/v1/orion-schluesselprobe" \
+  -H "apikey: sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M"
+```
+
+**Loeschen, sobald die Sache erledigt ist.**
+
+### Zwei Wege zurueck — Karams Entscheidung steht aus
+
+**Weg A: der alte JWT-Schluessel, ein Geheimnis, kein Code.**
+Die frueheren Legacy-Schluessel (`eyJ...`) haben ein `iat` aus dem
+Projektstart, also **weit in der Vergangenheit**. Der Fehler „issued at
+future" kann bei ihnen nicht auftreten. Steht ein solcher Schluessel unter
+dem Namen `ORION_DB_KEY` im Dashboard, greift der bereits ausgerollte
+Spiegel-Code **ohne jede Codeaenderung**.
+*Kosten:* fuenf Minuten. *Risiko:* gering. *Ungeprueft:* ob die
+Legacy-Schluessel in diesem Projekt noch aktiv sind — das entscheidet sich
+beim ersten Aufruf der Schluesselprobe.
+
+**Weg B: derselbe Weg, den der Laptop schon geht.**
+Lesen mit dem oeffentlichen Schluessel (bewiesen: HTTP 200), schreiben ueber
+die vier token-gesicherten Tueren. Der `fetch`-Abfang aus `orion-lokal.js`
+waere in die Funktionen zu uebernehmen. Der Weg **funktioniert erwiesenermassen**,
+er laeuft seit dem 26.08. rund um die Uhr.
+*Kosten:* Umbau an neun Funktionen. *Risiko:* echter Eingriff.
+*Vorteil:* unabhaengig davon, ob Supabase die Stoerung je behebt.
+
+**Wichtig fuer beide Wege — die Doppelmeldung.** Werden die Server-Funktionen
+wieder sehend, laufen Scanner und beide Melder **doppelt**: einmal auf dem
+Laptop, einmal per pg_cron. Telegram wuerde doppelt melden. Der Laptop-
+Notbetrieb muss also **vorher** gestoppt werden, nicht danach.
+
+### Weg A, die Reihenfolge (Karams Entscheidung am 27.08.)
+
+Der Schluessel wird **zuerst unter einem Probenamen** geprueft, den keine der
+neun Funktionen kennt. Damit kann waehrend der Messung **nichts** doppelt
+laufen. Erst wenn er nachweislich durchkommt, wird umgestellt.
+
+**Schritt 1 — nachsehen, ob es die alten Schluessel noch gibt.**
+Dashboard > Project Settings > API Keys, Reiter **Legacy API keys**.
+Gesucht ist der `service_role`-Schluessel; er beginnt mit `eyJ`.
+Ist der Reiter leer oder der Schluessel abgeschaltet, faellt Weg A aus und
+es geht mit Weg B weiter. Nichts verloren.
+
+**Schritt 2 — als PROBE hinterlegen, noch nicht scharf.**
+Dashboard > Edge Functions > Secrets. Neues Geheimnis:
+
+```
+Name:  ORION_PROBE_KEY
+Wert:  der eyJ... Schluessel aus Schritt 1
+```
+
+Genau so geschrieben: **GROSS, mit Unterstrichen, ohne Leerzeichen.** Das
+war der Fehler beim ersten Mal.
+
+**Schritt 3 — messen.** `orion-schluesselprobe` aufrufen (siehe oben). Sie
+prueft jeden Namen, in dem „orion" vorkommt, also auch diesen. Erwartet:
+
+```
+{ "name": "ORION_PROBE_KEY", "art": "JWT (alter Schluessel)",
+  "http": 200, "urteil": "KOMMT DURCH" }
+```
+
+**Schritt 4 — nur bei „KOMMT DURCH": umstellen.**
+1. **Erst den Laptop stoppen**: `ORION-STOPPEN.cmd`. Sonst laufen Scanner
+   und beide Melder doppelt.
+2. Geheimnis `ORION_PROBE_KEY` umbenennen in **`ORION_DB_KEY`** (oder neu
+   anlegen und die Probe loeschen).
+3. Das alte Geheimnis **`orion db key`** loeschen — es traegt einen
+   `sb_secret_`-Wert, der nachweislich abgewiesen wird, und stiftet nur
+   Verwirrung.
+4. Zwei Minuten warten, dann `orion-lebenszeichen` mit `{"nur_pruefen":true}`
+   aufrufen. Meldet sie **keinen** Alarm mehr, hat der Server uebernommen.
+
+**Schritt 5 — aufraeumen.** `orion-schluesselprobe` loeschen. Die vier
+Schreibtueren koennen bleiben, bis der Notbetrieb endgueltig abgebaut ist —
+sie stoeren nicht und sind der Rueckweg, falls die Stoerung wiederkommt.
+
+**Kommt der Schluessel NICHT durch**, ist Weg A erledigt: `ORION_PROBE_KEY`
+loeschen, der Laptop laeuft ununterbrochen weiter, es geht mit Weg B los.
+
+
+## 9ee. DAS WARNLICHT: die Sperre hat den Probealarm erschlagen (27.08.2026)
+
+**Punkt 2 aus 9cc ist geklaert.** Er bestand aus zwei Fragen, die als eine
+behandelt wurden. Getrennt betrachtet ist die eine ein echter Fehler, die
+andere gar keiner.
+
+### Frage A: warum kam der PROBEALARM nie an? Ein echter Fehler.
+
+`PROBEALARM.cmd` startet eine zweite Kopie von `orion-licht.ps1` mit `/test`.
+Ganz oben im Skript steht die Einmal-Sperre vom selben Tag:
+
+```powershell
+$andere = @(... -match '-File\s+\S*orion-licht\.ps1')
+if ($andere.Count -gt 0) { exit 0 }
+```
+
+Das echte Warnlicht laeuft **dauernd** (Aufgabenplaner, beim Anmelden). Die
+Probe fand es also **immer** und beendete sich **sofort**. Es konnte nie ein
+Fenster erscheinen.
+
+**Gemessen, 27.08.:**
+
+```
+Vorher laufende Warnlichter: 1
+Probealarm gestartet, PID 19920
+  -> BEENDET nach wenigen Sekunden. Exitcode 0.
+Nachher laufende Warnlichter: 1
+```
+
+**Die Ironie:** genau diese Sperre ist die, die am selben Tag **dreimal
+umsonst** gebaut wurde (Lehre 1 in 9cc: „erst das Messgeraet pruefen"). Sie
+loeste nie ein Problem und hat dann das Pruefwerkzeug erschlagen, mit dem
+das eigentliche Problem haette gefunden werden sollen.
+
+### Frage B: warum kam das ECHTE rote Fenster nie? Es gab nie einen Anlass.
+
+`Was-Ist-Kaputt` meldet nur bei einem echten Problem. Gemessen im selben
+Moment:
+
+```
+node-Prozesse:  Orion-Bridge-Pro-27  laeuft
+                orion-lokal          laeuft
+                orion-sammler-lokal  laeuft
+                orion-melder-lokal   laeuft
+Betfair-Lieferung ist 32 Sekunden alt (Grenze 300)
+```
+
+Alles in Ordnung, also **kein Fenster**. Das ist exakt das gewuenschte
+Verhalten aus Karams Ansage („nur ein rotes Licht, sonst nichts"). Es war
+nie kaputt, es hatte nur nie Grund.
+
+**Ehrlich dazu:** damit ist immer noch **nicht** bewiesen, dass das Fenster
+im echten Ernstfall ankommt. Bewiesen ist nur, dass es im Probefall ankommt
+— und das ist derselbe Codeweg (`$f.Show()`, dasselbe Fenster, dieselbe
+Stelle).
+
+### Zwei weitere Annahmen, beide widerlegt
+
+Im Skript stand zweimal, Claudes Befehle liefen „in einer anderen
+Windows-Sitzung" und koennten deshalb Karams Fenster nicht sehen.
+**Nachgemessen: beide laufen in Sitzung 1.** Und die Fenster sind ueber
+`EnumWindows` sehr wohl nachweisbar. Zweimal an einem Tag dieselbe unbelegte
+Annahme, zweimal falsch. Beide Kommentare sind jetzt richtiggestellt statt
+geloescht — sie sind die Warnung fuer das naechste Mal.
+
+### Was gebaut wurde
+
+`programm\orion-licht.ps1`, vier chirurgische Aenderungen, danach ins Repo
+gespiegelt (byteweise gleich, geprueft):
+
+1. **`$istProbe` ganz oben.** Die Sperre wird bei `/test` uebersprungen.
+2. **Die Probe fasst die Sperrdatei nicht an** — weder beim Start noch beim
+   Beenden. Sonst haette sie die PID des echten Warnlichts ueberschrieben
+   und beim Schliessen dessen Sperrdatei mitgeloescht. Gegengeprueft: die
+   Sperrdatei stand waehrend der laufenden Probe unveraendert auf `12008`,
+   der PID des echten Lichts.
+3. **`$script:probe = $istProbe`** statt einer zweiten Auswertung von
+   `$args`.
+4. **Der Probealarm zeigt jetzt BEIDE Wege**: das rote Fenster **und** die
+   Sprechblase aus dem Infobereich. Genau das war ja die offene Frage —
+   welcher der beiden Kanaele bei Karam ankommt. Vorher zeigte die Probe nur
+   das Fenster, also ausgerechnet den Kanal, der ohnehin im Verdacht stand.
+
+**Das laufende Warnlicht wurde NICHT angefasst.** Es laeuft weiter mit der
+Fassung von vorhin; die Aenderungen betreffen ausschliesslich den
+Probe-Zweig, sein Verhalten ist unveraendert. Kein Neustart noetig.
+
+### Die Gegenprobe, am lebenden System
+
+| Probe | Ergebnis |
+|---|---|
+| PowerShell-Syntax nach dem Umbau | **0 Fehler** (`Parser::ParseFile`) |
+| Probealarm nach der Reparatur | **laeuft** statt Exitcode 0 |
+| Warnlichter waehrend der Probe | **2** (1 echtes + 1 Probe), vorher immer 1 |
+| Sperrdatei waehrend der Probe | unveraendert `12008` — die Probe hat sie nicht angefasst |
+| Sichtbare Fenster des echten Lichts (PID 12008) | **0** — richtig, es ist nichts kaputt |
+| Sichtbare Fenster der Probe (PID 4320) | **1**, Titel „Orion", `IsWindowVisible = True` |
+| Position des Probefensters | `links 1248, oben 20, rechts 1516, unten 112` |
+| Bildschirm | ein einziger, `1536 x 864`, Arbeitsflaeche `1536 x 816` |
+
+Das Fenster liegt also **vollstaendig im Bild**, oben rechts, wie gebaut.
+Kein zweiter Bildschirm, keine Position ausserhalb der Flaeche — die zwei
+naechstliegenden Verdaechtigen sind damit ebenfalls ausgeschlossen.
+
+### Was jetzt noch fehlt: Karams Augen
+
+Alles Messbare ist gemessen. Was **nur Karam** beantworten kann: **steht das
+rote Fenster wirklich auf dem Bildschirm, und kommt die Sprechblase an?**
+
+`PROBEALARM.cmd` doppelklicken. Erwartet werden **zwei** Dinge:
+* oben rechts ein kleines rotes Fenster „ORION STEHT / PROBEALARM"
+* neben der Uhr eine Sprechblase „PROBEALARM"
+
+Rechtsklick auf das Fenster blendet es aus. Das echte Warnlicht laeuft davon
+unberuehrt weiter.
+
+**Kommt nur eines von beiden an, ist das die Antwort auf die offene Frage** —
+dann wird der andere Kanal ersatzlos ausgebaut, statt ihn weiter mitzuschleppen.
+
+### Karams Augen haben geantwortet, und dabei einen zweiten Fehler gefunden
+
+Wenige Minuten nach dem Probealarm kam Karams Frage: **„warum steht die
+bridge"**.
+
+**Damit ist Punkt 2 beantwortet: er SIEHT das Fenster.** Das rote Fenster
+kommt an, auf dem Bildschirm, oben rechts, genau wie gebaut. Die ganze
+Ungewissheit aus 9cc bestand aus einem Probealarm, der sich selbst
+abgeschossen hat.
+
+**Aber die Frage selbst war der zweite Fund.** Gemessen im selben Moment:
+
+```
+Orion-Bridge-Pro-27.js   laeuft seit 10:24:37
+Betfair-Lieferung        33 Sekunden alt   (Grenze 300)
+stats                    build 27, 419 Maerkte, vorrat 3669, verfallen 0
+```
+
+**Die Bridge stand nicht.** Sie lief einwandfrei. Karam hat die
+**Ueberschrift** des Probefensters gelesen, und die lautete fest
+**„ORION STEHT"** — nur im Kleintext darunter stand „PROBEALARM".
+
+**Ein Probealarm, den man fuer echt haelt, ist schlimmer als gar keiner.**
+Er kostet Schrecken und beim naechsten Mal Vertrauen. Behoben:
+
+* Bei der Probe lautet die Ueberschrift jetzt **`PROBEALARM`**.
+* Der Text darunter: „Nur eine Probe, nichts ist kaputt. So sieht es im
+  Ernstfall aus. Rechtsklick blendet aus."
+* Die Sprechblase sagt es ebenso im ersten Satz.
+* **Farbe und Ort bleiben gleich** — man soll ja wiedererkennen, wie der
+  Ernstfall aussieht. Nur die Behauptung wird wahr.
+
+Syntax geprueft (0 Fehler), Repo-Spiegel nachgezogen (byteweise gleich).
+Der laufende Probealarm wurde beendet, das echte Warnlicht (PID 12008) blieb
+unberuehrt, die Sperrdatei steht weiter auf `12008`.
+
+### Was von Punkt 2 noch offen ist
+
+Nur noch eine Teilfrage: **kommt auch die Sprechblase an?** Das Fenster ist
+bestaetigt. Kommt die Blase nicht, wird sie ersatzlos ausgebaut, statt sie
+weiter mitzuschleppen — ein zweiter Kanal, der nicht funktioniert, ist
+Ballast und taeuscht Sicherheit vor.
+
+
+## 9ff. GROSSE CHANCE, Stufe 2: das Messen ist eingebaut (27.08.2026)
+
+Karams Auftrag: Punkt 3 aus 9cc, „GROSSE CHANCE, Stufen 2 bis 5".
+**Gebaut ist Stufe 2** — messen, nichts melden. Es wird **keine einzige**
+Meldung ausgeloest, kein Schwellwert geaendert, kein Filter gelockert.
+
+### Vorweg: ein Fund, der die ganze Stufe fast entwertet haette
+
+Beim Bauen kam heraus: **`orion_lauf_schreiben` hat FESTE Spaltenlisten.**
+Die Tuer, durch die im Notbetrieb *alles* geschrieben wird, kennt genau die
+41 Spalten, die am 26.08. aufgezaehlt wurden. Der Scanner haette die neuen
+Messwerte gesendet, die Tuer haette sie **stillschweigend verworfen** — und
+nach sieben Tagen Messen waeren alle vier Spalten leer gewesen. HTTP 200,
+kein Fehler, kein Hinweis. Genau die Fehlerklasse „stiller Fehlschlag".
+
+Die Tuer laesst sie jetzt durch. **Signatur Zeichen fuer Zeichen unveraendert**
+— kein neuer Parameter, keine zweite Fassung daneben. Gegengeprueft: genau
+**eine** Fassung von `orion_lauf_schreiben` in der Datenbank, mit beiden
+Durchlaessen. Die Signaturfalle aus 9bb hat diesmal nicht zugeschlagen.
+
+### Was gebaut wurde
+
+**1. Zwei Spalten in `orion_laeufe`** (`kalshi_alter_s`, `smarkets_alter_s`,
+beide `null` erlaubt). Bisher gab es nur `bf_alter_s`. Der Scanner
+**rechnete `kaAlterS` und `smAlterS` seit jeher** und gab sie in der
+HTTP-Antwort zurueck — gespeichert hat er sie nie. Damit war hinterher nicht
+unterscheidbar, ob ein leerer Lauf nichts fand oder ob eine Quelle
+eingefroren stand.
+
+**2. `alterVon()` im Scanner** — eine Nachschlagefunktion in `schreibe()`:
+
+| Buch | Alter |
+|---|---|
+| betfair | `bfAlterS` |
+| kalshi | `kaAlterS` |
+| smarkets | `smAlterS` |
+| polymarket | **0** |
+
+Die drei Zahlen stehen im selben Block und sind laengst gerechnet. Es wird
+**nichts** neu abgefragt und **nichts** langsamer.
+
+`polymarket = 0` ist kein geschaetzter Wert: diesen Preis holt **dieser
+Lauf** gerade selbst, er ist Sekunden alt. `null` waere unehrlicher, denn
+unbekannt ist es nicht.
+
+**3. `alter_1_s` / `alter_2_s` je Fund.** Bisher gab es nur eine Alterszahl
+je **Lauf** — eine Zahl fuer zwanzig Bereiche und tausend Zeilen. An der
+einzelnen Zeile war nie beantwortbar, wie alt der Kurs war, auf dem sie
+steht. Genau daran ist der Sonego-Fall vom 24.08. nicht mehr aufklaerbar.
+
+**4. `kalshi_alter_s` / `smarkets_alter_s` im Laufeintrag.**
+
+### Der fehlende Bauweg, gefunden und geschlossen
+
+**Es gab keine Datei, die die Buendel baut.** Die fuenf `.bundle.js` in
+`programm\` waren einmal von Hand gebaut worden, der Befehl stand nirgends.
+Wer den Scanner aendert, haette es im Notbetrieb **nicht gemerkt** — der
+Laptop haette weiter den alten Stand gerechnet. Die Fehlerklasse „Drift
+zwischen zwei Fassungen", diesmal ohne jede Warnung.
+
+Der Weg ist rekonstruiert und **bewiesen**:
+
+```
+esbuild <ordner>/index.ts --bundle --format=cjs --platform=node --outfile=<ziel>
+```
+
+**Gegenprobe: alle fuenf Buendel entstanden byteweise gleich** wie die, die
+seit dem 26.08. laufen. Es gab **keine Drift** — die harte Bedingung „keine
+zweite Fassung der Logik" hat gehalten.
+
+| Buendel | vor der Aenderung |
+|---|---|
+| orion-lauf | byteweise gleich |
+| melder-chance | byteweise gleich |
+| melder-knapp | byteweise gleich |
+| sammler-kalshi | byteweise gleich |
+| sammler-smarkets | byteweise gleich |
+
+Neu: **`BUENDELN.cmd`** (Doppelklick, im Bridge-Ordner und im Repo). Es baut
+zuerst **daneben** und uebernimmt erst, wenn **alle fuenf** sauber
+durchlaufen. Bricht eines ab, bleibt alles beim Alten und der laufende
+Notbetrieb merkt nichts.
+
+**Einzige Abweichung nach der Umstellung:** der Scanner wurde frueher aus
+seinem *eigenen* Ordner gebaut, jetzt einheitlich aus `functions\`. Das
+aendert **drei Kommentarzeilen** (`// rechnung.ts` wird `// orion-lauf/rechnung.ts`).
+Nachgewiesen: **1701 zu 1701 Zeilen, ohne die Kommentarzeilen identisch.**
+
+### Buendel gehoeren nicht ins Repo, und jetzt greift die Regel auch
+
+`.gitignore` hatte `bridge/*.bundle.js` — das trifft **nicht**
+`bridge/programm/*.bundle.js`. Die Absicht war richtig (erzeugte Dateien
+gehoeren nicht ins Repo, sonst gibt es zwei Fassungen), sie war nur
+unwirksam. Jetzt `bridge/**/*.bundle.js`, mit `git check-ignore` gegengeprueft.
+Hergestellt werden sie mit `BUENDELN.cmd`.
+
+### Die Gegenprobe
+
+| Probe | Ergebnis |
+|---|---|
+| Spalten in `orion_laeufe` | `bf_alter_s`, `kalshi_alter_s`, `smarkets_alter_s`, alle `null` erlaubt |
+| Fassungen von `orion_lauf_schreiben` | **genau eine**, beide Durchlaesse aktiv |
+| esbuild-Parserlauf nach dem Umbau | **0 Fehler** |
+| Reihenfolge im Buendel | esbuild fasst `schreibe`/`alterVon` zu Ausdruecken zusammen; die Aufrufe erfolgen erst in Durchgang 1 bis 3, also **nach** der Initialisierung der drei Alterszahlen |
+| **Probelauf ohne Token** (rechnet, schreibt nichts) | **6 Bereiche, 0 Fehler**: fussball 25 Paare, tennis 10, basketball/baseball/eishockey/football 0 |
+| Buendel enthaelt `alter_1_s` | ja |
+| Buendel enthaelt `kalshi_alter_s: kaAlterS` | ja |
+
+### Was noch fehlt, damit Stufe 2 wirkt
+
+**1. Neustart des Notbetriebs.** Die Laeufer halten ihr Buendel **im
+Speicher**. Bis zum Neustart rechnet der Laptop den alten Stand. Also:
+`ORION-STOPPEN.cmd`, dann `ORION-STARTEN.cmd`.
+
+**2. `AUSROLLEN.cmd`**, damit der Server denselben Scanner hat. Nicht
+dringend — der Server-Scanner ist ohnehin blind, solange Punkt 1 aus 9dd
+offen ist. Aber sonst laufen die Fassungen auseinander.
+
+**3. Der Beweis am lebenden System**, erst nach dem Neustart moeglich:
+
+```sql
+select count(*) as zeilen, count(alter_1_s) as mit_alter_1,
+       count(alter_2_s) as mit_alter_2
+from orion_funde where zuletzt_gesehen > now() - interval '10 minutes';
+```
+
+Vor dem Neustart: **0 von 383** haben `alter_1_s`. Danach muessen es alle
+frisch gesehenen sein.
+
+### Was von Stufe 2 ausdruecklich NICHT gebaut ist
+
+- **`gemeldet_am` / `melde_klasse`** werden bereits geschrieben, aber nur
+  vom Knapp-Melder (gemessen: **1** Zeile von 383, passend zu genau einem
+  `knapp_gemeldet`). Ob der Chancen-Melder sie auch setzt, ist offen — er
+  hat seit der Messung nicht gefeuert.
+- **L5 / `markets_at`** (bf-bridge stempelt `updated_at` bedingungslos).
+  Bewusst nicht angefasst: das beruehrt die **Bridge-Annahme**, also den
+  einzigen Weg, auf dem die Betfair-Kurse hereinkommen. Karams harte Regel
+  lautet, dass laufende Bridges bei Updates nie brechen duerfen. Das gehoert
+  in ein eigenes Paket mit eigener Gegenprobe.
+- **Der Schattenlauf** (wie oft haette GROSSE CHANCE gefeuert). Bewusst
+  spaeter: mit `alter_1_s`/`alter_2_s` laesst sich das nach sieben Tagen
+  **per Abfrage** beantworten, ohne die `grossPruefung`-Logik aus
+  `js/anzeige.js` ein zweites Mal in den Scanner zu schreiben. Eine zweite
+  Fassung derselben Pruefung waere genau die Drift, die hier vermieden wird.
+
+
+## 9gg. DAS AUFBLITZENDE FENSTER (28.08.2026, Karams Meldung)
+
+Karam nach einem Neustart: **„die ganze Zeit oeffnet sich bei mir ein
+Terminal und schliesst sich direkt. kann das bitte aufhoeren."**
+
+### Was es NICHT war
+
+Der Notbetrieb. Gemessen im selben Moment:
+
+```
+Orion-Bridge-Pro-27.js   PID 5216   seit 2 h 51 min
+orion-lokal.js           PID 5856   seit 2 h 51 min
+orion-sammler-lokal.js   PID 9044   seit 2 h 51 min
+orion-melder-lokal.js    PID 1740   seit 2 h 51 min
+```
+
+Kein einziger Neustart, alle vier ununterbrochen. Bridge, Scanner und beide
+Melder protokollierten luecklos weiter.
+
+**Erst das Messgeraet, dann das Gemessene — und ich bin wieder
+hineingelaufen.** Mein erster Prozessbefehl sortierte nach Startzeit und
+nahm die **15 neuesten**. Die Orion-Prozesse laufen seit dem Morgen und
+fielen hinten heraus. Ich hatte kurz „es laeuft gar nichts mehr" vor mir,
+was schlicht falsch war. Dieselbe Lehre wie am 27.08. beim Warnlicht, zum
+zweiten Mal.
+
+### Was es war
+
+Der Aufgabenplaner. Und die Takte sind haeufiger, als in 9cc steht:
+
+| Aufgabe | in 9cc notiert | **tatsaechlich** |
+|---|---|---|
+| Orion Wache | alle 5 Minuten | alle 5 Minuten |
+| Orion Bridge | beim Anmelden | **beim Anmelden UND alle 10 Minuten** |
+| Orion Aufwachen | nach Energiesparen | unveraendert |
+
+Zusammen also im Schnitt **alle gut drei Minuten** ein Start.
+
+**Warum es trotz `-WindowStyle Hidden` blitzt:** Windows legt das
+Konsolenfenster **zuerst** an und uebergibt es an `powershell.exe`. Erst
+danach wertet PowerShell den Schalter aus und versteckt es wieder. Der
+Schalter kommt zu spaet — das Fenster war schon da. Das ist kein Fehler im
+Starter, sondern die Reihenfolge in Windows selbst.
+
+### Was gebaut wurde
+
+**`programm\orion-still.vbs`** (neu, auch im Repo). Sie startet **denselben**
+Starter mit **derselben** Zeile, nur ueber `wscript`. Der dritte Wert `0` in
+`.Run` heisst „kein Fenster" — und zwar von Anfang an, es entsteht gar
+keines erst.
+
+**Die alte .vbs-Falle ist beruecksichtigt.** Am 27.08. wurde eine frueher
+gebaute `.vbs` geloescht, weil sie nach dem Aufraeumen auf einen verschobenen
+Pfad zeigte und alle paar Minuten ein Fehlerfenster warf. Deshalb hier:
+
+* Der Pfad wird aus dem **eigenen Speicherort** abgeleitet
+  (`WScript.ScriptFullName`), nicht zusammengetippt. Der Ordner darf
+  verschoben werden, ohne dass etwas bricht.
+* Fehlt `orion-start.ps1`, endet sie **still** mit Rueckgabewert **2**,
+  statt ein Fehlerfenster zu werfen. Die 2 steht im Aufgabenplaner unter
+  „letztes Ergebnis" — die Stelle zum Nachsehen, falls einmal nichts startet.
+
+Alle **drei** Aufgaben zeigen jetzt darauf. Der alte Stand ist gesichert.
+
+### Ausdruecklich NICHT gewaehlt: „unabhaengig von der Anmeldung ausfuehren"
+
+Das ist der uebliche Rat gegen blitzende Fenster und waere hier **falsch**:
+die Aufgabe liefe dann in **Sitzung 0**. Muesste der Starter etwas neu
+starten, laege der ganze Notbetrieb dort — und das **Warnlicht waere
+unsichtbar**, weil es kein Fenster auf Karams Bildschirm bekaeme. Der
+Preis waere genau der Fehler, der am 27.08. einen Tag gekostet hat.
+
+### Die Gegenprobe
+
+| Probe | Ergebnis |
+|---|---|
+| 70 Sekunden Prozesse mitgeschrieben, ohne eigene Befehle | **1** neuer Prozess, und der gehoert nicht zu Orion (`morelogin.exe`) |
+| `orion-still.vbs` von Hand ausgefuehrt | **Exitcode 0** |
+| Notbetrieb danach | **dieselben 4 PIDs** — der Starter erkannte, dass alles laeuft, und fasste nichts an |
+| Aufgabe „Orion Wache" von Hand ausgeloest | **Ergebnis 0** |
+| Notbetrieb danach | **dieselben 4 PIDs** |
+| Bridge und Scanner danach | protokollieren weiter (`12:44:54 tennis`, `12:44:37 MMA`) |
+
+### Zurueckbauen
+
+In allen drei Aufgaben wieder eintragen:
+
+```
+powershell.exe -NoProfile -ExecutionPolicy Bypass -WindowStyle Hidden -File C:\Users\Home\Desktop\ORION-BRIDGE\programm\orion-start.ps1 /auto
+```
+
+Dann blitzt es wieder, sonst aendert sich nichts.
+
+### Nebenbefund: Karams Neustart hat Stufe 2 scharf gemacht
+
+Die Laeufer starteten um 09:48 mit dem **neuen** Buendel. Damit ist der
+Beweis aus 9ff nachgeholt:
+
+```
+Zeilen der letzten 10 Minuten:   25
+davon mit alter_1_s:             25
+davon mit alter_2_s:             25
+```
+
+Vorher waren es **0 von 383**. Stufe 2 misst.
+
+**Ein Schoenheitsfehler dabei, ehrlich vermerkt:** der kleinste Wert ist
+**-5**, also ein negatives Alter. Ursache ist ein Wettlauf innerhalb eines
+Laufs: `jetzt` wird **einmal zu Beginn** gesetzt, der Lauf dauert bis zu 17
+Sekunden, und die Bridge schreibt in dieser Zeit weiter. Faellt ihre
+Lieferung zwischen beides, ist der Stempel juenger als `jetzt`. Dazu kommt
+der Uhrversatz Laptop gegen Datenbank.
+
+**Bewusst nicht auf 0 geklemmt.** Eine geklemmte Null waere eine gefaelschte
+Messung, und Stufe 2 ist zum Messen da. Kleine negative Werte bis etwa -20 s
+sind normal und bedeuten „taufrisch". Wer spaeter darauf rechnet, muss das
+wissen — deshalb steht es hier.
+
+
+## 9hh. DER BILDSCHIRM STEHT STILL (28.08.2026, Karams Auftrag)
+
+Karams Wort: *„Es scrollt die ganze Zeit. Ich will, dass der Bildschirm
+still bleibt, solange ich nicht scrolle oder irgendwas anklicke. Wenn eine
+neue Anzeige kommt, soll nichts nach unten geschoben werden. Und wenn ich
+einen Vorschlag grad offen hab, dann soll der einfach stehen bleiben. Der
+darf einfach nicht verschwinden."*
+
+### Die dritte Runde an derselben Stelle, und diesmal an der Ursache
+
+Am **16.08.** und am **24.08.** wurde hier schon gearbeitet (Regeln 1 bis 4
+in `js/anzeige.js`). Beide Runden haben die Seite **nach** dem Schreiben
+zurechtgerueckt. Genau das ist der Kern des Problems: es wurde erst alles
+umgeworfen und dann nachgemessen. **Jede Korrektur ist selbst eine
+Bewegung.**
+
+Die Ursache blieb beide Male unangetastet: die Listen werden alle zwei
+Sekunden **komplett** neu geschrieben (`el.innerHTML = html`). Dabei
+entstehen **alle** Karten neu — auch die vierzig, an denen sich nichts
+geaendert hat, und auch die eine, die Karam gerade offen hat und liest.
+
+### Was gebaut wurde
+
+**Regel 5 — nur ersetzen, was sich wirklich geaendert hat.** Der neue Stand
+wird daneben aufgebaut und Karte fuer Karte mit dem verglichen, was schon
+dasteht. Unveraenderte Karten werden **nicht angefasst**: derselbe Knoten
+bleibt stehen. Ein Knoten, der stehen bleibt, kann sich nicht bewegen.
+
+**Regel 6 — wer offen ist, bleibt und haelt die Seite.**
+
+* **6a** Eine aufgeklappte Karte ist der **bevorzugte Anker**. Sie steht
+  danach wieder an genau derselben Stelle, egal was darueber passiert.
+* **6b** Faellt sie aus den Daten (Chance laeuft aus, wandert in den
+  Verlauf), wird sie **nicht entfernt**, solange sie offen ist. Sie bleibt
+  an ihrem Platz — nicht am Ende — und traegt die Klasse `bleibt-offen`.
+
+Regeln 1 bis 4 stehen unveraendert darunter.
+
+### Ausdruecklich NICHT gemacht: die offene Karte einfrieren
+
+Das waere die einfachste Loesung und die gefaehrlichste. Hier stehen
+**Quoten, auf die gesetzt wird.** Eine Karte mit alten Zahlen, die aussieht
+wie eine mit frischen, ist schlimmer als eine, die zuckt. Die offene Karte
+bleibt stehen, solange sie offen ist, und zieht beim Zuklappen sofort nach.
+Der Vermerk *„Nicht mehr bestaetigt"* sagt es ausserdem im Klartext.
+
+### Die Messung, im echten Browser an 40 Karten
+
+Ein Stand mit 40 Karten, **genau eine** aendert sich, **eine** ist
+aufgeklappt:
+
+| | alter Weg | **neuer Weg** |
+|---|---|---|
+| unangetastete Karten | **0 von 40** | **39 von 40** |
+| geaenderte Karte ersetzt | ja | ja |
+| offene Karte unangetastet | nein | **ja** |
+| offene Karte noch offen | nein | **ja** |
+
+**Erst das Messgeraet, dann das Gemessene — und wieder hineingelaufen.** Der
+erste Messlauf lief im echten Panel und meldete „0 von 40" auch fuer den
+neuen Weg. Grund: hinter der Code-Sperre ist die Liste **unsichtbar**, und
+dann greift richtigerweise Regel 4 (unsichtbare Listen werden hart
+geschrieben und ruehren die Seite nie an). Der Messaufbau war ungeeignet,
+nicht der Code. Dritter Fall dieser Art in zwei Tagen.
+
+### Die Pruefung
+
+**`pruefung/liste-ruhe.html`** (neu, **18 Pruefungen, 18 bestanden**). Sie
+laedt die **ausgelieferte** `js/anzeige.js` und ruft deren echte Funktionen
+auf — keine Abschrift.
+
+Warum als HTML und nicht als Node-Test wie der Rest: die Ruhe-Regeln
+brauchen ein **echtes DOM**. `insertBefore`, `getBoundingClientRect` und
+`details[open]` gibt es in der Node-Sandbox nicht, und sie nachzubauen
+hiesse, genau das Verhalten nachzubauen, das geprueft werden soll.
+
+Dafuer sind `listeSetzen`, `zielReihenfolge`, `einsortieren` und `istOffen`
+aus `welt.Anzeige` herausgereicht — dieselbe Begruendung wie bei
+`grossPruefung`.
+
+Geprueft wird unter anderem: unveraenderte Karte ist **derselbe** Knoten,
+offene Karte ueberlebt eine neue Karte darueber, offene Karte verschwindet
+**nicht** aus den Daten, sie steht **an ihrem alten Platz** und nicht am
+Ende, zugeklappt verschwindet sie wie jede andere, gleicher Stand zweimal
+schreibt gar nicht.
+
+**Die sieben bestehenden Pruefungen laufen unveraendert durch** (rechnung,
+zuordnung, spiegel, gross, melder, tagtabelle, vollpruefung).
+
+### Was sonst noch angefasst wurde
+
+* **`css/stil.css`** — Designschicht fuer `.bleibt-offen`: gestrichelte
+  Kante, leicht gedimmt, und ein Hinweis ueber der Karte. **Reine
+  Designschicht, loeschbar** — faellt sie weg, bleibt die Karte trotzdem
+  stehen, sie sieht dann nur aus wie jede andere. Heller und dunkler Modus
+  getrennt gesetzt.
+* **`logik.html`** nachgezogen (Karams Regel, nie nur eines von beiden):
+  neuer Abschnitt **9b „Warum der Bildschirm stillsteht"** mit der Tabelle,
+  was in welcher Lage passiert, und dem ausdruecklichen Vermerk, dass
+  **nicht** eingefroren wird. Dazu `liste-ruhe.html` in der Pruefstands-
+  tabelle in Abschnitt 9.
+* **Cache-Marken** `?v=82` → `?v=83` in **64 Fundstellen ueber 9 Dateien**.
+  `bridge-setup.html` bleibt auf `?v=22`.
+
+### Was noch fehlt
+
+**Das Panel laeuft auf GitHub Pages.** Alles hier ist bisher nur **lokal**
+geaendert. Karam sieht davon nichts, bevor es gepusht ist. Der Push steht
+aus und braucht sein Wort.
+

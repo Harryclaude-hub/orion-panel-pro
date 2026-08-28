@@ -6,9 +6,9 @@
 <title>Orion Panel Pro — Suchlogik</title>
 <meta name="robots" content="noindex, nofollow">
 <link rel="icon" type="image/svg+xml" href="favicon.svg">
-<link rel="stylesheet" href="schrift/schrift.css?v=82">
-<link rel="stylesheet" href="css/stil.css?v=82">
-<link rel="stylesheet" href="css/hud.css?v=82">
+<link rel="stylesheet" href="schrift/schrift.css?v=83">
+<link rel="stylesheet" href="css/stil.css?v=83">
+<link rel="stylesheet" href="css/hud.css?v=83">
 <style>
   .doku { max-width: 860px; }
   .doku h2 { margin-top: 34px; }
@@ -442,6 +442,7 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
     <tr><td><code>pruefung/zuordnung.test.js</code></td><td>275 Prüfungen</td></tr>
     <tr><td><code>pruefung/spiegel.test.js</code></td><td>15.133 Prüfungen — Browser- gegen Server-Fassung, vor jedem Deploy</td></tr>
     <tr><td><code>bridge/pruefung.js</code></td><td>158 Prüfungen</td></tr>
+    <tr><td><code>pruefung/liste-ruhe.html</code></td><td>18 Prüfungen — im echten Browser: bleibt der Bildschirm still, bleibt eine offene Karte stehen</td></tr>
     <tr><td><code>pruefung/bereiche.js</code> · <code>nachschlagen.js</code> · <code>linkpruefung.js</code></td><td>Messwerkzeuge gegen die echten Schnittstellen</td></tr>
   </table>
   <p>
@@ -455,6 +456,27 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
     Die Betfair-Anmeldung selbst. Ob aus den gefundenen Paaren regelmäßig echte Chancen
     werden, entscheidet der Markt, nicht die Software. Zwei Börsen mit vielen Teilnehmern
     liegen selten weit auseinander.
+  </p>
+
+  <h2>9b. Warum der Bildschirm stillsteht</h2>
+  <p>
+    Die Listen werden alle zwei Sekunden neu berechnet. Gezeichnet wird aber nur,
+    was sich wirklich geändert hat: eine Karte, an der sich nichts tut, bleibt
+    unangetastet stehen. <b>Gemessen an 40 Karten, von denen sich eine ändert:
+    vorher wurden 40 von 40 neu gebaut, jetzt 1 von 40.</b>
+  </p>
+  <table>
+    <tr><th>Lage</th><th>was passiert</th></tr>
+    <tr><td>Du scrollst oder klickst gerade</td><td>Für 1,2 Sekunden wird gar nicht geschrieben. Der nächste Takt kommt ohnehin.</td></tr>
+    <tr><td>Eine Karte ist aufgeklappt</td><td>Sie wird nicht ausgetauscht und hält die Seite fest. Sie steht danach an genau derselben Stelle.</td></tr>
+    <tr><td>Eine aufgeklappte Karte fällt aus den Daten</td><td><b>Sie verschwindet nicht.</b> Sie bleibt an ihrem Platz, mit dem Vermerk <i>„Nicht mehr bestätigt"</i>. Zuklappen entfernt sie.</td></tr>
+    <tr><td>Du bist in einem anderen Reiter</td><td>Die unsichtbare Liste wird geschrieben, rührt die Seite aber nie an.</td></tr>
+  </table>
+  <p class="leise">
+    Was ausdrücklich <b>nicht</b> passiert: eine offene Karte wird nicht eingefroren.
+    Hier stehen Quoten, auf die gesetzt wird. Eine Karte mit alten Zahlen, die aussieht
+    wie eine mit frischen, wäre gefährlicher als eine, die zuckt. Sobald du zuklappst,
+    zieht sie im nächsten Takt nach.
   </p>
 
   <h2>10. Was das Programm nicht sieht</h2>
@@ -472,8 +494,8 @@ Betfair:     auf den Broker umgeschrieben, Marktnummer bleibt</pre>
 
 </div>
 
-<script src="js/konfig.js?v=82"></script>
-<script src="js/sperre.js?v=82"></script>
+<script src="js/konfig.js?v=83"></script>
+<script src="js/sperre.js?v=83"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function () {
   window.Sperre.start(function () {

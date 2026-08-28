@@ -1,0 +1,182 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<title>Prüfung: bleibt der Bildschirm still?</title>
+<!--
+  ===========================================================================
+  PRUEFUNG: STILLSTAND DER LISTE (28.08.2026)
+  ===========================================================================
+  Anlass, Karams Wort: "wenn ich eine Chance offen hab, scrollt es die
+  ganze Zeit. Ich will, dass der Bildschirm still bleibt, solange ich nicht
+  scrolle. Und wenn ich einen Vorschlag offen hab, darf der nicht
+  verschwinden."
+
+  Diese Seite laedt die ECHTE js/anzeige.js und ruft ihre echten Funktionen
+  auf. Es wird die ausgelieferte Fassung geprueft, keine Abschrift - zwei
+  Fassungen derselben Logik sind eine dokumentierte Fehlerklasse dieses
+  Projekts.
+
+  Warum als HTML und nicht als Node-Test wie der Rest: die Ruhe-Regeln
+  brauchen ein ECHTES DOM. insertBefore, getBoundingClientRect und
+  details[open] gibt es in der Node-Sandbox nicht, und sie nachzubauen
+  hiesse, genau das Verhalten nachzubauen, das geprueft werden soll.
+
+  Aufmachen und hinsehen. Alles gruen heisst bestanden.
+  ===========================================================================
+-->
+<style>
+  body { font: 14px/1.5 system-ui, sans-serif; margin: 24px; max-width: 900px; }
+  h1 { font-size: 19px; margin: 0 0 4px; }
+  .leise { color: #666; font-size: 12.5px; margin: 0 0 18px; }
+  .fall { border-left: 3px solid #ccc; padding: 2px 0 2px 12px; margin: 14px 0; }
+  .ja { color: #14603F; font-weight: 600; }
+  .nein { color: #B00020; font-weight: 700; }
+  .was { color: #444; }
+  #buehne { border: 1px dashed #bbb; padding: 8px; margin-top: 20px; }
+  #ergebnis { font-size: 16px; font-weight: 700; margin-top: 18px; padding: 10px;
+              border-radius: 6px; }
+  .fund { border: 1px solid #ddd; border-radius: 6px; padding: 8px; margin: 6px 0; }
+</style>
+</head>
+<body>
+
+<h1>Prüfung: bleibt der Bildschirm still?</h1>
+<p class="leise">Geprüft wird die ausgelieferte <code>js/anzeige.js</code>, nicht eine Abschrift.</p>
+
+<div id="berichte"></div>
+<div id="ergebnis">läuft …</div>
+
+<h2 style="font-size:15px;margin-top:24px">Die Bühne, auf der geprüft wurde</h2>
+<div id="buehne"><div id="liste"></div></div>
+
+<script src="../js/konfig.js?v=83"></script>
+<script src="../js/rechnung.js?v=83"></script>
+<script src="../js/zuordnung.js?v=83"></script>
+<script src="../js/anzeige.js?v=83"></script>
+<script>
+(function () {
+  'use strict';
+
+  var berichte = document.getElementById('berichte');
+  var bestanden = 0, gefallen = 0;
+
+  function pruefe(was, bedingung, zusatz) {
+    var d = document.createElement('div');
+    d.className = 'fall';
+    d.innerHTML = '<span class="' + (bedingung ? 'ja">✓' : 'nein">✗') + '</span> ' +
+                  '<span class="was">' + was + '</span>' +
+                  (zusatz ? ' <span class="leise">' + zusatz + '</span>' : '');
+    berichte.appendChild(d);
+    if (bedingung) bestanden++; else gefallen++;
+  }
+
+  var A = window.Anzeige;
+  if (!A || !A.listeSetzen) {
+    document.getElementById('ergebnis').textContent =
+      'anzeige.js hat listeSetzen nicht herausgereicht — Prüfung nicht möglich.';
+    document.getElementById('ergebnis').style.background = '#fdd';
+    return;
+  }
+
+  var liste = document.getElementById('liste');
+
+  /* Eine Karte, wie sie das Panel baut: .fund mit data-schluessel und
+   * einem details-Block zum Aufklappen. */
+  function karte(s, zahl) {
+    return '<div class="fund" data-schluessel="' + s + '">' +
+             '<div class="titel">' + s + ' — Rendite ' + zahl + ' %</div>' +
+             '<details class="mehr"><summary data-schluessel="' + s + '">Mehr</summary>' +
+               '<div>Inhalt von ' + s + '</div>' +
+             '</details>' +
+           '</div>';
+  }
+
+  function hole(s) { return liste.querySelector('.fund[data-schluessel="' + s + '"]'); }
+
+  /* ---- Ausgangslage: drei Karten ---- */
+  liste.innerHTML = karte('A', '2.10') + karte('B', '2.20') + karte('C', '2.30');
+  liste.dataset.stand = 'anfang';
+
+  var knotenA = hole('A'), knotenB = hole('B'), knotenC = hole('C');
+
+  /* B wird aufgeklappt — das ist die Karte, die Karam gerade liest. */
+  knotenB.querySelector('details').open = true;
+  pruefe('B gilt als offen', A.istOffen(knotenB) === true);
+  pruefe('A gilt nicht als offen', A.istOffen(knotenA) === false);
+
+  /* ---- FALL 1: nur C ändert sich. A und B dürfen NICHT angefasst werden ---- */
+  A.listeSetzen(liste, karte('A', '2.10') + karte('B', '2.20') + karte('C', '9.99'));
+
+  pruefe('Fall 1 — unveränderte Karte A ist DERSELBE Knoten (nicht neu gebaut)',
+         hole('A') === knotenA);
+  pruefe('Fall 1 — offene Karte B ist DERSELBE Knoten',
+         hole('B') === knotenB);
+  pruefe('Fall 1 — B ist immer noch aufgeklappt',
+         hole('B') && hole('B').querySelector('details').open === true);
+  pruefe('Fall 1 — geänderte Karte C wurde ersetzt',
+         hole('C') !== knotenC && /9\.99/.test(hole('C').textContent));
+
+  /* ---- FALL 2: eine neue Karte kommt OBEN dazu ---- */
+  var vorherB = hole('B');
+  A.listeSetzen(liste, karte('NEU', '3.00') + karte('A', '2.10') + karte('B', '2.20') + karte('C', '9.99'));
+
+  pruefe('Fall 2 — die neue Karte steht ganz oben',
+         liste.firstElementChild.getAttribute('data-schluessel') === 'NEU');
+  pruefe('Fall 2 — die offene Karte B ist unverändert derselbe Knoten',
+         hole('B') === vorherB);
+  pruefe('Fall 2 — B ist weiterhin aufgeklappt',
+         hole('B').querySelector('details').open === true);
+  pruefe('Fall 2 — A wurde nicht neu gebaut',
+         hole('A') === knotenA);
+
+  /* ---- FALL 3: die OFFENE Karte fällt aus den Daten. Sie muss bleiben ---- */
+  A.listeSetzen(liste, karte('NEU', '3.00') + karte('A', '2.10') + karte('C', '9.99'));
+
+  pruefe('Fall 3 — die offene Karte B ist NICHT verschwunden',
+         hole('B') !== null,
+         'Karams Wort: „der darf einfach nicht verschwinden."');
+  pruefe('Fall 3 — B ist derselbe Knoten wie vorher',
+         hole('B') === vorherB);
+  pruefe('Fall 3 — B ist immer noch aufgeklappt',
+         hole('B') && hole('B').querySelector('details').open === true);
+  pruefe('Fall 3 — B trägt die Marke bleibt-offen',
+         hole('B') && hole('B').classList.contains('bleibt-offen'));
+  pruefe('Fall 3 — B steht an ihrem alten Platz, nicht am Ende',
+         hole('B') && hole('B').nextElementSibling &&
+         hole('B').nextElementSibling.getAttribute('data-schluessel') === 'C',
+         'sie stand vor C und steht wieder vor C');
+
+  /* ---- FALL 4: B wird zugeklappt. Jetzt darf sie weg ---- */
+  hole('B').querySelector('details').open = false;
+  liste.dataset.stand = 'erzwinge-neu';
+  A.listeSetzen(liste, karte('NEU', '3.00') + karte('A', '2.10') + karte('C', '9.99'));
+
+  pruefe('Fall 4 — zugeklappt verschwindet B wie jede andere',
+         hole('B') === null);
+
+  /* ---- FALL 5: eine geschlossene Karte, die aus den Daten fällt, geht sofort ---- */
+  liste.innerHTML = karte('X', '1.00') + karte('Y', '1.10');
+  liste.dataset.stand = 'anfang2';
+  A.listeSetzen(liste, karte('Y', '1.10'));
+  pruefe('Fall 5 — geschlossene Karte X verschwindet sofort',
+         hole('X') === null && hole('Y') !== null);
+
+  /* ---- FALL 6: gleicher Stand zweimal — es darf gar nichts passieren ---- */
+  var stand = karte('Y', '1.10');
+  var vorherY = hole('Y');
+  var ergebnis = A.listeSetzen(liste, stand);
+  pruefe('Fall 6 — identischer Stand wird gar nicht erst geschrieben',
+         ergebnis === false && hole('Y') === vorherY);
+
+  var alles = document.getElementById('ergebnis');
+  alles.textContent = bestanden + ' von ' + (bestanden + gefallen) + ' bestanden' +
+                      (gefallen ? '  —  ' + gefallen + ' GEFALLEN' : '  —  alles in Ordnung');
+  alles.style.background = gefallen ? '#fdd' : '#dfd';
+  alles.style.color = gefallen ? '#B00020' : '#14603F';
+  window.PRUEFUNG_ERGEBNIS = { bestanden: bestanden, gefallen: gefallen };
+})();
+</script>
+
+</body>
+</html>

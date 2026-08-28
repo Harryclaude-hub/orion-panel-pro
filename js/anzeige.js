@@ -24,48 +24,46 @@
     return true;
   }
 
-  /* ---------- LISTEN RUHIG SCHREIBEN (16.8.) ----------
+  /* ---------- STILLSTAND, solange der Nutzer liest (28.08.2026) ----------
    *
-   * Beschwerde des Auftraggebers: "wenn ich einen Vorschlag oeffne,
-   * teleportiert es mich beim Scrollen herum". Ursache: die Listen
-   * werden alle zwei Sekunden KOMPLETT neu geschrieben (innerHTML).
-   * Aendert sich dabei irgendwo oberhalb die Hoehe — und das tut sie
-   * staendig, weil Zeilen kommen, gehen und aufgeklappte Karten hoch
-   * sind —, rutscht der ganze Inhalt unter dem Finger weg.
+   * Karams Beschwerde: "wenn ich eine Chance offen hab, scrollt es die
+   * ganze Zeit. Ich will, dass der Bildschirm still bleibt, solange ich
+   * nicht scrolle oder was anklicke. Und wenn ich einen Vorschlag offen
+   * hab, darf der nicht verschwinden."
    *
-   * Zwei Regeln beheben das, ohne einen einzigen Wert zu aendern:
+   * Das ist die DRITTE Runde an dieser Stelle (16.8., 24.8., heute). Die
+   * zwei Runden davor haben die Seite NACH dem Schreiben zurechtgerueckt.
+   * Das ist der Kern des Problems: es wurde erst alles umgeworfen und
+   * dann nachgemessen. Jede Korrektur ist selbst eine Bewegung.
    *
-   *   1. RUHE: waehrend der Nutzer scrollt oder gerade geklickt hat
-   *      (letzte 1,2 s), wird gar nicht geschrieben. Der naechste Takt
-   *      kommt in zwei Sekunden ohnehin mit frischen Daten.
-   *   2. ANKER: muss geschrieben werden, merkt sich die Anzeige die
-   *      oberste sichtbare Karte und ihren Abstand zum Fensterrand —
-   *      und rueckt danach die Seite so zurecht, dass genau diese Karte
-   *      wieder an derselben Stelle steht. Man bleibt an seiner Zeile
-   *      kleben, egal was oben passiert. */
-  /* ---------- DIE RUECKKOPPLUNG, behoben am 24.8.2026 ----------
+   * DIE URSACHE, die bisher nie angefasst wurde: die Liste wird alle zwei
+   * Sekunden KOMPLETT neu geschrieben (innerHTML). Dabei entstehen alle
+   * Karten neu - auch die 40, an denen sich nichts geaendert hat, und auch
+   * die eine, die der Nutzer gerade offen hat und liest.
    *
-   * Karams Beschwerde: "wenn ich scrolle, wirft es mich immer hoch und
-   * runter". Die zwei Regeln unten waren richtig gedacht, aber sie
-   * bissen sich selbst in den Schwanz:
+   * NEUE REGEL 5 - NUR ERSETZEN, WAS SICH WIRKLICH GEAENDERT HAT.
+   * Der neue Stand wird daneben aufgebaut und Karte fuer Karte mit dem
+   * abgeglichen, was schon dasteht. Unveraenderte Karten werden NICHT
+   * angefasst - derselbe Knoten bleibt stehen. Ein Knoten, der stehen
+   * bleibt, kann sich auch nicht bewegen. Damit entfaellt der Grossteil
+   * der Unruhe, bevor ueberhaupt eine Korrektur noetig waere.
    *
-   *   Es gibt VIER Listen (Chancen, Knapp, Verlauf, Falsch), jede ruft
-   *   listeSetzen. Liste 1 schreibt und rueckt die Seite mit scrollBy
-   *   zurecht. Dieses scrollBy loest ein SCROLL-EREIGNIS aus - und der
-   *   Zuhoerer unten hielt das fuer den Nutzer. Damit stand
-   *   letzteUnruhe auf "gerade eben", und die Listen 2 bis 4 durften
-   *   nicht mehr schreiben. Im naechsten Takt kam eine andere Liste
-   *   dran, wieder mit eigener Korrektur. Vier Listen, die sich
-   *   abwechselnd schreiben und dabei jedes Mal an der Seite ziehen:
-   *   genau das Hoch und Runter.
+   * NEUE REGEL 6 - WER OFFEN IST, BLEIBT UND HAELT DIE SEITE.
+   *   a) Eine aufgeklappte Karte ist der BEVORZUGTE Anker. Sie steht
+   *      danach wieder an genau derselben Stelle, egal was darueber
+   *      passiert.
+   *   b) Faellt sie aus den Daten (Chance laeuft aus, wandert in den
+   *      Verlauf), wird sie NICHT entfernt, solange sie offen ist. Sie
+   *      bleibt an ihrem Platz und bekommt die Klasse "bleibt-offen".
+   *      Karams Wort: "der darf einfach nicht verschwinden."
    *
-   * ZWEI ERGAENZUNGEN beheben es, ohne die bewaehrten Regeln zu
-   * aendern:
-   *   3. EIGENE KORREKTUR ZAEHLT NICHT ALS UNRUHE. Ein Scroll, den wir
-   *      selbst ausgeloest haben, darf die anderen Listen nicht sperren.
-   *   4. UNSICHTBARE LISTEN SCROLLEN NIE. Steht der Nutzer im Reiter
-   *      "Verlauf", darf ein Neuschreiben der versteckten
-   *      Chancen-Liste die Seite nicht anfassen. */
+   * AUSDRUECKLICH NICHT GEMACHT: die offene Karte einfrieren. Das waere
+   * die einfachste Loesung und die gefaehrlichste - hier stehen Quoten,
+   * auf die gesetzt wird. Eine Karte mit alten Zahlen, die aussieht wie
+   * eine mit frischen, ist schlimmer als eine, die zuckt. Sie bleibt
+   * stehen, solange sie offen ist, und zieht beim Zuklappen sofort nach.
+   *
+   * Regel 1 bis 4 von frueher bleiben unveraendert darunter stehen. */
   var letzteUnruhe = 0;
   var eigeneKorrektur = 0;
   ['scroll', 'wheel', 'touchmove', 'pointerdown', 'keydown'].forEach(function (art) {
@@ -76,6 +74,107 @@
       letzteUnruhe = Date.now();
     }, { passive: true, capture: true });
   });
+
+  /* Ist diese Karte gerade aufgeklappt? Gefragt wird das DOM selbst und
+   * nicht die Merkliste aufgeklappt[]: die Merkliste sagt, was beim
+   * naechsten Zeichnen offen SEIN SOLL, das DOM sagt, was der Nutzer
+   * JETZT vor sich hat. Fuer "nimm ihm nicht weg, was er gerade liest"
+   * zaehlt nur Letzteres. */
+  function istOffen(karte) {
+    if (!karte || !karte.querySelector) return false;
+    return !!karte.querySelector('details[open]');
+  }
+
+  function schluesselVon(k) {
+    return (k && k.getAttribute) ? k.getAttribute('data-schluessel') : null;
+  }
+
+  function istFund(k) {
+    return !!(k && k.classList && k.classList.contains('fund') && schluesselVon(k));
+  }
+
+  /* Baut den neuen Stand daneben auf und gibt die Zielreihenfolge als
+   * Liste echter Knoten zurueck - wo immer moeglich die BEREITS
+   * DASTEHENDEN. */
+  function zielReihenfolge(el, html) {
+    var behaelter = document.createElement('div');
+    behaelter.innerHTML = html;
+
+    /* Was steht jetzt da, nach Schluessel? */
+    var alteKarten = {};
+    var alteFolge = [];
+    var k = el.firstElementChild;
+    while (k) {
+      if (istFund(k)) { alteKarten[schluesselVon(k)] = k; alteFolge.push(schluesselVon(k)); }
+      k = k.nextElementSibling;
+    }
+
+    /* Welche Schluessel kommen im neuen Stand vor? */
+    var neueSchluessel = {};
+    var n = behaelter.firstElementChild;
+    while (n) {
+      if (istFund(n)) neueSchluessel[schluesselVon(n)] = true;
+      n = n.nextElementSibling;
+    }
+
+    /* Regel 6b: offene Karten, die im neuen Stand FEHLEN. Sie bleiben.
+     * Gemerkt wird, VOR welcher ueberlebenden Karte sie standen, damit
+     * sie an ihrem Platz bleiben und nicht ans Ende rutschen. */
+    var bleiben = {};
+    var ohneAnker = [];
+    for (var i = 0; i < alteFolge.length; i++) {
+      var as = alteFolge[i];
+      if (neueSchluessel[as]) continue;
+      if (!istOffen(alteKarten[as])) continue;
+      var anker = null;
+      for (var j = i + 1; j < alteFolge.length; j++) {
+        if (neueSchluessel[alteFolge[j]]) { anker = alteFolge[j]; break; }
+      }
+      alteKarten[as].classList.add('bleibt-offen');
+      if (anker) { (bleiben[anker] = bleiben[anker] || []).push(alteKarten[as]); }
+      else { ohneAnker.push(alteKarten[as]); }
+    }
+
+    /* Die Zielreihenfolge. */
+    var ziel = [];
+    var m = behaelter.firstElementChild;
+    while (m) {
+      var naechstes = m.nextElementSibling;
+      var sm = istFund(m) ? schluesselVon(m) : null;
+
+      if (sm && bleiben[sm]) {
+        for (var b = 0; b < bleiben[sm].length; b++) ziel.push(bleiben[sm][b]);
+      }
+
+      if (sm && alteKarten[sm]) {
+        var alt = alteKarten[sm];
+        /* Der Kern: unveraendert ODER offen  ->  den DASTEHENDEN Knoten
+         * behalten. Offen wiegt schwerer als frisch: eine Karte, die der
+         * Nutzer gerade auseinandergefaltet hat, wird nicht unter seinen
+         * Augen ausgetauscht. Ihre Zahlen zieht der naechste Takt nach,
+         * sobald er sie zuklappt. */
+        if (alt.outerHTML === m.outerHTML || istOffen(alt)) ziel.push(alt);
+        else ziel.push(m);
+      } else {
+        ziel.push(m);
+      }
+      m = naechstes;
+    }
+    for (var o = 0; o < ohneAnker.length; o++) ziel.push(ohneAnker[o]);
+
+    return ziel;
+  }
+
+  /* Setzt die Zielreihenfolge mit so wenig Bewegung wie moeglich um:
+   * was schon an der richtigen Stelle steht, wird uebersprungen. */
+  function einsortieren(el, ziel) {
+    var kind = el.firstChild;
+    for (var i = 0; i < ziel.length; i++) {
+      if (kind === ziel[i]) { kind = kind.nextSibling; continue; }
+      el.insertBefore(ziel[i], kind);
+    }
+    while (kind) { var weg = kind.nextSibling; el.removeChild(kind); kind = weg; }
+  }
 
   function listeSetzen(el, html) {
     if (!el) return false;
@@ -89,27 +188,40 @@
       return true;
     }
 
-    /* Regel 1 — der Nutzer ist gerade dabei: nicht anfassen. */
+    /* Regel 1 - der Nutzer ist gerade dabei: nicht anfassen. */
     if (Date.now() - letzteUnruhe < 1200) return false;
 
-    /* Regel 2 — Anker suchen: ALLE Karten im Fenster merken, nicht nur
+    /* Regel 2 - Anker suchen: ALLE Karten im Fenster merken, nicht nur
      * die oberste. Verschwindet ausgerechnet die oberste im neuen Stand
-     * (Chance läuft aus, Zeile wandert in den Verlauf — der Normalfall,
+     * (Chance laeuft aus, Zeile wandert in den Verlauf - der Normalfall,
      * nicht die Ausnahme!), gab es bisher KEINEN Halt mehr, und genau
-     * dann sprang die Seite (Restbeschwerde vom 17.8.). Jetzt hält die
-     * nächste überlebende Karte die Seite fest. */
+     * dann sprang die Seite (Restbeschwerde vom 17.8.). Jetzt haelt die
+     * naechste ueberlebende Karte die Seite fest.
+     *
+     * ERGAENZUNG 28.8. (Regel 6a): eine AUFGEKLAPPTE Karte kommt nach
+     * vorn. Sie ist die, auf die der Nutzer gerade schaut, also die, die
+     * stehenbleiben muss - auch wenn ueber ihr eine andere naeher am
+     * oberen Rand steht. */
     var anker = [];
+    var offeneAnker = [];
     var karten = el.querySelectorAll('.fund[data-schluessel]');
     for (var i = 0; i < karten.length; i++) {
       var r = karten[i].getBoundingClientRect();
-      if (r.top >= window.innerHeight || anker.length >= 12) break;
+      if (r.top >= window.innerHeight || (anker.length + offeneAnker.length) >= 12) break;
       if (r.bottom > 0) {
-        anker.push({ s: karten[i].getAttribute('data-schluessel'), oben: r.top });
+        var eintrag = { s: karten[i].getAttribute('data-schluessel'), oben: r.top };
+        if (istOffen(karten[i])) offeneAnker.push(eintrag); else anker.push(eintrag);
       }
     }
+    anker = offeneAnker.concat(anker);
 
+    /* Regel 5 - nur ersetzen, was sich geaendert hat. Der alte Weg
+     * (el.innerHTML = html) bleibt als Rueckfall stehen: liefert der
+     * Abgleich nichts, wird geschrieben wie bisher. */
+    var ziel = zielReihenfolge(el, html);
+    if (ziel) einsortieren(el, ziel);
+    else el.innerHTML = html;
     el.dataset.stand = html;
-    el.innerHTML = html;
 
     for (var a = 0; a < anker.length; a++) {
       var neu = el.querySelector('.fund[data-schluessel="' + anker[a].s.replace(/"/g, '\\"') + '"]');
@@ -2900,6 +3012,15 @@
                     * kann und der spaetere Bot gegen DIESE Fassung
                     * gespiegelt wird - zwei Fassungen derselben Logik sind
                     * eine dokumentierte Fehlerklasse dieses Projekts. */
-                   grossPruefung: grossPruefung };
+                   grossPruefung: grossPruefung,
+                   /* Die Ruhe-Regeln der Liste, nach aussen gereicht fuer
+                    * pruefung/liste-ruhe.html (28.8.2026). Sie brauchen ein
+                    * ECHTES DOM (insertBefore, getBoundingClientRect), lassen
+                    * sich also nicht in der Node-Sandbox pruefen wie der Rest.
+                    * Geprueft wird damit DIE ausgelieferte Fassung, keine
+                    * Abschrift - zwei Fassungen derselben Logik sind eine
+                    * dokumentierte Fehlerklasse dieses Projekts. */
+                   listeSetzen: listeSetzen, zielReihenfolge: zielReihenfolge,
+                   einsortieren: einsortieren, istOffen: istOffen };
 
 })(typeof globalThis !== 'undefined' ? globalThis : this);
