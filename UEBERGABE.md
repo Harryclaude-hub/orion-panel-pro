@@ -6361,3 +6361,118 @@ und `null` zeigt das Panel als **rot**. Was man nicht weiss, ist nicht gruen.
   beantworten, ohne eine Zeile Code.
 * **L7** (Verdachtsmuster „Bridge steht").
 
+
+## 9kk. SUPABASE ANTWORTET NICHT (28.08.2026, 20:46 UTC)
+
+Karam: *„warum steht die bridge"* — und diesmal steht sie wirklich.
+
+### Der Beweis steht im eigenen Protokoll
+
+```
+20:46:28  Tennis   ... hochgeladen 508 ... 3.8 s
+20:53:39  FEHLER: Upload fehlgeschlagen (normal: 504 / Notweg: 504)
+20:59:20  FEHLER: Upload fehlgeschlagen (normal: 504 / Notweg: 504)
+```
+
+**HTTP 504 ist ein Gateway-Timeout.** Beide Wege, der normale und der
+Notweg, kamen nicht durch.
+
+### Es liegt NICHT am Laptop, jedes einzeln gemessen
+
+| Verdacht | Befund |
+|---|---|
+| Internet | laeuft: GitHub 562 ms, Polymarket 554 ms |
+| DNS `noexklrgtqveiclijdwp.supabase.co` | loest auf (Cloudflare) |
+| TCP 443 | offen |
+| Bridge-Prozess abgestuerzt | **laeuft**, alle vier Programme laufen |
+| `bridge-fehler.log` | **leer** |
+| Aenderungen vom 28.08. | keine davon fasst die Bridge an |
+| **REST-API, 3 Versuche a 30 s** | **0 durchgekommen** |
+| **REST-API, 6 Versuche a 10 s** | **0 durchgekommen** |
+| **Direkte Datenbank ueber MCP** | `Connection terminated due to connection timeout` |
+
+**Supabase sagt es selbst.** status.supabase.com im selben Moment:
+
+> Gesamtlage: **Partially Degraded Service**
+> **„Increased response times for requests"** — offen seit 27.08. 17:20 UTC, *identified*
+> dazu weiterhin „401 errors due to JWT rejections" seit 14.08.
+
+**Der Widerspruch:** die Verwaltungs-API meldet fuer das Projekt
+`ACTIVE_HEALTHY`, waehrend weder REST noch Datenbank antworten. Der
+Gesundheitsbericht taugt bei dieser Stoerung nichts.
+
+### Die Luecke, die dabei sichtbar wurde
+
+Der Scanner schwieg 13 Minuten — **und die Wache merkte es nicht.**
+`Laeuft()` in `orion-start.ps1` fragte nur, ob der Prozess **existiert**.
+Ein Prozess, der da ist aber nichts mehr tut, galt als gesund. Die Wache
+lief alle fuenf Minuten vorbei, sah vier `node.exe` und ging wieder.
+
+**Ein stummer und ein arbeitender Prozess sehen von aussen gleich aus** —
+dieselbe Fehlerklasse wie beim stummen Bot am 22.08.
+
+### Gebaut: die Wache fragt jetzt auch, ob er noch ARBEITET
+
+`programm\orion-start.ps1`, drei neue Helfer:
+
+* **`DatenbankDa()`** — antwortet Supabase ueberhaupt? Kurzer Lesegriff mit
+  dem oeffentlichen Schluessel, 8 s Zeitlimit.
+* **`Stumm($protokoll, $grenzeS)`** — schreibt dieses Protokoll noch?
+* **`Beende($muster)`** — beendet einen stummen Dienst **samt seiner
+  cmd-Huelle**. Ohne die Huelle bliebe ein Waisenprozess stehen und man
+  haette beim naechsten Start zwei.
+
+**Der entscheidende Schutz: neu gestartet wird NUR, wenn die Datenbank
+auch antwortet.** Waehrend einer Supabase-Stoerung braechte ein Neustart
+nichts und wuerde nur alle fuenf Minuten Runden drehen. Schweigt alles UND
+ist Supabase tot, ist Warten die richtige Reaktion.
+
+Grenzen, aus den gemessenen Takten des 28.08. abgeleitet:
+
+| Dienst | gemessener Takt | Grenze |
+|---|---|---|
+| Bridge | Median 16,6 s, Maximum 64,8 s | **300 s** |
+| Scanner | 5 bis 15 s je Bereich | **300 s** |
+| Sammler | Kalshi bis 67 s je Durchlauf | **600 s** |
+| Melder | jede Minute | **600 s** |
+
+Vier- bis zehnfach ueber dem Maximum. Ein Fehlalarm kostet einen
+unnoetigen Neustart mitten im Betrieb — teurer als ein paar Minuten
+Verzoegerung.
+
+### Die Gegenprobe
+
+| Probe | Ergebnis |
+|---|---|
+| PowerShell-Syntax | **0 Fehler** |
+| Starter im Ausfall ausgefuehrt | „laeuft schon" fuer alle vier, **dieselben 4 PIDs**, nichts angefasst |
+| `DatenbankDa()` | **False** — richtig, Supabase antwortet nicht |
+| `Stumm bridge-lauf.log 300` | True |
+| `Stumm bridge-lauf.log 99999` | False |
+| `Stumm gibt-es-nicht.log 1` | **False** — eine fehlende Datei loest keinen Neustart aus |
+| stumm JA + Datenbank NEIN | **kein Neustart, warten** |
+| Warnlichter danach | **genau 1** |
+
+**Erst das Messgeraet, dann das Gemessene — zum vierten Mal.** Mein
+Pruefbefehl benutzte `$P` fuer den Ordner und `$p` als Schleifenvariable.
+PowerShell unterscheidet keine Gross- und Kleinschreibung bei
+Variablennamen: die Schleife ueberschrieb den Pfad, und jede Messung lief
+ins Leere.
+
+### Warum das die Bridge trotzdem nicht sofort neu startet
+
+Die Bridge protokolliert **alle sechs Minuten einen Fehlversuch**. Damit
+bleibt ihr Protokoll „frisch" (285 s bei einer Grenze von 300 s) und sie
+gilt zu Recht nicht als stumm — **sie lebt und versucht es weiter, sie
+kommt nur nicht durch.** Genau richtig: hier ist nichts zu reparieren,
+was ein Neustart heilen koennte.
+
+### Was zu tun ist
+
+**Nichts.** Sobald Supabase wieder antwortet, laufen Bridge, Scanner,
+Sammler und Melder von selbst weiter — sie versuchen es in ihrem Takt
+ohnehin. Karam muss nichts anklicken.
+
+Bleibt einer danach haengen, faengt ihn jetzt die Wache innerhalb von
+fuenf Minuten.
+

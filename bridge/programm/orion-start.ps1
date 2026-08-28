@@ -29,6 +29,12 @@ $Programm = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Oben     = Split-Path -Parent $Programm
 $Auto     = $args -contains '/auto'
 
+# Die Datenbank, nur zum NACHFRAGEN ob sie ueberhaupt antwortet (28.08.).
+# Der oeffentliche Schluessel steht auch im Panel und darf nur lesen -
+# hier ist kein Geheimnis, und es wird nichts geschrieben.
+$SUPA        = 'https://noexklrgtqveiclijdwp.supabase.co'
+$OEFFENTLICH = 'sb_publishable_NrgVUoZhe-uN8U8j41P17Q_9cZgUd6M'
+
 function Sag($t) { if (-not $Auto) { Write-Host $t } }
 
 # ---- Was laeuft schon? -----------------------------------------------------
@@ -38,9 +44,88 @@ function Laeuft($muster) {
   return [bool]$p
 }
 
+# ---- SCHWEIGT ER? (28.08.2026) ---------------------------------------------
+#
+# ANLASS: am 28.08. gegen 20:46 UTC hoerte Supabase auf zu antworten
+# ("Increased response times", offene Stoerung seit dem 27.08.). Die Bridge
+# meldete  FEHLER: Upload fehlgeschlagen (normal: 504 / Notweg: 504)  und
+# der Scanner schwieg 13 Minuten lang.
+#
+# DIE LUECKE: Laeuft() fragt nur, ob der Prozess EXISTIERT. Ein Prozess, der
+# da ist aber nichts mehr tut, galt damit als gesund - die Wache lief alle
+# fuenf Minuten vorbei, sah vier node.exe und ging wieder. Ein stummer
+# Prozess und ein arbeitender sehen von aussen gleich aus, genau wie ein
+# stummer und ein kaputter Bot am 22.08.
+#
+# DER SCHUTZ DAVOR, DASS ES SCHLIMMER WIRD: neu gestartet wird NUR, wenn die
+# Datenbank auch wirklich antwortet. Waehrend einer Supabase-Stoerung bringt
+# ein Neustart nichts und wuerde nur alle fuenf Minuten Runden drehen und
+# die Protokolle zumuellen. Schweigt alles UND ist Supabase tot, ist das die
+# richtige Reaktion: warten.
+
+# Antwortet die Datenbank? Kurzer Griff, mit dem oeffentlichen Schluessel -
+# derselbe, der auch im Panel steht und nur lesen darf.
+function DatenbankDa() {
+  $k = @{ apikey = $OEFFENTLICH; authorization = ("Bearer " + $OEFFENTLICH) }
+  try {
+    $null = Invoke-RestMethod -Uri ($SUPA + "/rest/v1/bridge_odds?id=eq.1&select=updated_at") `
+                              -Headers $k -TimeoutSec 8 -ErrorAction Stop
+    return $true
+  } catch { return $false }
+}
+
+# Wie lange schreibt dieses Protokoll schon nichts mehr?
+# Gemessene Takte am 28.08., daraus die Grenzen unten:
+#   Bridge   Median 16,6 s   Maximum 64,8 s
+#   Scanner  5 bis 15 s je Bereich
+#   Kalshi-Sammler  bis 67 s je Durchlauf
+# Die Grenzen sind bewusst das Vier- bis Zehnfache davon. Ein Fehlalarm
+# kostet einen unnoetigen Neustart mitten im Betrieb - teurer als ein paar
+# Minuten Verzoegerung.
+function Stumm($protokoll, $grenzeS) {
+  $p = Join-Path $Programm $protokoll
+  if (-not (Test-Path $p)) { return $false }
+  $still = ((Get-Date) - (Get-Item $p).LastWriteTime).TotalSeconds
+  return ($still -gt $grenzeS)
+}
+
+# Einen stummen Dienst samt seiner cmd-Huelle beenden. Ohne die Huelle
+# bliebe ein Waisenprozess stehen, und beim naechsten Start haette man zwei.
+function Beende($muster) {
+  $node = Get-CimInstance Win32_Process -Filter "Name='node.exe'" -ErrorAction SilentlyContinue |
+          Where-Object { $_.CommandLine -like "*$muster*" }
+  foreach ($n in $node) {
+    $huelle = Get-CimInstance Win32_Process -Filter "ProcessId=$($n.ParentProcessId)" -ErrorAction SilentlyContinue
+    Stop-Process -Id $n.ProcessId -Force -ErrorAction SilentlyContinue
+    if ($huelle -and $huelle.Name -eq "cmd.exe" -and $huelle.CommandLine -like "*$muster*") {
+      Stop-Process -Id $huelle.ProcessId -Force -ErrorAction SilentlyContinue
+    }
+  }
+}
+
 # ---- Einen Dienst starten, verborgen, mit Protokoll -------------------------
-function Starte($name, $datei, $protokoll, $umgebung) {
-  if (Laeuft $datei) { Sag ("   laeuft schon: " + $name); return $true }
+function Starte($name, $datei, $protokoll, $umgebung, $grenzeS) {
+  # Laeuft er noch UND arbeitet er noch? Zwei verschiedene Fragen (28.08.).
+  if (Laeuft $datei) {
+    if ($grenzeS -and (Stumm $protokoll $grenzeS)) {
+      if (DatenbankDa) {
+        Sag ("   STUMM seit ueber " + $grenzeS + " s, wird neu gestartet: " + $name)
+        Add-Content -LiteralPath (Join-Path $Programm $protokoll) -Encoding utf8 `
+          -Value ("`r`n===== STUMM erkannt, Neustart durch die Wache " + (Get-Date -Format 'dd.MM.yyyy HH:mm:ss') + " =====")
+        Beende $datei
+        Start-Sleep -Seconds 2
+        # weiter unten faellt er in den normalen Start
+      } else {
+        # Die Datenbank antwortet selbst nicht. Ein Neustart brächte nichts
+        # und wuerde nur alle fuenf Minuten Runden drehen. Warten ist hier
+        # die richtige Antwort.
+        Sag ("   stumm, aber die Datenbank antwortet auch nicht - kein Neustart: " + $name)
+        return $true
+      }
+    } else {
+      Sag ("   laeuft schon: " + $name); return $true
+    }
+  }
   $ziel = Join-Path $Programm $datei
   if (-not (Test-Path $ziel)) { Sag ("   FEHLT: " + $datei); return $false }
 
@@ -87,22 +172,22 @@ Sag "   ORION"
 Sag "   ============================================================"
 
 # 1. Betfair-Bridge
-Starte 'Betfair-Bridge' 'Orion-Bridge-Pro-27.js' 'bridge-lauf.log' @{} | Out-Null
+Starte 'Betfair-Bridge' 'Orion-Bridge-Pro-27.js' 'bridge-lauf.log' @{}  300 | Out-Null
 
 # 2. Scanner
-Starte 'Scanner' 'orion-lokal.js' 'notbetrieb.log' @{ ORION_BRIDGE_TOKEN = $brg } | Out-Null
+Starte 'Scanner' 'orion-lokal.js' 'notbetrieb.log' @{ ORION_BRIDGE_TOKEN = $brg }  300 | Out-Null
 
 # 3. Sammler fuer Kalshi und Smarkets
 #    Seit 27.08. auch hier: ihre Server-Funktionen kommen nicht an die
 #    Datenbank, dadurch waren ihre Schnappschuesse ueber 20 Stunden alt und
 #    die Frischesperren hielten sie zurueck. Von vier Boersen arbeiteten
 #    nur noch zwei.
-Starte 'Sammler Kalshi+Smarkets' 'orion-sammler-lokal.js' 'sammler.log' @{ ORION_BRIDGE_TOKEN = $brg } | Out-Null
+Starte 'Sammler Kalshi+Smarkets' 'orion-sammler-lokal.js' 'sammler.log' @{ ORION_BRIDGE_TOKEN = $brg }  600 | Out-Null
 
 # 4. Telegram-Bots, nur wenn ein Schluessel hinterlegt ist
 if ($tg -or $tgk) {
   Starte 'Telegram-Bots' 'orion-melder-lokal.js' 'melder.log' `
-    @{ ORION_BRIDGE_TOKEN = $brg; TELEGRAM_BOT_TOKEN = $tg; TELEGRAM_BOT_TOKEN_KNAPP = $tgk } | Out-Null
+    @{ ORION_BRIDGE_TOKEN = $brg; TELEGRAM_BOT_TOKEN = $tg; TELEGRAM_BOT_TOKEN_KNAPP = $tgk } 600 | Out-Null
 } else {
   Sag "   Telegram uebersprungen: kein Bot-Schluessel in bridge-config.json"
 }
