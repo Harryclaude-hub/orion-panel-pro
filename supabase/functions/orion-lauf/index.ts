@@ -412,6 +412,30 @@ Deno.serve(async (req) => {
      * Paarung zweimal da, einmal mit PM-Schluessel und einmal direkt. */
     const bfGesehen = new Set<string>();
 
+    /* GROSSE CHANCE, Stufe 2 (27.8.2026): Lieferalter je Boerse ZU DIESEM
+     * FUND. Bisher gab es nur bf_alter_s je LAUF in orion_laeufe - also
+     * eine Zahl fuer zwanzig Bereiche und tausend Zeilen. An der einzelnen
+     * Zeile war nie beantwortbar, wie alt der Kurs war, auf dem sie steht.
+     * Genau daran ist der Sonego-Fall vom 24.8. nicht mehr aufklaerbar.
+     *
+     * Die drei Zahlen sind oben schon gerechnet und stehen im selben
+     * Block. Es wird NICHTS neu abgefragt und nichts langsamer.
+     *
+     * polymarket = 0 ist kein geschaetzter Wert: die PM-Preise holt DIESER
+     * Lauf gerade selbst, sie sind Sekunden alt. Wer das genauer will,
+     * muesste die Laufdauer mitrechnen - dafuer ist die Zahl hier zu grob
+     * gemeint. null waere unehrlicher, denn unbekannt ist es nicht.
+     *
+     * Kennt eine Quelle ihr Alter nicht, bleibt es null. Nichts liest die
+     * Spalten bisher, ein Fehlwert kann also nichts kippen. */
+    function alterVon(buch: string): number | null {
+      if (buch === 'betfair')    return bfAlterS;
+      if (buch === 'kalshi')     return kaAlterS;
+      if (buch === 'smarkets')   return smAlterS;
+      if (buch === 'polymarket') return 0;
+      return null;
+    }
+
     function schreibe(a: Seite, b: Seite, e: any, opt: {
       schluessel: string; marktId: string; titel: string; frage: string;
       bez: string; art: string; sport: string; ende: string; zuordnung: number;
@@ -453,7 +477,9 @@ Deno.serve(async (req) => {
         pm_menge: a.geld, gegen_menge: b.geld,
         max_einsatz: e.maxEinsatz === undefined ? null : e.maxEinsatz,
         max_gewinn: e.maxGewinn === undefined ? null : e.maxGewinn,
-        endet_am: opt.ende, zuletzt_gesehen: new Date().toISOString(), status: 'live'
+        endet_am: opt.ende, zuletzt_gesehen: new Date().toISOString(), status: 'live',
+        /* Stufe 2, siehe alterVon() oben. Reine Messung, nichts liest sie. */
+        alter_1_s: alterVon(a.buch), alter_2_s: alterVon(b.buch)
       });
     }
 
@@ -977,7 +1003,12 @@ Deno.serve(async (req) => {
         bereich,
         dauer_ms: Date.now() - t0, pm_maerkte: maerkte.length,
         bf_match_odds: bfSieger.length + bfOu.length, bf_alter_s: bfAlterS,
-        paare: zeilen.length, chancen_neu: chancen, chancen_live: chancen, beendet
+        paare: zeilen.length, chancen_neu: chancen, chancen_live: chancen, beendet,
+        /* Stufe 2 (27.8.2026): beide Zahlen wurden oben laengst gerechnet
+         * und in der HTTP-Antwort zurueckgegeben - gespeichert hat sie nie
+         * jemand. Damit war hinterher nicht unterscheidbar, ob ein leerer
+         * Lauf nichts fand oder ob eine Quelle eingefroren stand. */
+        kalshi_alter_s: kaAlterS, smarkets_alter_s: smAlterS
       })
     });
 
