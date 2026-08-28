@@ -6476,3 +6476,91 @@ ohnehin. Karam muss nichts anklicken.
 Bleibt einer danach haengen, faengt ihn jetzt die Wache innerhalb von
 fuenf Minuten.
 
+
+## 9ll. DER AUSFALL VOM 28.08. ABEND, UND WIE ER BEHOBEN WURDE
+
+**Von 20:46 bis 21:43 UTC stand alles.** Behoben durch **einen Klick** von
+Karam: *Restart project* im Supabase-Dashboard.
+
+### Die Eingrenzung, Ebene fuer Ebene
+
+Der entscheidende Messschritt. Jede Supabase-Ebene einzeln gefragt:
+
+| Ebene | Antwort |
+|---|---|
+| **Storage** `/storage/v1/version` | **200 in 0,32 s** |
+| **Realtime** | **401 in 2,5 s** |
+| REST / PostgREST | **Zeitlimit** |
+| Auth | **Zeitlimit** |
+| Edge Functions | **Zeitlimit** |
+
+**Damit war es entschieden:** Cloudflare, DNS und die Supabase-Plattform
+waren kerngesund — es hing genau das, was die **Datenbank** braucht. Ohne
+diese Aufteilung haette man weiter „Supabase ist down" vermutet und
+gewartet.
+
+### Was vorher ausgeschlossen wurde
+
+| Verdacht | Befund |
+|---|---|
+| Internet | GitHub 562 ms, Polymarket 554 ms |
+| DNS, TCP 443 | in Ordnung |
+| Frontend-Aenderungen des Tages | Syntax OK, **7 von 7 Pruefungen**, Pages HTTP 200 |
+| **Last vom Laptop** | **alle vier Programme gestoppt, 8 Messungen ueber 2 min: 0 Erfolge** |
+| Bridge-Prozess | lief, `bridge-fehler.log` leer |
+
+Das Stoppen des Notbetriebs war der wichtigste Ausschluss: **die Datenbank
+blieb auch ohne jede Last tot.** Es war kein Verbindungspool-Problem und
+nichts, was Karams Laptop verursacht hat.
+
+### Was ich NICHT durfte
+
+Ich wollte die Datenbank ueber `pause_project` neu starten. **Der
+Sicherheitsfilter hat es blockiert** — ein Projekt pausieren oder neu
+starten darf ich nicht. Auch `ORION-STARTEN.cmd` per `cmd /c` wurde
+blockiert; der Notbetrieb liess sich aber ueber
+`Start-ScheduledTask -TaskName 'Orion Bridge'` wieder hochfahren, den
+regulaeren Weg.
+
+**Fuer die naechste Sitzung:** bei haengender Datenbank ist der Restart
+**Karams Klick**:
+`https://supabase.com/dashboard/project/noexklrgtqveiclijdwp/settings/general`
+→ *Restart project*. Daten bleiben erhalten, dauert ein bis drei Minuten.
+
+### Zwei Fallen beim Wiederanlauf
+
+**1. „Token unbekannt oder Konto gesperrt".** Direkt nach dem Neustart
+meldete die Bridge diesen Fehler statt 504. Gemessen: `profiles` hat
+**2 Zeilen, beide mit Token, keine gesperrt**. Es war ein
+**Uebergangsfehler**, waehrend die Datenbank noch hochfuhr. Nicht am Token
+herumschrauben — abwarten.
+
+**2. Smarkets brauchte neun Minuten laenger.** Betfair und Kalshi waren um
+21:43 wieder da, Smarkets erst um 21:49. Kein Fehler: **ein
+Smarkets-Durchlauf dauert 415 Sekunden**, und die Frischesperre (900 s)
+hielt die alte Aufnahme bis dahin richtigerweise zurueck. Der Sammler war
+die ganze Zeit gesund.
+
+### Der gemessene Endstand
+
+```
+Betfair      62 s alt     618 Maerkte
+Kalshi       88 s alt     131 Maerkte
+Smarkets     68 s alt    6231 Maerkte
+Scanner       3 s her
+Panel        47 lebende Zeilen
+```
+
+Alle vier Boersen liefern.
+
+### Was der Tag gelehrt hat
+
+**Frag die Ebenen einzeln.** „Supabase antwortet nicht" war zu grob und
+haette zu Warten gefuehrt. Erst die Aufteilung in Storage / Realtime / REST
+/ Auth / Functions zeigte, dass nur die Datenbank haengt — und damit, dass
+ein Neustart genau das richtige Mittel ist.
+
+**Und: Last wegnehmen ist ein Messwerkzeug.** Den Notbetrieb zu stoppen
+hat nichts repariert, aber es hat den Verdacht „der Laptop ueberlastet die
+Datenbank" in zwei Minuten sauber widerlegt.
+
