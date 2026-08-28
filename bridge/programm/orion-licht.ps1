@@ -32,7 +32,9 @@ Add-Type -AssemblyName System.Drawing
 #   1. Prozesssuche im Starter: zu langsam, zwei Starts im selben Moment
 #      sehen einander noch nicht.
 #   2. Mutex mit Local\ : gilt JE WINDOWS-SITZUNG. Claudes Befehle laufen
-#      in einer anderen Sitzung als Karams Desktop, die zwei Kopien haben
+#      in einer anderen Sitzung als Karams Desktop. WIDERLEGT am
+#      27.08.: beide laufen in Sitzung 1, nachgemessen. Auch diese
+#      Annahme war falsch.
 #      sich deshalb nie gesehen. Genau das war gemessen: trotz Sperre zwei.
 # Deshalb jetzt eine Sperrdatei mit PID, so wie es die Bridge seit Build 27
 # macht. Die wirkt ueber Sitzungsgrenzen hinweg.
@@ -52,13 +54,28 @@ $sperre = Join-Path $env:LOCALAPPDATA 'orion-warnlicht.lock'
 #
 # Deshalb jetzt genau: nur Prozesse, die orion-licht.ps1 wirklich per -File
 # ausfuehren. Ein Befehl, der den Namen bloss erwaehnt, zaehlt nicht mehr.
-try {
-  $andere = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop |
-              Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -match '-File\s+\S*orion-licht\.ps1' })
-  if ($andere.Count -gt 0) { exit 0 }
-} catch { }
+#
+# DER PROBEALARM WAR VON DIESER SPERRE ERSCHLAGEN (27.08.2026, gemessen).
+# Genau hier lag Punkt 2 aus 9cc. Das echte Warnlicht laeuft dauernd (per
+# Aufgabenplaner beim Anmelden). Ein Doppelklick auf PROBEALARM.cmd startete
+# eine zweite Kopie - die fand die erste und beendete sich SOFORT mit
+# exit 0. Es konnte nie ein Fenster erscheinen. Gemessen: der Probe-Prozess
+# war nach 6 Sekunden weg, Exitcode 0, und das laufende Licht blieb bei 1.
+#
+# Die Probe wird deshalb von der Sperre ausgenommen. Sie fasst auch die
+# SPERRDATEI nicht an: sonst wuerde sie die PID des echten Warnlichts
+# ueberschreiben und beim Beenden dessen Sperrdatei mitloeschen.
+$istProbe = ($args -contains '/test')
 
-try { Set-Content -LiteralPath $sperre -Value $PID -Encoding ascii -ErrorAction Stop } catch { }
+if (-not $istProbe) {
+  try {
+    $andere = @(Get-CimInstance Win32_Process -Filter "Name='powershell.exe'" -ErrorAction Stop |
+                Where-Object { $_.ProcessId -ne $PID -and $_.CommandLine -match '-File\s+\S*orion-licht\.ps1' })
+    if ($andere.Count -gt 0) { exit 0 }
+  } catch { }
+
+  try { Set-Content -LiteralPath $sperre -Value $PID -Encoding ascii -ErrorAction Stop } catch { }
+}
 
 $Programm = Split-Path -Parent $MyInvocation.MyCommand.Path
 $Oben     = Split-Path -Parent $Programm
@@ -171,14 +188,44 @@ function Was-Ist-Kaputt {
 # absichtlich zeigen. Anlass 27.08.: ich kann von aussen nicht pruefen, ob
 # das Fenster auf Karams Bildschirm wirklich erscheint - meine Befehle
 # laufen in einer anderen Windows-Sitzung und sehen nur deren Fenster.
+#
+# NACHTRAG 27.08., gemessen: auch das stimmte nicht. Beide laufen in
+# Sitzung 1, und die Fenster sind ueber EnumWindows sehr wohl
+# nachweisbar. Der Probealarm blieb aus einem ganz anderen Grund
+# unsichtbar - die Einmal-Sperre weiter oben hat ihn erschlagen.
+# Zweimal an einem Tag dieselbe unbelegte Annahme, zweimal falsch.
 # Dieser Schalter macht die Probe zu einem Doppelklick.
-$script:probe = ($args -contains '/test')
+$script:probe = $istProbe
 
 function Nachsehen {
   if ($script:probe) {
-    $grund.Text = "PROBEALARM. So sieht es aus,`nwenn wirklich etwas klemmt.`nRechtsklick blendet aus."
+    # DIE UEBERSCHRIFT MUSS MITZIEHEN (27.08.2026, Karams Fund).
+    # Der erste Probealarm zeigte die feste Ueberschrift "ORION STEHT",
+    # und nur im Kleintext darunter stand "PROBEALARM". Karam hat die
+    # Ueberschrift gelesen und gefragt, warum die Bridge steht - sie lief
+    # in dem Moment einwandfrei (33 s frisch, 419 Maerkte).
+    #
+    # Ein Probealarm, den man fuer echt haelt, ist schlimmer als gar
+    # keiner: er kostet Schrecken und Vertrauen. Die Ueberschrift sagt
+    # deshalb jetzt selbst, dass es eine Probe ist. Farbe und Ort bleiben
+    # gleich - man soll ja wiedererkennen, wie der Ernstfall aussieht.
+    $titel.Text = 'PROBEALARM'
+    $grund.Text = "Nur eine Probe, nichts ist kaputt.`nSo sieht es im Ernstfall aus.`nRechtsklick blendet aus."
     if (-not $f.Visible) { $f.Show() }
     $f.TopMost = $true
+    $f.BringToFront()
+    # Die Probe zeigt BEIDE Wege auf einmal (27.08.2026). Offen war ja
+    # gerade, WELCHER der beiden bei Karam ankommt: das rote Fenster oben
+    # rechts oder die Sprechblase neben der Uhr. Ein Doppelklick
+    # beantwortet jetzt beides. Vorher zeigte die Probe nur das Fenster -
+    # also ausgerechnet den Weg, der ohnehin im Verdacht stand.
+    if (-not $script:letzteBlase) {
+      $script:letzteBlase = Get-Date
+      $symbol.BalloonTipIcon  = [System.Windows.Forms.ToolTipIcon]::Error
+      $symbol.BalloonTipTitle = 'PROBEALARM'
+      $symbol.BalloonTipText  = 'Nur eine Probe, nichts ist kaputt. Das ist der zweite Weg: die Sprechblase. Kommt sie an, das rote Fenster aber nicht, sag Bescheid.'
+      $symbol.ShowBalloonTip(20000)
+    }
     return
   }
   $problem = Was-Ist-Kaputt
@@ -227,4 +274,6 @@ $f.Add_FormClosed({ $ctx.ExitThread() })
 
 # Beim Beenden die Sperrdatei wieder freigeben.
 if ($symbol) { $symbol.Visible = $false; $symbol.Dispose() }
-try { Remove-Item -LiteralPath $sperre -Force -ErrorAction SilentlyContinue } catch { }
+if (-not $istProbe) {
+  try { Remove-Item -LiteralPath $sperre -Force -ErrorAction SilentlyContinue } catch { }
+}

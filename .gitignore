@@ -19,5 +19,10 @@ bridge/bridge-lauf.log
 bridge/bridge-fehler.log
 bridge/orion-lauf.bundle.js
 bridge/notbetrieb*.log
-bridge/*.bundle.js
+# Buendel sind ERZEUGT, nicht Quelle. Sie gehoeren nicht ins Repo, sonst
+# gaebe es zwei Fassungen derselben Logik, die auseinanderlaufen koennen.
+# Herstellen mit bridge/BUENDELN.cmd (27.8.2026).
+# Die alte Regel bridge/*.bundle.js griff NICHT fuer bridge/programm/ -
+# deshalb jetzt mit **.
+bridge/**/*.bundle.js
 bridge/melder.log
