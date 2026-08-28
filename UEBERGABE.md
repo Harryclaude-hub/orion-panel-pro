@@ -6300,3 +6300,64 @@ jederzeit seine.
 (SCHONUNG)** stellt alles Dauerlaufende ab. Das ist der groesste einzelne
 Hebel und wirkt sofort.
 
+
+## 9jj. L9 BEHOBEN: die Betfair-Ampel fror auf gruen ein (28.08.2026)
+
+Offener Punkt **L9** aus 9y: *„Panel-Bug: `bf_alter_s` ohne Frischegrenze
+fuer die Laufzeile und ohne Nachaltern."* Behoben in `js/daten.js`.
+
+### Zwei Fehler in drei Zeilen, beide in dieselbe Richtung
+
+Die Zahl war zu **klein**, also zu **optimistisch**.
+
+**1. Kein Nachaltern.** `bf_alter_s` ist das Alter **zum Zeitpunkt des
+Laufs**. Lief der Lauf vor 19 Sekunden und war der Kurs damals 14 Sekunden
+alt, ist er **jetzt 33 Sekunden alt** — das Panel zeigte **14**. Genau so
+am 28.08. an den echten Laufdaten gemessen.
+
+**2. Keine Frischegrenze.** Genommen wurde der **erste** Lauf mit einer
+Zahl, egal wie alt dieser Lauf war. **Steht der Scanner, friert die
+Betfair-Ampel damit auf gruen ein und luegt unbegrenzt weiter.** Im
+Normalbetrieb sind das ein paar Sekunden Fehler. Im Ernstfall — und nur
+da zaehlt eine Ampel — beliebig viele.
+
+**Kalshi und Smarkets hatten das nie:** ihre Zahlen werden aus
+`updated_at` gegen JETZT gerechnet und altern von selbst nach. Nur
+Betfair kam ueber den Umweg Laufeintrag.
+
+### Warum das gefahrlos ist
+
+`bf_alter_s` steuert **nur** Anzeige, Ampel und Warntext
+(`anzeige.js:2446, :2477, :2668, :2687`). **Ob eine Zeile als veraltet
+gilt, entscheidet `pm_preis_seit` / `bf_quote_seit` JE ZEILE** — davon
+wurde nichts angefasst. Es kann also keine Zeile verschwinden, es wird
+nur eine Zahl ehrlich.
+
+Grenze ist dieselbe wie fuer die Bereichslaeufe (`FRISCH_MS`, 5 Minuten).
+Hat seit fuenf Minuten kein Lauf Betfair gelesen, bleibt die Zahl `null` —
+und `null` zeigt das Panel als **rot**. Was man nicht weiss, ist nicht gruen.
+
+### Die Gegenprobe, gegen die ausgelieferte Datei gerechnet
+
+| Fall | vorher | **jetzt** |
+|---|---|---|
+| Lauf vor 19 s, Kurs war 14 s alt | 14 s | **33 s** |
+| **Scanner steht seit 40 min** | **14 s (eingefroren, gruen)** | **null → rot** |
+| juengster Lauf ohne bf-Zahl, davor 20 s vor 30 s | 20 s | **50 s** |
+| Die sieben Pruefungen | — | **alle OK** |
+
+### Was von 9y noch offen bleibt
+
+* **L5** (`bf-bridge` stempelt `updated_at` bedingungslos). **Bewusst
+  heute nicht angefasst.** Der Vorschlag aus 9bb ist additiv und
+  rueckfallsicher, aber er beruehrt die **Bridge-Annahme** — den einzigen
+  Weg, auf dem Betfair-Kurse hereinkommen. Karams harte Regel lautet, dass
+  laufende Bridges bei Updates nie brechen duerfen. Nach vier Baustellen
+  an einem Tag ist das genau die Aenderung, die eine eigene ruhige Runde
+  mit voller Gegenprobe verdient, statt als fuenfte nebenher zu laufen.
+* **L10** (Kalshi/Smarkets gleiche Bauart, VERDACHT). **Jetzt erstmals
+  messbar**: seit Stufe 2 stehen `kalshi_alter_s` und `smarkets_alter_s`
+  in `orion_laeufe`. Die Frage laesst sich in ein paar Tagen per Abfrage
+  beantworten, ohne eine Zeile Code.
+* **L7** (Verdachtsmuster „Bridge steht").
+

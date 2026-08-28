@@ -281,10 +281,45 @@
         var kaAlterS = ka && ka.updated_at ? Math.round((jetzt - Date.parse(ka.updated_at)) / 1000) : null;
         var smAlterS = sm && sm.updated_at ? Math.round((jetzt - Date.parse(sm.updated_at)) / 1000) : null;
         /* Betfair-Frische aus dem juengsten Lauf, der Betfair ueberhaupt
-         * gelesen hat — nicht aus irgendeinem. */
+         * gelesen hat - nicht aus irgendeinem.
+         *
+         * L9 BEHOBEN (28.8.2026). Zwei Fehler steckten in den drei Zeilen
+         * darunter, beide in derselben Richtung: die Zahl war zu KLEIN,
+         * also zu optimistisch.
+         *
+         *   1. KEIN NACHALTERN. bf_alter_s ist das Alter ZUM ZEITPUNKT
+         *      DES LAUFS. Lief der Lauf vor 19 s und war der Kurs damals
+         *      14 s alt, ist er JETZT 33 s alt - das Panel zeigte 14.
+         *      Genau so gemessen am 28.8.
+         *   2. KEINE FRISCHEGRENZE. Genommen wurde der erste Lauf mit
+         *      einer Zahl, egal wie alt der Lauf war. STEHT DER SCANNER,
+         *      friert die Betfair-Ampel damit auf gruen ein und luegt
+         *      unbegrenzt weiter. Im Normalbetrieb sind es ein paar
+         *      Sekunden Fehler, im Ernstfall - und nur da zaehlt die
+         *      Ampel - beliebig viele.
+         *
+         * Kalshi und Smarkets hatten das Problem nie: ihre Zahlen werden
+         * oben aus updated_at gegen JETZT gerechnet und altern von selbst
+         * nach. Nur Betfair kam ueber den Umweg Laufeintrag.
+         *
+         * Dieselbe Grenze wie fuer die Bereichslaeufe (FRISCH_MS, 5 min):
+         * hat seit fuenf Minuten kein Lauf Betfair gelesen, ist die Zahl
+         * nicht mehr aussagekraeftig. Dann bleibt sie null, und null zeigt
+         * das Panel als rot - richtig so. Was man nicht weiss, ist nicht
+         * gruen.
+         *
+         * GEFAHRLOS fuer die Zeilen: bf_alter_s steuert nur Anzeige,
+         * Ampel und Warntext (anzeige.js:2446, :2477, :2668, :2687). Ob
+         * eine Zeile als veraltet gilt, entscheidet pm_preis_seit /
+         * bf_quote_seit JE ZEILE - davon wird hier nichts angefasst. */
         var bfAlterS = null;
         for (var bi = 0; bi < laeufe.length; bi++) {
-          if (laeufe[bi].bf_alter_s !== null && laeufe[bi].bf_alter_s !== undefined) { bfAlterS = laeufe[bi].bf_alter_s; break; }
+          var BL = laeufe[bi];
+          if (BL.bf_alter_s === null || BL.bf_alter_s === undefined) continue;
+          var seitLauf = Math.round((jetzt - Date.parse(BL.gelaufen_am)) / 1000);
+          if (!isFinite(seitLauf) || seitLauf * 1000 > FRISCH_MS) break;
+          bfAlterS = BL.bf_alter_s + Math.max(0, seitLauf);
+          break;
         }
         var laufAlterS = lauf ? Math.round((jetzt - Date.parse(lauf.gelaufen_am)) / 1000) : null;
         /* Frische des Scanners JE BEREICH: eine Fussball-Zeile ist so
