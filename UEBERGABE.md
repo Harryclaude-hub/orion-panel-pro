@@ -6208,3 +6208,95 @@ zuordnung, spiegel, gross, melder, tagtabelle, vollpruefung).
 geaendert. Karam sieht davon nichts, bevor es gepusht ist. Der Push steht
 aus und braucht sein Wort.
 
+
+## 9ii. WARUM ES NICHT FLUESSIG WAR (28.08.2026, gemessen)
+
+Karams Wort: *„sie ist seit dieser Woche nicht fluessig genug."*
+
+### Die Messung, bevor irgendetwas behauptet wurde
+
+| was | CPU |
+|---|---|
+| **alle sechs Orion-Programme zusammen** | **15,9 % EINES Kerns = 2 % der ganzen CPU** |
+| Bridge (`Orion-Bridge-Pro-27`) | 0 % |
+| Scanner (`orion-lokal`) | 9,7 % |
+| Sammler (`orion-sammler-lokal`) | 3,9 % |
+| Melder (`orion-melder-lokal`) | 0 % |
+| Warnlicht | 0,3 % |
+| **Browser (drei `msedge`-Prozesse)** | **93 + 33,9 + 15,6 = ueber 140 %** |
+
+**Der Notbetrieb ist NICHT die Ursache.** Er kostet 2 % der Maschine.
+Das Schwere ist die Seite selbst.
+
+### Warum die Seite so schwer war
+
+Die Animationsstufe stand auf **`anim-3`**, der hoechsten („VOLLES KINO").
+Gemessen am noch **gesperrten** Panel: 447 DOM-Knoten, davon **39 mit
+Animation, 14 davon endlos**. Mit echten Daten wird es deutlich mehr.
+
+`js/anim.js` empfiehlt Stufe 3 ab **8 logischen Kernen und 8 GB**. Karams
+Laptop hat **genau 8 logische Kerne** — das sind ueblicherweise 4
+physische mit Hyperthreading. Die Empfehlung ist also zu optimistisch.
+
+**Und sie wurde einmal berechnet, als der Laptop noch nichts anderes zu
+tun hatte.** Seit dem 26.08. traegt er zusaetzlich alles, was vorher
+Supabase getragen hat. Das ist die Antwort auf „seit dieser Woche": nicht
+eine einzelne Last, sondern eine Empfehlung, die den neuen Zustand nicht
+kennt.
+
+### Was gebaut wurde: `js/fluss.js` (neu)
+
+**Messen statt die Heuristik umschreiben.** Eine Kernzahl sagt nichts
+darueber, was auf dem Geraet sonst laeuft — die Bildrate sagt es.
+
+* zaehlt Bilder ueber Fenster von 4 Sekunden
+* zwei schlechte Fenster hintereinander (unter **45 Bilder/s**) → **eine
+  Stufe herunter**
+* **nie unter Stufe 1**, und sie schaltet **nie wieder hoch** — sonst
+  pendelt sie zwischen zwei Stufen und wird selbst zur Unruhe
+* **sie sagt es.** Karams Animations-Warnregel: bei Uebertreibung immer
+  warnen, nicht heimlich drosseln. Der Hinweis steht unten rechts, ist
+  wegklickbar und verschwindet nach 15 s. Bewusst **ohne Animation** —
+  ein Hinweis, der wegen Ruckelns erscheint und dabei hereinfliegt, waere
+  ein Witz auf eigene Kosten.
+
+**Was sie nie tut:** Karams eigene Wahl ueberschreiben. Hat er den
+Animationsknopf einmal benutzt, steht `orion-anim` im Speicher und die
+Datei haelt sich vollstaendig heraus. Und sie fasst nichts an Zahlen,
+Rechnung, Takt oder Scanner an — sie setzt eine Klasse am `<html>`, mehr
+nicht. **Loeschbar:** faellt sie weg, gilt wieder die Empfehlung aus
+`anim.js`.
+
+### Die Gegenprobe
+
+| Probe | Ergebnis |
+|---|---|
+| `fluss.js` geladen, Grenze | **45 Bilder/s** |
+| Drosselt sie bei **versteckter** Seite? | **nein** — kein Hinweis, nichts gespeichert |
+| Prueft sie Karams eigene Wahl **zuerst**? | ja |
+| Haelt sie dann komplett an? | ja |
+| Schaltet sie je **hoch**? | nein (`stufe - 1` kommt vor, `stufe + 1` nicht) |
+| Geht sie unter Stufe 1? | nein |
+| CSS in der ausgelieferten Datei | `.fluss-hinweis` **und** `.fund.bleibt-offen`, beide mit Dunkelmodus |
+| Die sieben Pruefungen | **alle OK** |
+
+**Was hier NICHT geprueft werden konnte, ehrlich:** der Ernstfall. Der
+Browser-Pane laeuft **versteckt**, und versteckte Seiten drosseln
+`requestAnimationFrame` von sich aus — jede Bildratenmessung darin misst
+die Drosselung des Browsers, nicht das Ruckeln. Genau in diesen Messfehler
+bin ich beim Bauen zweimal gelaufen; er steht jetzt als Kommentar in
+`fluss.js`, damit der naechste ihn nicht ein drittes Mal macht. **Ob die
+Drosselung bei echtem Ruckeln greift, zeigt sich erst auf Karams
+Bildschirm.**
+
+### Was Karam davon merkt
+
+Nichts, solange alles fluessig laeuft. Ruckelt es, geht die Animation
+eine Stufe herunter und ein kleiner Hinweis sagt, warum und mit welcher
+gemessenen Bildrate. Ueber den Animationsknopf bleibt die Entscheidung
+jederzeit seine.
+
+**Sofort-Hilfe, falls es weiter hakt:** der Animationsknopf auf **Stufe 1
+(SCHONUNG)** stellt alles Dauerlaufende ab. Das ist der groesste einzelne
+Hebel und wirkt sofort.
+

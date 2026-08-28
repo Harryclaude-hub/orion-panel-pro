@@ -2677,3 +2677,42 @@ html.anim-2 .s-hud-jet         { display: none !important; }
 body.dunkel .fund.bleibt-offen::before {
   color: #FFC978; background: rgba(255, 176, 60, .12);
 }
+
+/* ══════════════════════════════════════════════════════════════════════
+   FLUSS-HINWEIS — die Meldung, wenn gedrosselt wurde (28.08.2026)
+   ══════════════════════════════════════════════════════════════════════
+   js/fluss.js misst die Bildrate und senkt die Animationsstufe, wenn die
+   Seite nicht flüssig läuft. Karams Animations-Warnregel: bei
+   Übertreibung IMMER warnen, nicht heimlich drosseln. Deshalb sagt sie
+   es — unten rechts, klein, klickbar, und nach 15 Sekunden von selbst weg.
+
+   Bewusst OHNE Animation. Ein Hinweis, der wegen Ruckelns erscheint und
+   dabei selbst hereinfliegt, wäre ein Witz auf eigene Kosten.
+
+   REINE DESIGNSCHICHT. Ohne diesen Block wird trotzdem gedrosselt, der
+   Hinweis sähe dann nur aus wie gewöhnlicher Text.
+   ══════════════════════════════════════════════════════════════════════ */
+.fluss-hinweis {
+  position: fixed;
+  right: 16px;
+  bottom: 16px;
+  z-index: 60;
+  max-width: 330px;
+  padding: 11px 13px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 176, 60, .45);
+  background: #FFF6E6;
+  color: #6A4A12;
+  font-size: 12.5px;
+  line-height: 1.45;
+  box-shadow: 0 6px 22px rgba(0, 0, 0, .18);
+  cursor: pointer;
+}
+
+@media (prefers-color-scheme: dark) {
+  .fluss-hinweis { background: #2A2214; color: #FFD9A0; border-color: rgba(255, 176, 60, .35); }
+}
+:root[data-thema="dunkel"] .fluss-hinweis,
+body.dunkel .fluss-hinweis {
+  background: #2A2214; color: #FFD9A0; border-color: rgba(255, 176, 60, .35);
+}
