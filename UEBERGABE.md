@@ -6564,3 +6564,110 @@ ein Neustart genau das richtige Mittel ist.
 hat nichts repariert, aber es hat den Verdacht „der Laptop ueberlastet die
 Datenbank" in zwei Minuten sauber widerlegt.
 
+
+## 9mm. DIE URSACHE DER TAEGLICHEN AUSFAELLE, GEFUNDEN UND BESEITIGT (29.08.2026)
+
+Karam: *„warum steht der orion wieder, setz eine permanente loesung ein"*
+
+**Drei Ausfaelle in 21 Stunden** (28.08. 20:46, 29.08. 10:50, 29.08. 17:21),
+jedes Mal dasselbe Bild, jedes Mal half nur ein Neustart — fuer ein paar
+Stunden. Das war kein Zufall und keine Supabase-Stoerung. **Es war
+selbstgemacht.**
+
+### Was es NICHT war, alles gemessen statt vermutet
+
+| Verdacht | Messung | Urteil |
+|---|---|---|
+| `net._http_response` voll | **25 Zeilen, 120 kB** | widerlegt |
+| Platte voll | **162 MB von 500 MB** | widerlegt |
+| Verbindungspool | **13 von 60** | widerlegt |
+| haengende Transaktionen | **0** | widerlegt |
+| Last vom Laptop | am 28.08. **alle vier Programme gestoppt**, 8 Messungen ueber 2 min: **0 Erfolge** | widerlegt |
+| Internet, DNS, TCP 443 | GitHub 562 ms, Polymarket 554 ms, Port offen | widerlegt |
+| Frontend-Aenderungen | Syntax OK, 7 von 7 Pruefungen, Pages HTTP 200 | widerlegt |
+
+**Mein erster Verdacht war falsch, und das gehoert hierher:** ich hatte auf
+eine vollgelaufene `net._http_response` getippt und es sogar schon Karam
+gegenueber als Hauptverdacht genannt. Die Messung ergab **25 Zeilen**. Erst
+messen, dann behaupten — diesmal in der richtigen Reihenfolge, aber knapp.
+
+### Was es war
+
+**28 pg_cron-Takte riefen Edge Functions auf, die seit dem 25.08. blind
+sind.** PostgREST weist ihren Dienstschluessel ab („JWT issued at future"),
+sie koennen also nichts ausrichten — aber **jeder Aufruf laeuft ins
+Zeitlimit und haelt dabei eine pg_net-Verbindung**.
+
+| Takt | Anzahl | Ziel |
+|---|---|---|
+| alle **33 s** | **19** | `orion-lauf`, je ein Bereich |
+| alle **15 s** | **1** | `orion-lauf`, fussball |
+| alle 2 min | 2 | `orion-kalshi`, `orion-smarkets` |
+| jede Minute | 2 | `orion-melder-telegram`, `orion-melder-mail` |
+| alle 5 min | 2 | `orion-melder-knapp`, `orion-pruefer` |
+| 2-stuendlich / taeglich | 2 | `orion-lebenszeichen` |
+
+**Rund 38 Aufrufe je Minute, jeder bis zu eine Minute offen.** Dauerhaft 20
+bis 40 gleichzeitige Verbindungen fuer Aufrufe, die **garantiert**
+scheitern. Die Datenbank schaukelt sich ueber Stunden hoch, bis sie steht.
+
+**Damit erklaert sich auch, warum ein Neustart immer nur Stunden hielt:** er
+raeumt die Verbindungen frei, und danach faengt dasselbe Spiel von vorn an.
+
+**Und keiner dieser Takte wurde gebraucht.** Seit dem 26.08. laeuft alles
+auf Karams Laptop — Scanner, beide Sammler, beide Melder. Die Takte feuerten
+nur noch aus Gewohnheit gegen tote Funktionen.
+
+### Die permanente Loesung
+
+Alle 28 http-Takte **stillgelegt** (`cron.alter_job(..., active := false)`).
+**Nichts geloescht** — die Zeitplaene stehen unveraendert da.
+
+**Die 8 reinen SQL-Takte bleiben an**: 9, 84, 85, 86, 88, 90 (jede Minute),
+7 (alle 5 min), 96 (Aufraeumen). Sie rufen kein http auf, kosten nichts und
+tragen die Wache.
+
+### Die Wirkung, im selben Moment gemessen
+
+| | vorher | **nachher** |
+|---|---|---|
+| REST-Antwort | **Zeitlimit nach 12 s**, 0 von 3 | **200 in 0,21 bis 0,42 s**, 5 von 5 |
+| Betfair-Lieferung | 20 min alt, Uploads mit 504 | **5 s alt, 442 Maerkte** |
+| Scanner | stand | **12 s her** |
+| aktive http-Takte | 28 | **0** |
+| aktive SQL-Takte | 8 | 8 |
+
+Das Bridge-Protokoll unmittelbar danach, drei saubere Laeufe ohne einen
+einzigen Fehler:
+
+```
+17:41:03  American Football  ... hochgeladen 442 ... 21.3 s
+17:41:24  Fussball           ... hochgeladen 442 ... 12.2 s
+17:41:45  Eishockey          ... hochgeladen 442 ...  2.9 s
+```
+
+### Zurueckbauen — WICHTIG fuer den Tag, an dem Supabase repariert ist
+
+Sobald die Server-Funktionen wieder an die Datenbank duerfen (Punkt 1 aus
+9dd, der Schluesselfund), muessen die Takte wieder an:
+
+```sql
+select cron.alter_job(jobid, active := true)
+  from cron.job where command like '%net.http_post%';
+```
+
+**Vorher unbedingt den Notbetrieb auf dem Laptop stoppen** (`ORION-STOPPEN.cmd`),
+sonst laufen Scanner und beide Melder doppelt und Telegram meldet zweimal.
+
+### Was daraus zu lernen ist
+
+**Ein Takt, der ins Leere feuert, ist nicht harmlos.** Er kostet nichts,
+solange sein Ziel schnell „nein" sagt — aber sobald das Ziel ins Zeitlimit
+laeuft, wird aus jedem Takt eine gehaltene Verbindung. Vier Tage lang hat
+niemand die Takte angefasst, weil sie ja „nur ins Leere laufen".
+
+**Wer eine Notloesung baut, muss den alten Weg stilllegen.** Am 26.08. wurde
+der Notbetrieb aufgesetzt, und in 9cc steht sogar ausdruecklich: *„Die
+pg_cron-Takte rufen die Server-Funktionen ohnehin weiter jede Minute."* Das
+stand da als Beruhigung. Es war die Ursache.
+
